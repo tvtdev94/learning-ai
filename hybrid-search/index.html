@@ -1,0 +1,1075 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hiểu Hybrid Search từ gốc</title>
+<script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+:root{
+  --bg:#f7f6f2; --surface:#ffffff; --surface-2:#f0eee8; --text:#1f2328; --muted:#5b6370;
+  --border:#dcd8cf; --accent:#2f6fde; --accent-soft:#e3ecfc; --ok:#1f8a4c; --ok-soft:#e1f3e8;
+  --warn:#b4610e; --warn-soft:#fbeedd; --bad:#c23b3b; --bad-soft:#fae3e3;
+  --p1:#2f6fde; --p2:#8a4fd1; --p3:#1f8a4c; --p4:#b4610e;
+  --code-bg:#f0eee8; --shadow:0 1px 2px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04); --on-accent:#ffffff; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+    --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+    --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+    --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --code-bg:#252930; --shadow:none; --on-accent:#15171a; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+  --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+  --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+  --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --code-bg:#252930; --shadow:none; --on-accent:#15171a; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+a{color:var(--accent)}
+header.top{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
+.top-inner{max-width:1100px;margin:0 auto;padding:10px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.brand{font-weight:700;white-space:nowrap}
+.home{white-space:nowrap;text-decoration:none;color:var(--text);border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:4px 10px;font-size:14px}
+.home:hover{border-color:var(--accent);color:var(--accent)}
+nav.toc{display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin;flex:1}
+nav.toc a{white-space:nowrap;text-decoration:none;color:var(--muted);padding:4px 10px;border-radius:999px;font-size:14px}
+nav.toc a:hover,nav.toc a.active{background:var(--accent-soft);color:var(--accent)}
+button{font:inherit;cursor:pointer}
+.theme-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:4px 10px;font-size:14px}
+main{max-width:1100px;margin:0 auto;padding:16px}
+section{padding:28px 0;border-bottom:1px solid var(--border);scroll-margin-top:64px}
+section:last-child{border-bottom:none}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.2;margin:16px 0 8px}
+h2{font-size:clamp(22px,3.5vw,28px);margin:0 0 12px}
+h3{font-size:18px;margin:20px 0 8px}
+p{margin:8px 0}
+.lead{font-size:18px;color:var(--muted);max-width:760px}
+.muted{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow);min-width:0}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 10px 10px 0;margin:12px 0}
+.callout.ok{border-color:var(--ok);background:var(--ok-soft)}
+.callout.warn{border-color:var(--warn);background:var(--warn-soft)}
+.callout.bad{border-color:var(--bad);background:var(--bad-soft)}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);margin-right:4px}
+.tag.p1{background:var(--accent-soft);color:var(--p1)}
+.tag.p3{background:var(--ok-soft);color:var(--p3)}
+.tag.p4{background:var(--warn-soft);color:var(--p4)}
+.tag.p2{color:var(--p2)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+th{background:var(--surface-2);font-weight:600}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.mono,code{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:14px}
+code{background:var(--code-bg);padding:1px 5px;border-radius:5px}
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-word;margin:8px 0;font-size:14px;line-height:1.55}
+svg text{fill:var(--text);font-family:inherit}
+.diagram{width:100%;height:auto;display:block}
+.svgbox{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;overflow-x:auto}
+.svgbox svg{min-width:640px}
+.formula{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin:8px 0;font-size:15px;overflow-x:auto}
+/* Glossary */
+.gloss-tools{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+.gloss-tools input{flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
+.chip{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:999px;padding:4px 12px;font-size:14px}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.term h4{margin:0 0 4px;font-size:16px}
+.term .en{font-weight:400;color:var(--muted);font-size:14px}
+.term p{margin:4px 0;font-size:15px}
+.term .ex{font-size:14px;color:var(--muted)}
+.term .rel{font-size:13px;margin-top:6px}
+.term .rel a{font-size:13px}
+/* Stepper */
+.stepper{display:grid;grid-template-columns:240px 1fr;gap:12px}
+.stepper>div{min-width:0}
+@media (max-width:720px){.stepper{grid-template-columns:1fr}}
+.steps{display:flex;flex-direction:column;gap:6px}
+@media (max-width:720px){.steps{flex-direction:row;overflow-x:auto}}
+.steps button{text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px;white-space:nowrap}
+.steps button .n{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--surface-2);text-align:center;line-height:22px;font-size:12px;margin-right:6px}
+.steps button.on{border-color:var(--accent);background:var(--accent-soft)}
+.steps button.on .n{background:var(--accent);color:var(--on-accent)}
+.step-nav{display:flex;gap:8px;margin-top:12px}
+.step-nav button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 14px}
+.chunk{border:1px dashed var(--border);border-radius:8px;padding:8px 10px;margin:6px 0;font-size:14px;background:var(--surface)}
+.chunk.hit{border-style:solid;border-color:var(--ok);background:var(--ok-soft)}
+.chunk .id{font-weight:700;font-size:12px;color:var(--muted)}
+.tok{display:inline-block;font-family:ui-monospace,Consolas,monospace;font-size:13px;background:var(--accent-soft);color:var(--p1);border-radius:6px;padding:1px 6px;margin:2px 3px 2px 0}
+.tok.off{background:var(--surface-2);color:var(--muted);text-decoration:line-through}
+.bar{height:8px;background:var(--surface-2);border-radius:4px;overflow:hidden;margin-top:4px}
+.bar>span{display:block;height:100%;background:var(--ok)}
+.bar.b1>span{background:var(--p1)} .bar.b2>span{background:var(--p2)} .bar.b3>span{background:var(--p3)}
+/* Simulator */
+.sim-q{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.sim-q button{text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px}
+.sim-q button.on{border-color:var(--p4);background:var(--warn-soft)}
+.sim-q button .tag{margin-left:4px}
+.sim-opts{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin:8px 0 12px;font-size:14px}
+.sim-opts label{display:flex;gap:6px;align-items:center}
+.sim-opts input[type=range]{width:150px;accent-color:var(--accent)}
+.sim-opts input[type=checkbox]{accent-color:var(--accent)}
+.sim-col h4{margin:0 0 6px}
+.ri{border:1px solid var(--border);border-radius:8px;padding:6px 10px;margin:6px 0;font-size:14px;background:var(--surface)}
+.ri.rel{border-color:var(--ok);background:var(--ok-soft)}
+.ri .top{display:flex;justify-content:space-between;gap:8px;font-weight:600}
+.ri .sub{font-size:13px;color:var(--muted)}
+.ri .calc{font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--muted);word-break:break-word}
+.ri .star{color:var(--ok)}
+.empty{border:1px dashed var(--bad);background:var(--bad-soft);border-radius:8px;padding:8px 10px;font-size:14px}
+.score-sum{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.score-sum .card{flex:1;min-width:150px;padding:10px 12px}
+.score-sum b{display:block;font-size:20px}
+details{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin:8px 0}
+details summary{cursor:pointer;font-weight:600}
+details[open] summary{margin-bottom:6px}
+.check{display:flex;gap:8px;align-items:flex-start;padding:6px 0}
+.check input{margin-top:6px}
+footer{max-width:1100px;margin:0 auto;padding:24px 16px;color:var(--muted);font-size:14px}
+sup.cite{font-size:max(11px,.72em);line-height:0;margin-left:1px;white-space:nowrap}
+sup.cite a{text-decoration:none;font-weight:600;padding:10px 3px;margin:-10px 0}
+sup.cite a:hover{text-decoration:underline}
+sup.cite a+a{margin-left:2px}
+ol.sources{padding-left:1.6em;margin:8px 0}
+ol.sources li{margin:0 0 10px;font-size:15px;overflow-wrap:anywhere;scroll-margin-top:64px}
+ol.sources li:target{background:var(--accent-soft);border-radius:6px}
+ol.sources .acc{color:var(--muted);font-size:14px;white-space:nowrap}
+button:disabled{opacity:.45;cursor:default}
+.card>h4:first-child,.card>.tag+h4{margin-top:4px}
+.card h4{margin-bottom:6px}
+.m-only{display:none}
+.vflow .box,.vflow .node,.vflow .ar{display:block}
+.vflow .ph{font-weight:700;font-size:14px;margin:4px 0 8px}
+.vflow .ph1{color:var(--p1)} .vflow .ph2{color:var(--p3)}
+.vflow .node{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px}
+.vflow .node b{display:block}
+.vflow .node span{font-size:13px;color:var(--muted)}
+.vflow .node.r{border:2px solid var(--p1)} .vflow .node.a{border:2px solid var(--p2)} .vflow .node.g{border:2px solid var(--p3)} .vflow .node.db{border:2px solid var(--p2)}
+.vflow .opt{background:var(--warn-soft);border-color:var(--p4)}
+.vflow .ar{text-align:center;color:var(--muted);font-size:13px;line-height:1.3;padding:4px 0}
+.vflow .box{border-radius:12px;padding:10px;margin-bottom:10px}
+.vflow .box1{background:var(--accent-soft)} .vflow .box2{background:var(--ok-soft)}
+.vflow .pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vflow .note{font-size:13px;color:var(--muted);margin-top:6px}
+/* Below ~900px the scaled SVG text gets too small: use the vertical versions */
+@media (max-width:900px){.d-only{display:none}.m-only{display:block}}
+@media (max-width:600px){
+  .brand{display:none} body{font-size:15px}
+  .d-only{display:none}
+  .m-only{display:block}
+  .theme-btn .lbl,.home .lbl{display:none}
+  main{padding:12px 16px}
+  section{padding:22px 0}
+  .card{padding:14px}
+  .sim-opts input[type=range]{width:130px;height:40px}
+  /* Touch targets: at least 40px tall on phones */
+  .home,.theme-btn{min-height:40px;min-width:40px;display:inline-flex;align-items:center;justify-content:center}
+  nav.toc a{padding:10px 12px}
+  .chip,.steps button,.step-nav button,.sim-q button{min-height:40px}
+  .sim-opts label{min-height:40px}
+  details summary{padding:8px 0}
+  .term .rel a{display:inline-block;padding:10px 2px;font-size:14px}
+  pre,pre.mono,.term .ex{font-size:15px}
+  .vflow .node span{font-size:14px}
+  sup.cite a{padding:14px 4px}
+  main p a,main li a,.callout a{padding:10px 0}
+  .ri .calc{font-size:13px}
+  .check{padding:10px 0}
+  ol.sources a{padding:11px 0}
+  table.stack thead{display:none}
+  table.stack,table.stack tbody,table.stack tr,table.stack td{display:block;width:100%}
+  table.stack tr{border-bottom:1px solid var(--border);padding:8px 0}
+  table.stack tr:last-child{border-bottom:none}
+  table.stack td{border:none;padding:3px 12px}
+  table.stack td[data-label]::before{content:attr(data-label);display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  table.stack td:first-child{font-size:16px}
+  table.stack td:first-child::before{display:none}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <a class="home" href="../" aria-label="Về trang tất cả chủ đề">←<span class="lbl"> Chủ đề</span></a>
+    <span class="brand">Hybrid Search</span>
+    <nav class="toc" id="toc">
+      <a href="#tong-quan">1. Tổng quan</a>
+      <a href="#hai-kieu">2. Hai kiểu tìm</a>
+      <a href="#flow">3. Flow</a>
+      <a href="#vi-du">4. Ví dụ từng bước</a>
+      <a href="#tron">5. Cách trộn</a>
+      <a href="#mo-phong">6. Mô phỏng</a>
+      <a href="#khai-niem">7. Khái niệm</a>
+      <a href="#quan-he">8. Mối quan hệ</a>
+      <a href="#so-sanh">9. So sánh</a>
+      <a href="#loi">10. Lỗi &amp; chẩn đoán</a>
+      <a href="#danh-gia">11. Đánh giá</a>
+      <a href="#lo-trinh">12. Lộ trình</a>
+      <a href="#nguon">13. Nguồn</a>
+    </nav>
+    <button class="theme-btn" id="themeBtn" aria-label="Đổi giao diện sáng/tối">◐<span class="lbl"> Giao diện</span></button>
+  </div>
+</header>
+
+<main>
+
+<!-- 1. TỔNG QUAN -->
+<section id="tong-quan">
+  <h1>Hiểu Hybrid Search từ gốc</h1>
+  <p class="lead">Hybrid search là cách tìm tài liệu bằng <b>hai bộ máy chạy song song</b>: một bộ tìm theo <b>từ khóa</b> (lexical, thường là BM25) và một bộ tìm theo <b>nghĩa</b> (vector embedding). Hai danh sách kết quả sau đó được <b>trộn</b> thành một danh sách duy nhất.</p>
+  <p class="muted">Trên trang này, "đoạn" và "chunk" là một: mẩu văn bản cắt từ tài liệu, đơn vị nhỏ nhất để tìm.</p>
+  <p>Trong RAG, đây là một cách nâng cấp bước <b>Retrieval</b>: LLM chỉ trả lời tốt khi nhận đúng đoạn tài liệu. Nếu bạn chưa học RAG, xem trang <a href="../rag/">Hiểu RAG từ gốc</a> trước, nhất là phần <a href="../rag/#embedding">embedding</a>.</p>
+
+  <h3>Vì sao một kiểu tìm là chưa đủ?</h3>
+  <div class="grid g3">
+    <div class="card"><span class="tag p4">Vector bỏ lỡ</span><h4>Mã số, tên riêng, viết tắt</h4><p>Hỏi "lỗi <b>E-4012</b>", tìm theo nghĩa có thể trả về đoạn nói về "E-4021" vì hai mã trông na ná, trong khi người dùng cần đúng từng ký tự. Nghiên cứu ghi nhận dense retriever còn thua BM25 ở khả năng khớp chắc chắn các cụm từ quan trọng và thực thể hiếm.<sup class="cite"><a href="#src-8">[8]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Từ khóa bỏ lỡ</span><h4>Cách nói khác, đồng nghĩa</h4><p>Hỏi "hàng <b>hư</b> có được <b>bồi hoàn</b> không", tài liệu lại viết "sản phẩm <b>bị lỗi</b> được <b>hoàn tiền</b>". Không trùng chữ thì tìm theo từ khóa khó thấy.</p></div>
+    <div class="card"><span class="tag p3">Hybrid</span><h4>Lấy điểm mạnh của cả hai</h4><p>Đoạn nào được <i>một trong hai</i> bộ máy tìm ra đều có cơ hội vào danh sách cuối; đoạn được <i>cả hai</i> tìm ra thường được đẩy lên cao.</p></div>
+  </div>
+
+  <h3>Hình dung bằng ví dụ đời thường</h3>
+  <div class="grid g2">
+    <div class="card">
+      <h4>📖 Bảng tra cuối sách và người đã đọc cả cuốn</h4>
+      <p><b>Tìm theo từ khóa</b> giống <b>bảng tra cứu (index) ở cuối sách</b>: tra chữ "E-4012" là ra đúng trang có chữ đó. Rất chính xác với chữ, nhưng tra "hàng hư" thì không thấy trang viết "sản phẩm bị lỗi".</p>
+      <p><b>Tìm theo nghĩa</b> giống <b>người đã đọc cả cuốn sách</b>: hiểu bạn muốn hỏi gì dù bạn dùng chữ khác, nhưng đôi khi nhớ nhầm hai mã số na ná nhau.</p>
+      <p><b>Hybrid</b> là hỏi cả hai rồi gộp ý kiến.</p>
+    </div>
+    <div class="card">
+      <h4>🧭 Điều cần nhớ ngay từ đầu</h4>
+      <ul>
+        <li>Hybrid <b>không</b> phải một model mới. Nó là cách <b>ghép hai bộ tìm kiếm</b> đã có.</li>
+        <li>Phần khó nhất là <b>trộn</b>: điểm BM25 và điểm cosine nằm trên hai thang đo khác nhau, không cộng thẳng được (mục 5).</li>
+        <li>Hybrid thường giúp, nhưng <b>không phải lúc nào cũng giúp</b>. Phải đo trên câu hỏi thật (mục 11).</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 2. HAI KIỂU TÌM -->
+<section id="hai-kieu">
+  <h2>2. Hai kiểu tìm: theo từ khóa và theo nghĩa</h2>
+  <div class="grid g2">
+    <div class="card">
+      <span class="tag p1">Lexical · sparse</span><h4>Tìm theo từ khóa</h4>
+      <p>Văn bản được tách thành các <b>token</b> (từ hoặc âm tiết). Hệ thống xây một <b>inverted index</b>: với mỗi token, ghi lại danh sách các đoạn chứa nó, giống bảng tra cuối sách.</p>
+      <pre>"mật"   → d4, d5
+"khẩu"  → d4, d5
+"e-4012" → d1</pre>
+      <p>Khi có câu hỏi, chỉ cần tra các token của câu hỏi, lấy những đoạn chứa chúng, rồi chấm điểm bằng <b>BM25</b>.</p>
+      <p class="muted">BM25 coi đoạn văn như một "túi từ" (bag of words): chỉ đếm từ, không quan tâm thứ tự hay từ nào đứng cạnh từ nào. "mật khẩu" và "khẩu ... mật" được tính như nhau.</p>
+      <p class="muted">Gọi là <i>sparse</i> (thưa) vì nếu viết mỗi đoạn thành một vector dài bằng cả bộ từ vựng, gần như mọi ô đều bằng 0, chỉ vài ô ứng với các từ có mặt là khác 0. TF-IDF và BM25 là các mô hình thưa kinh điển.<sup class="cite"><a href="#src-7">[7]</a></sup></p>
+    </div>
+    <div class="card">
+      <span class="tag p2">Dense · vector</span><h4>Tìm theo nghĩa</h4>
+      <p>Một <b>embedding model</b> biến mỗi đoạn và câu hỏi thành một vector vài trăm đến vài nghìn số. Câu cùng nghĩa cho vector gần nhau, đo bằng <b>cosine similarity</b>. Vector index (ANN) giúp tìm nhanh các vector gần nhất.</p>
+      <p>Câu hỏi và đoạn được embed <b>riêng rẽ</b> (kiến trúc bi-encoder, còn gọi là dual-encoder), nên vector của mọi đoạn tính trước được.<sup class="cite"><a href="#src-7">[7]</a><a href="#src-18">[18]</a></sup></p>
+      <p>Gọi là <i>dense</i> (đặc) vì hầu như mọi số trong vector đều khác 0 và không số nào ứng với một từ cụ thể.</p>
+      <p class="muted">Đây chính là cách tìm mặc định trong trang RAG. Xem lại: <a href="../rag/#embedding">Embedding: trái tim của việc tìm theo nghĩa</a>.</p>
+    </div>
+  </div>
+
+  <h3>BM25 chấm điểm thế nào? (ý tưởng, không cần nhớ công thức)</h3>
+  <p>BM25 cộng điểm cho từng token của câu hỏi có mặt trong đoạn. Mỗi phần điểm phụ thuộc ba ý:</p>
+  <div class="grid g3">
+    <div class="card"><span class="tag p1">TF · term frequency</span><h4>Xuất hiện nhiều thì cộng nhiều, nhưng có trần</h4><p>Từ "mật khẩu" xuất hiện 3 lần trong đoạn thì đoạn đó liên quan hơn đoạn chỉ có 1 lần. Nhưng lần thứ 10 cộng thêm rất ít so với lần thứ 1: điểm <b>bão hòa</b>, không vượt quá một mức trần dù từ lặp bao nhiêu lần.<sup class="cite"><a href="#src-2">[2]</a></sup> Tham số <b>k1</b> điều khiển tốc độ bão hòa.<sup class="cite"><a href="#src-3">[3]</a></sup></p></div>
+    <div class="card"><span class="tag p1">IDF · inverse document frequency</span><h4>Từ hiếm thì nặng ký</h4><p>Từ có trong gần như mọi đoạn ("được", "của") nói rất ít về đoạn nào là đúng. Từ hiếm như "E-4012" hay "SSO" thì gần như chỉ điểm thẳng tới đoạn cần tìm, nên được nhân hệ số lớn.</p></div>
+    <div class="card"><span class="tag p1">Chuẩn hóa độ dài</span><h4>Đoạn dài không được lợi thế vô lý</h4><p>Đoạn dài dễ chứa nhiều từ hơn chỉ vì nó dài. BM25 so độ dài đoạn với <b>độ dài trung bình</b> của kho và giảm điểm đoạn dài.<sup class="cite"><a href="#src-2">[2]</a></sup> Tham số <b>b</b> (từ 0 đến 1) quyết định giảm mạnh hay nhẹ.<sup class="cite"><a href="#src-3">[3]</a></sup></p></div>
+  </div>
+  <div class="formula">điểm(đoạn, câu hỏi) = Σ<sub>mỗi token t của câu hỏi</sub> IDF(t) × TF đã bão hòa và đã chuẩn hóa theo độ dài</div>
+  <p class="muted">Chọn k1 và b thế nào? Mô hình lý thuyết không chỉ ra giá trị cụ thể. Các thí nghiệm được tổng kết cho thấy b trong khoảng 0.5–0.8 và k1 trong khoảng 1.2–2 thường khá tốt.<sup class="cite"><a href="#src-2">[2]</a></sup> Lucene và Elasticsearch đặt mặc định k1 = 1.2, b = 0.75.<sup class="cite"><a href="#src-3">[3]</a><a href="#src-4">[4]</a></sup> Mô phỏng trên trang này dùng đúng hai giá trị đó.</p>
+  <p class="muted">Công thức IDF có nhiều biến thể. Trang này dùng dạng của Lucene: <code>ln(1 + (N − n + 0.5)/(n + 0.5))</code>, với N là số đoạn trong kho và n là số đoạn chứa token.<sup class="cite"><a href="#src-3">[3]</a></sup></p>
+
+  <h3>Mỗi kiểu mạnh ở đâu, yếu ở đâu?</h3>
+  <div class="table-wrap">
+  <table class="stack">
+    <thead><tr><th>Loại câu hỏi</th><th>Từ khóa (BM25)</th><th>Theo nghĩa (vector)</th></tr></thead>
+    <tbody>
+      <tr><td><b>Mã số, ID</b> (E-4012, Điều 15, SKU-889)</td><td>✅ Khớp chính xác từng ký tự, nếu tokenizer giữ nguyên mã.</td><td>⚠️ Mã na ná nhau có thể có vector gần nhau; dense retriever kém BM25 ở khả năng khớp chắc chắn cụm từ và thực thể hiếm.<sup class="cite"><a href="#src-8">[8]</a></sup></td></tr>
+      <tr><td><b>Tên riêng, thuật ngữ hiếm</b></td><td>✅ Từ hiếm có IDF cao, nên rất nặng điểm.</td><td>⚠️ Tên nội bộ mà model chưa từng thấy thì vector không mang nhiều nghĩa.</td></tr>
+      <tr><td><b>Từ viết tắt</b> (SSO, BHXH)</td><td>✅ nếu tài liệu cũng viết tắt giống vậy. ❌ nếu tài liệu viết đầy đủ.</td><td>⚠️ Tùy model có biết từ viết tắt đó hay không.</td></tr>
+      <tr><td><b>Đồng nghĩa, diễn đạt khác</b> (hư / bị lỗi)</td><td>❌ Không trùng chữ thì không có điểm.</td><td>✅ Đây là điểm mạnh chính.</td></tr>
+      <tr><td><b>Lỗi chính tả</b></td><td>❌ "mât khẩu" ≠ "mật khẩu". Một số engine có fuzzy matching (khớp trong một khoảng cách chỉnh sửa) để bù.<sup class="cite"><a href="#src-13">[13]</a></sup></td><td>⚠️ Thường chịu được tốt hơn, nhưng không đảm bảo.</td></tr>
+      <tr><td><b>Gõ không dấu</b> (quen mat khau)</td><td>❌ nếu index giữ dấu. ✅ nếu index thêm một bản bỏ dấu.<sup class="cite"><a href="#src-12">[12]</a></sup></td><td>⚠️ Tùy model; nhiều model xử lý được ở mức nào đó.</td></tr>
+      <tr><td><b>Câu hỏi dài, tự nhiên</b></td><td>⚠️ Nhiều từ chung chung gây nhiễu.</td><td>✅ Nắm được ý chính của cả câu.</td></tr>
+      <tr><td><b>Hỏi một ngôn ngữ, tài liệu ngôn ngữ khác</b></td><td>❌ Không có chữ chung.</td><td>✅ nếu dùng embedding model đa ngôn ngữ.<sup class="cite"><a href="#src-19">[19]</a></sup></td></tr>
+      <tr><td><b>Giải thích vì sao ra kết quả</b></td><td>✅ Dễ: chỉ ra từ nào khớp.</td><td>❌ Khó: chỉ có một con số khoảng cách.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Tiền xử lý tiếng Việt ảnh hưởng thẳng tới BM25</h3>
+  <p>BM25 chỉ so token, nên <b>cách tách token</b> quyết định nó thấy gì. Tiếng Việt có ba chỗ dễ vấp:</p>
+  <div class="grid g3">
+    <div class="card"><span class="tag p4">Âm tiết ≠ từ</span><h4>Tách từ (word segmentation)</h4><p>Dấu cách trong tiếng Việt ngăn cách cả <b>âm tiết</b>, nên không phải dấu hiệu tin cậy của ranh giới từ: "mật khẩu" là một từ hai âm tiết.<sup class="cite"><a href="#src-10">[10]</a></sup> Tách theo dấu cách thì "sản phẩm" và "sản xuất" cùng có token "sản", "bảo mật" và "mật khẩu" cùng có "mật".</p><p class="muted">Có các công cụ tách từ tiếng Việt mã nguồn mở (ví dụ RDRsegmenter, VnCoreNLP).<sup class="cite"><a href="#src-10">[10]</a><a href="#src-21">[21]</a></sup> Một lựa chọn khác là đánh index thêm cặp âm tiết liền nhau. Cách nào tốt hơn phải đo trên dữ liệu của bạn.</p></div>
+    <div class="card"><span class="tag p4">Dấu</span><h4>Gõ có dấu và không dấu</h4><p>Người dùng hay gõ "quen mat khau". Nếu index chỉ lưu bản có dấu, BM25 không tìm ra gì. Cách thường dùng: lưu <b>thêm một bản bỏ dấu</b> rồi tìm trên cả hai. Ví dụ, bộ lọc ASCII folding của Elasticsearch đổi "à" thành "a" và có tùy chọn giữ cả token gốc.<sup class="cite"><a href="#src-12">[12]</a></sup></p><p class="muted">Bỏ dấu sinh va chạm: "mật", "mặt", "mắt" đều thành "mat". Vì vậy nên giữ cả trường có dấu để khớp chính xác vẫn được ưu tiên.</p></div>
+    <div class="card"><span class="tag p4">Unicode</span><h4>Cùng hình, khác mã</h4><p>Chữ "ệ" có thể lưu dạng <b>dựng sẵn</b> (một ký tự) hoặc <b>tổ hợp</b> (chữ e + dấu). Unicode coi hai cách này là tương đương và phải hiển thị giống nhau, nhưng so từng ký tự thì máy thấy khác.<sup class="cite"><a href="#src-11">[11]</a></sup> Cần <b>chuẩn hóa Unicode</b> (thường là NFC, dạng dựng sẵn) cho cả tài liệu lẫn câu hỏi, cùng với chuyển chữ thường.</p><p class="muted">NFC không gộp được hai kiểu <b>đặt dấu thanh</b> khác nhau như "hoà"/"hòa", "thuỷ"/"thủy": dấu nằm trên hai chữ cái khác nhau nên là hai chuỗi khác hẳn. Nếu kho có cả hai kiểu, cần thêm một bước đưa vị trí dấu thanh về một quy ước thống nhất.</p></div>
+  </div>
+  <div class="callout warn"><b>Từ dừng (stopwords):</b> bỏ các từ quá phổ biến như "là", "thì", "được" giúp giảm nhiễu. Nhưng cẩn thận với "không": trong "có được hoàn tiền không" nó là từ để hỏi, còn trong "không được hoàn tiền" nó đảo ngược nghĩa. Mô phỏng ở mục 6 cho bạn bật/tắt việc này để thấy ảnh hưởng.</div>
+
+  <h3>Kiểu thứ ba nằm giữa: learned sparse</h3>
+  <details><summary>Mở rộng: learned sparse (SPLADE) là gì?</summary>
+    <p><b>Learned sparse retrieval</b> (ví dụ tiêu biểu: <b>SPLADE</b>) dùng một model ngôn ngữ để dự đoán <b>trọng số cho từng token trong bộ từ vựng của model</b>, thay cho TF và IDF tính tay.</p>
+    <p>Vì mọi token trong bộ từ vựng đều có thể nhận trọng số, model có thể <b>thêm từ không có trong đoạn</b> (gọi là expansion). Ví dụ minh họa: đoạn viết "hoàn tiền" có thể được gán thêm trọng số nhỏ cho "trả lại".</p>
+    <p>Nhờ ràng buộc độ thưa, kết quả vẫn là vector thưa, giữ được khả năng khớp chính xác và lưu trong inverted index.<sup class="cite"><a href="#src-6">[6]</a></sup></p>
+    <p class="muted">Nó bắt được một phần đồng nghĩa mà vẫn giữ khả năng khớp chữ. Đổi lại, cần chạy model khi đánh index (và thường cả khi tìm), và chất lượng phụ thuộc vào việc model có hỗ trợ tốt ngôn ngữ của bạn không.</p>
+    <p class="muted">Learned sparse cũng có thể là một nhánh trong hybrid, thay cho BM25 hoặc chạy thêm.</p>
+  </details>
+</section>
+
+<!-- 3. FLOW -->
+<section id="flow">
+  <h2>3. Flow hoạt động</h2>
+  <p>Giống RAG, hybrid search có <b>pha chuẩn bị</b> (đánh index, làm trước) và <b>pha tìm</b> (mỗi câu hỏi). Điểm khác: cùng một bộ chunk được đánh <b>hai index</b>, và mỗi câu hỏi chạy <b>hai nhánh tìm song song</b> rồi trộn.</p>
+
+  <div class="vflow m-only" role="group" aria-label="Sơ đồ flow hybrid search (dạng dọc)">
+    <div class="box box1">
+      <div class="ph ph1">PHA 1 · CHUẨN BỊ (indexing)</div>
+      <div class="node"><b>Tài liệu → Chunk</b><span>mỗi chunk có id + metadata</span></div>
+      <div class="ar">↓ cùng một chunk đi vào hai nhánh ↓</div>
+      <div class="pair">
+        <div class="node r"><b>Tiền xử lý + tách từ</b><span>→ Inverted index</span></div>
+        <div class="node a"><b>Embedding model</b><span>→ Vector index (ANN)</span></div>
+      </div>
+      <div class="note">Hai index phải dùng chung chunk id thì mới trộn được.</div>
+    </div>
+    <div class="box box2">
+      <div class="ph ph2">PHA 2 · TÌM (mỗi câu hỏi)</div>
+      <div class="node"><b>Câu hỏi</b><span>+ metadata filter (nếu có), áp cho cả hai nhánh</span></div>
+      <div class="ar">↓ chạy song song ↓</div>
+      <div class="pair">
+        <div class="node r"><b>Tìm BM25</b><span>cùng tiền xử lý · ra danh sách A</span></div>
+        <div class="node a"><b>Tìm vector</b><span>cùng embedding model · ra danh sách B</span></div>
+      </div>
+      <div class="ar">↓ top-N mỗi bên ↓</div>
+      <div class="node" style="border:2px solid var(--p3)"><b>Trộn (fusion)</b><span>RRF hoặc trộn điểm có trọng số</span></div>
+      <div class="ar">↓</div>
+      <div class="node opt"><b>Reranker</b><span>tùy chọn · chấm lại kỹ</span></div>
+      <div class="ar">↓ top-k</div>
+      <div class="node"><b>Prompt + LLM</b><span>phần còn lại của RAG</span></div>
+    </div>
+  </div>
+  <div class="svgbox d-only">
+  <svg class="diagram" viewBox="0 0 1000 470" role="img" aria-label="Sơ đồ flow hybrid search: hai index, hai nhánh tìm, trộn">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+    </defs>
+    <rect x="10" y="10" width="980" height="175" rx="14" fill="var(--accent-soft)" stroke="var(--p1)" stroke-opacity=".4"/>
+    <text x="28" y="36" font-weight="700" font-size="16" style="fill:var(--p1)">PHA 1 · CHUẨN BỊ (indexing) — chạy trước</text>
+    <g font-size="14">
+      <rect x="30" y="75" width="120" height="60" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="90" y="101" text-anchor="middle" font-weight="600">Tài liệu</text>
+      <text x="90" y="121" text-anchor="middle" font-size="12" style="fill:var(--muted)">PDF, web…</text>
+      <rect x="185" y="75" width="140" height="60" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="255" y="101" text-anchor="middle" font-weight="600">Chunk</text>
+      <text x="255" y="121" text-anchor="middle" font-size="12" style="fill:var(--muted)">+ id + metadata</text>
+      <rect x="370" y="52" width="170" height="48" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="455" y="72" text-anchor="middle" font-weight="600">Tiền xử lý + tách từ</text>
+      <text x="455" y="90" text-anchor="middle" font-size="12" style="fill:var(--muted)">NFC, chữ thường, dấu</text>
+      <rect x="585" y="52" width="180" height="48" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="675" y="72" text-anchor="middle" font-weight="600">Inverted index</text>
+      <text x="675" y="90" text-anchor="middle" font-size="12" style="fill:var(--muted)">token → các chunk chứa nó</text>
+      <rect x="370" y="122" width="170" height="48" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="455" y="142" text-anchor="middle" font-weight="600">Embedding model</text>
+      <text x="455" y="160" text-anchor="middle" font-size="12" style="fill:var(--muted)">chunk → vector</text>
+      <rect x="585" y="122" width="180" height="48" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="675" y="142" text-anchor="middle" font-weight="600">Vector index</text>
+      <text x="675" y="160" text-anchor="middle" font-size="12" style="fill:var(--muted)">tìm gần nhất (ANN)</text>
+      <text x="790" y="95" font-size="12" style="fill:var(--muted)">Hai index dùng chung</text>
+      <text x="790" y="113" font-size="12" style="fill:var(--muted)">một bộ chunk id</text>
+      <text x="790" y="131" font-size="12" style="fill:var(--muted)">→ mới trộn được</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="2" fill="none" marker-end="url(#arr)">
+      <line x1="150" y1="105" x2="183" y2="105"/>
+      <path d="M325 95 L368 78"/><path d="M325 115 L368 144"/>
+      <line x1="540" y1="76" x2="583" y2="76"/><line x1="540" y1="146" x2="583" y2="146"/>
+    </g>
+    <rect x="10" y="210" width="980" height="250" rx="14" fill="var(--ok-soft)" stroke="var(--p3)" stroke-opacity=".4"/>
+    <text x="28" y="236" font-weight="700" font-size="16" style="fill:var(--p3)">PHA 2 · TÌM — mỗi câu hỏi</text>
+    <g font-size="14">
+      <rect x="30" y="314" width="110" height="60" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="85" y="340" text-anchor="middle" font-weight="600">Câu hỏi</text>
+      <text x="85" y="360" text-anchor="middle" font-size="12" style="fill:var(--muted)">của người dùng</text>
+      <rect x="185" y="262" width="170" height="56" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="270" y="285" text-anchor="middle" font-weight="600">Tìm BM25</text>
+      <text x="270" y="305" text-anchor="middle" font-size="12" style="fill:var(--muted)">cùng tiền xử lý như pha 1</text>
+      <rect x="185" y="372" width="170" height="56" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="270" y="395" text-anchor="middle" font-weight="600">Tìm vector</text>
+      <text x="270" y="415" text-anchor="middle" font-size="12" style="fill:var(--muted)">cùng embedding model</text>
+      <text x="270" y="350" text-anchor="middle" font-size="12" style="fill:var(--muted)">↕ chạy song song</text>
+      <rect x="395" y="262" width="140" height="56" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="465" y="285" text-anchor="middle" font-weight="600">Danh sách A</text>
+      <text x="465" y="305" text-anchor="middle" font-size="12" style="fill:var(--muted)">top-N theo BM25</text>
+      <rect x="395" y="372" width="140" height="56" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="465" y="395" text-anchor="middle" font-weight="600">Danh sách B</text>
+      <text x="465" y="415" text-anchor="middle" font-size="12" style="fill:var(--muted)">top-N theo cosine</text>
+      <rect x="580" y="313" width="150" height="64" rx="10" fill="var(--surface)" stroke="var(--p3)" stroke-width="2"/>
+      <text x="655" y="339" text-anchor="middle" font-weight="700">Trộn (fusion)</text>
+      <text x="655" y="359" text-anchor="middle" font-size="12" style="fill:var(--muted)">RRF hoặc có trọng số</text>
+      <rect x="765" y="313" width="100" height="64" rx="10" fill="var(--warn-soft)" stroke="var(--p4)"/>
+      <text x="815" y="339" text-anchor="middle" font-weight="600">Reranker</text>
+      <text x="815" y="359" text-anchor="middle" font-size="12" style="fill:var(--muted)">tùy chọn</text>
+      <rect x="893" y="313" width="85" height="64" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="935" y="339" text-anchor="middle" font-weight="600">Prompt</text>
+      <text x="935" y="359" text-anchor="middle" font-size="12" style="fill:var(--muted)">+ LLM</text>
+      <text x="185" y="450" font-size="12" style="fill:var(--muted)">Metadata filter (phòng ban, năm, quyền xem…) phải áp dụng giống nhau cho cả hai nhánh.</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="2" fill="none" marker-end="url(#arr)">
+      <path d="M140 334 L183 292"/><path d="M140 354 L183 398"/>
+      <line x1="355" y1="290" x2="393" y2="290"/><line x1="355" y1="400" x2="393" y2="400"/>
+      <path d="M535 290 L578 333"/><path d="M535 400 L578 358"/>
+      <line x1="730" y1="345" x2="763" y2="345"/><line x1="865" y1="345" x2="891" y2="345"/>
+    </g>
+    <text x="747" y="304" font-size="11" style="fill:var(--muted)" text-anchor="middle">top-N</text>
+    <text x="879" y="304" font-size="11" style="fill:var(--muted)" text-anchor="middle">top-k</text>
+  </svg>
+  </div>
+
+  <h3>Hybrid nằm ở đâu trong RAG?</h3>
+  <div class="grid g2">
+    <div class="card"><h4>Thay thế bước Retrieval</h4><p>Trong <a href="../rag/#flow">flow RAG</a>, bước <b>R</b> vốn chỉ tìm vector. Hybrid thay bước đó bằng "hai nhánh + trộn". Các bước sau (Augmentation, Generation) giữ nguyên: LLM vẫn chỉ nhận các đoạn cuối cùng.</p></div>
+    <div class="card"><h4>Thường đi cùng reranker</h4><p>Hybrid giúp <b>không bỏ sót</b> (lấy rộng từ hai nguồn). <a href="../reranking/">Reranking</a> giúp <b>chọn chính xác</b> (chấm lại kỹ từng cặp câu hỏi, đoạn). Cách ghép hay gặp: bước tìm nhanh lấy rộng vài chục đến cả trăm ứng viên, reranker (cross-encoder) chấm lại và giữ vài đoạn tốt nhất.<sup class="cite"><a href="#src-18">[18]</a></sup></p></div>
+  </div>
+  <div class="callout ok"><b>Ba thứ phải "cùng":</b> cùng tiền xử lý cho tài liệu và câu hỏi ở nhánh BM25; cùng embedding model cho tài liệu và câu hỏi ở nhánh vector; cùng chunk id và cùng metadata filter ở cả hai nhánh.</div>
+</section>
+
+<!-- 4. VÍ DỤ TỪNG BƯỚC -->
+<section id="vi-du">
+  <h2>4. Ví dụ đi qua từng bước</h2>
+  <p>Kho hỗ trợ khách hàng của một ứng dụng có 8 đoạn (d1–d8, xem đầy đủ ở mục 6). Người dùng hỏi <b>"lỗi E-4012"</b>. Điểm BM25 dưới đây được <b>tính thật</b> trên 8 đoạn đó (k1 = 1.2, b = 0.75, tách theo âm tiết). Điểm cosine là <b>minh họa</b>, không phải đầu ra của một model cụ thể.</p>
+  <div class="stepper card">
+    <div class="steps" id="steps"></div>
+    <div>
+      <div id="stepBody" aria-live="polite"></div>
+      <div class="step-nav"><button id="prevStep">← Trước</button><button id="nextStep">Tiếp →</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. CÁCH TRỘN -->
+<section id="tron">
+  <h2>5. Cách trộn hai danh sách</h2>
+  <p>Hai nhánh trả về hai danh sách xếp hạng. Một đoạn có thể nằm ở cả hai, ở một, hoặc không ở đâu. Việc của bước trộn (fusion) là ra <b>một</b> thứ tự cuối cùng.</p>
+  <div class="callout bad"><b>Vì sao không cộng thẳng điểm?</b> BM25 và tìm vector tính điểm trên hai thang khác nhau.<sup class="cite"><a href="#src-17">[17]</a></sup> Điểm BM25 thay đổi theo câu hỏi và theo kho (trong ví dụ: 2.878), còn cosine trong ví dụ chỉ nằm trong khoảng 0.55–0.83. Cộng thẳng thì nhánh BM25 gần như quyết định tất cả, nhánh vector gần như chỉ còn tác dụng phá hòa.</div>
+
+  <div class="grid g2">
+    <div class="card">
+      <span class="tag p3">Cách 1 · phổ biến</span><h4>Reciprocal Rank Fusion (RRF)</h4>
+      <p>Bỏ qua điểm, chỉ dùng <b>thứ hạng</b>. Mỗi danh sách chứa đoạn d cho nó một phần điểm, rồi cộng lại:<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+      <div class="formula">RRF(d) = Σ<sub>mỗi danh sách</sub> 1 / (k + hạng của d)</div>
+      <ul>
+        <li>Hạng tính từ 1. Danh sách nào không chứa d thì không cộng gì cho d.</li>
+        <li><b>k</b> là hằng số làm "phẳng" điểm. Giá trị <b>thường dùng là k = 60</b>: bài báo gốc (Cormack và cộng sự, 2009) cố định k = 60 sau thí nghiệm thử, và ghi nhận giá trị này gần tối ưu nhưng việc chọn k không quá quan trọng trên dữ liệu của họ.<sup class="cite"><a href="#src-1">[1]</a></sup></li>
+        <li>Mỗi sản phẩm có mặc định riêng. Theo tài liệu truy cập ngày 2026-11-14: Elasticsearch mặc định 60, Qdrant mặc định 2 (và Qdrant tính hạng từ 0).<sup class="cite"><a href="#src-14">[14]</a><a href="#src-16">[16]</a></sup></li>
+        <li>k nhỏ: hạng 1 được ưu tiên rất mạnh so với hạng 2, 3. k lớn: các hạng gần nhau gần ngang điểm, nên đoạn <b>có mặt ở cả hai</b> danh sách thường thắng đoạn đứng đầu ở chỉ một danh sách.<sup class="cite"><a href="#src-14">[14]</a></sup></li>
+      </ul>
+      <p class="muted">Tính tay với k = 60 (minh họa): đoạn đứng hạng 1 ở chỉ một danh sách được 1/61 ≈ 0.0164. Đoạn đứng hạng 3 ở <i>cả hai</i> danh sách được 1/63 + 1/63 ≈ 0.0317, cao hơn gần gấp đôi.</p>
+      <p><b>Ưu:</b> không cần chuẩn hóa, không quan tâm thang điểm, dễ bắt đầu khi chưa có eval set.<sup class="cite"><a href="#src-14">[14]</a><a href="#src-16">[16]</a></sup> <b>Nhược:</b> bỏ mất thông tin "hơn bao nhiêu": đoạn thắng sát nút và đoạn thắng áp đảo đều chỉ là "hạng 1".</p>
+    </div>
+    <div class="card">
+      <span class="tag p1">Cách 2</span><h4>Trộn điểm có trọng số</h4>
+      <p>Đưa điểm hai nhánh về cùng thang (<b>chuẩn hóa</b>), rồi lấy tổng có trọng số:</p>
+      <div class="formula">điểm(d) = α × vector<sub>chuẩn hóa</sub>(d) + (1 − α) × BM25<sub>chuẩn hóa</sub>(d)</div>
+      <ul>
+        <li><b>α</b> (từ 0 đến 1) là trọng số cho nhánh vector. α = 1 là chỉ dùng vector, α = 0 là chỉ dùng BM25 (Weaviate dùng đúng quy ước này).<sup class="cite"><a href="#src-15">[15]</a></sup></li>
+        <li><b>Min-max</b> là cách chuẩn hóa đơn giản: trong mỗi danh sách, điểm cao nhất thành 1, thấp nhất thành 0. Còn có z-score, L2 và các cách khác.<sup class="cite"><a href="#src-17">[17]</a></sup></li>
+        <li>Đoạn không có mặt trong một danh sách thì nhận 0 ở phần đó.</li>
+      </ul>
+      <p><b>Ưu:</b> giữ được khoảng cách điểm. <b>Nhược:</b> phải chọn cách chuẩn hóa và α, và nên chỉnh theo eval set.</p>
+      <p class="muted">Min-max tính lại theo từng câu hỏi, nên đoạn thấp nhất trong danh sách thành 0, giống hệt đoạn không được tìm thấy (xem bước 7 của ví dụ). Một số sản phẩm vá chỗ này, ví dụ OpenSearch thay điểm 0 bằng 0.001.<sup class="cite"><a href="#src-17">[17]</a></sup></p>
+    </div>
+  </div>
+  <div class="callout warn"><b>RRF có chắc tốt hơn không?</b> Không chắc. Một nghiên cứu so sánh (Bruch và cộng sự) thấy RRF <b>vẫn nhạy với tham số</b> của nó, và trộn có trọng số (convex combination) cho kết quả tốt hơn RRF trên các bộ dữ liệu họ thử; chỉ cần ít ví dụ có nhãn để chỉnh α.<sup class="cite"><a href="#src-5">[5]</a></sup> Lời khuyên thực tế: chưa có eval set thì RRF là điểm khởi đầu an toàn.<sup class="cite"><a href="#src-16">[16]</a></sup> Có eval set thì có thể chỉnh trọng số, bằng RRF có trọng số (mỗi danh sách một hệ số)<sup class="cite"><a href="#src-16">[16]</a></sup> hoặc trộn điểm có trọng số<sup class="cite"><a href="#src-5">[5]</a></sup>, rồi đo trên eval set.</div>
+  <div class="callout"><b>Cẩn thận chữ "k":</b> trên trang này k xuất hiện ở bốn nơi khác nhau: <b>k1</b> của BM25, <b>k của RRF</b>, <b>top-k</b> (số đoạn đưa cho LLM) và <b>recall@k</b>. Chúng không liên quan với nhau. Ngoài ra, Qdrant tính hạng từ 0 với k = 2, tương đương k = 1 trong công thức hạng-từ-1 của trang này.<sup class="cite"><a href="#src-16">[16]</a></sup></div>
+
+  <h3>Những quyết định đi kèm</h3>
+  <div class="grid g3">
+    <div class="card"><h4>Lấy bao nhiêu từ mỗi nhánh (N)?</h4><p>Mỗi nhánh chỉ trả top-N trước khi trộn. N quá nhỏ: đoạn đúng đứng hạng N+1 ở một nhánh coi như không tồn tại. N lớn hơn thì chậm hơn một chút. Mô phỏng trên trang dùng N = 5.</p></div>
+    <div class="card"><h4>Trùng lặp</h4><p>Cùng một chunk xuất hiện ở hai danh sách phải được nhận ra là <b>một</b> đoạn (dựa vào chunk id), để cộng điểm chứ không hiện hai lần.</p></div>
+    <div class="card"><h4>Bằng điểm</h4><p>Với RRF, hai đoạn cùng đứng hạng 2 ở đúng một danh sách sẽ bằng điểm. Cần một quy tắc phá hòa cố định (ví dụ ưu tiên nhánh mà bạn tin hơn) để kết quả không nhảy lung tung giữa các lần chạy.</p></div>
+    <div class="card"><h4>Khi nào k của RRF thật sự đổi thứ tự?</h4><p>Mỗi nhánh lấy N = 5 thì đoạn có mặt ở cả hai danh sách được ít nhất 2/(k+5), còn đoạn chỉ có ở một danh sách được nhiều nhất 1/(k+1). Từ k = 4 trở lên, vế đầu luôn lớn hơn: đoạn "cả hai cùng thấy" luôn thắng. Vì vậy với danh sách ngắn, k chỉ đổi kết quả khi rất nhỏ. Thử câu hỏi 5 trong mô phỏng với k = 1.</p></div>
+  </div>
+  <p class="muted">Nhiều search engine và vector database có sẵn chế độ hybrid, ví dụ Elasticsearch (RRF), Weaviate (trộn theo hạng hoặc theo điểm tương đối), Qdrant (RRF hoặc DBSF, một cách chuẩn hóa theo phân phối), OpenSearch (chuẩn hóa rồi lấy trung bình có trọng số).<sup class="cite"><a href="#src-14">[14]</a><a href="#src-15">[15]</a><a href="#src-16">[16]</a><a href="#src-17">[17]</a></sup> Tên tham số và giá trị mặc định khác nhau và có thể đổi theo phiên bản; hãy đọc tài liệu của sản phẩm bạn dùng.</p>
+</section>
+
+<!-- 6. MÔ PHỎNG -->
+<section id="mo-phong">
+  <h2>6. Mô phỏng: tự trộn và xem thứ hạng đổi</h2>
+  <p>Chọn một câu hỏi. Cột BM25 được <b>tính thật</b> bằng JavaScript trên 8 đoạn mẫu. Cột vector dùng điểm cosine <b>minh họa</b> (đặt sẵn, vì trình duyệt không chạy embedding model). Cột hybrid được <b>tính thật</b> từ hai cột kia. Đoạn đánh dấu <span class="star" style="color:var(--ok)">★</span> là đoạn đúng.</p>
+  <div class="sim-q" id="simQ"></div>
+  <div class="sim-opts card" style="padding:10px 14px">
+    <label><input type="checkbox" id="optFold"> Thêm bản bỏ dấu khi tìm BM25</label>
+    <label><input type="checkbox" id="optStop"> Bỏ từ dừng</label>
+    <span style="display:flex;gap:6px" id="modeChips"><button class="chip on" data-m="rrf" aria-pressed="true">RRF</button><button class="chip" data-m="w" aria-pressed="false">Có trọng số</button></span>
+    <label id="kWrap">k = <b id="kVal">60</b> <input type="range" id="optK" min="1" max="100" step="1" value="60" aria-label="Hằng số k của RRF"></label>
+    <label id="aWrap" style="display:none">α (vector) = <b id="aVal">0.5</b> <input type="range" id="optA" min="0" max="1" step="0.1" value="0.5" aria-label="Trọng số alpha của nhánh vector"></label>
+  </div>
+  <div id="simTokens" class="muted" style="font-size:14px;margin:6px 0"></div>
+  <div class="grid g3" id="simCols"></div>
+  <div id="simNote" aria-live="polite"></div>
+  <h3>MRR và recall@2 trên cả 5 câu hỏi mẫu (với cài đặt hiện tại)</h3>
+  <p class="muted">MRR = trung bình của 1/(hạng của đoạn đúng đầu tiên); không tìm thấy thì tính 0. recall@2 = tỷ lệ đoạn đúng nằm trong 2 kết quả đầu (câu 2 có hai đoạn đúng, nên MRR không thấy lỗi d2 chen lên nhưng recall@2 thấy). Thay đổi các tùy chọn ở trên rồi xem các con số thay đổi: đó chính là việc "tinh chỉnh trên eval set" ở quy mô tí hon. Năm câu hỏi là quá ít để kết luận gì thật.</p>
+  <div class="score-sum" id="simMrr" aria-live="polite"></div>
+  <details><summary>Xem 8 đoạn trong kho mẫu</summary><div id="simCorpus"></div></details>
+</section>
+
+<!-- 7. KHÁI NIỆM -->
+<section id="khai-niem">
+  <h2>7. Từ điển khái niệm</h2>
+  <p>Mỗi thẻ có định nghĩa ngắn, ví dụ và liên kết sang khái niệm liên quan. Lọc theo nhóm hoặc gõ để tìm (gõ không dấu cũng được).</p>
+  <div class="gloss-tools">
+    <input id="glossSearch" type="search" aria-label="Tìm khái niệm" placeholder="Tìm khái niệm… (vd: idf, rrf, tach tu)">
+  </div>
+  <div class="gloss-tools" id="glossChips"></div>
+  <div class="grid g3" id="glossGrid"></div>
+</section>
+
+<!-- 8. MỐI QUAN HỆ -->
+<section id="quan-he">
+  <h2>8. Bản đồ mối quan hệ</h2>
+  <p>Các khái niệm nối với nhau thế nào: cái gì tạo ra cái gì, cái gì điều chỉnh cái gì.</p>
+  <div class="vflow m-only" role="group" aria-label="Bản đồ quan hệ (dạng dọc)">
+    <div class="node"><b>Câu hỏi</b><span>đi vào cả hai nhánh</span></div>
+    <div class="ar">↓</div>
+    <div class="pair">
+      <div class="box box1" style="margin:0">
+        <div class="ph ph1">Nhánh từ khóa</div>
+        <div class="node"><b>Tiền xử lý</b><span>tách từ · dấu · NFC · từ dừng</span></div>
+        <div class="ar">↓ token</div>
+        <div class="node r"><b>Inverted index</b></div>
+        <div class="ar">↓</div>
+        <div class="node r"><b>BM25</b><span>TF · IDF · độ dài · k1, b</span></div>
+      </div>
+      <div class="box" style="margin:0;background:var(--surface-2)">
+        <div class="ph" style="color:var(--p2)">Nhánh theo nghĩa</div>
+        <div class="node"><b>Embedding model</b><span>cùng model 2 pha</span></div>
+        <div class="ar">↓ vector</div>
+        <div class="node a"><b>Vector index</b><span>ANN</span></div>
+        <div class="ar">↓</div>
+        <div class="node a"><b>Cosine</b></div>
+      </div>
+    </div>
+    <div class="note">Metadata filter áp cho cả hai nhánh. Learned sparse (SPLADE) là nhánh lai: model gán trọng số từ, lưu trong inverted index.</div>
+    <div class="ar">↓ danh sách A + danh sách B (top-N)</div>
+    <div class="node" style="border:2px solid var(--p3)"><b>Fusion</b><span>RRF (k) hoặc có trọng số (α + chuẩn hóa điểm)</span></div>
+    <div class="ar">↓ top-N đã trộn</div>
+    <div class="node opt"><b>Reranker</b><span>tùy chọn</span></div>
+    <div class="ar">↓ top-k</div>
+    <div class="node"><b>Prompt + LLM</b></div>
+    <div class="node" style="border:1px dashed var(--bad);background:var(--bad-soft);margin-top:12px"><b>Eval set (đứng ngoài, dùng để tinh chỉnh)</b><span>đo recall@k, MRR, nDCG trên danh sách sau Fusion → chọn α, k của RRF, N, cách tách từ, có bỏ dấu hay không</span></div>
+  </div>
+  <div class="svgbox d-only">
+  <svg class="diagram" viewBox="0 0 1000 470" role="img" aria-label="Bản đồ quan hệ giữa các khái niệm hybrid search">
+    <defs>
+      <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+    </defs>
+    <g font-size="13">
+      <rect x="30" y="190" width="150" height="54" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="105" y="222" text-anchor="middle" font-weight="600">Câu hỏi</text>
+      <rect x="30" y="50" width="150" height="54" rx="10" fill="var(--surface)" stroke="var(--p1)"/><text x="105" y="74" text-anchor="middle" font-weight="600">Tiền xử lý</text><text x="105" y="92" text-anchor="middle" font-size="11" style="fill:var(--muted)">tách từ · dấu · NFC</text>
+      <rect x="30" y="330" width="150" height="54" rx="10" fill="var(--surface)" stroke="var(--p2)"/><text x="105" y="354" text-anchor="middle" font-weight="600">Embedding model</text><text x="105" y="372" text-anchor="middle" font-size="11" style="fill:var(--muted)">cùng model 2 pha</text>
+      <rect x="230" y="50" width="150" height="54" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/><text x="305" y="74" text-anchor="middle" font-weight="600">Inverted index</text><text x="305" y="92" text-anchor="middle" font-size="11" style="fill:var(--muted)">token → chunk</text>
+      <rect x="430" y="50" width="160" height="54" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/><text x="510" y="74" text-anchor="middle" font-weight="600">BM25</text><text x="510" y="92" text-anchor="middle" font-size="11" style="fill:var(--muted)">TF · IDF · độ dài · k1, b</text>
+      <rect x="230" y="330" width="150" height="54" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/><text x="305" y="354" text-anchor="middle" font-weight="600">Vector index</text><text x="305" y="372" text-anchor="middle" font-size="11" style="fill:var(--muted)">ANN</text>
+      <rect x="430" y="330" width="160" height="54" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/><text x="510" y="354" text-anchor="middle" font-weight="600">Cosine similarity</text><text x="510" y="372" text-anchor="middle" font-size="11" style="fill:var(--muted)">điểm theo nghĩa</text>
+      <rect x="230" y="190" width="150" height="54" rx="10" fill="var(--surface)" stroke="var(--border)" stroke-dasharray="5 4"/><text x="305" y="214" text-anchor="middle" font-weight="600">Learned sparse</text><text x="305" y="232" text-anchor="middle" font-size="11" style="fill:var(--muted)">vd. SPLADE</text>
+      <rect x="430" y="190" width="160" height="54" rx="10" fill="var(--warn-soft)" stroke="var(--p4)"/><text x="510" y="214" text-anchor="middle" font-weight="600">Metadata filter</text><text x="510" y="232" text-anchor="middle" font-size="11" style="fill:var(--muted)">áp cho cả hai nhánh</text>
+      <rect x="650" y="50" width="150" height="54" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="725" y="74" text-anchor="middle" font-weight="600">Chuẩn hóa điểm</text><text x="725" y="92" text-anchor="middle" font-size="11" style="fill:var(--muted)">chỉ cần cho trộn có trọng số</text>
+      <rect x="650" y="190" width="150" height="54" rx="10" fill="var(--surface)" stroke="var(--p3)" stroke-width="2"/><text x="725" y="214" text-anchor="middle" font-weight="700">Fusion</text><text x="725" y="232" text-anchor="middle" font-size="11" style="fill:var(--muted)">RRF (k) · trọng số (α)</text>
+      <rect x="850" y="190" width="130" height="54" rx="10" fill="var(--warn-soft)" stroke="var(--p4)"/><text x="915" y="214" text-anchor="middle" font-weight="600">Reranker</text><text x="915" y="232" text-anchor="middle" font-size="11" style="fill:var(--muted)">tùy chọn</text>
+      <rect x="850" y="330" width="130" height="54" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="915" y="362" text-anchor="middle" font-weight="600">Prompt + LLM</text>
+      <rect x="650" y="405" width="330" height="54" rx="10" fill="var(--bad-soft)" stroke="var(--bad)" stroke-dasharray="5 4"/><text x="815" y="429" text-anchor="middle" font-weight="600">Eval set</text><text x="815" y="447" text-anchor="middle" font-size="11" style="fill:var(--muted)">recall@k, MRR, nDCG → chọn α, k (RRF), N, tách từ</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="1.8" fill="none" marker-end="url(#arr2)">
+      <line x1="105" y1="190" x2="105" y2="106"/>
+      <line x1="105" y1="244" x2="105" y2="328"/>
+      <line x1="180" y1="77" x2="228" y2="77"/>
+      <line x1="380" y1="77" x2="428" y2="77"/>
+      <line x1="180" y1="357" x2="228" y2="357"/>
+      <line x1="380" y1="357" x2="428" y2="357"/>
+      <path d="M305 190 L305 106" stroke-dasharray="4 4"/>
+      <path d="M510 190 L510 106" stroke-dasharray="4 4"/>
+      <path d="M510 244 L510 328" stroke-dasharray="4 4"/>
+      <path d="M590 90 C 625 95, 650 150, 668 188"/>
+      <path d="M590 357 C 630 350, 650 290, 668 246"/>
+      <path d="M725 104 L725 188" stroke-dasharray="4 4"/>
+      <line x1="800" y1="217" x2="848" y2="217"/>
+      <line x1="915" y1="244" x2="915" y2="328"/>
+      <path d="M725 405 L725 246" stroke-dasharray="4 4"/>
+    </g>
+    <g font-size="11" style="fill:var(--muted)">
+      <text x="112" y="150">nhánh từ khóa</text><text x="112" y="290">nhánh theo nghĩa</text>
+      <text x="192" y="70">token</text><text x="392" y="70">tra</text>
+      <text x="200" y="350">tạo</text><text x="392" y="350">tìm</text>
+      <text x="312" y="150">lưu trong</text>
+      <text x="517" y="150">lọc</text><text x="517" y="290">lọc</text>
+      <text x="612" y="135">danh sách A</text><text x="612" y="305">danh sách B</text>
+      <text x="806" y="210">top-N</text><text x="922" y="290">top-k</text>
+      <text x="732" y="330">tinh chỉnh</text>
+    </g>
+  </svg>
+  </div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h4>Quan hệ phụ thuộc quan trọng nhất</h4>
+      <ul>
+        <li><b>Tiền xử lý quyết định</b> BM25 thấy gì: tách sai mã "E-4012" hay không xử lý dấu thì BM25 mù trước đúng những câu hỏi nó lẽ ra giỏi nhất.</li>
+        <li><b>Embedding model quyết định</b> nhánh vector hiểu "gần nghĩa" ra sao, nhất là với tiếng Việt.</li>
+        <li><b>N quyết định</b> đoạn nào được tham gia trộn: ngoài top-N là bị loại trước khi trộn.</li>
+        <li><b>Fusion quyết định</b> khi hai nhánh bất đồng thì nghe bên nào.</li>
+      </ul>
+    </div>
+    <div class="card"><h4>Đánh đổi xuyên suốt</h4>
+      <ul>
+        <li><b>RRF ↔ có trọng số:</b> không cần chuẩn hóa, dễ bắt đầu ↔ tận dụng được độ chênh điểm nhưng phải chọn α (nên có eval set).</li>
+        <li><b>k của RRF nhỏ ↔ lớn:</b> tin hạng 1 của mỗi nhánh ↔ ưu tiên đoạn được cả hai đồng thuận.</li>
+        <li><b>N lớn ↔ N nhỏ:</b> ít bỏ sót ↔ nhanh hơn, ít nhiễu đưa vào reranker.</li>
+        <li><b>Bỏ dấu, bỏ từ dừng:</b> tìm được nhiều hơn ↔ va chạm nghĩa nhiều hơn.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 9. SO SÁNH -->
+<section id="so-sanh">
+  <h2>9. So sánh và đánh đổi</h2>
+  <div class="table-wrap">
+  <table class="stack">
+    <thead><tr><th>Cách tìm</th><th>Ý tưởng</th><th>Mạnh</th><th>Yếu / chi phí</th></tr></thead>
+    <tbody>
+      <tr><td><b>Chỉ BM25</b></td><td>Khớp token, chấm bằng TF, IDF, độ dài.</td><td>Mã số, tên riêng; nhanh, rẻ, không cần model; giải thích được.</td><td>Không hiểu đồng nghĩa; phụ thuộc mạnh vào tách từ và dấu với tiếng Việt.</td></tr>
+      <tr><td><b>Chỉ vector</b></td><td>So vector embedding bằng cosine.</td><td>Đồng nghĩa, câu tự nhiên, đa ngôn ngữ.</td><td>Hụt với mã số, từ hiếm; cần chạy model; đổi model phải embed lại toàn bộ kho.</td></tr>
+      <tr><td><b>Learned sparse</b> (SPLADE…)</td><td>Model gán trọng số từ, có mở rộng từ; lưu trong inverted index.</td><td>Vừa khớp chữ vừa bắt một phần đồng nghĩa.</td><td>Cần model hỗ trợ ngôn ngữ của bạn; chạy model khi đánh index.</td></tr>
+      <tr><td><b>Hybrid</b> (BM25 + vector)</td><td>Chạy cả hai song song, trộn bằng RRF hoặc có trọng số.</td><td>Bù chỗ yếu của nhau trên tập câu hỏi đa dạng (cần đo để xác nhận trên dữ liệu của bạn).</td><td>Hai index cần đồng bộ; thêm tham số; độ trễ bằng nhánh chậm hơn cộng bước trộn.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Khi nào hybrid giúp, khi nào không?</h3>
+  <div class="grid g2">
+    <div class="card"><span class="tag p3">Thường giúp</span>
+      <ul>
+        <li>Câu hỏi trộn lẫn mã số / tên sản phẩm / số hiệu văn bản với câu tự nhiên.</li>
+        <li>Kho có nhiều thuật ngữ nội bộ, từ viết tắt riêng mà embedding model chưa từng gặp.</li>
+        <li>Người dùng hay gõ không dấu, và bạn đã đánh index thêm bản bỏ dấu.</li>
+        <li>Embedding model chưa hợp với miền hoặc ngôn ngữ của bạn: BM25 đóng vai trò lưới an toàn. Trên một bộ benchmark nhiều miền, BM25 được ghi nhận là baseline vững, còn các model dense thường hụt khi gặp dữ liệu khác miền huấn luyện.<sup class="cite"><a href="#src-9">[9]</a></sup></li>
+      </ul>
+    </div>
+    <div class="card"><span class="tag p4">Có thể không giúp, thậm chí kém hơn</span>
+      <ul>
+        <li>Câu hỏi gần như toàn diễn đạt tự nhiên, ít trùng chữ với tài liệu: nhánh BM25 chủ yếu đưa nhiễu vào.</li>
+        <li>Nhánh BM25 cấu hình kém (tách từ sai, không xử lý dấu, từ dừng gây nhiễu): RRF vẫn cho nó tiếng nói ngang nhánh vector.</li>
+        <li>Ngân sách độ trễ rất chặt, hoặc đội không đủ sức vận hành thêm một index.</li>
+        <li>Đã có reranker mạnh và nhánh vector đã gần như không bỏ sót: lợi ích thêm có thể nhỏ. Chỉ biết chắc khi đo.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout"><b>Hybrid và reranking giải hai bài khác nhau:</b> hybrid làm cho tập ứng viên <b>đủ</b> (recall), reranker làm cho thứ tự đầu danh sách <b>đúng</b> (precision). Reranker không cứu được đoạn chưa từng vào tập ứng viên, vì nó chỉ chấm lại các ứng viên đã được tìm ra.<sup class="cite"><a href="#src-18">[18]</a></sup> Xem thêm trang <a href="../reranking/">Reranking</a>.</div>
+</section>
+
+<!-- 10. LỖI -->
+<section id="loi">
+  <h2>10. Lỗi thường gặp và cách chẩn đoán</h2>
+  <p>Khi hybrid trả sai, hãy nhìn <b>từng nhánh riêng</b> trước khi nhìn kết quả đã trộn. Cây dưới đây đi theo đúng thứ tự dữ liệu chảy qua hệ thống.</p>
+  <div class="grid g2">
+    <div class="card">
+      <h4>Cây chẩn đoán cho một câu hỏi sai</h4>
+      <ol>
+        <li><b>Đoạn đúng có nằm trong danh sách BM25 không?</b><br><span class="muted">Không, dù đoạn có chứa từ khóa → kiểm tra tiền xử lý: mã có bị tách vụn không, dấu, Unicode NFC, từ dừng, câu hỏi và tài liệu có qua cùng một tokenizer không.</span></li>
+        <li><b>Đoạn đúng có nằm trong danh sách vector không?</b><br><span class="muted">Không → embedding model không hợp ngôn ngữ/miền, chunk quá dài làm loãng nghĩa, hoặc dùng hai model khác nhau cho hai pha.</span></li>
+        <li><b>Có trong ít nhất một danh sách, nhưng rơi khỏi top sau khi trộn?</b><br><span class="muted">→ lỗi trộn: N quá nhỏ, α lệch, k chưa hợp, quên chuẩn hóa điểm, hoặc chunk id không khớp giữa hai index nên điểm không được cộng.</span></li>
+        <li><b>Có trong top sau khi trộn mà câu trả lời vẫn sai?</b><br><span class="muted">→ vấn đề ở reranker hoặc ở bước sinh câu trả lời. Xem <a href="../rag/#loi">lỗi và chẩn đoán của RAG</a>.</span></li>
+      </ol>
+    </div>
+    <div class="card">
+      <h4>Bảng triệu chứng</h4>
+      <div class="table-wrap"><table class="stack">
+        <thead><tr><th>Triệu chứng</th><th>Nguyên nhân thường gặp</th></tr></thead>
+        <tbody>
+          <tr><td>Hỏi "E-4012" mà ra đoạn có "4012" của mã khác</td><td>Tokenizer tách "E-4012" thành "e" và "4012".</td></tr>
+          <tr><td>Gõ không dấu thì BM25 trả về rỗng</td><td>Index chỉ có bản có dấu; chưa thêm trường bỏ dấu.</td></tr>
+          <tr><td>Hai chữ trông giống hệt mà không khớp</td><td>Một bên dựng sẵn, một bên tổ hợp; thiếu chuẩn hóa Unicode.</td></tr>
+          <tr><td>Kết quả hybrid gần như y hệt BM25</td><td>Trộn điểm thô không chuẩn hóa, BM25 lấn át; hoặc α quá thấp.</td></tr>
+          <tr><td>Hybrid kém hơn chỉ dùng vector</td><td>Nhánh BM25 nhiễu (từ dừng, tách từ kém) và RRF cho nó tiếng nói ngang nhau.</td></tr>
+          <tr><td>Cùng một đoạn hiện hai lần</td><td>Hai index dùng hai bộ id khác nhau; khử trùng lặp sai.</td></tr>
+          <tr><td>Người dùng thấy tài liệu không có quyền xem</td><td>Metadata filter chỉ áp ở một nhánh.</td></tr>
+          <tr><td>Tài liệu vừa sửa lúc tìm ra bản cũ, lúc ra bản mới</td><td>Hai index cập nhật lệch nhau.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+</section>
+
+<!-- 11. ĐÁNH GIÁ -->
+<section id="danh-gia">
+  <h2>11. Đánh giá và tinh chỉnh</h2>
+  <p>Câu hỏi đúng không phải "hybrid có tốt không" mà là "trên <b>câu hỏi của tôi</b>, hybrid có tốt hơn từng nhánh riêng không, và với cài đặt nào".</p>
+  <div class="grid g2">
+    <div class="card"><span class="tag p1">Bước 1</span><h4>Eval set có phân nhóm</h4>
+      <p>Vài chục đến vài trăm câu hỏi thật, mỗi câu ghi rõ đoạn đúng. Gắn nhãn nhóm cho từng câu: <i>mã số</i>, <i>tên riêng/viết tắt</i>, <i>diễn đạt khác</i>, <i>không dấu/sai chính tả</i>, <i>câu dài</i>. Hybrid thường thắng ở nhóm này và thua nhẹ ở nhóm khác; con số trung bình chung sẽ che mất điều đó.</p>
+    </div>
+    <div class="card"><span class="tag p1">Bước 2</span><h4>Chạy ba cấu hình trên cùng eval set</h4>
+      <p>Chỉ BM25, chỉ vector, hybrid. Đo các chỉ số retrieval (ví dụ Elasticsearch có sẵn API đo recall@k, MRR và DCG/nDCG):<sup class="cite"><a href="#src-20">[20]</a></sup></p>
+      <ul>
+        <li><b>recall@k</b>: tỷ lệ đoạn đúng lọt vào top-k. Chọn k bằng số đoạn bạn thật sự đưa cho reranker hoặc LLM.</li>
+        <li><b>MRR</b>: đoạn đúng đầu tiên đứng càng cao điểm càng cao.</li>
+        <li><b>nDCG@k</b>: giống MRR nhưng tính cả nhiều đoạn đúng và mức độ liên quan khác nhau, phạt đoạn đúng đứng thấp.</li>
+      </ul>
+    </div>
+    <div class="card"><span class="tag p1">Bước 3</span><h4>Tinh chỉnh từng nút một</h4>
+      <p>Các nút thường chỉnh: α (nếu trộn có trọng số), k của RRF, N mỗi nhánh, cách tách từ, có thêm bản bỏ dấu hay không, danh sách từ dừng, kể cả k1 và b của BM25 (lý thuyết BM25 không chỉ ra giá trị, nên chỉnh bằng bộ câu hỏi có đánh giá).<sup class="cite"><a href="#src-2">[2]</a></sup> Đổi <b>một</b> nút mỗi lần, đo lại, ghi lại.</p>
+    </div>
+    <div class="card"><span class="tag p1">Bước 4</span><h4>Chống "học thuộc" eval set</h4>
+      <p>Chia eval set làm hai: phần <b>dev</b> để thử và chọn tham số, phần <b>test</b> giữ riêng để kiểm tra cuối cùng. Chỉnh α đến hai chữ số thập phân cho đẹp trên 30 câu thường chỉ là khớp ngẫu nhiên. Đo thêm độ trễ, vì hybrid chạy hai truy vấn.</p>
+    </div>
+  </div>
+  <h3>Đọc bảng kết quả (số minh họa)</h3>
+  <div class="table-wrap">
+  <table class="stack">
+    <thead><tr><th>Nhóm câu hỏi</th><th>Chỉ BM25</th><th>Chỉ vector</th><th>Hybrid (RRF)</th></tr></thead>
+    <tbody>
+      <tr><td>Mã số, tên riêng</td><td>0.90</td><td>0.55</td><td>0.88</td></tr>
+      <tr><td>Diễn đạt khác</td><td>0.40</td><td>0.85</td><td>0.82</td></tr>
+      <tr><td>Không dấu</td><td>0.75 <span class="muted">(có trường bỏ dấu)</span></td><td>0.65</td><td>0.80</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="muted">Các con số là recall@5 <b>minh họa</b> để luyện cách đọc, không phải kết quả đo. Cách đọc: hybrid không thắng tuyệt đối ở mọi nhóm (thua nhẹ BM25 ở mã số, thua nhẹ vector ở diễn đạt khác) nhưng không có nhóm nào sụp. Đó thường là lý do chọn hybrid. Nếu hệ thống của bạn gần như chỉ có câu hỏi kiểu "diễn đạt khác", chỉ vector (cộng reranker) có thể đã đủ.</p>
+</section>
+
+<!-- 12. LỘ TRÌNH -->
+<section id="lo-trinh">
+  <h2>12. Lộ trình tự học 2 tuần (không cần code)</h2>
+  <p class="muted">Khoảng 4–5 giờ mỗi tuần. Các ô đã đánh dấu được lưu trong trình duyệt của bạn.</p>
+  <div class="grid g3">
+    <div class="card"><span class="tag p1">Tuần 1 · nửa đầu</span><h4>Hai kiểu tìm và flow</h4><p>Đọc mục 1, 2, 3.</p>
+      <label class="check"><input type="checkbox" data-k="w1a"><span>Lấy một tài liệu ~5 trang, tự tra bằng Ctrl+F (giống tìm từ khóa) cho 5 câu hỏi; ghi lại câu nào Ctrl+F không tìm ra vì tài liệu dùng chữ khác.</span></label>
+      <label class="check"><input type="checkbox" data-k="w1b"><span>Giải thích cho người khác vì sao từ hiếm (như mã lỗi) nặng điểm hơn từ "được".</span></label>
+    </div>
+    <div class="card"><span class="tag p1">Tuần 1 · nửa sau</span><h4>Trộn và mô phỏng</h4><p>Đọc mục 4, 5, 6.</p>
+      <label class="check"><input type="checkbox" data-k="w1c"><span>Tự tính lại RRF ở bước 6 của ví dụ bằng giấy bút, rồi so với mô phỏng.</span></label>
+      <label class="check"><input type="checkbox" data-k="w1d"><span>Trong mô phỏng, tìm một cài đặt làm MRR của hybrid giảm, và giải thích vì sao.</span></label>
+    </div>
+    <div class="card"><span class="tag p1">Tuần 2</span><h4>Khái niệm, lỗi, đánh giá</h4><p>Đọc mục 7–11.</p>
+      <label class="check"><input type="checkbox" data-k="w2a"><span>Viết 15 câu hỏi cho tài liệu ở tuần 1, gắn nhãn nhóm (mã số / diễn đạt khác / không dấu…) và ghi đoạn đúng.</span></label>
+      <label class="check"><input type="checkbox" data-k="w2b"><span>Với 15 câu đó, đoán nhánh nào sẽ tìm ra; đánh dấu những câu chỉ hybrid mới cứu được.</span></label>
+    </div>
+  </div>
+
+  <h3>Tự kiểm tra: trả lời được là đã nắm cốt lõi</h3>
+  <details><summary>1. Vì sao tìm theo nghĩa có thể trả về "E-4021" khi hỏi "E-4012"?</summary>
+    <p>Embedding biểu diễn nghĩa tổng thể, và hai mã lỗi na ná nhau trong cùng ngữ cảnh "lỗi ứng dụng" có vector rất gần nhau. Tìm theo từ khóa coi "e-4012" là một token chính xác, nên chỉ đoạn chứa đúng mã đó mới có điểm (với điều kiện tokenizer không tách vụn mã).</p></details>
+  <details><summary>2. IDF làm gì, và vì sao "được" gần như không giúp tìm?</summary>
+    <p>IDF tăng trọng số cho token hiếm trong kho và giảm cho token phổ biến. "Được" xuất hiện ở rất nhiều đoạn nên không phân biệt được đoạn nào đúng; trong kho lớn, IDF của nó rất thấp.</p></details>
+  <details><summary>3. Vì sao không cộng thẳng điểm BM25 với điểm cosine?</summary>
+    <p>Hai điểm ở hai thang đo khác nhau: BM25 không có thang cố định (tổng điểm phụ thuộc số token khớp và độ hiếm của chúng), còn cosine thường nằm trong một khoảng hẹp. Cộng thẳng thì BM25 lấn át. Phải dùng thứ hạng (RRF) hoặc chuẩn hóa điểm trước khi trộn có trọng số.</p></details>
+  <details><summary>4. Tính RRF (k = 60) cho đoạn đứng hạng 1 ở BM25 và hạng 3 ở vector.</summary>
+    <p>1/(60+1) + 1/(60+3) = 0.01639 + 0.01587 ≈ 0.0323. Một đoạn chỉ đứng hạng 1 ở vector và không có trong BM25 được 1/61 ≈ 0.0164, thấp hơn.</p></details>
+  <details><summary>5. Người dùng gõ "quen mat khau" và BM25 trả về rỗng. Sửa thế nào? Có rủi ro gì?</summary>
+    <p>Đánh index thêm một trường bỏ dấu và tìm trên cả hai trường. Rủi ro là va chạm: "mật", "mặt", "mắt" đều thành "mat", nên vẫn giữ trường có dấu để khớp chính xác được ưu tiên.</p></details>
+  <details><summary>6. Vì sao metadata filter phải áp cho cả hai nhánh?</summary>
+    <p>Nếu chỉ một nhánh lọc, nhánh kia vẫn đưa tài liệu bị loại vào danh sách trộn. Với quyền truy cập, điều này nghĩa là lộ tài liệu cho người không được xem.</p></details>
+  <details><summary>7. Hybrid và reranker khác nhau thế nào? Có thay nhau được không?</summary>
+    <p>Hybrid mở rộng tập ứng viên để ít bỏ sót (recall); reranker chấm lại tập ứng viên để đưa đoạn đúng lên đầu (precision). Không thay nhau: reranker không thể chấm đoạn chưa từng được tìm ra, còn hybrid không đọc kỹ từng cặp câu hỏi và đoạn như reranker.</p></details>
+  <details><summary>8. Làm sao biết hybrid có đáng dùng cho hệ thống của bạn?</summary>
+    <p>Chạy chỉ BM25, chỉ vector và hybrid trên cùng một eval set có phân nhóm câu hỏi, so recall@k và MRR theo từng nhóm, xem cả độ trễ. Chọn tham số trên phần dev, xác nhận trên phần test.</p></details>
+</section>
+
+<!-- 13. NGUỒN -->
+<section id="nguon">
+  <h2>13. Nguồn tham khảo</h2>
+  <p class="muted">Tất cả nguồn được mở và đối chiếu ngày 2026-11-14. Ưu tiên bài báo gốc và tài liệu chính thức. Tài liệu sản phẩm có thể đổi theo phiên bản.</p>
+  <ol class="sources">
+    <li id="src-1">Cormack, G. V., Clarke, C. L. A., Büttcher, S. <i>Reciprocal Rank Fusion outperforms Condorcet and individual Rank Learning Methods</i>. SIGIR 2009. <a href="https://plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf" target="_blank" rel="noopener">plg.uwaterloo.ca/~gvcormac/cormacksigir09-rrf.pdf</a> <span class="acc">· truy cập 2026-11-14</span></li>
+    <li id="src-2">Robertson, S., Zaragoza, H. <i>The Probabilistic Relevance Framework: BM25 and Beyond</i>. Foundations and Trends in Information Retrieval, 2009. <a href="https://www.staff.city.ac.uk/~sbrp622/papers/foundations_bm25_review.pdf" target="_blank" rel="noopener">staff.city.ac.uk/~sbrp622/papers/foundations_bm25_review.pdf</a> <span class="acc">· truy cập 2026-11-14</span></li>
+    <li id="src-3">Apache Lucene. <i>BM25Similarity</i> (API docs, Lucene 9.9.0). <a href="https://lucene.apache.org/core/9_9_0/core/org/apache/lucene/search/similarities/BM25Similarity.html" target="_blank" rel="noopener">lucene.apache.org/…/BM25Similarity.html</a> <span class="acc">· truy cập 2026-11-14</span></li>
+    <li id="src-4">Elastic. <i>Similarity settings</i> (Elasticsearch reference). <a href="https://www.elastic.co/docs/reference/elasticsearch/index-settings/similarity" target="_blank" rel="noopener">elastic.co/docs/reference/elasticsearch/index-settings/similarity</a> <span class="acc">· truy cập 2026-11-14</span></li>
+    <li id="src-5">Bruch, S., Gai, S., Ingber, A. <i>An Analysis of Fusion Functions for Hybrid Retrieval</i>. arXiv:2210.11934, 2022 (bản sửa 2023). <a href="https://arxiv.org/abs/2210.11934" target="_blank" rel="noopener">arxiv.org/abs/2210.11934</a> <span class="acc">· truy cập 2026-11-14</span></li>
+    <li id="src-6">Formal, T., Piwowarski, B., Clinchant, S. <i>SPLADE: Sparse Lexical and Expansion Model for First Stage Ranking</i>. SIGIR 2021. <a href="https://arxiv.org/abs/2107.05720" target="_blank" rel="noopener">arxiv.org/abs/2107.05720</a> <span class="acc">· truy cập 2026-11-14</span></li>
+    <li id="src-7">Karpukhin, V. và cộng sự. <i>Dense Passage Retrieval for Open-Domain Question Answering</i>. EMNLP 2020. <a href="https://arxiv.org/abs/2004.04906" target="_blank" rel="noopener">arxiv.org/abs/2004.04906</a> <span class="acc">· truy cập 2026-11-14</span></li>
+    <li id="src-8">Chen, X. và cộng sự. <i>Salient Phrase Aware Dense Retrieval: Can a Dense Retriever Imitate a Sparse One?</i> arXiv:2110.06918, 2021. <a href="https://arxiv.org/abs/2110.06918" target="_blank" rel="noopener">arxiv.org/abs/2110.06918</a> <span class="acc">· truy cập 2026-11-14</span></li>
+    <li id="src-9">Thakur, N. và cộng sự. <i>BEIR: A Heterogenous Benchmark for Zero-shot Evaluation of Information Retrieval Models</i>. NeurIPS 2021 Datasets and Benchmarks. <a href="https://arxiv.org/abs/2104.08663" target="_blank" rel="noopener">arxiv.org/abs/2104.08663</a> <span class="acc">· truy cập 2026-11-14</span></li>
+    <li id="src-10">Nguyen, D. Q. và cộng sự. <i>A Fast and Accurate Vietnamese Word Segmenter</i>. LREC 2018 (arXiv:1709.06307). <a href="https://arxiv.org/abs/1709.06307" target="_blank" rel="noopener">arxiv.org/abs/1709.06307</a> <span class="acc">· truy cập 2026-11-14</span></li>
+    <li id="src-11">Unicode Consortium. <i>UAX #15: Unicode Normalization Forms</i>. <a href="https://www.unicode.org/reports/tr15/" target="_blank" rel="noopener">unicode.org/reports/tr15</a> <span class="acc">· truy cập 2026-11-14</span></li>
+    <li id="src-12">Elastic. <i>ASCII folding token filter</i>. <a href="https://www.elastic.co/docs/reference/text-analysis/analysis-asciifolding-tokenfilter" target="_blank" rel="noopener">elastic.co/…/analysis-asciifolding-tokenfilter</a> <span class="acc">· truy cập 2026-11-14</span></li>
+    <li id="src-13">Elastic. <i>Fuzzy query</i>. <a href="https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-fuzzy-query" target="_blank" rel="noopener">elastic.co/…/query-dsl-fuzzy-query</a> <span class="acc">· truy cập 2026-11-14</span></li>
+    <li id="src-14">Elastic. <i>Reciprocal rank fusion</i> (Elasticsearch REST API reference). <a href="https://www.elastic.co/docs/reference/elasticsearch/rest-apis/reciprocal-rank-fusion" target="_blank" rel="noopener">elastic.co/…/reciprocal-rank-fusion</a> <span class="acc">· truy cập 2026-11-14</span></li>
+    <li id="src-15">Weaviate. <i>Hybrid search</i>. <a href="https://docs.weaviate.io/weaviate/search/hybrid" target="_blank" rel="noopener">docs.weaviate.io/weaviate/search/hybrid</a> <span class="acc">· truy cập 2026-11-14</span></li>
+    <li id="src-16">Qdrant. <i>Hybrid Queries</i>. <a href="https://qdrant.tech/documentation/concepts/hybrid-queries/" target="_blank" rel="noopener">qdrant.tech/documentation/concepts/hybrid-queries</a> <span class="acc">· truy cập 2026-11-14</span></li>
+    <li id="src-17">OpenSearch. <i>Normalization processor</i>. <a href="https://docs.opensearch.org/latest/search-plugins/search-pipelines/normalization-processor/" target="_blank" rel="noopener">docs.opensearch.org/…/normalization-processor</a> <span class="acc">· truy cập 2026-11-14</span></li>
+    <li id="src-18">Sentence Transformers. <i>Cross-Encoders</i> (applications). <a href="https://www.sbert.net/examples/cross_encoder/applications/README.html" target="_blank" rel="noopener">sbert.net/examples/cross_encoder/applications</a> <span class="acc">· truy cập 2026-11-14</span></li>
+    <li id="src-19">Feng, F. và cộng sự. <i>Language-agnostic BERT Sentence Embedding</i> (LaBSE). ACL 2022 (arXiv:2007.01852). <a href="https://arxiv.org/abs/2007.01852" target="_blank" rel="noopener">arxiv.org/abs/2007.01852</a> <span class="acc">· truy cập 2026-11-14</span></li>
+    <li id="src-20">Elastic. <i>Evaluate ranked search results</i> (rank eval API). <a href="https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-rank-eval" target="_blank" rel="noopener">elastic.co/…/operation-rank-eval</a> <span class="acc">· truy cập 2026-11-14</span></li>
+    <li id="src-21">Vu, T. và cộng sự. <i>VnCoreNLP: A Vietnamese Natural Language Processing Toolkit</i>. NAACL 2018 Demonstrations. <a href="https://arxiv.org/abs/1801.01331" target="_blank" rel="noopener">arxiv.org/abs/1801.01331</a> <span class="acc">· truy cập 2026-11-14</span></li>
+  </ol>
+</section>
+</main>
+
+<footer>
+  Tài liệu học Hybrid Search ở mức khái niệm. Điểm BM25 trong ví dụ và mô phỏng được tính thật trên 8 đoạn mẫu (k1 = 1.2, b = 0.75, tách theo âm tiết); điểm cosine và các bảng chỉ số là minh họa để hiểu cơ chế, không phải số liệu đo từ một model hay sản phẩm cụ thể.
+</footer>
+
+<script>
+(function(){
+  // ---------- Theme ----------
+  var root=document.documentElement;
+  function safeGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+  function safeSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  var saved=safeGet('rag-theme'); if(saved) root.setAttribute('data-theme',saved);
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme');
+    if(!cur){cur=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+    var next=cur==='dark'?'light':'dark'; root.setAttribute('data-theme',next); safeSet('rag-theme',next);
+  });
+
+  // ---------- Stacked tables on phones: give each cell its column name ----------
+  function labelTables(scope){
+    [].forEach.call(scope.querySelectorAll('table.stack'),function(t){
+      var heads=[].map.call(t.querySelectorAll('thead th'),function(th){return th.textContent});
+      [].forEach.call(t.querySelectorAll('tbody tr'),function(tr){[].forEach.call(tr.children,function(td,i){if(heads[i])td.setAttribute('data-label',heads[i])})});
+    });
+  }
+  labelTables(document);
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+
+  // ---------- Search engine shared by the stepper and the simulator ----------
+  var CORPUS=[
+    {id:'d1',s:'E-4012: phiên đăng nhập hết hạn',t:'Lỗi E-4012 xuất hiện khi phiên đăng nhập hết hạn; hãy đăng xuất rồi đăng nhập lại để tiếp tục đồng bộ.'},
+    {id:'d2',s:'Không đồng bộ được dữ liệu',t:'Ứng dụng không đồng bộ được dữ liệu: kiểm tra kết nối mạng, sau đó thử đồng bộ lại.'},
+    {id:'d3',s:'E-4021: hết dung lượng',t:'Mã E-4021 báo hết dung lượng lưu trữ; hãy xóa bớt tệp hoặc nâng cấp gói.'},
+    {id:'d4',s:'Quên mật khẩu',t:'Quên mật khẩu: bấm nút Quên mật khẩu ở màn hình đăng nhập để nhận email đặt lại mật khẩu.'},
+    {id:'d5',s:'Đổi mật khẩu định kỳ',t:'Nên đổi mật khẩu định kỳ trong mục Cài đặt > Bảo mật để giữ tài khoản an toàn.'},
+    {id:'d6',s:'Chính sách hoàn tiền',t:'Chính sách hoàn tiền: đơn hàng được hoàn tiền trong 7 ngày nếu sản phẩm bị lỗi do nhà sản xuất.'},
+    {id:'d7',s:'Trả hàng, nhận lại tiền',t:'Muốn trả hàng và nhận lại tiền, khách gửi yêu cầu trong mục Đơn hàng của ứng dụng.'},
+    {id:'d8',s:'Gói Doanh nghiệp: SSO',t:'Gói Doanh nghiệp hỗ trợ SSO: nhân viên đăng nhập một lần bằng tài khoản công ty.'}
+  ];
+  var byDoc={};CORPUS.forEach(function(d){byDoc[d.id]=d});
+  var STOP='là gì thì có được không của và để khi ở trong rồi hãy nếu do bằng sau đó các những một'.split(' ');
+  var K1=1.2, B=0.75, TOPN=5;
+  var STOP_F=STOP.map(function(x){return x.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d')});
+  var TOKEN_RE;try{TOKEN_RE=new RegExp('[\\p{L}\\p{N}]+(?:-[\\p{L}\\p{N}]+)*','gu')}catch(e){TOKEN_RE=/[0-9A-Za-zÀ-ɏḀ-ỿ]+(?:-[0-9A-Za-zÀ-ɏḀ-ỿ]+)*/g}
+  function fold(s){return s.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d')}
+  // Tokenize: NFC, lowercase, split on syllables (keeping codes like "e-4012" whole), optional stopword removal and diacritic folding.
+  function tokens(s,o){var t=s.normalize('NFC').toLowerCase().match(TOKEN_RE)||[];if(o.stop)t=t.filter(function(x){return !isStop(x)});if(o.fold)t=t.map(fold);return t}
+  function isStop(x){return STOP.indexOf(x)>=0||STOP_F.indexOf(fold(x))>=0}
+  function uniq(a){var seen={},r=[];a.forEach(function(x){if(!seen[x]){seen[x]=1;r.push(x)}});return r}
+  // Real BM25 over CORPUS. When o.fold is set, the query is matched against both the accented and the folded field and the two scores are added,
+  // so a chunk that matches with the right diacritics scores on both fields and ranks above a chunk that only matches after folding.
+  function bm25Field(q,o){
+    var D=CORPUS.map(function(d){return tokens(d.t,o)}), N=D.length, avg=D.reduce(function(a,d){return a+d.length},0)/N;
+    var qt=uniq(tokens(q,o));
+    return CORPUS.map(function(d,i){var s=0,hits=[];
+      qt.forEach(function(t){var n=0;D.forEach(function(x){if(x.indexOf(t)>=0)n++});if(!n)return;var tf=0;D[i].forEach(function(x){if(x===t)tf++});if(!tf)return;
+        var idf=Math.log(1+(N-n+0.5)/(n+0.5));var c=idf*tf*(K1+1)/(tf+K1*(1-B+B*D[i].length/avg));s+=c;hits.push(t)});
+      return {id:d.id,score:s,hits:hits};
+    });
+  }
+  function bm25(q,o){
+    var base=bm25Field(q,{stop:o.stop,fold:false}), res=base;
+    if(o.fold){var f=bm25Field(q,{stop:o.stop,fold:true});res=base.map(function(r,i){return{id:r.id,score:r.score+f[i].score,hits:uniq(r.hits.concat(f[i].hits))}})}
+    return res.filter(function(r){return r.score>0}).sort(function(a,b){return b.score-a.score||(a.id<b.id?-1:1)}).slice(0,TOPN);
+  }
+
+  // Illustrative cosine scores (not produced by a real model).
+  var QUERIES=[
+    {q:'lỗi E-4012',tag:'Mã số',rel:['d1'],dense:{d3:.83,d1:.81,d2:.80,d4:.62,d5:.55,d8:.52,d6:.50,d7:.41},
+     note:'BM25 khớp đúng token "e-4012" nên đặt d1 lên đầu. Nhánh vector (minh họa, cố ý phóng đại) xếp mã na ná E-4021 (d3) lên trên d1. Hybrid đưa d1 lên hạng 1 vì d1 có mặt ở cả hai danh sách.'},
+    {q:'sản phẩm hư thì có được bồi hoàn không',tag:'Đồng nghĩa',rel:['d6','d7'],dense:{d6:.84,d7:.79,d3:.58,d2:.55,d5:.48,d1:.47,d4:.45,d8:.40},
+     note:'Cả d6 (hoàn tiền khi lỗi) và d7 (trả hàng, nhận lại tiền) đều đúng. BM25 không thấy d7 vì không trùng chữ, lại kéo d2 vào chỉ nhờ hai từ chung chung "không", "được". Với RRF, d2 chen lên trên d7. Thử bật "Bỏ từ dừng", hoặc chuyển sang trộn có trọng số.'},
+    {q:'SSO là gì',tag:'Viết tắt',rel:['d8'],dense:{d4:.66,d5:.64,d8:.63,d1:.58,d2:.50,d3:.45,d7:.42,d6:.40},
+     note:'Giả sử (minh họa) model hiểu câu hỏi ngắn này chủ yếu là "chuyện đăng nhập" nên xếp d8 thứ 3. BM25 chỉ có một token hiếm "sso" khớp đúng d8. Hybrid đưa d8 lên đầu.'},
+    {q:'quen mat khau',tag:'Không dấu',rel:['d4'],dense:{d4:.71,d5:.66,d1:.52,d8:.47,d2:.40,d3:.35,d6:.30,d7:.28},
+     note:'Index chỉ có bản có dấu thì BM25 không khớp token nào: danh sách rỗng, hybrid chỉ còn là nhánh vector. Bật "Thêm bản bỏ dấu" để BM25 tìm ra d4. d5 cũng được điểm vì nó cũng chứa "mật khẩu" (và thêm một "mật" trong "bảo mật": va chạm âm tiết, có dấu hay không dấu đều vậy).'},
+    {q:'ứng dụng có được thay pass thường xuyên không',tag:'Từ lóng · hybrid thua',rel:['d5'],dense:{d5:.78,d4:.74,d8:.52,d6:.50,d1:.45,d2:.44,d3:.35,d7:.30},
+     note:'Từ lóng "pass" không có trong tài liệu, nên BM25 chỉ khớp các từ chung chung ("ứng dụng", "được", "không"): toàn nhiễu. Với RRF k = 60, d6 có mặt ở cả hai danh sách (dù đều ở hạng thấp) nên vượt lên đầu, đẩy đoạn đúng d5 xuống: hybrid kém hơn chỉ dùng vector. Thử kéo k về 1, hoặc chuyển sang trộn có trọng số với α = 0.7.'}
+  ];
+  function denseList(Q){return Object.keys(Q.dense).map(function(id){return{id:id,score:Q.dense[id]}}).sort(function(a,b){return b.score-a.score}).slice(0,TOPN)}
+  // Min-max per list. A chunk that was found but scored lowest gets 0.001 instead of 0 (as OpenSearch does), so it stays distinguishable from a chunk that was not found.
+  function minmax(L){var m={};if(!L.length)return m;var mx=L[0].score,mn=L[L.length-1].score;L.forEach(function(r){m[r.id]=mx>mn?Math.max(0.001,(r.score-mn)/(mx-mn)):1});return m}
+  // Fuse two ranked lists. Ties are broken by best single rank, then by the dense rank, then by id, so the order is deterministic.
+  function fuse(A,V,o){
+    var ids=uniq(A.map(function(r){return r.id}).concat(V.map(function(r){return r.id})));
+    var ra={},rv={};A.forEach(function(r,i){ra[r.id]=i+1});V.forEach(function(r,i){rv[r.id]=i+1});
+    var na=minmax(A),nv=minmax(V);
+    var out=ids.map(function(id){var s,calc;
+      if(o.mode==='rrf'){var pa=ra[id]?1/(o.k+ra[id]):0,pv=rv[id]?1/(o.k+rv[id]):0;s=pa+pv;
+        calc=(ra[id]?'1/('+o.k+'+'+ra[id]+')':'0')+' + '+(rv[id]?'1/('+o.k+'+'+rv[id]+')':'0');}
+      else{var a=na[id]||0,v=nv[id]||0;s=o.a*v+(1-o.a)*a;calc=o.a.toFixed(1)+'×'+v.toFixed(3)+' + '+(1-o.a).toFixed(1)+'×'+a.toFixed(3);}
+      return{id:id,score:s,ra:ra[id],rv:rv[id],calc:calc};}).filter(function(r){return r.score>0});
+    out.sort(function(x,y){if(Math.abs(y.score-x.score)>1e-12)return y.score-x.score;
+      var bx=Math.min(x.ra||99,x.rv||99),by=Math.min(y.ra||99,y.rv||99);if(bx!==by)return bx-by;
+      var vx=x.rv||99,vy=y.rv||99;if(vx!==vy)return vx-vy;return x.id<y.id?-1:1});
+    return out;
+  }
+  function firstRel(L,rel){for(var i=0;i<L.length;i++)if(rel.indexOf(L[i].id)>=0)return i+1;return 0}
+
+  // ---------- Stepper example (numbers computed by the same engine) ----------
+  var EX=QUERIES[0], exA=bm25(EX.q,{}), exV=denseList(EX), exR=fuse(exA,exV,{mode:'rrf',k:60}), exW=fuse(exA,exV,{mode:'w',a:0.5});
+  function f3(x){return x.toFixed(3)} function f4(x){return x.toFixed(4)} function f5(x){return x.toFixed(5)}
+  // Per-token BM25 contributions for the worked example.
+  function contrib(q,id){var D=CORPUS.map(function(d){return tokens(d.t,{})}),N=D.length,avg=D.reduce(function(a,d){return a+d.length},0)/N,i=CORPUS.indexOf(byDoc[id]);
+    return uniq(tokens(q,{})).map(function(t){var n=0;D.forEach(function(x){if(x.indexOf(t)>=0)n++});var tf=0;D[i].forEach(function(x){if(x===t)tf++});var idf=n?Math.log(1+(N-n+0.5)/(n+0.5)):0;
+      return{t:t,n:n,tf:tf,idf:idf,len:D[i].length,avg:avg,c:tf?idf*tf*(K1+1)/(tf+K1*(1-B+B*D[i].length/avg)):0}})}
+  var c1=contrib(EX.q,'d1'), c6=contrib(EX.q,'d6');
+  function chunkRow(r,label){var d=byDoc[r.id];return '<div class="chunk'+(EX.rel.indexOf(r.id)>=0?' hit':'')+'"><span class="id">#'+r.rank+' · '+d.id+' · '+label+'</span><br>'+esc(d.t)+'</div>'}
+  var rrfRows=exR.map(function(r){return '<tr><td><b>'+r.id+'</b>'+(EX.rel.indexOf(r.id)>=0?' ★':'')+'</td><td>'+(r.ra||'—')+'</td><td>'+(r.rv||'—')+'</td><td class="mono">'+(r.ra?'1/'+(60+r.ra)+' = '+f5(1/(60+r.ra)):'0')+'</td><td class="mono">'+(r.rv?'1/'+(60+r.rv)+' = '+f5(1/(60+r.rv)):'0')+'</td><td class="mono"><b>'+f4(r.score)+'</b></td></tr>'}).join('');
+  var wRows=exW.map(function(r){return '<tr><td><b>'+r.id+'</b>'+(EX.rel.indexOf(r.id)>=0?' ★':'')+'</td><td class="mono">'+r.calc+'</td><td class="mono"><b>'+f4(r.score)+'</b></td></tr>'}).join('');
+  var avgLen=c1[0].avg;
+  var STEPS=[
+    {t:'Câu hỏi và kho',h:'<span class="tag p3">Bắt đầu</span><h3>Bước 1 · Câu hỏi và các đoạn liên quan</h3><pre>Câu hỏi: "lỗi E-4012"</pre><p>Kho có 8 đoạn. Bốn đoạn đáng chú ý cho câu hỏi này:</p>'+['d1','d3','d2','d6'].map(function(id){return '<div class="chunk'+(id==='d1'?' hit':'')+'"><span class="id">'+id+(id==='d1'?' · ĐOẠN ĐÚNG':'')+'</span><br>'+esc(byDoc[id].t)+'</div>'}).join('')+'<p class="muted">d3 là "bẫy": mã E-4021 trông gần giống E-4012 nhưng là lỗi khác hẳn.</p>'},
+    {t:'Tiền xử lý',h:'<span class="tag p1">Nhánh BM25</span><h3>Bước 2 · Tách câu hỏi thành token</h3><p>Chuẩn hóa Unicode (NFC), chuyển chữ thường, tách theo âm tiết nhưng <b>giữ nguyên mã có dấu gạch nối</b>:</p><p>'+tokens(EX.q,{}).map(function(t){return '<span class="tok">'+esc(t)+'</span>'}).join('')+'</p><p>Tài liệu trong kho cũng đã được tách <b>đúng cùng cách</b> này ở pha chuẩn bị. Ví dụ d1 có '+c1[0].len+' token; độ dài trung bình của kho là '+avgLen.toFixed(3)+' token.</p><div class="callout warn">Nếu tokenizer tách "E-4012" thành "e" và "4012", thì "e" sẽ khớp với cả đoạn d3 (E-4021) và độ chính xác của mã mất đi một phần. Tách từ là quyết định thiết kế, không phải chi tiết vặt.</div>'},
+    {t:'Tra inverted index',h:'<span class="tag p1">Nhánh BM25</span><h3>Bước 3 · Tra inverted index</h3><p>Với mỗi token, lấy danh sách đoạn chứa nó (posting list) và tính IDF. Kho có N = 8 đoạn; n là số đoạn chứa token:</p><div class="formula">IDF = ln(1 + (N − n + 0.5) / (n + 0.5))</div><div class="table-wrap"><table class="stack"><thead><tr><th>Token</th><th>Có trong</th><th>Số đoạn chứa</th><th>IDF</th></tr></thead><tbody>'+c1.map(function(c){var docs=CORPUS.filter(function(d){return tokens(d.t,{}).indexOf(c.t)>=0}).map(function(d){return d.id}).join(', ');return '<tr><td><span class="tok">'+esc(c.t)+'</span></td><td>'+docs+'</td><td>'+c.n+'</td><td class="mono">'+f3(c.idf)+'</td></tr>'}).join('')+'</tbody></table></div><p class="muted">"e-4012" chỉ có trong 1 đoạn nên IDF cao hơn "lỗi" (có trong 2 đoạn). Trong kho thật hàng nghìn đoạn, chênh lệch giữa từ hiếm và từ phổ biến lớn hơn nhiều.</p>'},
+    {t:'Chấm điểm BM25',h:'<span class="tag p1">Nhánh BM25</span><h3>Bước 4 · Chấm điểm BM25 → danh sách A</h3><p>Mỗi token đóng góp IDF × TF đã bão hòa và chuẩn hóa theo độ dài (k1 = 1.2, b = 0.75):</p><div class="table-wrap"><table class="stack"><thead><tr><th>Đoạn</th><th>Độ dài</th><th>Phần của "lỗi"</th><th>Phần của "e-4012"</th><th>Tổng BM25</th></tr></thead><tbody><tr><td><b>d1</b> ★</td><td>'+c1[0].len+'</td><td class="mono">'+f3(c1[0].c)+'</td><td class="mono">'+f3(c1[1].c)+'</td><td class="mono"><b>'+f3(c1[0].c+c1[1].c)+'</b></td></tr><tr><td><b>d6</b></td><td>'+c6[0].len+'</td><td class="mono">'+f3(c6[0].c)+'</td><td class="mono">0</td><td class="mono"><b>'+f3(c6[0].c+c6[1].c)+'</b></td></tr></tbody></table></div><p class="muted">Để ý: phần của "lỗi" ở d6 ('+f3(c6[0].c)+') nhỉnh hơn ở d1 ('+f3(c1[0].c)+') vì d6 ngắn hơn một chút. Đó là chuẩn hóa độ dài.</p><p><b>Danh sách A</b> (chỉ 2 đoạn có token khớp):</p>'+exA.map(function(r,i){return chunkRow({id:r.id,rank:i+1},'BM25 '+f3(r.score))}).join('')},
+    {t:'Nhánh vector',h:'<span class="tag p2">Nhánh vector</span><h3>Bước 5 · Tìm theo nghĩa → danh sách B</h3><p>Song song với bước 2–4, câu hỏi được embed và so cosine với các vector trong kho. Lấy top-5 (điểm <b>minh họa</b>):</p>'+exV.map(function(r,i){return chunkRow({id:r.id,rank:i+1},'cosine '+r.score.toFixed(2))}).join('')+'<p class="muted">Nhánh vector đặt đoạn bẫy d3 lên đầu và d1 chỉ đứng thứ 2: với nó, "lỗi mã E-40xx" nào cũng gần nghĩa như nhau. Số ở đây cố ý phóng đại để dễ thấy; model thật có thể xếp d1 cao hơn, nhưng khớp chắc chắn mã và thực thể hiếm vẫn là điểm yếu đã được ghi nhận của tìm theo nghĩa.<sup class="cite"><a href="#src-8">[8]</a></sup></p>'},
+    {t:'Trộn bằng RRF',h:'<span class="tag p3">Trộn</span><h3>Bước 6 · Tính RRF bằng tay (k = 60)</h3><p>Mỗi đoạn nhận 1/(60 + hạng) từ mỗi danh sách có chứa nó:</p><div class="table-wrap"><table class="stack"><thead><tr><th>Đoạn</th><th>Hạng A (BM25)</th><th>Hạng B (vector)</th><th>Phần từ A</th><th>Phần từ B</th><th>RRF</th></tr></thead><tbody>'+rrfRows+'</tbody></table></div><div class="callout ok">d1 lên <b>hạng 1</b> dù không đứng đầu nhánh vector, vì nó là đoạn duy nhất có mặt ở <b>cả hai</b> danh sách.</div><p class="muted">d6 (hạng 2 ở BM25) đứng trên d2 (hạng 3 ở vector) vì hạng riêng tốt hơn. Nếu hai đoạn bằng điểm, mô phỏng phá hòa theo quy tắc cố định: ưu tiên đoạn có thứ hạng riêng tốt hơn; nếu vẫn bằng thì ưu tiên nhánh vector.</p>'},
+    {t:'So với trộn có trọng số',h:'<span class="tag p3">Trộn</span><h3>Bước 7 · Nếu trộn điểm có trọng số (α = 0.5)</h3><p>Cộng thẳng điểm thô thì d1 = 2.878 + 0.80: phần BM25 lấn át. Vì vậy chuẩn hóa min-max từng danh sách trước (cao nhất → 1, thấp nhất → 0), rồi tính α × vector + (1 − α) × BM25. Đoạn không có trong danh sách nào được 0 và bị loại.</p><div class="table-wrap"><table class="stack"><thead><tr><th>Đoạn</th><th>Cách tính</th><th>Điểm</th></tr></thead><tbody>'+wRows+'</tbody></table></div><div class="callout warn">Để ý d6: nó <b>có</b> trong danh sách BM25 nhưng là đoạn thấp nhất, nên min-max thuần biến điểm thành 0, y như đoạn không được tìm thấy. Mô phỏng làm như OpenSearch: thay 0 bằng 0.001 để vẫn phân biệt được.<sup class="cite"><a href="#src-17">[17]</a></sup> Điểm sau chuẩn hóa còn phụ thuộc N: mức 0 chính là điểm của đoạn đứng cuối danh sách.</div>'},
+    {t:'Kết quả',h:'<span class="tag p3">Kết thúc</span><h3>Bước 8 · Kết quả đi tiếp vào RAG</h3><p>Danh sách đã trộn (RRF):</p>'+exR.slice(0,3).map(function(r,i){return chunkRow({id:r.id,rank:i+1},'RRF '+f4(r.score))}).join('')+'<p>Top của danh sách này được đưa sang <a href="../reranking/">reranker</a> (nếu có) rồi vào prompt cho LLM, như bước Augmentation trong <a href="../rag/#vi-du">ví dụ RAG</a>.</p><div class="callout"><b>So sánh:</b> chỉ dùng vector thì đoạn đầu tiên là d3 (sai mã), LLM có thể trả lời nhầm về hết dung lượng. Chỉ dùng BM25 thì đúng ở câu này, nhưng sẽ hụt ở câu hỏi kiểu "hàng hư có được bồi hoàn không" (thử trong mục 6).</div>'}
+  ];
+  var cur=0, stepsEl=document.getElementById('steps'), bodyEl=document.getElementById('stepBody');
+  STEPS.forEach(function(s,i){var b=document.createElement('button');b.innerHTML='<span class="n">'+(i+1)+'</span>'+s.t;b.addEventListener('click',function(){show(i)});stepsEl.appendChild(b)});
+  function show(i){cur=i;bodyEl.innerHTML=STEPS[i].h;labelTables(bodyEl);[].forEach.call(stepsEl.children,function(b,j){b.classList.toggle('on',j===i);if(j===i)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current')});
+    document.getElementById('prevStep').disabled=i===0;var ab=stepsEl.children[i];if(stepsEl.scrollWidth>stepsEl.clientWidth){stepsEl.scrollLeft=ab.offsetLeft-stepsEl.offsetLeft-8}document.getElementById('nextStep').disabled=i===STEPS.length-1;}
+  document.getElementById('prevStep').addEventListener('click',function(){if(cur>0)show(cur-1)});
+  document.getElementById('nextStep').addEventListener('click',function(){if(cur<STEPS.length-1)show(cur+1)});
+  show(0);
+
+  // ---------- Simulator ----------
+  var S={qi:0,fold:false,stop:false,mode:'rrf',k:60,a:0.5};
+  var qWrap=document.getElementById('simQ'), cols=document.getElementById('simCols'), noteEl=document.getElementById('simNote'), tokEl=document.getElementById('simTokens'), mrrEl=document.getElementById('simMrr');
+  QUERIES.forEach(function(Q,i){var b=document.createElement('button');b.innerHTML='❓ '+esc(Q.q)+' <span class="tag p4">'+esc(Q.tag)+'</span>';b.addEventListener('click',function(){S.qi=i;render()});qWrap.appendChild(b)});
+  document.getElementById('simCorpus').innerHTML=CORPUS.map(function(d){return '<div class="chunk"><span class="id">'+d.id+'</span><br>'+esc(d.t)+'</div>'}).join('');
+  function item(r,rank,Q,kind,max){
+    var isRel=Q.rel.indexOf(r.id)>=0, d=byDoc[r.id], sc, extra='';
+    if(kind==='a'){sc='BM25 '+f3(r.score);extra='<div class="sub">khớp: '+r.hits.map(function(t){return '<span class="tok">'+esc(t)+'</span>'}).join('')+'</div>'}
+    else if(kind==='v'){sc='cos '+r.score.toFixed(2)}
+    else{sc=f4(r.score);extra='<div class="calc">'+r.calc+'</div><div class="sub">hạng BM25: '+(r.ra||'—')+' · hạng vector: '+(r.rv||'—')+'</div>'}
+    var w=max>0?Math.max(2,r.score/max*100):0;
+    return '<div class="ri'+(isRel?' rel':'')+'"><div class="top"><span>#'+rank+' · '+d.id+(isRel?' <span class="star">★</span>':'')+'</span><span class="mono">'+sc+'</span></div><div class="sub">'+esc(d.s)+'</div><div class="bar b'+(kind==='a'?1:kind==='v'?2:3)+'"><span style="width:'+w.toFixed(1)+'%"></span></div>'+extra+'</div>';
+  }
+  function col(title,tagHtml,L,Q,kind){
+    var max=L.length?L[0].score:0, body=L.length?L.map(function(r,i){return item(r,i+1,Q,kind,max)}).join(''):'<div class="empty">Không đoạn nào chứa token của câu hỏi → danh sách rỗng.</div>';
+    return '<div class="card sim-col">'+tagHtml+'<h4>'+title+'</h4>'+body+'</div>';
+  }
+  function run(Q){var o={fold:S.fold,stop:S.stop};var A=bm25(Q.q,o),V=denseList(Q),H=fuse(A,V,{mode:S.mode,k:S.k,a:S.a});return{A:A,V:V,H:H}}
+  function render(){
+    [].forEach.call(qWrap.children,function(b,j){b.classList.toggle('on',j===S.qi);b.setAttribute('aria-pressed',j===S.qi?'true':'false')});
+    var Q=QUERIES[S.qi], R=run(Q);
+    var qtAll=Q.q.normalize('NFC').toLowerCase().match(TOKEN_RE)||[], kept=tokens(Q.q,{stop:S.stop});
+    tokEl.innerHTML='Token của câu hỏi cho BM25: '+qtAll.map(function(t){var off=S.stop&&STOP.indexOf(t)>=0;return '<span class="tok'+(off?' off':'')+'">'+esc(t)+'</span>'}).join('')+(S.fold?' <span class="muted">+ bản bỏ dấu: </span>'+kept.map(function(t){return '<span class="tok">'+esc(fold(t))+'</span>'}).join(''):'');
+    cols.innerHTML=col('BM25 · danh sách A','<span class="tag p1">tính thật</span>',R.A,Q,'a')+col('Vector · danh sách B','<span class="tag p2">minh họa</span>',R.V,Q,'v')+col('Hybrid · '+(S.mode==='rrf'?'RRF (k = '+S.k+')':'có trọng số (α = '+S.a.toFixed(1)+')'),'<span class="tag p3">tính thật</span>',R.H,Q,'h');
+    var fa=firstRel(R.A,Q.rel),fv=firstRel(R.V,Q.rel),fh=firstRel(R.H,Q.rel);
+    function rk(x){return x?'#'+x:'không có'}
+    noteEl.innerHTML='<div class="callout"><b>Đoạn đúng đầu tiên đứng ở:</b> BM25 '+rk(fa)+' · vector '+rk(fv)+' · hybrid '+rk(fh)+'.<br>'+esc(Q.note)+'</div>';
+    var m={a:0,v:0,h:0},rc={a:0,v:0,h:0};
+    function rec2(L,rel){var hit=0;L.slice(0,2).forEach(function(r){if(rel.indexOf(r.id)>=0)hit++});return hit/rel.length}
+    QUERIES.forEach(function(q){var r=run(q),x;[['A','a'],['V','v'],['H','h']].forEach(function(K){x=firstRel(r[K[0]],q.rel);m[K[1]]+=x?1/x:0;rc[K[1]]+=rec2(r[K[0]],q.rel)})});
+    var n=QUERIES.length;
+    function card(lbl,k){return '<div class="card"><span class="muted">'+lbl+'</span><b>MRR '+(m[k]/n).toFixed(3)+'</b><span class="muted">recall@2 '+(rc[k]/n).toFixed(3)+'</span></div>'}
+    mrrEl.innerHTML=card('Chỉ BM25','a')+card('Chỉ vector (minh họa)','v')+card('Hybrid','h');
+  }
+  document.getElementById('optFold').addEventListener('change',function(e){S.fold=e.target.checked;render()});
+  document.getElementById('optStop').addEventListener('change',function(e){S.stop=e.target.checked;render()});
+  var kIn=document.getElementById('optK'),aIn=document.getElementById('optA');
+  kIn.addEventListener('input',function(){var v=parseInt(kIn.value,10);S.k=(v>=1&&v<=100)?v:60;document.getElementById('kVal').textContent=S.k;render()});
+  aIn.addEventListener('input',function(){var v=parseFloat(aIn.value);S.a=(v>=0&&v<=1)?v:0.5;document.getElementById('aVal').textContent=S.a.toFixed(1);render()});
+  var modeChips=document.getElementById('modeChips');
+  modeChips.addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;S.mode=b.dataset.m;[].forEach.call(modeChips.children,function(c){c.classList.toggle('on',c===b);c.setAttribute('aria-pressed',c===b?'true':'false')});
+    document.getElementById('kWrap').style.display=S.mode==='rrf'?'':'none';document.getElementById('aWrap').style.display=S.mode==='w'?'':'none';render()});
+  render();
+
+  // ---------- Glossary ----------
+  var G={lex:'Từ khóa (lexical)',dense:'Theo nghĩa (dense)',vi:'Tiếng Việt & tiền xử lý',fuse:'Trộn kết quả',pipe:'Pipeline & vận hành',eval:'Đánh giá & tinh chỉnh'};
+  var T=[
+    ['lexical','lex','Lexical search','tìm theo từ khóa','Tìm các đoạn chứa đúng các token có trong câu hỏi, rồi chấm điểm theo mức độ khớp.','Ctrl+F nâng cấp: không chỉ tìm thấy mà còn xếp hạng.',['inverted-index','bm25','sparse']],
+    ['sparse','lex','Sparse vector','vector thưa','Biểu diễn đoạn văn bằng một vector dài bằng bộ từ vựng, hầu hết bằng 0; chỉ các từ có mặt mới có giá trị.','BM25 và SPLADE đều là kiểu sparse.',['lexical','dense','splade']],
+    ['inverted-index','lex','Inverted index','chỉ mục ngược','Cấu trúc ghi lại, với mỗi token, danh sách các đoạn chứa nó. Giúp tìm theo từ khóa rất nhanh.','"mật" → d4, d5. Giống bảng tra cuối sách.',['posting','tokenization','bm25']],
+    ['posting','lex','Posting list','','Danh sách các đoạn (thường kèm số lần xuất hiện) ứng với một token trong inverted index.','Posting list của "e-4012" chỉ có d1.',['inverted-index','df']],
+    ['tf','lex','TF','term frequency','Số lần một token xuất hiện trong một đoạn. Trong BM25, TF được bão hòa: lần lặp thêm cộng ít dần.','"mật" xuất hiện 3 lần trong d4.',['bm25','k1']],
+    ['df','lex','DF','document frequency','Số đoạn trong kho có chứa token. DF càng cao thì token càng phổ biến.','"lỗi" có DF = 2 trong kho mẫu.',['idf']],
+    ['idf','lex','IDF','inverse document frequency','Trọng số tăng khi token hiếm (DF thấp) và giảm khi token phổ biến. Từ hiếm nói nhiều hơn về đoạn nào là đúng.','"e-4012" có IDF cao hơn "lỗi".',['df','bm25','stopword']],
+    ['length-norm','lex','Chuẩn hóa độ dài','length normalization','Điều chỉnh để đoạn dài không được cộng điểm chỉ vì dài. BM25 so độ dài đoạn với độ dài trung bình của kho.','Cùng 1 lần chứa "lỗi", đoạn ngắn hơn được điểm nhỉnh hơn.',['b','avgdl']],
+    ['bm25','lex','BM25','Okapi BM25','Công thức chấm điểm theo từ khóa phổ biến: cộng phần đóng góp của từng token câu hỏi, dựa trên IDF, TF bão hòa và chuẩn hóa độ dài.','Nhánh lexical trong hầu hết hệ hybrid.',['tf','idf','length-norm','k1','b']],
+    ['k1','lex','k1','tham số BM25','Điều khiển TF bão hòa nhanh hay chậm. k1 nhỏ: lặp lại ít có tác dụng; k1 lớn: lặp lại được cộng nhiều hơn.','Thường khá tốt trong khoảng 1.2–2; Lucene/Elasticsearch mặc định 1.2.',['tf','bm25']],
+    ['b','lex','b','tham số BM25','Mức chuẩn hóa độ dài, từ 0 (không chuẩn hóa) đến 1 (chuẩn hóa hoàn toàn).','Thường khá tốt trong khoảng 0.5–0.8; Lucene/Elasticsearch mặc định 0.75.',['length-norm','avgdl']],
+    ['avgdl','lex','Độ dài trung bình','avgdl','Độ dài trung bình (số token) của các đoạn trong kho; mốc để BM25 so độ dài từng đoạn.','Kho mẫu: 18.875 token.',['b','length-norm']],
+    ['dense','dense','Dense retrieval','tìm theo nghĩa','Tìm bằng cách so vector embedding của câu hỏi với vector của các đoạn.','Tìm ra "hoàn tiền" khi hỏi "bồi hoàn".',['embedding','cosine','ann']],
+    ['embedding','dense','Embedding','','Vector số biểu diễn nghĩa của một đoạn văn bản; nghĩa giống nhau thì vector gần nhau.','Xem thêm trang RAG, mục 4.',['dense','bi-encoder']],
+    ['bi-encoder','dense','Bi-encoder','','Kiểu model embed câu hỏi và đoạn <i>riêng rẽ</i>, nên vector đoạn tính trước được. Nhanh, là nền của tìm vector. Khác cross-encoder (reranker) đọc cả cặp cùng lúc.','Embedding model trong RAG thường là bi-encoder.',['embedding','reranker']],
+    ['cosine','dense','Cosine similarity','','Đo góc giữa hai vector; càng gần 1 càng giống nghĩa. Thang điểm khác hẳn BM25.','Trong mô phỏng: 0.28–0.84 (minh họa).',['dense','normalization']],
+    ['ann','dense','ANN','Approximate Nearest Neighbor','Thuật toán tìm vector gần đúng gần nhất, rất nhanh với kho lớn, đổi lại có thể bỏ sót đôi chút.','',['dense']],
+    ['multilingual','dense','Embedding đa ngôn ngữ','multilingual','Embedding model được huấn luyện để câu cùng nghĩa ở các ngôn ngữ khác nhau có vector gần nhau.','Hỏi tiếng Anh, tìm ra đoạn tiếng Việt. BM25 không làm được.',['embedding']],
+    ['tokenization','vi','Tokenization','tách token','Cắt văn bản thành các token để đánh index và tìm. Câu hỏi và tài liệu phải đi qua cùng một cách tách.','"lỗi E-4012" → [lỗi] [e-4012].',['word-seg','inverted-index']],
+    ['word-seg','vi','Tách từ tiếng Việt','word segmentation','Gộp các âm tiết thành từ ("mật khẩu" là một từ), vì dấu cách trong tiếng Việt ngăn âm tiết chứ không ngăn từ.','Tách theo âm tiết thì "sản phẩm" và "sản xuất" chung token "sản".',['syllable','tokenization']],
+    ['syllable','vi','Âm tiết','syllable','Đơn vị giữa hai dấu cách trong tiếng Việt. Tách theo âm tiết đơn giản nhưng gây va chạm nghĩa.','"bảo mật" và "mật khẩu" cùng có "mật".',['word-seg']],
+    ['fold','vi','Bỏ dấu','diacritic folding','Chuyển chữ có dấu thành không dấu (và đ → d) để khớp câu hỏi gõ không dấu. Nên lưu thêm thành một trường riêng.','"mật khẩu" → "mat khau".',['nfc','tokenization']],
+    ['nfc','vi','Chuẩn hóa Unicode','NFC','Đưa các cách mã hóa khác nhau của cùng một chữ có dấu về một dạng thống nhất, để máy so khớp đúng.','"ệ" dựng sẵn và "ệ" tổ hợp nhìn giống nhau nhưng khác mã.',['fold']],
+    ['stopword','vi','Từ dừng','stopwords','Từ rất phổ biến ít mang thông tin ("là", "thì", "được"), có thể bỏ khi tìm. Cẩn thận với từ phủ định như "không".','Bỏ "không", "được" giúp d2 không chen vào kết quả trong mô phỏng.',['idf']],
+    ['fuzzy','vi','Fuzzy matching','khớp gần đúng','Cho phép khớp token sai lệch vài ký tự (theo khoảng cách chỉnh sửa) để chịu được lỗi chính tả. Một số search engine hỗ trợ.','"mât" vẫn khớp "mật".',['tokenization']],
+    ['hybrid','fuse','Hybrid search','','Chạy song song tìm theo từ khóa và tìm theo nghĩa, rồi trộn hai danh sách thành một.','BM25 + vector + RRF.',['fusion','bm25','dense']],
+    ['fusion','fuse','Fusion','trộn kết quả','Bước gộp nhiều danh sách xếp hạng thành một thứ tự cuối cùng.','RRF hoặc trộn điểm có trọng số.',['rrf','weighted']],
+    ['rank','fuse','Hạng','rank','Vị trí của đoạn trong một danh sách, tính từ 1. RRF chỉ dùng hạng, không dùng điểm.','d1 đứng hạng 1 ở BM25, hạng 3 ở vector.',['rrf']],
+    ['rrf','fuse','Reciprocal Rank Fusion','RRF','Mỗi danh sách chứa đoạn d cộng cho nó 1/(k + hạng). Không cần chuẩn hóa điểm.','1/(60+1) + 1/(60+3) ≈ 0.0323.',['rrf-k','rank','weighted']],
+    ['rrf-k','fuse','k của RRF','','Hằng số làm phẳng điểm RRF. Giá trị thường dùng là 60 (từ bài báo gốc); mỗi sản phẩm có mặc định riêng. k nhỏ thì hạng 1 được ưu tiên mạnh.','Trong mô phỏng: câu hỏi 5 với k = 1 và k = 60.',['rrf']],
+    ['weighted','fuse','Trộn có trọng số','weighted / convex combination','Chuẩn hóa điểm mỗi nhánh rồi tính α × vector + (1 − α) × BM25.','α = 0.5: hai nhánh nặng ngang nhau.',['alpha','normalization']],
+    ['alpha','fuse','α','alpha','Trọng số của nhánh vector trong trộn có trọng số; phần còn lại (1 − α) dành cho BM25. Nên chọn bằng eval set.','α = 0 là chỉ BM25, α = 1 là chỉ vector.',['weighted','eval-set']],
+    ['normalization','fuse','Chuẩn hóa điểm','score normalization','Đưa điểm của các nhánh về cùng thang trước khi cộng. Min-max: cao nhất → 1, thấp nhất → 0; ngoài ra còn z-score.','BM25 2.878 và cosine 0.80 không cộng thẳng được.',['weighted','cosine']],
+    ['topn','fuse','Độ sâu ứng viên','N mỗi nhánh','Số kết quả mỗi nhánh trả về trước khi trộn. Đoạn ngoài top-N của mọi nhánh bị loại.','Mô phỏng dùng N = 5.',['fusion','recall-k']],
+    ['dedup','fuse','Khử trùng lặp','dedup','Nhận ra cùng một chunk xuất hiện ở cả hai danh sách (theo chunk id) để gộp điểm thay vì hiện hai lần.','',['chunk-id']],
+    ['splade','pipe','SPLADE','learned sparse','Một mô hình learned sparse: model ngôn ngữ dự đoán trọng số cho từng token trong bộ từ vựng của model, nên có thể thêm token không có trong đoạn (expansion); vẫn thưa và lưu trong inverted index.','Minh họa: đoạn "hoàn tiền" được thêm trọng số nhỏ cho "trả lại".',['sparse','learned-sparse']],
+    ['learned-sparse','pipe','Learned sparse retrieval','','Nhóm phương pháp tìm thưa mà trọng số từ do model học thay cho TF/IDF thủ công.','Có thể thay BM25 hoặc làm thêm một nhánh trong hybrid.',['splade','bm25']],
+    ['meta-filter','pipe','Metadata filter','','Lọc theo thuộc tính (phòng ban, năm, quyền xem). Trong hybrid phải áp giống nhau cho cả hai nhánh.','Chỉ tìm tài liệu người hỏi được phép xem.',['hybrid']],
+    ['chunk-id','pipe','Chunk id','','Mã định danh chung của một đoạn trong cả inverted index và vector index; là "chìa khóa" để trộn.','d1 phải là d1 ở cả hai index.',['dedup']],
+    ['reranker','pipe','Reranker','','Model (thường là cross-encoder) chấm lại từng cặp câu hỏi, đoạn trên tập ứng viên đã trộn, giữ vài đoạn tốt nhất.','Hybrid lấy top-30 → rerank → top-5.',['bi-encoder','hybrid']],
+    ['eval-set','eval','Eval set','bộ câu hỏi kiểm tra','Câu hỏi thật kèm đoạn đúng, dùng để so cấu hình và chọn tham số. Nên gắn nhãn nhóm câu hỏi.','Nhóm: mã số, diễn đạt khác, không dấu.',['recall-k','mrr','dev-test']],
+    ['recall-k','eval','recall@k','','Tỷ lệ các đoạn đúng nằm trong top-k.','Câu cần d6 và d7, top-2 có d6 và d2 → recall@2 = 0.5.',['eval-set','mrr']],
+    ['mrr','eval','MRR','Mean Reciprocal Rank','Trung bình của 1/(hạng của đoạn đúng đầu tiên); không tìm thấy tính 0.','Hạng 1 → 1; hạng 3 → 0.33.',['recall-k','ndcg']],
+    ['ndcg','eval','nDCG@k','','Chỉ số xếp hạng tính cả nhiều đoạn đúng và mức độ liên quan, phạt đoạn đúng đứng thấp; 1 là thứ tự hoàn hảo.','',['mrr']],
+    ['dev-test','eval','Dev / test split','','Chia eval set: phần dev để thử tham số, phần test giữ riêng để kiểm tra cuối, tránh chọn tham số khớp ngẫu nhiên.','',['eval-set','alpha']]
+  ];
+  var byId={};T.forEach(function(t){byId[t[0]]=t});
+  var grid=document.getElementById('glossGrid'), chips=document.getElementById('glossChips'), search=document.getElementById('glossSearch'), activeG='all';
+  function foldQ(s){return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d')}
+  function stripTags(s){return s.replace(/<[^>]+>/g,'')}
+  function renderGloss(){
+    var q=foldQ(search.value.trim()); grid.innerHTML='';var n=0;
+    T.forEach(function(t){
+      if(activeG!=='all'&&t[1]!==activeG)return;
+      var hay=foldQ(t[2]+' '+t[3]+' '+stripTags(t[4])+' '+t[5]); if(q&&hay.indexOf(q)<0)return; n++;
+      var d=document.createElement('div');d.className='card term';d.id='term-'+t[0];
+      var rel=t[6].filter(function(r){return byId[r]}).map(function(r){return '<a href="#term-'+r+'" data-goto="'+r+'">'+esc(byId[r][2])+'</a>'}).join(', ');
+      // Definitions are static authored strings; only <i> is allowed as markup, everything else is escaped.
+      var def=esc(t[4]).replace(/&lt;(\/?)i&gt;/g,'<$1i>');
+      d.innerHTML='<span class="tag">'+G[t[1]]+'</span><h4>'+esc(t[2])+(t[3]?' <span class="en">· '+esc(t[3])+'</span>':'')+'</h4><p>'+def+'</p>'+(t[5]?'<p class="ex">Ví dụ: '+esc(t[5])+'</p>':'')+(rel?'<div class="rel">Liên quan: '+rel+'</div>':'');
+      grid.appendChild(d);
+    });
+    if(!n)grid.innerHTML='<p class="muted">Không có khái niệm khớp.</p>';
+  }
+  var all=document.createElement('button');all.className='chip on';all.setAttribute('aria-pressed','true');all.textContent='Tất cả ('+T.length+')';all.dataset.g='all';chips.appendChild(all);
+  Object.keys(G).forEach(function(k){var b=document.createElement('button');b.className='chip';b.setAttribute('aria-pressed','false');b.dataset.g=k;b.textContent=G[k];chips.appendChild(b)});
+  chips.addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;activeG=b.dataset.g;[].forEach.call(chips.children,function(c){c.classList.toggle('on',c===b);c.setAttribute('aria-pressed',c===b?'true':'false')});renderGloss()});
+  search.addEventListener('input',renderGloss);
+  grid.addEventListener('click',function(e){var a=e.target.closest('a[data-goto]');if(!a)return;e.preventDefault();
+    if(!document.getElementById('term-'+a.dataset.goto)){activeG='all';search.value='';[].forEach.call(chips.children,function(c){c.classList.toggle('on',c.dataset.g==='all')});renderGloss()}
+    var t=document.getElementById('term-'+a.dataset.goto);if(!t)return;t.scrollIntoView({behavior:'smooth',block:'center'});t.style.outline='2px solid var(--accent)';setTimeout(function(){t.style.outline=''},1500)});
+  renderGloss();
+
+  // ---------- Checklist persistence ----------
+  [].forEach.call(document.querySelectorAll('input[data-k]'),function(cb){
+    cb.checked=safeGet('hs-'+cb.dataset.k)==='1';
+    cb.addEventListener('change',function(){safeSet('hs-'+cb.dataset.k,cb.checked?'1':'0')});
+  });
+
+  // ---------- Active TOC ----------
+  var links=[].slice.call(document.querySelectorAll('#toc a'));
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(l){var on=l.getAttribute('href')==='#'+e.target.id;l.classList.toggle('active',on);if(on){var nav=l.parentNode;nav.scrollLeft=l.offsetLeft-nav.offsetLeft-(nav.clientWidth-l.offsetWidth)/2}})}})},{rootMargin:'-40% 0px -55% 0px'});
+    document.querySelectorAll('main section').forEach(function(s){io.observe(s)});
+  }
+})();
+</script>
+</body>
+</html>

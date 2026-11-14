@@ -1,0 +1,972 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hiểu Knowledge Base cho AI</title>
+<script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+:root{
+  --bg:#f7f6f2; --surface:#ffffff; --surface-2:#f0eee8; --text:#1f2328; --muted:#5b6370;
+  --border:#dcd8cf; --accent:#2f6fde; --accent-soft:#e3ecfc; --ok:#1f8a4c; --ok-soft:#e1f3e8;
+  --warn:#b4610e; --warn-soft:#fbeedd; --bad:#c23b3b; --bad-soft:#fae3e3;
+  --p1:#2f6fde; --p2:#8a4fd1; --p3:#1f8a4c; --p4:#b4610e;
+  --code-bg:#f0eee8; --shadow:0 1px 2px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04); --on-accent:#ffffff;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+    --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+    --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+    --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --code-bg:#252930; --shadow:none; --on-accent:#15171a;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+  --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+  --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+  --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --code-bg:#252930; --shadow:none; --on-accent:#15171a;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+a{color:var(--accent)}
+header.top{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
+.top-inner{max-width:1100px;margin:0 auto;padding:10px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.brand{font-weight:700;white-space:nowrap}
+.home{white-space:nowrap;text-decoration:none;color:var(--text);border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:4px 10px;font-size:14px}
+.home:hover{border-color:var(--accent);color:var(--accent)}
+nav.toc{display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin;flex:1}
+nav.toc a{white-space:nowrap;text-decoration:none;color:var(--muted);padding:4px 10px;border-radius:999px;font-size:14px}
+nav.toc a:hover,nav.toc a.active{background:var(--accent-soft);color:var(--accent)}
+button{font:inherit;cursor:pointer}
+.theme-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:4px 10px;font-size:14px}
+main{max-width:1100px;margin:0 auto;padding:16px}
+section{padding:28px 0;border-bottom:1px solid var(--border);scroll-margin-top:56px}
+section:last-child{border-bottom:none}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.2;margin:16px 0 8px}
+h2{font-size:clamp(22px,3.5vw,28px);margin:0 0 12px}
+h3{font-size:18px;margin:20px 0 8px}
+p{margin:8px 0}
+.lead{font-size:18px;color:var(--muted);max-width:760px}
+.muted{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 10px 10px 0;margin:12px 0}
+.callout.ok{border-color:var(--ok);background:var(--ok-soft)}
+.callout.warn{border-color:var(--warn);background:var(--warn-soft)}
+.callout.bad{border-color:var(--bad);background:var(--bad-soft)}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);margin-right:4px}
+.tag.p1{background:var(--accent-soft);color:var(--p1)}
+.tag.p2{background:var(--surface-2);color:var(--p2)}
+.tag.p3{background:var(--ok-soft);color:var(--p3)}
+.tag.p4{background:var(--warn-soft);color:var(--p4)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+th{background:var(--surface-2);font-weight:600}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.mono,code{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:14px}
+code{background:var(--code-bg);padding:1px 5px;border-radius:5px}
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-word;margin:8px 0;font-size:14px;line-height:1.55}
+svg text{fill:var(--text);font-family:inherit}
+.diagram{width:100%;height:auto;display:block}
+.svgbox{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;overflow-x:auto}
+.svgbox svg{min-width:640px}
+.svgbox.fit svg{min-width:0;max-width:640px;margin:0 auto}
+/* Glossary */
+.gloss-tools{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+.gloss-tools input{flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
+.chip{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:999px;padding:4px 12px;font-size:14px}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.term h4{margin:0 0 4px;font-size:16px}
+.term .en{font-weight:400;color:var(--muted);font-size:14px}
+.term p{margin:4px 0;font-size:15px}
+.term .ex{font-size:14px;color:var(--muted)}
+.term .rel{font-size:13px;margin-top:6px}
+.term .rel a{font-size:13px}
+/* Stepper */
+.stepper{display:grid;grid-template-columns:240px 1fr;gap:12px}
+.stepper>div{min-width:0}
+@media (max-width:720px){.stepper{grid-template-columns:1fr}}
+.steps{display:flex;flex-direction:column;gap:6px}
+@media (max-width:720px){.steps{flex-direction:row;overflow-x:auto}}
+.steps button{text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px;white-space:nowrap}
+.steps button .n{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--surface-2);text-align:center;line-height:22px;font-size:12px;margin-right:6px}
+.steps button.on{border-color:var(--accent);background:var(--accent-soft)}
+.steps button.on .n{background:var(--accent);color:var(--on-accent)}
+.step-nav{display:flex;gap:8px;margin-top:12px}
+.step-nav button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 14px}
+.chunk{border:1px dashed var(--border);border-radius:8px;padding:8px 10px;margin:6px 0;font-size:14px;background:var(--surface)}
+.chunk.hit{border-style:solid;border-color:var(--ok);background:var(--ok-soft)}
+.chunk.bad{border-style:solid;border-color:var(--warn);background:var(--warn-soft)}
+.chunk .id{font-weight:700;font-size:12px;color:var(--muted)}
+.vec{font-family:ui-monospace,Consolas,monospace;font-size:13px;color:var(--p2)}
+.del{text-decoration:line-through;color:var(--bad)}
+.add{color:var(--ok);font-weight:600}
+.qc{list-style:none;padding:0;margin:8px 0}
+.qc li{padding:6px 10px;border-radius:8px;margin:4px 0;background:var(--surface-2);font-size:14px}
+.qc li.pass::before{content:"✔ ";color:var(--ok);font-weight:700}
+.qc li.warn::before{content:"⚠ ";color:var(--warn);font-weight:700}
+.qc li.block::before{content:"✖ ";color:var(--bad);font-weight:700}
+.pipe{display:flex;flex-wrap:wrap;gap:4px;margin:0 0 10px}
+.pipe span{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
+.pipe span.done{background:var(--ok-soft);color:var(--text)}
+.pipe span.now{background:var(--accent);color:var(--on-accent);font-weight:600}
+/* Segmented toggle */
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:8px 0}
+.seg button{border:none;background:var(--surface);color:var(--text);padding:6px 14px;font-size:14px}
+.seg button+button{border-left:1px solid var(--border)}
+.seg button.on{background:var(--accent);color:var(--on-accent)}
+mark{background:var(--warn-soft);color:var(--text);font-weight:600;border-radius:4px;padding:0 3px;border-bottom:2px solid var(--warn)}
+.cite{font-size:12px;line-height:0;margin-left:1px;white-space:nowrap}
+.cite a{text-decoration:none;padding:12px 2px}
+.sources{padding-left:22px}
+.sources li{margin:8px 0;font-size:15px;overflow-wrap:anywhere;scroll-margin-top:72px}
+.term{scroll-margin-top:72px}
+button:disabled{opacity:.45;cursor:default}
+.gloss-tools input{font-size:16px;min-height:44px}
+@media (max-width:1000px){.svgbox.dg-d{display:none}.vflow.dg-m{display:block}}
+.sources .muted{font-size:14px}
+.kg-list{list-style:none;padding:0;margin:0}
+.kg-list li{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin:6px 0}
+.kg-list .rel{display:block;font-size:14px;color:var(--p4);font-weight:600}
+details{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0 14px;margin:8px 0}
+details summary{cursor:pointer;font-weight:600;padding:10px 0;min-height:44px}
+details[open]{padding-bottom:10px}
+.check{display:flex;gap:8px;align-items:flex-start;padding:6px 0}
+.check input{margin-top:6px}
+footer{max-width:1100px;margin:0 auto;padding:24px 16px;color:var(--muted);font-size:14px}
+.kpi{display:flex;gap:10px;flex-wrap:wrap}
+.kpi .card{flex:1;min-width:200px}
+.kpi b.num{display:block;font-size:24px}
+.card>h4:first-child,.card>.tag+h4{margin-top:4px}
+.card h4{margin-bottom:6px}
+.m-only{display:none}
+.vflow .box,.vflow .node,.vflow .ar{display:block}
+.vflow .ph{font-weight:700;font-size:14px;margin:4px 0 8px}
+.vflow .ph1{color:var(--p1)} .vflow .ph2{color:var(--p3)} .vflow .ph3{color:var(--p4)}
+.vflow .node{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px}
+.vflow .node b{display:block}
+.vflow .node span{font-size:13px;color:var(--muted)}
+.vflow .node.r{border:2px solid var(--p1)} .vflow .node.a{border:2px solid var(--p2)} .vflow .node.g{border:2px solid var(--p3)} .vflow .node.db{border:2px solid var(--p2)}
+.vflow .opt{background:var(--warn-soft);border-color:var(--p4)}
+.vflow .ar{text-align:center;color:var(--muted);font-size:13px;line-height:1.3;padding:4px 0}
+.vflow .box{border-radius:12px;padding:10px;margin-bottom:10px}
+.vflow .box1{background:var(--accent-soft)} .vflow .box2{background:var(--ok-soft)} .vflow .box3{background:var(--warn-soft)}
+.vflow .note{font-size:13px;color:var(--muted);margin-top:6px}
+@media (max-width:600px){
+  .brand{display:none} body{font-size:15px}
+  .d-only{display:none}
+  .m-only{display:block}
+  .theme-btn .lbl,.home .lbl{display:none}
+  main{padding:12px 16px}
+  section{padding:22px 0}
+  .card{padding:14px}
+  table.stack thead{display:none}
+  table.stack,table.stack tbody,table.stack tr,table.stack td{display:block;width:100%}
+  table.stack tr{border-bottom:1px solid var(--border);padding:8px 0}
+  table.stack tr:last-child{border-bottom:none}
+  table.stack td{border:none;padding:3px 12px}
+  table.stack td[data-label]::before{content:attr(data-label);display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  table.stack td:first-child{font-size:16px}
+  table.stack td:first-child::before{display:none}
+  nav.toc a,.home,.theme-btn,.chip,.seg button,.step-nav button{min-height:40px;display:inline-flex;align-items:center}
+  .steps button{min-height:40px}
+  .check{min-height:40px;align-items:center}
+  .check input{margin-top:0;width:20px;height:20px;flex:none}
+  .term .rel a{display:inline-block;padding:10px 2px}
+  .term .ex,.chunk,.qc li,.vflow .node span,.kg-list .rel{font-size:15px}
+  .pipe{display:none}
+  pre{font-size:15px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <a class="home" href="../" aria-label="Về trang tất cả chủ đề">←<span class="lbl"> Chủ đề</span></a>
+    <span class="brand">Knowledge Base</span>
+    <nav class="toc" id="toc">
+      <a href="#tong-quan">1. Tổng quan</a>
+      <a href="#flow">2. Pipeline</a>
+      <a href="#mo-phong">3. Mô phỏng</a>
+      <a href="#van-hanh">4. Vận hành</a>
+      <a href="#cau-truc">5. Cấu trúc &amp; graph</a>
+      <a href="#viet-cho-ai">6. Viết cho AI</a>
+      <a href="#khai-niem">7. Khái niệm</a>
+      <a href="#quan-he">8. Mối quan hệ</a>
+      <a href="#so-sanh">9. So sánh</a>
+      <a href="#loi">10. Lỗi &amp; chẩn đoán</a>
+      <a href="#chat-luong">11. Đo chất lượng</a>
+      <a href="#lo-trinh">12. Lộ trình</a>
+      <a href="#nguon">Nguồn</a>
+    </nav>
+    <button class="theme-btn" id="themeBtn" aria-label="Đổi giao diện sáng/tối">◐<span class="lbl"> Giao diện</span></button>
+  </div>
+</header>
+
+<main>
+
+<!-- 1. TỔNG QUAN -->
+<section id="tong-quan">
+  <h1>Knowledge Base: kho tri thức cho AI</h1>
+  <p class="lead"><b>Knowledge base (KB)</b> là tập tri thức của một tổ chức đã được <b>thu thập, làm sạch, tổ chức và gắn thông tin mô tả</b> để cả con người lẫn AI tra cứu được. Với AI, KB không chỉ là "một thư mục tài liệu": nó là các đoạn văn bản đã cắt sẵn, có chỉ mục để tìm, có nguồn, có ngày, có quyền xem.</p>
+
+  <h3>KB và RAG khác nhau thế nào?</h3>
+  <div class="grid g2">
+    <div class="card"><span class="tag p2">Kho</span><h4>Knowledge base</h4><p>Là <b>cái kho</b>: chứa gì, sạch không, mới không, ai được xem, ai chịu trách nhiệm. Được xây trước và bảo trì liên tục.</p></div>
+    <div class="card"><span class="tag p3">Cách dùng kho</span><h4>RAG</h4><p>Là <b>cách dùng kho lúc trả lời</b>: tìm vài đoạn liên quan trong KB rồi đưa vào prompt cho LLM.<sup class="cite"><a href="#src-1">[1]</a></sup><sup class="cite"><a href="#src-2">[2]</a></sup> Xem lại ở trang <a href="../rag/">Hiểu RAG từ gốc</a>.</p></div>
+  </div>
+  <div class="callout"><b>Ví dụ đời thường:</b> nếu RAG là người thủ thư chạy đi tìm sách, thì KB là <b>cả thư viện</b>: sách nào được nhập, xếp vào kệ nào, có phiếu mục lục không, sách cũ có bị thu hồi không. Thủ thư giỏi đến đâu cũng không tìm được sách mà thư viện chưa nhập, hay đã xếp sai kệ.</div>
+
+  <h3>Vì sao KB quyết định chất lượng AI?</h3>
+  <div class="grid g3">
+    <div class="card"><span class="tag p4">Rác vào</span><h4>Rác ra</h4><p>PDF trích lỗi, menu website lẫn vào nội dung, bảng bị dàn phẳng: AI đọc đúng những gì kho đưa, kể cả rác.<sup class="cite"><a href="#src-3">[3]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Cũ vào</span><h4>Trả lời theo chính sách cũ</h4><p>Tài liệu đã sửa mà kho chưa cập nhật, hoặc bản cũ vẫn nằm song song bản mới, AI sẽ trả lời theo bản cũ hoặc trả lời mâu thuẫn.</p></div>
+    <div class="card"><span class="tag p4">Sai quyền</span><h4>Lộ thông tin</h4><p>Kho không ghi ai được xem tài liệu nào thì AI có thể trích tài liệu mật cho người không có quyền.<sup class="cite"><a href="#src-9">[9]</a></sup></p></div>
+  </div>
+
+  <h3>Các loại nguồn thường gặp</h3>
+  <div class="grid g3">
+    <div class="card"><h4>📄 Tài liệu</h4><p>PDF, Word, slide, bảng tính. Khó nhất ở bước trích chữ: bản scan cần OCR, bảng dễ bị đọc sai.<sup class="cite"><a href="#src-3">[3]</a></sup></p></div>
+    <div class="card"><h4>🌐 Wiki / intranet</h4><p>Trang HTML có tiêu đề rõ, sửa thường xuyên. Cần lọc menu, header, footer.</p></div>
+    <div class="card"><h4>❓ FAQ</h4><p>Cặp câu hỏi–trả lời ngắn, đã tuyển chọn. Rất dễ dùng cho AI vì mỗi mục tự đủ nghĩa.</p></div>
+    <div class="card"><h4>🎫 Ticket / chat hỗ trợ</h4><p>Nhiều tri thức thực tế, nhưng lẫn thông tin cá nhân và câu trả lời có thể đã lỗi thời. Thường cần lọc và tóm tắt trước; dữ liệu cá nhân còn kéo theo nghĩa vụ xóa khi được yêu cầu, trong những trường hợp luật định.<sup class="cite"><a href="#src-21">[21]</a></sup></p></div>
+    <div class="card"><h4>🗃️ Database có cấu trúc</h4><p>Bảng sản phẩm, đơn hàng. Hợp truy vấn chính xác (đếm, tổng, lọc) hơn là cắt thành đoạn văn (mục 5).</p></div>
+    <div class="card"><h4>🔌 API / hệ thống sống</h4><p>Tồn kho, trạng thái đơn đổi từng phút. Thường gọi thẳng lúc trả lời thay vì chép vào kho, để không bị cũ.</p></div>
+  </div>
+</section>
+
+<!-- 2. FLOW -->
+<section id="flow">
+  <h2>2. Pipeline: từ nguồn đến kho, rồi giữ kho luôn đúng</h2>
+  <p>Xây KB gồm hai phần. <b>Ingestion</b> (nạp dữ liệu) là dây chuyền biến tài liệu thô thành các đoạn sạch, có metadata, đã được index.<sup class="cite"><a href="#src-2">[2]</a></sup> <b>Vận hành</b> là vòng lặp không bao giờ dừng: nguồn thay đổi, tài liệu bị xóa, quyền bị đổi, người dùng phản hồi. Kho chỉ tốt khi cả hai phần đều chạy.</p>
+
+  <div class="vflow m-only dg-m" aria-label="Sơ đồ pipeline knowledge base (dạng dọc)">
+    <div class="box box1">
+      <div class="ph ph1">INGESTION · đưa tri thức vào kho</div>
+      <div class="node"><b>Nguồn</b><span>tài liệu, wiki, FAQ, ticket, database</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>1. Kết nối nguồn</b><span>connector đọc nội dung + ngày sửa + quyền xem</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>2. Trích văn bản</b><span>parsing, OCR, giữ tiêu đề và bảng</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>3. Làm sạch &amp; khử trùng lặp</b><span>bỏ menu/footer, chuẩn hóa, bỏ bản sao</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>4. Chunking</b><span>cắt theo mục, gắn tiêu đề vào đoạn</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>5. Gắn metadata</b><span>nguồn, chủ sở hữu, ngày, phiên bản, quyền…</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>6. Embedding &amp; index</b><span>vector index + keyword index</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>7. Kiểm tra chất lượng</b><span>lỗi nặng chặn lại, lỗi nhẹ báo chủ sở hữu</span></div>
+      <div class="ar">↓</div>
+      <div class="node db"><b>Knowledge base</b><span>sẵn sàng cho RAG tìm kiếm</span></div>
+    </div>
+    <div class="box box3">
+      <div class="ph ph3">VẬN HÀNH · giữ kho đúng và mới (lặp mãi)</div>
+      <div class="node"><b>Nguồn thay đổi</b><span>sửa, thêm, xóa, đổi quyền</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>Phát hiện thay đổi</b><span>ngày sửa, content hash, sự kiện từ nguồn</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>Chỉ xử lý phần đổi</b><span>chạy lại pipeline cho phần đó · xóa phần bị gỡ</span></div>
+      <div class="ar">↓ kho được cập nhật</div>
+      <div class="node"><b>Phản hồi &amp; đo chất lượng</b><span>câu hỏi không trả lời được, đánh giá của người dùng</span></div>
+      <div class="ar">↓ chủ sở hữu sửa nguồn, vòng lặp bắt đầu lại</div>
+    </div>
+  </div>
+
+  <div class="svgbox d-only dg-d">
+  <svg class="diagram" viewBox="0 0 1000 500" role="img" aria-label="Sơ đồ pipeline ingestion và vòng vận hành của knowledge base">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+    </defs>
+    <rect x="10" y="10" width="980" height="300" rx="14" fill="var(--accent-soft)" stroke="var(--p1)" stroke-opacity=".4"/>
+    <text x="28" y="38" font-weight="700" font-size="16" style="fill:var(--p1)">INGESTION · đưa tri thức vào kho</text>
+    <g font-size="14">
+      <rect x="30" y="55" width="195" height="80" rx="10" fill="var(--surface)" stroke="var(--border)" stroke-dasharray="5 4"/>
+      <text x="127" y="88" text-anchor="middle" font-weight="600">Nguồn</text>
+      <text x="127" y="110" text-anchor="middle" font-size="12" style="fill:var(--muted)">tài liệu, wiki, FAQ, ticket, DB</text>
+      <rect x="275" y="55" width="195" height="80" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="372" y="88" text-anchor="middle" font-weight="600">1. Kết nối nguồn</text>
+      <text x="372" y="110" text-anchor="middle" font-size="12" style="fill:var(--muted)">nội dung + ngày sửa + quyền</text>
+      <rect x="520" y="55" width="195" height="80" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="617" y="88" text-anchor="middle" font-weight="600">2. Trích văn bản</text>
+      <text x="617" y="110" text-anchor="middle" font-size="12" style="fill:var(--muted)">parsing, OCR, bảng</text>
+      <rect x="765" y="55" width="195" height="80" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="862" y="88" text-anchor="middle" font-weight="600">3. Làm sạch</text>
+      <text x="862" y="110" text-anchor="middle" font-size="12" style="fill:var(--muted)">chuẩn hóa + khử trùng lặp</text>
+
+      <rect x="30" y="205" width="165" height="80" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="112" y="238" text-anchor="middle" font-weight="600">4. Chunking</text>
+      <text x="112" y="260" text-anchor="middle" font-size="12" style="fill:var(--muted)">cắt theo mục</text>
+      <rect x="222" y="205" width="165" height="80" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="304" y="238" text-anchor="middle" font-weight="600">5. Metadata</text>
+      <text x="304" y="260" text-anchor="middle" font-size="12" style="fill:var(--muted)">nguồn, ngày, quyền…</text>
+      <rect x="414" y="205" width="165" height="80" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="496" y="238" text-anchor="middle" font-weight="600">6. Embedding</text>
+      <text x="496" y="260" text-anchor="middle" font-size="12" style="fill:var(--muted)">+ index vector, từ khóa</text>
+      <rect x="606" y="205" width="165" height="80" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="688" y="238" text-anchor="middle" font-weight="600">7. Kiểm tra</text>
+      <text x="688" y="260" text-anchor="middle" font-size="12" style="fill:var(--muted)">cổng chất lượng</text>
+      <rect x="798" y="205" width="165" height="80" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="880" y="238" text-anchor="middle" font-weight="700" style="fill:var(--p2)">Knowledge base</text>
+      <text x="880" y="260" text-anchor="middle" font-size="12" style="fill:var(--muted)">RAG tìm trong đây</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="2" marker-end="url(#arr)" fill="none">
+      <line x1="225" y1="95" x2="273" y2="95"/><line x1="470" y1="95" x2="518" y2="95"/><line x1="715" y1="95" x2="763" y2="95"/>
+      <path d="M862 135 C 862 178, 112 165, 112 203"/>
+      <line x1="195" y1="245" x2="220" y2="245"/><line x1="387" y1="245" x2="412" y2="245"/><line x1="579" y1="245" x2="604" y2="245"/><line x1="771" y1="245" x2="796" y2="245"/>
+    </g>
+
+    <rect x="10" y="330" width="980" height="160" rx="14" fill="var(--warn-soft)" stroke="var(--p4)" stroke-opacity=".5"/>
+    <text x="28" y="356" font-weight="700" font-size="16" style="fill:var(--p4)">VẬN HÀNH · giữ kho đúng và mới (lặp mãi)</text>
+    <g font-size="14">
+      <rect x="30" y="372" width="210" height="62" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="135" y="398" text-anchor="middle" font-weight="600">Nguồn thay đổi</text>
+      <text x="135" y="418" text-anchor="middle" font-size="12" style="fill:var(--muted)">sửa, thêm, xóa, đổi quyền</text>
+      <rect x="270" y="372" width="210" height="62" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="375" y="398" text-anchor="middle" font-weight="600">Phát hiện thay đổi</text>
+      <text x="375" y="418" text-anchor="middle" font-size="12" style="fill:var(--muted)">ngày sửa, hash, sự kiện</text>
+      <rect x="510" y="372" width="210" height="62" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="615" y="398" text-anchor="middle" font-weight="600">Chỉ xử lý phần đổi</text>
+      <text x="615" y="418" text-anchor="middle" font-size="12" style="fill:var(--muted)">xóa phần bị gỡ khỏi index</text>
+      <rect x="750" y="372" width="220" height="62" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="860" y="398" text-anchor="middle" font-weight="600">Phản hồi &amp; đo chất lượng</text>
+      <text x="860" y="418" text-anchor="middle" font-size="12" style="fill:var(--muted)">câu hỏi không trả lời được</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="2" marker-end="url(#arr)" fill="none">
+      <line x1="240" y1="403" x2="268" y2="403"/><line x1="480" y1="403" x2="508" y2="403"/>
+    </g>
+    <path d="M592 372 L592 300" fill="none" stroke="var(--p4)" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+    <text x="600" y="345" font-size="12" style="fill:var(--p4)">quay lại pipeline, chỉ cho phần đổi</text>
+    <path d="M900 285 L900 370" fill="none" stroke="var(--p2)" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+    <text x="906" y="324" font-size="12" style="fill:var(--p2)">dùng &amp; đo</text>
+    <path d="M860 434 C 860 462, 135 462, 135 436" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arr)"/>
+    <text x="380" y="480" font-size="12" style="fill:var(--muted)">chủ sở hữu bổ sung / sửa nội dung ở nguồn</text>
+  </svg>
+  </div>
+
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h4>Mỗi giai đoạn để làm gì?</h4>
+      <ul>
+        <li><b>Kết nối:</b> lấy nội dung <i>và</i> thông tin về nội dung (ai sửa, khi nào, ai được xem).</li>
+        <li><b>Trích + làm sạch:</b> biến file thành văn bản đúng thứ tự đọc, không rác.<sup class="cite"><a href="#src-3">[3]</a></sup></li>
+        <li><b>Chunking + metadata:</b> tạo đơn vị tìm kiếm<sup class="cite"><a href="#src-2">[2]</a></sup>, mỗi đơn vị biết mình từ đâu, của ai, còn hiệu lực không.</li>
+        <li><b>Embedding + index:</b> làm cho đơn vị đó tìm được, theo nghĩa và theo từ khóa.<sup class="cite"><a href="#src-2">[2]</a></sup></li>
+        <li><b>Kiểm tra:</b> không để dữ liệu hỏng lọt vào kho đang phục vụ người dùng.</li>
+      </ul>
+    </div>
+    <div class="card"><h4>Liên hệ với trang RAG</h4>
+      <p>Pha "chuẩn bị (indexing)" trong <a href="../rag/#flow">sơ đồ RAG</a> chính là ingestion ở đây, nhưng thu gọn. Trang này mở rộng phần đó: thêm kết nối nguồn, làm sạch, metadata, kiểm tra chất lượng, và toàn bộ phần vận hành.</p>
+      <p class="muted">Pha "trả lời (querying)" của RAG đọc kho này; phần đó không lặp lại ở đây.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 3. MÔ PHỎNG -->
+<section id="mo-phong">
+  <h2>3. Mô phỏng: một tài liệu đi qua pipeline</h2>
+  <p>Một cửa hàng online có trang wiki "Chính sách đổi trả" do nhóm Chăm sóc khách hàng (CSKH) viết. Bấm từng giai đoạn để xem dữ liệu biến đổi thế nào. <span class="muted">Mã trang, hash, vector và tên người trong ví dụ đều là <b>minh họa</b>.</span></p>
+  <div class="stepper card">
+    <div class="steps" id="steps"></div>
+    <div>
+      <div class="pipe" id="pipe" aria-hidden="true"></div>
+      <div id="stepBody"></div>
+      <div class="step-nav"><button id="prevStep">← Trước</button><button id="nextStep">Tiếp →</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. VẬN HÀNH -->
+<section id="van-hanh">
+  <h2>4. Vận hành: giữ kho đúng, mới và an toàn</h2>
+  <p>Ingestion lần đầu chỉ là điểm bắt đầu. Phần lớn công sức KB nằm ở việc <b>giữ cho kho khớp với thực tế</b> mỗi ngày.</p>
+  <div class="grid g2">
+    <div class="card"><span class="tag p4">Đồng bộ</span><h4>Đồng bộ tăng dần (incremental sync)</h4>
+      <p>Chỉ xử lý những gì <b>mới, đổi hoặc bị xóa</b> kể từ lần trước, thay vì làm lại cả kho. Cách phát hiện <b>sửa và thêm</b>: so <b>ngày sửa</b>, nhận <b>sự kiện</b> nguồn gửi đến, và so <b>content hash</b> (dấu vân tay nội dung). Hash không đổi thì bỏ qua, không embed lại; bản cũ của nội dung đã đổi thì bị xóa.<sup class="cite"><a href="#src-7">[7]</a></sup></p>
+      <p><b>Phát hiện xóa</b> khó hơn: tài liệu đã biến mất thì không còn ngày sửa hay nội dung để băm. Cần sự kiện xóa từ nguồn, hoặc định kỳ <b>đối chiếu danh sách</b>: mã tài liệu nào có trong kho mà nguồn không còn trả về thì xóa.<sup class="cite"><a href="#src-8">[8]</a></sup></p>
+      <p class="muted">Băm (hash) càng chi tiết, phần phải làm lại càng nhỏ: hash theo từng chunk giúp tài liệu dài sửa một câu thì chỉ embed lại vài đoạn (bước 8 của mô phỏng).</p></div>
+    <div class="card"><span class="tag p4">Thời gian</span><h4>Phiên bản &amp; độ mới</h4>
+      <p>Ghi phiên bản, ngày cập nhật và <b>thời gian hiệu lực</b> vào metadata. Bản bị thay thế được đánh dấu để không xuất hiện trong kết quả mặc định (vẫn giữ nếu cần tra lịch sử).</p>
+      <p class="muted">Một cách làm phổ biến: đặt <b>hạn xem lại</b> cho từng tài liệu, quá hạn mà chưa ai xác nhận thì gắn cảnh báo "có thể đã cũ". Lưu ý: <b>cũ không có nghĩa là sai</b>. Hướng dẫn KCS khuyên không gỡ hay lưu trữ bài chỉ vì tuổi; nội dung cũ chỉ không nên hiện ra khi nó không liên quan.<sup class="cite"><a href="#src-20">[20]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Xóa</span><h4>Xóa &amp; thu hồi</h4>
+      <p>Tài liệu bị xóa ở nguồn thì phải xóa khỏi vector store<sup class="cite"><a href="#src-7">[7]</a></sup> và cả <b>mọi nơi khác</b> giữ bản sao: keyword index, bộ nhớ đệm (cache), câu trả lời đã lưu. Chỉ xóa file gốc là chưa đủ.</p>
+      <p><b>Thu hồi quyền</b> thì khác: tài liệu vẫn ở lại kho, nhưng metadata quyền phải được cập nhật và các câu trả lời đã lưu cho người vừa mất quyền phải bị bỏ.</p>
+      <p class="muted">Với dữ liệu cá nhân, đây còn là nghĩa vụ pháp lý ở nhiều nơi, ví dụ quyền được xóa trong GDPR.<sup class="cite"><a href="#src-21">[21]</a></sup> Xem thêm trang <a href="../governance/">Governance</a>.</p></div>
+    <div class="card"><span class="tag p4">Quyền</span><h4>Quyền truy cập đi theo dữ liệu</h4>
+      <p>Quyền xem được lấy từ nguồn, lưu vào metadata, và <b>lọc ngay lúc tìm</b>, áp cho mọi truy vấn<sup class="cite"><a href="#src-9">[9]</a></sup>: đoạn người hỏi không được xem thì không bao giờ vào prompt. Không dựa vào việc dặn LLM "đừng tiết lộ". Bộ lọc chỉ đáng tin khi ứng dụng xác định đúng <b>ai đang hỏi</b>.</p>
+      <p class="muted">Quyền ở nguồn đổi thì kết quả tìm chỉ đổi theo <b>sau khi</b> quyền được đồng bộ vào kho;<sup class="cite"><a href="#src-10">[10]</a></sup> khoảng trễ đó là lúc có rủi ro lộ dữ liệu.</p></div>
+    <div class="card"><span class="tag p4">Mâu thuẫn</span><h4>Tài liệu nói khác nhau</h4>
+      <p>Wiki nói 30 ngày, PDF năm ngoái nói 14 ngày, một ticket cũ nói 7 ngày. Cần <b>quy tắc ưu tiên</b> rõ ràng: nguồn chính thức thắng nguồn tham khảo, bản còn hiệu lực thắng bản đã bị thay, rồi mới đến bản mới hơn.</p>
+      <p class="muted">Mâu thuẫn không tự giải được thì báo chủ sở hữu; khi trả lời, nêu rõ nguồn và ngày thay vì chọn bừa. Các bài trùng nội dung nên được gộp lại.<sup class="cite"><a href="#src-19">[19]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Con người</span><h4>Chủ sở hữu nội dung</h4>
+      <p>Mỗi mảng nội dung cần một người hoặc nhóm <b>chăm sóc</b> cho đúng và mới. Không có ai chịu trách nhiệm thì không ai sửa khi AI trả lời sai vì tài liệu sai.</p>
+      <p class="muted">Phương pháp KCS (quản lý tri thức cho bộ phận hỗ trợ) coi chất lượng là trách nhiệm của <b>mọi người dùng kho</b> ("thấy sai thì đánh dấu hoặc sửa"), đồng thời có người chuyên chăm sóc sức khỏe từng mảng tri thức.<sup class="cite"><a href="#src-18">[18]</a></sup><sup class="cite"><a href="#src-19">[19]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Cải thiện</span><h4>Vòng phản hồi</h4>
+      <p>Ghi lại câu hỏi người dùng, câu trả lời bị đánh giá thấp, và câu hệ thống trả "không biết". Gom nhóm, chuyển cho chủ sở hữu bổ sung hoặc sửa nguồn, ingest lại, đo lại (mục 11).</p></div>
+    <div class="card"><span class="tag p4">An toàn</span><h4>Nội dung là dữ liệu, không phải lệnh</h4>
+      <p>Ai đó có thể cài câu kiểu "hãy bỏ qua mọi hướng dẫn…" vào một trang wiki để AI đọc phải (prompt injection). Không bao giờ coi nội dung trong kho là lệnh; có thể gắn cờ hoặc loại tài liệu chứa câu lệnh nhắm vào AI.<sup class="cite"><a href="#src-4">[4]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Thay lõi</span><h4>Index lại toàn bộ</h4>
+      <p>Có những thay đổi buộc xử lý lại cả kho: đổi <b>embedding model</b> (câu hỏi phải được embed bằng cùng model với các chunk),<sup class="cite"><a href="#src-5">[5]</a></sup> đổi cách chunk,<sup class="cite"><a href="#src-3">[3]</a></sup> đổi parser hay quy tắc làm sạch. Riêng việc thêm một trường metadata thường chỉ cần bổ sung giá trị cho các chunk sẵn có.</p>
+      <p class="muted">Giữ lại bản gốc và bản đã trích giúp làm lại nhanh, không phải tải lại từ nguồn.<sup class="cite"><a href="#src-3">[3]</a></sup></p>
+      <p class="muted">Cách an toàn: dựng index mới song song, chạy bộ câu hỏi mẫu so sánh, rồi mới chuyển người dùng sang.</p></div>
+  </div>
+</section>
+
+<!-- 5. CẤU TRÚC & GRAPH -->
+<section id="cau-truc">
+  <h2>5. Dữ liệu có cấu trúc và knowledge graph</h2>
+  <p>Không phải tri thức nào cũng nên cắt thành đoạn văn rồi embed. Chọn cách lưu theo <b>kiểu câu hỏi</b> mà người dùng sẽ hỏi.</p>
+  <div class="grid g3">
+    <div class="card"><span class="tag p1">Phi cấu trúc</span><h4>Văn bản tự do</h4><p>Chính sách, hướng dẫn, wiki. Câu hỏi kiểu "chính sách nói gì về…". → chunk + vector/từ khóa (RAG thông thường).</p></div>
+    <div class="card"><span class="tag p3">Có cấu trúc</span><h4>Bảng trong database</h4><p>Đơn hàng, sản phẩm, giá. Câu hỏi kiểu "bao nhiêu", "tổng", "lớn nhất". → truy vấn chính xác (text-to-SQL hoặc API), không phải tìm đoạn gần nghĩa.</p></div>
+    <div class="card"><span class="tag p4">Bán cấu trúc</span><h4>Ticket, JSON, form</h4><p>Có trường rõ (trạng thái, sản phẩm) và phần chữ tự do. → trường đưa vào metadata để lọc; phần chữ cắt chunk để tìm.</p></div>
+  </div>
+
+  <h3>Text-to-SQL: hỏi bằng lời, trả lời bằng truy vấn</h3>
+  <p>Vector search trả về các <i>đoạn gần nghĩa</i>, nên không đếm hay cộng được. Hỏi "tháng 10 có bao nhiêu đơn bị trả lại?" mà đi tìm đoạn văn thì vô ích. Ý tưởng text-to-SQL là chuyển câu hỏi bằng lời thành câu truy vấn trên database:<sup class="cite"><a href="#src-13">[13]</a></sup></p>
+  <div class="vflow" aria-label="Flow text-to-SQL">
+    <div class="box box2">
+      <div class="node"><b>Câu hỏi</b><span>"Tháng 10/2026 có bao nhiêu đơn bị trả lại?"</span></div>
+      <div class="ar">↓ kèm mô tả bảng và cột (schema)</div>
+      <div class="node a"><b>LLM viết truy vấn</b><span>đếm các đơn có trạng thái "đã trả lại" trong tháng 10/2026</span></div>
+      <div class="ar">↓</div>
+      <div class="node opt"><b>Kiểm tra trước khi chạy</b><span>quyền chỉ đọc theo đúng người hỏi (chỉ thấy các dòng họ được xem), chỉ các bảng/view cho phép, giới hạn số dòng</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>Database chạy truy vấn</b><span>trả về con số (ví dụ minh họa: 37)</span></div>
+      <div class="ar">↓ kết quả đưa vào prompt</div>
+      <div class="node g"><b>LLM trả lời bằng lời</b><span>kèm truy vấn đã dùng để người dùng kiểm tra</span></div>
+    </div>
+  </div>
+  <div class="callout warn"><b>Rủi ro:</b> LLM có thể viết truy vấn chạy được nhưng <b>sai nghĩa</b> (nhầm cột, nhầm định nghĩa "đơn bị trả"). Chạy truy vấn do model viết luôn có rủi ro; tài liệu LangChain khuyên cấp quyền database <b>hẹp nhất có thể</b> và kiểm tra truy vấn trước khi chạy.<sup class="cite"><a href="#src-14">[14]</a></sup> Thêm vào đó: mô tả cột rõ ràng, các view đã định nghĩa sẵn khái niệm nghiệp vụ, và hiển thị truy vấn cho người dùng. Không cho quyền ghi/xóa.</div>
+  <div class="callout"><b>Ai chọn cách tra?</b> Khi kho có cả đoạn văn, bảng, graph và API, cần một bước <b>định tuyến</b>: theo luật cố định (câu hỏi "bao nhiêu" → SQL), hoặc để một AI agent tự chọn nguồn tra cứu lúc trả lời (agentic RAG).<sup class="cite"><a href="#src-2">[2]</a></sup></div>
+
+  <h3>Knowledge graph: tri thức dạng thực thể và quan hệ</h3>
+  <p><b>Knowledge graph</b> lưu tri thức thành <b>thực thể</b> (nút) và <b>quan hệ</b> (cạnh). Mỗi cạnh là một bộ ba (chủ thể, quan hệ, đối tượng); một tập bộ ba tạo thành một graph.<sup class="cite"><a href="#src-15">[15]</a></sup> Hữu ích khi câu trả lời cần <b>nối nhiều mẩu thông tin</b> (multi-hop) mà không đoạn văn nào chứa trọn. Khó khăn thường gặp: cùng một thực thể có nhiều tên ("Tai nghe X", "TN-X", mã SKU) phải được <b>gộp thành một nút</b>, và mọi nguồn nên dùng chung một bộ danh mục (taxonomy).</p>
+  <div class="m-only" aria-label="Ví dụ knowledge graph dạng danh sách bộ ba">
+    <ul class="kg-list">
+      <li>Tai nghe X <span class="rel">— thuộc danh mục →</span> Danh mục Điện tử</li>
+      <li>Chính sách đổi trả v4 <span class="rel">— áp dụng cho →</span> Danh mục Điện tử</li>
+      <li>Chính sách đổi trả v4 <span class="rel">— thay thế →</span> Chính sách v3</li>
+      <li>Nhóm CSKH <span class="rel">— sở hữu →</span> Chính sách đổi trả v4</li>
+    </ul>
+    <div class="callout" style="margin-top:8px"><b>Hỏi:</b> "Tai nghe X đổi trả mấy ngày?" Trang chính sách không nhắc tên X. Đi theo graph: Tai nghe X → Danh mục Điện tử → chính sách v4.</div>
+  </div>
+  <div class="svgbox fit d-only">
+  <svg class="diagram" viewBox="0 0 460 300" role="img" aria-label="Ví dụ knowledge graph nhỏ: sản phẩm, danh mục, chính sách">
+    <defs>
+      <marker id="arr3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+    </defs>
+    <g stroke="var(--muted)" stroke-width="1.8" fill="none" marker-end="url(#arr3)">
+      <line x1="120" y1="66" x2="120" y2="128"/>
+      <line x1="318" y1="150" x2="200" y2="150"/>
+      <line x1="380" y1="174" x2="380" y2="226"/>
+      <line x1="380" y1="66" x2="380" y2="124"/>
+    </g>
+    <g font-size="12" style="fill:var(--muted)">
+      <text x="128" y="102">thuộc danh mục</text>
+      <text x="212" y="142">áp dụng cho</text>
+      <text x="388" y="206">thay thế</text>
+      <text x="388" y="100">sở hữu</text>
+    </g>
+    <g font-size="14">
+      <rect x="40" y="20" width="160" height="46" rx="23" fill="var(--accent-soft)" stroke="var(--p1)"/><text x="120" y="48" text-anchor="middle" font-weight="600">Tai nghe X</text>
+      <rect x="40" y="130" width="160" height="46" rx="23" fill="var(--ok-soft)" stroke="var(--p3)"/><text x="120" y="158" text-anchor="middle" font-weight="600">Danh mục Điện tử</text>
+      <rect x="320" y="126" width="130" height="48" rx="24" fill="var(--warn-soft)" stroke="var(--p4)"/><text x="385" y="148" text-anchor="middle" font-weight="600">Chính sách</text><text x="385" y="165" text-anchor="middle" font-size="12">đổi trả v4</text>
+      <rect x="320" y="228" width="130" height="46" rx="23" fill="var(--surface-2)" stroke="var(--border)"/><text x="385" y="256" text-anchor="middle" font-size="13" style="fill:var(--muted)">Chính sách v3</text>
+      <rect x="320" y="20" width="130" height="46" rx="23" fill="var(--surface)" stroke="var(--p2)"/><text x="385" y="48" text-anchor="middle" font-weight="600">Nhóm CSKH</text>
+    </g>
+    <text x="20" y="232" font-size="12" style="fill:var(--muted)">Hỏi: "Tai nghe X đổi trả mấy ngày?"</text>
+    <text x="20" y="250" font-size="12" style="fill:var(--muted)">Tai nghe X → Điện tử → chính sách v4</text>
+    <text x="20" y="268" font-size="12" style="fill:var(--muted)">(trang chính sách không nhắc tên X)</text>
+  </svg>
+  </div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h4>GraphRAG ở mức ý tưởng</h4>
+      <p>GraphRAG là tên gọi chung cho các cách <b>dùng knowledge graph trong bước tìm kiếm</b> của RAG:</p>
+      <ul>
+        <li>Lúc xây kho: dùng LLM đọc văn bản, <b>trích thực thể và quan hệ</b> thành graph.<sup class="cite"><a href="#src-16">[16]</a></sup></li>
+        <li>Lúc hỏi: tìm các thực thể liên quan tới câu hỏi, dùng chúng làm "cửa vào" graph để <b>gom thực thể kề bên, quan hệ</b> và các đoạn văn gốc gắn với chúng, rồi đưa vào prompt.<sup class="cite"><a href="#src-17">[17]</a></sup></li>
+        <li>Bài báo GraphRAG (2024) còn <b>gom các cụm thực thể liên quan</b> và viết sẵn bản tóm tắt cho từng cụm, để trả lời câu hỏi bao quát cả kho (RAG thường làm kém loại này), kiểu "các chủ đề chính trong toàn bộ ticket quý này là gì?".<sup class="cite"><a href="#src-16">[16]</a></sup></li>
+      </ul>
+    </div>
+    <div class="card"><h4>Khi nào đáng làm?</h4>
+      <p><b>Đáng:</b> câu hỏi cần nối nhiều bước; dữ liệu vốn đã có quan hệ rõ (sản phẩm–danh mục–chính sách, người–phòng ban–dự án); cần câu trả lời tổng quan cả kho.</p>
+      <p><b>Cái giá:</b> xây graph tốn công và tốn lượt gọi LLM; trích sai thực thể/quan hệ tạo ra "tri thức sai có cấu trúc"; graph cũng phải đồng bộ khi nguồn đổi như mọi index khác.</p>
+      <p class="muted">Lời khuyên: bắt đầu với chunk + vector + từ khóa + metadata tốt. Chỉ thêm graph khi đo được loại câu hỏi mà cách thường trả lời kém.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 6. VIẾT CHO AI -->
+<section id="viet-cho-ai">
+  <h2>6. KB cho người đọc và KB cho AI</h2>
+  <p>Người đọc mở cả trang, cuộn lên xuống, nhìn hình. AI thì <b>chỉ thấy vài chunk rời rạc</b> được tìm ra, và chunk đứng riêng thường mất ngữ cảnh.<sup class="cite"><a href="#src-11">[11]</a></sup> Một câu như "xem ở trên" vô hại với người, nhưng với AI thì "ở trên" không tồn tại.</p>
+  <div class="card">
+    <p style="margin-top:0"><b>Câu hỏi:</b> "Đơn online mua đồ giảm giá thì đổi trong mấy ngày?" — Đây là chunk mà AI nhận được:</p>
+    <div class="seg" role="group" aria-label="Chọn cách viết">
+      <button id="vHuman" class="on" aria-pressed="true">Viết cho người</button><button id="vAi" aria-pressed="false">Viết lại cho AI</button>
+    </div>
+    <div id="writeBody"></div>
+  </div>
+  <h3>Quy tắc viết để AI dùng tốt (và người cũng đọc dễ hơn)</h3>
+  <div class="grid g2">
+    <div class="card"><ul>
+      <li><b>Tiêu đề nói rõ nội dung:</b> "Thời hạn đổi trả hàng giảm giá" thay vì "Lưu ý khác".</li>
+      <li><b>Mỗi mục tự đủ nghĩa:</b> đọc riêng một mục vẫn hiểu. Tránh "như trên", "xem phần trước".</li>
+      <li><b>Gọi tên đầy đủ:</b> "hàng giảm giá" thay vì "loại này", "nó".</li>
+      <li><b>Ghi phạm vi và hiệu lực:</b> áp dụng cho ai, kênh nào, từ ngày nào.</li>
+      <li><b>Một mục, một chủ đề:</b> mục gộp nhiều chủ đề tạo ra chunk loãng nghĩa.</li>
+    </ul></div>
+    <div class="card"><ul>
+      <li><b>Thông tin trong hình phải có chữ:</b> quy trình vẽ bằng ảnh thì viết thêm các bước bằng chữ (hoặc pipeline phải tạo mô tả cho hình).<sup class="cite"><a href="#src-3">[3]</a></sup></li>
+      <li><b>Bảng có tiêu đề cột rõ</b>, mỗi dòng đọc riêng vẫn hiểu.</li>
+      <li><b>Thuật ngữ thống nhất,</b> giải nghĩa từ viết tắt ở lần đầu trong mỗi mục.</li>
+      <li><b>Câu trả lời trước, giải thích sau.</b></li>
+      <li><b>Một sự thật chỉ nằm ở một nơi:</b> chép con số ra nhiều trang thì sửa một chỗ sẽ sinh mâu thuẫn; dẫn chiếu bằng tên mục cụ thể.</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- 7. KHÁI NIỆM -->
+<section id="khai-niem">
+  <h2>7. Từ điển khái niệm</h2>
+  <p>Mỗi thẻ có định nghĩa ngắn, ví dụ, và liên kết sang khái niệm liên quan. Lọc theo nhóm hoặc gõ để tìm (gõ không dấu cũng được).</p>
+  <div class="gloss-tools">
+    <input id="glossSearch" type="search" placeholder="Tìm khái niệm… (vd: metadata, dong bo, graph)">
+  </div>
+  <div class="gloss-tools" id="glossChips"></div>
+  <div class="grid g3" id="glossGrid"></div>
+</section>
+
+<!-- 8. MỐI QUAN HỆ -->
+<section id="quan-he">
+  <h2>8. Bản đồ mối quan hệ</h2>
+  <p>Ai tạo ra nội dung, nội dung đi vào kho thế nào, kho gồm những gì, ai đọc kho, và phản hồi quay về đâu.</p>
+  <div class="vflow m-only dg-m" aria-label="Bản đồ quan hệ (dạng dọc)">
+    <div class="box box1">
+      <div class="ph ph1">Tạo và nạp nội dung</div>
+      <div class="node"><b>Chủ sở hữu nội dung</b><span>viết, duyệt, xác nhận còn đúng</span></div>
+      <div class="ar">↓ viết vào</div>
+      <div class="node"><b>Nguồn</b><span>tài liệu, wiki, FAQ, ticket, database</span></div>
+      <div class="ar">↓ đọc bởi</div>
+      <div class="node"><b>Connector</b><span>nội dung + ngày sửa + quyền</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>Ingestion pipeline</b><span>trích, làm sạch, chunk, metadata, index, kiểm tra</span></div>
+      <div class="ar">↓ ghi vào</div>
+      <div class="node db"><b>Knowledge base</b><span>chunk + metadata · vector index · keyword index · bảng có cấu trúc · knowledge graph</span></div>
+    </div>
+    <div class="box box2">
+      <div class="ph ph2">Dùng kho để trả lời</div>
+      <div class="node"><b>Câu hỏi</b></div>
+      <div class="ar">↓</div>
+      <div class="node r"><b>Retriever (RAG)</b><span>lọc theo quyền + metadata, tìm trong kho</span></div>
+      <div class="ar">↓ đoạn liên quan</div>
+      <div class="node g"><b>LLM</b></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>Câu trả lời</b><span>+ trích nguồn</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>Phản hồi &amp; đo chất lượng</b><span>câu không trả lời được → báo lại chủ sở hữu</span></div>
+    </div>
+    <div class="node" style="border:1px dashed var(--bad);background:var(--bad-soft)"><b>Governance (xuyên suốt)</b><span>quyền truy cập, xóa/thu hồi, lưu vết: áp lên kho và lên bước tìm</span></div>
+  </div>
+  <div class="svgbox d-only dg-d">
+  <svg class="diagram" viewBox="0 0 1000 505" role="img" aria-label="Bản đồ quan hệ giữa các thành phần knowledge base">
+    <defs>
+      <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+    </defs>
+    <g font-size="13">
+      <rect x="20" y="30" width="200" height="56" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="120" y="55" text-anchor="middle" font-weight="600">Chủ sở hữu nội dung</text><text x="120" y="73" text-anchor="middle" font-size="12" style="fill:var(--muted)">viết, duyệt, xác nhận</text>
+      <rect x="270" y="30" width="200" height="56" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="370" y="55" text-anchor="middle" font-weight="600">Nguồn</text><text x="370" y="73" text-anchor="middle" font-size="12" style="fill:var(--muted)">tài liệu, wiki, ticket, DB</text>
+      <rect x="520" y="30" width="200" height="56" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="620" y="55" text-anchor="middle" font-weight="600">Connector</text><text x="620" y="73" text-anchor="middle" font-size="12" style="fill:var(--muted)">nội dung + ngày sửa + quyền</text>
+      <rect x="770" y="30" width="200" height="56" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/><text x="870" y="55" text-anchor="middle" font-weight="600">Ingestion pipeline</text><text x="870" y="73" text-anchor="middle" font-size="12" style="fill:var(--muted)">trích → … → kiểm tra</text>
+
+      <rect x="20" y="140" width="960" height="150" rx="14" fill="var(--accent-soft)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="40" y="165" font-weight="700" style="fill:var(--p2)">KNOWLEDGE BASE</text>
+      <rect x="40" y="180" width="172" height="90" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="126" y="210" text-anchor="middle" font-weight="600">Chunk + metadata</text><text x="126" y="232" text-anchor="middle" font-size="12" style="fill:var(--muted)">văn bản gốc, nguồn,</text><text x="126" y="251" text-anchor="middle" font-size="12" style="fill:var(--muted)">ngày, quyền, chủ sở hữu</text>
+      <rect x="226" y="180" width="172" height="90" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="312" y="222" text-anchor="middle" font-weight="600">Vector index</text><text x="312" y="242" text-anchor="middle" font-size="12" style="fill:var(--muted)">tìm theo nghĩa</text>
+      <rect x="412" y="180" width="172" height="90" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="498" y="222" text-anchor="middle" font-weight="600">Keyword index</text><text x="498" y="242" text-anchor="middle" font-size="12" style="fill:var(--muted)">khớp từ, mã số (BM25)</text>
+      <rect x="598" y="180" width="172" height="90" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="684" y="222" text-anchor="middle" font-weight="600">Bảng có cấu trúc</text><text x="684" y="242" text-anchor="middle" font-size="12" style="fill:var(--muted)">truy vấn SQL / API</text>
+      <rect x="784" y="180" width="172" height="90" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="870" y="222" text-anchor="middle" font-weight="600">Knowledge graph</text><text x="870" y="242" text-anchor="middle" font-size="12" style="fill:var(--muted)">thực thể – quan hệ</text>
+
+      <rect x="20" y="350" width="150" height="56" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="95" y="383" text-anchor="middle" font-weight="600">Câu hỏi</text>
+      <rect x="200" y="350" width="200" height="56" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/><text x="300" y="375" text-anchor="middle" font-weight="600">Retriever (RAG)</text><text x="300" y="393" text-anchor="middle" font-size="12" style="fill:var(--muted)">lọc quyền + metadata, rồi tìm</text>
+      <rect x="430" y="350" width="150" height="56" rx="10" fill="var(--surface)" stroke="var(--p3)" stroke-width="2"/><text x="505" y="383" text-anchor="middle" font-weight="600">LLM</text>
+      <rect x="610" y="350" width="170" height="56" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="695" y="375" text-anchor="middle" font-weight="600">Câu trả lời</text><text x="695" y="393" text-anchor="middle" font-size="12" style="fill:var(--muted)">+ trích nguồn</text>
+      <rect x="810" y="350" width="170" height="56" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="895" y="375" text-anchor="middle" font-weight="600">Phản hồi &amp; đo</text><text x="895" y="393" text-anchor="middle" font-size="12" style="fill:var(--muted)">câu không trả lời được</text>
+
+      <rect x="430" y="424" width="350" height="38" rx="10" fill="var(--bad-soft)" stroke="var(--bad)" stroke-dasharray="5 4"/><text x="605" y="448" text-anchor="middle" font-size="12" font-weight="600">Governance: quyền · xóa/thu hồi · lưu vết</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="1.8" fill="none" marker-end="url(#arr2)">
+      <line x1="220" y1="58" x2="268" y2="58"/>
+      <line x1="470" y1="58" x2="518" y2="58"/>
+      <line x1="720" y1="58" x2="768" y2="58"/>
+      <line x1="870" y1="86" x2="870" y2="138"/>
+      <line x1="170" y1="378" x2="198" y2="378"/>
+      <line x1="300" y1="350" x2="300" y2="293"/>
+      <line x1="400" y1="378" x2="428" y2="378"/>
+      <line x1="580" y1="378" x2="608" y2="378"/>
+      <line x1="780" y1="378" x2="808" y2="378"/>
+      <path d="M895 406 L895 480 L8 480 L8 58 L18 58" stroke-dasharray="4 4"/>
+      <path d="M595 424 L595 293" stroke="var(--bad)" stroke-dasharray="4 4"/>
+    </g>
+    <g font-size="12" style="fill:var(--muted)">
+      <text x="226" y="50">viết</text><text x="480" y="50">đọc</text><text x="731" y="50">nạp</text><text x="878" y="118">ghi</text>
+      <text x="308" y="325">tìm trong kho</text><text x="603" y="325" style="fill:var(--bad)">áp lên kho và bước tìm</text>
+      <text x="300" y="497">báo nội dung thiếu / sai cho chủ sở hữu</text>
+    </g>
+  </svg>
+  </div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h4>Quan hệ "phụ thuộc" quan trọng nhất</h4>
+      <ul>
+        <li><b>Nguồn quyết định</b> trần chất lượng: kho không thể đúng hơn tài liệu gốc.</li>
+        <li><b>Trích văn bản quyết định</b> AI có đọc được nội dung không: PDF scan không OCR thì kho rỗng.</li>
+        <li><b>Metadata quyết định</b> lọc quyền, chọn bản còn hiệu lực, trích nguồn và đồng bộ.</li>
+        <li><b>Chủ sở hữu quyết định</b> kho có được sửa khi sai hay không.</li>
+      </ul>
+    </div>
+    <div class="card"><h4>Đánh đổi xuyên suốt</h4>
+      <ul>
+        <li><b>Nạp mọi thứ ↔ tuyển chọn:</b> phủ rộng ↔ ít rác, ít mâu thuẫn.</li>
+        <li><b>Đồng bộ thường xuyên ↔ thưa:</b> mới hơn ↔ rẻ, đơn giản hơn.</li>
+        <li><b>Thêm index (từ khóa, graph) ↔ chỉ vector:</b> tìm tốt hơn với nhiều kiểu câu hỏi ↔ thêm thứ phải đồng bộ.</li>
+        <li><b>Kiểm tra chặt ↔ lỏng:</b> kho sạch ↔ nội dung mới vào chậm hơn.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 9. SO SÁNH -->
+<section id="so-sanh">
+  <h2>9. So sánh và đánh đổi</h2>
+  <h3>Các cách tổ chức tri thức cho AI</h3>
+  <div class="table-wrap">
+  <table class="stack">
+    <thead><tr><th>Cách tổ chức</th><th>Hợp với câu hỏi</th><th>Điểm mạnh</th><th>Hạn chế</th></tr></thead>
+    <tbody>
+      <tr><td><b>Chunk + vector index</b></td><td>"Chính sách nói gì về…", hỏi bằng từ ngữ khác tài liệu.</td><td>Tìm theo nghĩa; áp dụng được cho hầu hết văn bản.</td><td>Kém với mã số, tên riêng; không đếm/cộng được.</td></tr>
+      <tr><td><b>Keyword index (BM25)</b></td><td>Mã sản phẩm, số hiệu, tên riêng, từ viết tắt.</td><td>Khớp chính xác, dễ giải thích vì sao ra kết quả; từ càng hiếm càng được tính nặng.<sup class="cite"><a href="#src-12">[12]</a></sup></td><td>Hỏi khác chữ là trượt. Thường dùng cùng vector (<a href="../hybrid-search/">hybrid search</a>).</td></tr>
+      <tr><td><b>FAQ / Q&amp;A tuyển chọn</b></td><td>Câu hỏi lặp lại nhiều, cần trả lời chuẩn.</td><td>Mỗi mục tự đủ nghĩa, chất lượng cao, dễ kiểm soát.</td><td>Tốn công viết và bảo trì; không phủ được câu hỏi lạ.</td></tr>
+      <tr><td><b>Bảng có cấu trúc + text-to-SQL / API</b></td><td>"Bao nhiêu", "tổng", "lớn nhất", trạng thái hiện tại.</td><td>Con số chính xác, luôn mới (đọc trực tiếp).</td><td>LLM có thể viết truy vấn sai nghĩa; cần kiểm soát quyền chặt.<sup class="cite"><a href="#src-14">[14]</a></sup></td></tr>
+      <tr><td><b>Knowledge graph / GraphRAG</b></td><td>Nối nhiều bước, câu hỏi tổng quan cả kho.</td><td>Thể hiện quan hệ rõ ràng; trả lời được câu hỏi nhiều bước, và câu hỏi tổng quan cả kho.<sup class="cite"><a href="#src-16">[16]</a></sup></td><td>Xây và bảo trì tốn kém (nhiều lượt gọi LLM); trích quan hệ có thể sai.</td></tr>
+      <tr><td><b>Dán thẳng tài liệu vào prompt</b></td><td>Ít tài liệu, ngắn, ít người dùng.</td><td>Không cần pipeline.</td><td>Giới hạn context window, tốn token, không lọc quyền theo đoạn.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Đánh đổi khi vận hành</h3>
+  <div class="table-wrap">
+  <table class="stack">
+    <thead><tr><th>Lựa chọn</th><th>Lợi</th><th>Hại</th><th>Gợi ý</th></tr></thead>
+    <tbody>
+      <tr><td><b>Index lại toàn bộ mỗi lần</b></td><td>Đơn giản, không sót chunk cũ.</td><td>Chậm và tốn khi kho lớn; không mới kịp.</td><td>Dùng khi đổi embedding model, cách chunk, schema.</td></tr>
+      <tr><td><b>Đồng bộ tăng dần</b></td><td>Nhanh, rẻ, kho mới hơn.</td><td>Phức tạp: phải xử lý đúng sửa, xóa, đổi quyền.</td><td>Mặc định cho vận hành hằng ngày.</td></tr>
+      <tr><td><b>Nạp tự động mọi nguồn</b></td><td>Phủ rộng, ít công người.</td><td>Nhiều rác, trùng lặp, mâu thuẫn, rủi ro dữ liệu nhạy cảm.</td><td>Chỉ nạp nguồn có chủ sở hữu và có quyền rõ.</td></tr>
+      <tr><td><b>Tuyển chọn thủ công</b></td><td>Chất lượng cao, ít mâu thuẫn.</td><td>Chậm, thiếu nội dung.</td><td>Dùng cho FAQ và nội dung hay được hỏi nhất.</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- 10. LỖI -->
+<section id="loi">
+  <h2>10. Lỗi thường gặp và cách chẩn đoán</h2>
+  <p>Khi AI trả lời sai, hãy kiểm tra kho <b>trước</b> khi sửa prompt hay đổi LLM. Đi theo thứ tự dưới đây; nếu kho đều ổn mà vẫn sai, chuyển sang <a href="../rag/#loi">cây chẩn đoán của RAG</a>.</p>
+  <div class="grid g2">
+    <div class="card">
+      <h4>Cây chẩn đoán phía kho</h4>
+      <ol>
+        <li><b>Nguồn có chứa đáp án đúng không?</b><br><span class="muted">Không → lỗ hổng nội dung. Ghi lại, giao chủ sở hữu viết thêm.</span></li>
+        <li><b>Tài liệu đó đã được nạp vào kho chưa?</b><br><span class="muted">Chưa → connector bỏ sót, đồng bộ lỗi, hoặc bị cổng kiểm tra chặn. Xem nhật ký ingestion.</span></li>
+        <li><b>Văn bản trích ra có đúng không?</b><br><span class="muted">Không → lỗi parsing: thiếu OCR, bảng bị dàn phẳng, cột đọc lẫn nhau.</span></li>
+        <li><b>Có chunk nào chứa trọn đáp án, đọc riêng vẫn hiểu không?</b><br><span class="muted">Không → chunking cắt ngang, hoặc nguồn viết kiểu "xem ở trên" (mục 6).</span></li>
+        <li><b>Metadata có đúng không?</b><br><span class="muted">Sai quyền → bị lọc mất (hoặc lộ). Sai phiên bản → bản cũ thắng bản mới.</span></li>
+        <li><b>Kho có bản khác mâu thuẫn không?</b><br><span class="muted">Có → bản cũ chưa bị đánh dấu thay thế, bản sao trùng lặp chiếm chỗ trong top-k.</span></li>
+      </ol>
+    </div>
+    <div class="card">
+      <h4>Bảng triệu chứng</h4>
+      <div class="table-wrap"><table class="stack">
+        <thead><tr><th>Triệu chứng</th><th>Nguyên nhân thường gặp ở kho</th></tr></thead>
+        <tbody>
+          <tr><td>Trả lời theo chính sách cũ</td><td>Đồng bộ chưa chạy; hoặc thêm bản mới nhưng không xóa chunk cũ.</td></tr>
+          <tr><td>Lúc nói 7 ngày, lúc nói 14 ngày</td><td>Nhiều phiên bản cùng nằm trong kho, không có quy tắc ưu tiên.</td></tr>
+          <tr><td>"Không biết" dù tài liệu có</td><td>PDF scan chưa OCR; tài liệu chưa được nạp; metadata quyền sai nên bị lọc.</td></tr>
+          <tr><td>Con số trong bảng bị ghép sai</td><td>Trích bảng làm mất quan hệ hàng–cột.</td></tr>
+          <tr><td>Vẫn trả lời từ tài liệu đã xóa</td><td>Xóa ở nguồn nhưng chưa xóa khỏi index hoặc cache.</td></tr>
+          <tr><td>Người không có quyền thấy nội dung mật</td><td>Không lấy quyền từ nguồn, hoặc quyền đổi mà chưa đồng bộ.</td></tr>
+          <tr><td>Top-k toàn những đoạn giống hệt nhau</td><td>Chưa khử trùng lặp (cùng nội dung ở wiki, FAQ, email).</td></tr>
+          <tr><td>Kết quả có menu, chữ "© bản quyền"</td><td>Chưa lọc boilerplate khi làm sạch.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+</section>
+
+<!-- 11. ĐO CHẤT LƯỢNG -->
+<section id="chat-luong">
+  <h2>11. Đo chất lượng knowledge base</h2>
+  <p>Đo KB khác đo RAG. <a href="../rag/#danh-gia">Đánh giá RAG</a> hỏi "tìm có đúng, trả lời có đúng không"; đo KB hỏi <b>"kho có đủ, có mới, có sạch không"</b>. Các con số dưới đây là <b>minh họa</b> một bảng theo dõi.</p>
+  <div class="kpi">
+    <div class="card"><span class="tag p1">Độ phủ</span><b class="num">82%</b><p>Tỷ lệ câu hỏi thật mà kho <b>có</b> nội dung trả lời.</p><p class="muted">Đo: lấy mẫu câu hỏi từ nhật ký, người (hoặc LLM có kiểm tra lại) đánh dấu "kho có đáp án không". 18% còn lại là lỗ hổng nội dung, nên tỷ lệ "không trả lời được" khó thấp hơn mức đó.</p></div>
+    <div class="card"><span class="tag p4">Không trả lời được</span><b class="num">21%</b><p>Tỷ lệ câu hệ thống trả "không biết" (14%) cộng câu trả lời bị đánh giá sai (7%).</p><p class="muted">Gom nhóm theo chủ đề → danh sách nội dung cần viết thêm.</p></div>
+    <div class="card"><span class="tag p4">Độ mới</span><b class="num">18%</b><p>Tỷ lệ tài liệu đã <b>quá hạn xem lại</b>.</p><p class="muted">Kèm: thời gian từ lúc nguồn đổi đến lúc kho cập nhật.</p></div>
+    <div class="card"><span class="tag p3">Sạch &amp; có chủ</span><b class="num">94%</b><p>Tỷ lệ tài liệu có chủ sở hữu và đủ metadata bắt buộc.</p><p class="muted">Kèm: tỷ lệ trùng lặp, số cặp tài liệu mâu thuẫn đang mở.</p></div>
+  </div>
+  <div class="callout"><b>Tách hai loại "không trả lời được":</b> (1) kho <b>không có</b> nội dung → lỗ hổng nội dung (content gap), giao chủ sở hữu viết thêm; (2) kho <b>có</b> mà không tìm ra → kho có mà không tìm ra (findability): lỗi trích, chunk, metadata hoặc retrieval. KCS cũng tách đúng hai loại này.<sup class="cite"><a href="#src-19">[19]</a></sup> Trộn hai loại thì sửa nhầm chỗ.</div>
+  <h3>Vòng cải thiện</h3>
+  <div class="grid g3">
+    <div class="card"><span class="tag">1</span><h4>Thu thập</h4><p>Nhật ký câu hỏi, đánh giá 👍/👎, câu trả lời "không biết".</p></div>
+    <div class="card"><span class="tag">2</span><h4>Phân loại</h4><p>Lỗ hổng nội dung, nội dung cũ, mâu thuẫn, hay lỗi tìm kiếm.</p></div>
+    <div class="card"><span class="tag">3</span><h4>Giao việc</h4><p>Chủ sở hữu viết thêm, sửa, hoặc gỡ nội dung; kỹ thuật sửa pipeline.</p></div>
+    <div class="card"><span class="tag">4</span><h4>Đo lại</h4><p>Chạy lại bộ câu hỏi mẫu; xem hit@k (<a href="../rag/#danh-gia">trang RAG</a>) và độ phủ có tăng không.</p></div>
+  </div>
+  <div class="callout warn"><b>Bảo vệ quyền riêng tư:</b> nhật ký câu hỏi có thể chứa thông tin cá nhân. Lưu có thời hạn, giới hạn người xem, che thông tin nhạy cảm trước khi phân tích.</div>
+</section>
+
+<!-- 12. LỘ TRÌNH -->
+<section id="lo-trinh">
+  <h2>12. Lộ trình tự học 3 tuần (không cần code)</h2>
+  <p class="muted">Khoảng 4–5 giờ mỗi tuần. Các ô đã đánh dấu được lưu trong trình duyệt của bạn.</p>
+  <div class="grid g3">
+    <div class="card"><span class="tag p1">Tuần 1</span><h4>KB là gì và pipeline</h4><p>Đọc mục 1, 2, 3.</p>
+      <label class="check"><input type="checkbox" data-k="w1a"><span>Tự vẽ lại pipeline 7 giai đoạn và vòng vận hành, không nhìn trang.</span></label>
+      <label class="check"><input type="checkbox" data-k="w1b"><span>Chọn một tài liệu thật ở chỗ bạn làm, liệt kê nó sẽ gặp vấn đề gì ở bước trích văn bản và làm sạch.</span></label>
+    </div>
+    <div class="card"><span class="tag p1">Tuần 2</span><h4>Metadata, vận hành, viết cho AI</h4><p>Đọc mục 4, 5, 6, 7.</p>
+      <label class="check"><input type="checkbox" data-k="w2a"><span>Viết schema metadata cho kho của bạn (mẫu ở bước 5 của mô phỏng, mục 3): trường nào bắt buộc, lấy từ đâu, dùng để làm gì.</span></label>
+      <label class="check"><input type="checkbox" data-k="w2b"><span>Viết lại một trang tài liệu theo quy tắc mục 6, rồi thử dán từng mục riêng lẻ cho một chatbot hỏi đáp.</span></label>
+    </div>
+    <div class="card"><span class="tag p1">Tuần 3</span><h4>Lỗi và đo chất lượng</h4><p>Đọc mục 8, 9, 10, 11.</p>
+      <label class="check"><input type="checkbox" data-k="w3a"><span>Viết 15 câu hỏi thật; đánh dấu câu nào kho có đáp án, câu nào không (độ phủ).</span></label>
+      <label class="check"><input type="checkbox" data-k="w3b"><span>Tìm hai tài liệu mâu thuẫn trong tổ chức của bạn và đề xuất quy tắc ưu tiên.</span></label>
+    </div>
+  </div>
+
+  <h3>Tự kiểm tra: trả lời được là đã nắm cốt lõi</h3>
+  <details><summary>1. Knowledge base và RAG khác nhau thế nào?</summary>
+    <p>KB là kho: tri thức đã được thu thập, làm sạch, cắt đoạn, gắn metadata và index. RAG là cách dùng kho lúc trả lời: tìm vài đoạn trong kho rồi đưa vào prompt. RAG tốt đến đâu cũng không bù được kho thiếu, cũ hoặc bẩn.</p></details>
+  <details><summary>2. Vì sao phải lấy quyền xem ngay từ bước kết nối và lọc lúc tìm, thay vì dặn LLM đừng tiết lộ?</summary>
+    <p>Vì LLM không phải lớp bảo mật: một khi đoạn mật đã nằm trong prompt, không có gì bảo đảm LLM sẽ không nhắc tới. Lọc theo metadata quyền ngay lúc tìm bảo đảm đoạn đó không bao giờ đến được LLM.</p></details>
+  <details><summary>3. Tài liệu sửa một câu, đồng bộ tăng dần làm gì? Vì sao phải xóa chunk cũ?</summary>
+    <p>Phát hiện tài liệu đổi (ngày sửa hoặc hash), so hash từng chunk, chỉ embed lại chunk đổi, xóa chunk không còn, cập nhật metadata phiên bản. Nếu chỉ thêm chunk mới mà không xóa chunk cũ, kho chứa cả nội dung cũ lẫn mới và AI trả lời mâu thuẫn.</p></details>
+  <details><summary>4. Khi nào bắt buộc phải index lại toàn bộ kho?</summary>
+    <p>Khi đổi embedding model (vector của hai model không so sánh được), đổi cách chunk, hoặc đổi schema metadata. Nên dựng index mới song song, kiểm tra bằng bộ câu hỏi mẫu rồi mới chuyển.</p></details>
+  <details><summary>5. "Tháng 10 có bao nhiêu đơn bị trả lại?" nên trả lời bằng cách nào?</summary>
+    <p>Bằng truy vấn trên dữ liệu có cấu trúc (text-to-SQL hoặc API), vì cần đếm chính xác. Vector search chỉ trả về đoạn văn gần nghĩa, không đếm được.</p></details>
+  <details><summary>6. Vì sao câu "xem bảng ở trên" là vấn đề khi viết cho AI?</summary>
+    <p>AI chỉ nhận vài chunk rời rạc. Chunk chứa câu đó thường không chứa bảng, nên "ở trên" trỏ vào khoảng trống. Sửa bằng cách ghi thẳng thông tin, hoặc dẫn chiếu bằng tên mục cụ thể.</p></details>
+  <details><summary>7. Kho có hai tài liệu nói 7 ngày và 14 ngày. Xử lý thế nào?</summary>
+    <p>Áp quy tắc ưu tiên: nguồn chính thức trước, bản còn hiệu lực trước, rồi bản mới hơn. Đánh dấu bản thua là "đã bị thay thế" để không vào kết quả mặc định, và báo chủ sở hữu xác nhận. Nếu chưa rõ bản nào đúng, câu trả lời nên nêu cả hai kèm nguồn và ngày.</p></details>
+  <details><summary>8. Đo một KB tốt hay dở bằng gì?</summary>
+    <p>Độ phủ câu hỏi thật, tỷ lệ câu không trả lời được (tách "kho không có" với "có mà không tìm ra"), độ mới (tỷ lệ quá hạn xem lại, độ trễ đồng bộ), độ sạch (trùng lặp, mâu thuẫn, thiếu chủ sở hữu). Thêm hit@k trên bộ câu hỏi mẫu để kiểm phần tìm kiếm.</p></details>
+</section>
+
+<!-- NGUỒN -->
+<section id="nguon">
+  <h2>Nguồn tham khảo</h2>
+  <p class="muted">Các khẳng định chính trong trang dẫn về những nguồn dưới đây (số trong ngoặc vuông). Tất cả được truy cập ngày 2026-11-14. Phần không có số là cách làm phổ biến hoặc ví dụ minh họa, không phải tiêu chuẩn.</p>
+  <ol class="sources">
+    <li id="src-1">Lewis và cộng sự, <i>Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks</i>, NeurIPS 2020. <a href="https://arxiv.org/abs/2005.11401" target="_blank" rel="noopener">arxiv.org/abs/2005.11401</a></li>
+    <li id="src-2">Microsoft, <i>Design and Develop a RAG Solution on Azure</i>, Azure Architecture Center, 2025. <a href="https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/rag/rag-solution-design-and-evaluation-guide" target="_blank" rel="noopener">learn.microsoft.com/…/rag-solution-design-and-evaluation-guide</a></li>
+    <li id="src-3">Microsoft, <i>Develop a RAG Solution – Chunking Phase</i>, Azure Architecture Center, 2026. <a href="https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/rag/rag-chunking-phase" target="_blank" rel="noopener">learn.microsoft.com/…/rag-chunking-phase</a></li>
+    <li id="src-4">Microsoft, <i>Develop a RAG Solution – Chunk Enrichment Phase</i>, Azure Architecture Center, 2026. <a href="https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/rag/rag-enrichment-phase" target="_blank" rel="noopener">learn.microsoft.com/…/rag-enrichment-phase</a></li>
+    <li id="src-5">Microsoft, <i>Develop a RAG Solution – Generate Embeddings Phase</i>, Azure Architecture Center, 2026. <a href="https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/rag/rag-generate-embeddings" target="_blank" rel="noopener">learn.microsoft.com/…/rag-generate-embeddings</a></li>
+    <li id="src-6">Unicode Consortium, <i>UAX #15: Unicode Normalization Forms</i>. <a href="https://www.unicode.org/reports/tr15/" target="_blank" rel="noopener">unicode.org/reports/tr15</a></li>
+    <li id="src-7">LangChain, <i>Syncing data sources to vector stores</i>, 2023. <a href="https://www.langchain.com/blog/syncing-data-sources-to-vector-stores" target="_blank" rel="noopener">langchain.com/blog/syncing-data-sources-to-vector-stores</a></li>
+    <li id="src-8">LangChain, tài liệu tham chiếu hàm <i>index()</i> (langchain-core). <a href="https://reference.langchain.com/python/langchain-core/indexing/api/index" target="_blank" rel="noopener">reference.langchain.com/…/indexing/api/index</a></li>
+    <li id="src-9">Microsoft, <i>Security Filter Pattern – Azure AI Search</i>, 2026. <a href="https://learn.microsoft.com/en-us/azure/search/search-security-trimming-for-azure-search" target="_blank" rel="noopener">learn.microsoft.com/…/search-security-trimming-for-azure-search</a></li>
+    <li id="src-10">Microsoft, <i>Document-Level Access Control – Azure AI Search</i>, 2026. <a href="https://learn.microsoft.com/en-us/azure/search/search-document-level-access-overview" target="_blank" rel="noopener">learn.microsoft.com/…/search-document-level-access-overview</a></li>
+    <li id="src-11">Anthropic, <i>Introducing Contextual Retrieval</i>, 2024. <a href="https://www.anthropic.com/news/contextual-retrieval" target="_blank" rel="noopener">anthropic.com/news/contextual-retrieval</a></li>
+    <li id="src-12">Shane Connelly (Elastic), <i>Practical BM25 – Part 2: The BM25 Algorithm and its Variables</i>, 2018. <a href="https://www.elastic.co/blog/practical-bm25-part-2-the-bm25-algorithm-and-its-variables" target="_blank" rel="noopener">elastic.co/blog/practical-bm25-part-2…</a></li>
+    <li id="src-13">Yu và cộng sự, <i>Spider: A Large-Scale Human-Labeled Dataset for Complex and Cross-Domain Semantic Parsing and Text-to-SQL Task</i>, EMNLP 2018. <a href="https://arxiv.org/abs/1809.08887" target="_blank" rel="noopener">arxiv.org/abs/1809.08887</a></li>
+    <li id="src-14">LangChain, <i>Build a SQL agent</i> (tài liệu). <a href="https://docs.langchain.com/oss/python/langchain/sql-agent" target="_blank" rel="noopener">docs.langchain.com/oss/python/langchain/sql-agent</a></li>
+    <li id="src-15">W3C, <i>RDF 1.1 Concepts and Abstract Syntax</i>, 2014. <a href="https://www.w3.org/TR/rdf11-concepts/" target="_blank" rel="noopener">w3.org/TR/rdf11-concepts</a></li>
+    <li id="src-16">Edge và cộng sự, <i>From Local to Global: A Graph RAG Approach to Query-Focused Summarization</i>, 2024. <a href="https://arxiv.org/abs/2404.16130" target="_blank" rel="noopener">arxiv.org/abs/2404.16130</a></li>
+    <li id="src-17">Microsoft, <i>GraphRAG – Local Search</i> (tài liệu dự án). <a href="https://microsoft.github.io/graphrag/query/local_search/" target="_blank" rel="noopener">microsoft.github.io/graphrag/query/local_search</a></li>
+    <li id="src-18">Consortium for Service Innovation, <i>KCS v6 Practices Guide – Practice 5: Content Health</i>. <a href="https://library.serviceinnovation.org/KCS/KCS_v6/KCS_v6_Practices_Guide/030/040/010" target="_blank" rel="noopener">library.serviceinnovation.org/…/030/040/010</a></li>
+    <li id="src-19">Consortium for Service Innovation, <i>KCS v6 – Technique 5.9: Knowledge Domain Analysis</i>. <a href="https://library.serviceinnovation.org/KCS/KCS_v6/KCS_v6_Practices_Guide/030/040/010/060" target="_blank" rel="noopener">library.serviceinnovation.org/…/030/040/010/060</a></li>
+    <li id="src-20">Consortium for Service Innovation, <i>KCS v6 – Technique 5.5: Archiving Old Articles</i>. <a href="https://library.serviceinnovation.org/KCS/KCS_v6/KCS_v6_Practices_Guide/030/040/010/044" target="_blank" rel="noopener">library.serviceinnovation.org/…/030/040/010/044</a></li>
+    <li id="src-21">Liên minh châu Âu, <i>GDPR Điều 17 – Quyền được xóa</i> (bản trình bày tại gdpr-info.eu). <a href="https://gdpr-info.eu/art-17-gdpr/" target="_blank" rel="noopener">gdpr-info.eu/art-17-gdpr</a></li>
+  </ol>
+</section>
+</main>
+
+<footer>
+  Tài liệu học knowledge base cho AI ở mức khái niệm. Mã trang, hash, vector, tên người và các con số trong bảng theo dõi là minh họa, không phải số liệu đo từ một hệ thống cụ thể.
+</footer>
+
+<script>
+(function(){
+  // ---------- Helpers ----------
+  var root=document.documentElement;
+  function safeGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+  function safeSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function cite(){return [].map.call(arguments,function(n){return '<sup class="cite"><a href="#src-'+n+'">['+n+']</a></sup>'}).join('')}
+
+  // ---------- Theme ----------
+  var saved=safeGet('rag-theme'); if(saved) root.setAttribute('data-theme',saved);
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme');
+    if(!cur){cur=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+    var next=cur==='dark'?'light':'dark'; root.setAttribute('data-theme',next); safeSet('rag-theme',next);
+  });
+
+  // ---------- Stacked tables on phones: give each cell its column name ----------
+  function labelTables(scope){
+    [].forEach.call(scope.querySelectorAll('table.stack'),function(t){
+      var heads=[].map.call(t.querySelectorAll('thead th'),function(th){return th.textContent});
+      [].forEach.call(t.querySelectorAll('tbody tr'),function(tr){[].forEach.call(tr.children,function(td,i){if(heads[i])td.setAttribute('data-label',heads[i])})});
+    });
+  }
+  labelTables(document);
+
+  // ---------- Pipeline simulation ----------
+  var RAW='<nav>Trang chủ › CSKH › Chính sách</nav>\n<h1>Chính sách đổi trả</h1>\n<p>Phiên bản 3 · áp dụng từ 01/09/2026</p>\n<h2>1. Thời hạn đổi trả</h2>\n<p>Khách được đổi trả trong 30 ngày kể từ ngày nhận hàng.</p>\n<table>\n  <tr><th>Loại hàng</th><th>Thời hạn</th></tr>\n  <tr><td>Thông thường</td><td>30 ngày</td></tr>\n  <tr><td>Hàng giảm giá</td><td>7 ngày</td></tr>\n</table>\n<h2>2. Điều kiện</h2>\n<p>Sản phẩm còn tem, còn hộp. Xem bảng ở trên để biết thời hạn.</p>\n<img src="quy-trinh.png">\n<h2>3. Hoàn tiền</h2>\n<p>Tiền được hoàn về phương thức thanh toán ban đầu trong 5–7 ngày làm việc.</p>\n<footer>© Cửa hàng · Báo lỗi trang cho IT</footer>';
+  function kv(rows,heads){return '<div class="table-wrap"><table class="stack"><thead><tr>'+heads.map(function(h){return '<th>'+h+'</th>'}).join('')+'</tr></thead><tbody>'+rows.map(function(r){return '<tr>'+r.map(function(c){return '<td>'+c+'</td>'}).join('')+'</tr>'}).join('')+'</tbody></table></div>'}
+  var C1='[Chính sách đổi trả › 1. Thời hạn đổi trả] Khách được đổi trả trong 30 ngày kể từ ngày nhận hàng.<br>Loại hàng | Thời hạn<br>Thông thường | 30 ngày<br>Hàng giảm giá | 7 ngày';
+  var C2='[Chính sách đổi trả › 2. Điều kiện] Sản phẩm còn tem, còn hộp. <mark>Xem bảng ở trên</mark> để biết thời hạn.';
+  var C3='[Chính sách đổi trả › 3. Hoàn tiền] Tiền được hoàn về phương thức thanh toán ban đầu trong 5–7 ngày làm việc.';
+  var STEPS=[
+    {t:'Kết nối nguồn',h:'<h3>Bước 1 · Connector lấy tài liệu từ nguồn</h3><p>Connector (bộ kết nối) gọi vào wiki và lấy trang "Chính sách đổi trả" <b>kèm thông tin mà hệ thống nguồn cung cấp</b>:</p>'+kv([['Nguồn','Wiki nội bộ · không gian CSKH'],['Mã trang','CS-112'],['Sửa lần cuối','03/11/2026 09:14'],['Người sửa','Lan (nhóm CSKH)'],['Quyền xem','nhóm CSKH, nhóm Bán hàng'],['Định dạng','HTML']],['Thông tin','Giá trị (minh họa)'])+'<div class="callout warn"><b>Vì sao lấy cả quyền xem ngay từ đầu?</b> Nếu bỏ qua ở đây, các bước sau không còn cách nào biết ai được đọc đoạn này, và AI có thể trích nó cho bất kỳ ai.'+cite(9,10)+'</div><p class="muted">"Sửa lần cuối" được lưu lại để lần đồng bộ sau biết trang này có đổi hay không (bước 8).</p>'},
+    {t:'Trích văn bản',h:'<h3>Bước 2 · Trích văn bản từ file gốc</h3><p>Nội dung connector nhận về là HTML (rút gọn):</p><pre>'+esc(RAW)+'</pre><p>Parser biến nó thành văn bản, <b>giữ cấu trúc</b> tiêu đề và bảng:'+cite(3)+'</p><pre>Trang chủ › CSKH › Chính sách\n# Chính sách đổi trả\nPhiên bản 3 · áp dụng từ 01/09/2026\n## 1. Thời hạn đổi trả\nKhách được đổi trả trong 30 ngày kể từ ngày nhận hàng.\nLoại hàng | Thời hạn\nThông thường | 30 ngày\nHàng giảm giá | 7 ngày\n## 2. Điều kiện\nSản phẩm còn tem, còn hộp. Xem bảng ở trên để biết thời hạn.\n[Hình: quy-trinh.png — không có chữ đi kèm]\n## 3. Hoàn tiền\nTiền được hoàn về phương thức thanh toán ban đầu trong 5–7 ngày làm việc.\n© Cửa hàng · Báo lỗi trang cho IT</pre><div class="callout bad"><b>Nếu trích bảng kém</b>, bảng bị dàn phẳng thành "Loại hàng Thời hạn Thông thường 30 ngày Hàng giảm giá 7 ngày" và quan hệ "hàng giảm giá → 7 ngày" có thể bị hiểu sai.</div><p class="muted">Nếu đây là PDF scan, file chỉ chứa ảnh: không có OCR thì văn bản trích ra rỗng. Nội dung trong hình quy-trinh.png cũng không vào được kho nếu không có chữ mô tả.'+cite(3)+'</p>'},
+    {t:'Làm sạch & bỏ trùng',h:'<h3>Bước 3 · Làm sạch và khử trùng lặp</h3><p><b>Làm sạch:</b> bỏ phần lặp lại vô nghĩa (boilerplate) và chuẩn hóa văn bản.'+cite(3,4)+'</p><pre><span class="del">Trang chủ › CSKH › Chính sách</span>\n# Chính sách đổi trả\n…\n<span class="del">© Cửa hàng · Báo lỗi trang cho IT</span></pre><p>Chuẩn hóa khoảng trắng và <b>Unicode</b>: chữ tiếng Việt có dấu có thể được lưu theo hai cách (ký tự dựng sẵn hoặc chữ cái + dấu rời) nhìn giống hệt nhau nhưng khác nhau ở cấp byte. Không đưa về một dạng chung (thường là NFC) thì tìm từ khóa và so trùng lặp sẽ trượt.'+cite(6)+'</p><p><b>Khử trùng lặp:</b> so với nội dung đã có trong kho:</p><div class="chunk"><span class="id">Trùng tuyệt đối · FAQ cũ › "Đổi trả bao lâu?"</span><br>Đoạn trả lời chép nguyên văn mục "1. Thời hạn đổi trả"; sau chuẩn hóa có cùng hash với chunk của wiki → chỉ giữ một bản.'+cite(7,19)+' Thường giữ bản ở nguồn chính thức.</div><div class="chunk bad"><span class="id">Gần trùng · "Chính sách đổi trả v2" (PDF 2025)</span><br>Gần như cùng nội dung nhưng ghi "14 ngày" → đây <b>không phải bản sao</b> mà là <b>phiên bản cũ mâu thuẫn</b>. Không xóa bừa: đánh dấu "đã bị thay thế bởi v3" và báo chủ sở hữu xác nhận.</div>'},
+    {t:'Chunking',h:'<h3>Bước 4 · Cắt theo mục, gắn tiêu đề vào từng đoạn</h3><p>Cắt theo tiêu đề mục thay vì theo số ký tự cố định. Bảng nằm trọn trong một đoạn. Đường dẫn tiêu đề được gắn vào đầu đoạn để đoạn đọc riêng vẫn biết đang nói về gì.'+cite(3)+' Đây là bản đơn giản của ý "thêm ngữ cảnh vào đầu chunk"; Anthropic đi xa hơn, dùng LLM viết riêng một câu ngữ cảnh cho từng chunk.'+cite(11)+'</p><div class="chunk"><span class="id">CS-112#c1</span><br>'+C1+'</div><div class="chunk bad"><span class="id">CS-112#c2</span><br>'+C2+'</div><div class="chunk"><span class="id">CS-112#c3</span><br>'+C3+'</div><div class="callout warn">Chunk <b>c2</b> nói "xem bảng ở trên", nhưng khi c2 được tìm ra một mình thì không có bảng nào "ở trên" cả. Đây là lỗi <b>cách viết nguồn</b>, chunking không sửa được (xem mục 6).</div>'},
+    {t:'Gắn metadata',h:'<h3>Bước 5 · Gắn metadata theo schema</h3><p>Mỗi chunk mang theo các trường do <b>schema metadata</b> quy định. Ví dụ cho c1. Các trường mô tả nội dung (mã, nguồn, ngôn ngữ) theo hướng dẫn'+cite(4)+'; các trường vận hành (chủ sở hữu, hiệu lực, quyền) là thiết kế ví dụ.</p>'+kv([['doc_id','CS-112','gom chunk theo tài liệu; xóa, cập nhật đồng loạt'],['chunk_id','CS-112#c1','trích nguồn chính xác'],['nguồn','Wiki CSKH + đường dẫn trang','link về bản gốc'],['chủ sở hữu','Nhóm CSKH','ai sửa khi sai'],['cập nhật','03/11/2026','ưu tiên bản mới, đo độ mới'],['phiên bản / hiệu lực','v3 · từ 01/09/2026','không trả lời theo bản đã bị thay'],['hạn xem lại','01/03/2027','cảnh báo khi có thể đã cũ'],['quyền xem','CSKH, Bán hàng','lọc theo người hỏi lúc tìm'],['ngôn ngữ','vi','chọn cách xử lý từ khóa phù hợp'],['loại','chính sách (chính thức)','ưu tiên khi mâu thuẫn'],['content_hash','a41f… (minh họa)','phát hiện thay đổi'],['embedding model','tên + phiên bản model','biết khi nào phải embed lại']],['Trường','Giá trị','Dùng để'])+'<p class="muted">Ngoài metadata lấy từ nguồn, có thể <b>sinh thêm từ nội dung</b>: tiêu đề, tóm tắt, từ khóa, thực thể, các câu hỏi mà đoạn trả lời được.'+cite(4)+' Trường bắt buộc (chủ sở hữu, quyền, ngày) thiếu thì cổng kiểm tra ở bước 7 sẽ chặn lại.</p>'},
+    {t:'Embedding & index',h:'<h3>Bước 6 · Embedding và ghi vào hai loại index</h3><div class="grid g2"><div class="card"><h4>Vector index</h4><p>Embedding model biến c1 thành vector (câu hỏi sau này phải dùng đúng model này):'+cite(5)+'</p><p class="vec">[0.42, -0.17, 0.08, 0.61, …]</p><p class="muted">Dùng khi hỏi khác chữ: "đồ sale đổi được mấy hôm?" vẫn gần nghĩa với c1.</p></div><div class="card"><h4>Keyword index</h4><p>Các từ trong c1 trỏ về c1:</p><p class="mono">đổi trả → c1, c2 · giảm giá → c1 · 7 ngày → c1 · CS-112 → c1, c2, c3</p><p class="muted">Dùng khi hỏi mã số, tên riêng, cụm chính xác. Từ càng hiếm trong kho càng được tính nặng.'+cite(12)+'</p></div></div><p>Cả hai index cùng trỏ về <b>một chunk_id</b> và cùng có metadata để lọc. Lúc trả lời, hai cách tìm được trộn lại (xem <a href="../hybrid-search/">Hybrid search</a>).</p><p class="muted">Vector ở đây là minh họa. Vector thật có hàng trăm đến hàng nghìn số. Chi tiết về embedding ở <a href="../rag/#embedding">trang RAG</a>.</p>'},
+    {t:'Kiểm tra chất lượng',h:'<h3>Bước 7 · Cổng kiểm tra chất lượng</h3><p>Trước khi phiên bản mới được dùng để trả lời người thật, pipeline chạy các kiểm tra tự động:</p><ul class="qc"><li class="pass">Văn bản không rỗng, không có chuỗi ký tự lỗi font</li><li class="pass">Độ dài từng chunk nằm trong khoảng cho phép</li><li class="pass">Đủ trường bắt buộc: chủ sở hữu, quyền xem, ngày cập nhật</li><li class="pass">Không trùng với chunk đang có trong kho</li><li class="pass">Không chứa câu lệnh nhắm vào AI (prompt injection)'+cite(4)+'</li><li class="warn">c2 chứa "ở trên" → gửi chủ sở hữu đề nghị viết lại</li><li class="warn">Hình quy-trinh.png không có chữ mô tả → AI không thấy nội dung hình</li><li class="pass">Câu hỏi mẫu "Hàng giảm giá được đổi trong mấy ngày?" → c1 nằm trong top-3</li></ul><div class="callout"><b>Nguyên tắc:</b> lỗi nặng (văn bản rỗng, thiếu quyền xem) thì <b>chặn</b>, không cho vào kho. Lỗi nhẹ thì vẫn cho vào nhưng <b>báo chủ sở hữu</b>. Kiểm tra quá chặt sẽ làm nội dung mới vào kho chậm.</div>'},
+    {t:'Đồng bộ tăng dần',h:'<h3>Bước 8 · Một tuần sau: tài liệu được sửa</h3><p>Ngày 10/11/2026, nhóm CSKH sửa trang thành phiên bản 4: hàng giảm giá còn <b>3 ngày</b>, và viết lại c2 cho tự đủ nghĩa. Connector thấy "sửa lần cuối" đã đổi, nên chạy lại pipeline <b>cho riêng trang này</b>, rồi so hash từng chunk:'+cite(7,8)+'</p>'+kv([['c1','a41f…','7be2…','<span class="add">nội dung đổi → embed lại</span>'],['c2','c09d…','5d31…','<span class="add">nội dung đổi → embed lại</span>'],['c3','e77a…','e77a…','giữ nguyên, không embed lại']],['Chunk','Hash cũ','Hash mới','Hành động'])+'<div class="chunk hit"><span class="id">CS-112#c1 · v4</span><br>… Hàng giảm giá | <span class="del">7 ngày</span> <span class="add">3 ngày</span></div><div class="chunk hit"><span class="id">CS-112#c2 · v4</span><br>[Chính sách đổi trả › 2. Điều kiện] Sản phẩm được đổi trả phải còn tem và còn hộp. <span class="add">Thời hạn đổi trả theo từng loại hàng nằm ở mục "1. Thời hạn đổi trả" của chính sách này.</span></div><p>Metadata của cả ba chunk được cập nhật: phiên bản v4, ngày 10/11/2026. Chỉ 2 trên 3 chunk phải embed lại; với kho hàng chục nghìn tài liệu, tiết kiệm này rất lớn.</p><div class="callout bad"><b>Bẫy hay gặp:</b> chỉ <i>thêm</i> chunk v4 mà quên <i>xóa</i> chunk v3. Kho khi đó chứa cả "7 ngày" lẫn "3 ngày", và AI trả lời lúc thế này lúc thế khác. Mục nào bị xóa khỏi trang thì chunk tương ứng cũng phải bị xóa khỏi mọi index.</div>'}
+  ];
+  var cur=0, stepsEl=document.getElementById('steps'), bodyEl=document.getElementById('stepBody'), pipeEl=document.getElementById('pipe');
+  STEPS.forEach(function(s,i){
+    var b=document.createElement('button');b.innerHTML='<span class="n">'+(i+1)+'</span>'+esc(s.t);b.addEventListener('click',function(){show(i)});stepsEl.appendChild(b);
+    var p=document.createElement('span');p.textContent=(i+1)+'. '+s.t;pipeEl.appendChild(p);
+  });
+  function show(i){
+    cur=i;bodyEl.innerHTML=STEPS[i].h;labelTables(bodyEl);
+    [].forEach.call(stepsEl.children,function(b,j){b.classList.toggle('on',j===i);b.setAttribute('aria-current',j===i?'step':'false')});
+    [].forEach.call(pipeEl.children,function(p,j){p.className=j<i?'done':(j===i?'now':'')});
+    document.getElementById('prevStep').disabled=i===0;document.getElementById('nextStep').disabled=i===STEPS.length-1;
+    var ab=stepsEl.children[i];if(stepsEl.scrollWidth>stepsEl.clientWidth){stepsEl.scrollLeft=ab.offsetLeft-stepsEl.offsetLeft-8}
+  }
+  function keepInView(){var top=bodyEl.getBoundingClientRect().top;if(top<70||top>innerHeight*0.6){window.scrollTo({top:top+scrollY-130,behavior:'smooth'})}}
+  document.getElementById('prevStep').addEventListener('click',function(){if(cur>0){show(cur-1);keepInView()}});
+  document.getElementById('nextStep').addEventListener('click',function(){if(cur<STEPS.length-1){show(cur+1);keepInView()}});
+  show(0);
+
+  // ---------- Write-for-AI toggle ----------
+  var WRITE={
+    human:'<div class="chunk bad"><span class="id">Chunk tìm được · "Lưu ý khác"</span><br><mark>Như đã nói ở trên</mark>, áp dụng cho cả đơn online. Riêng <mark>loại này</mark> thì ngắn hơn, <mark>xem hình</mark>.</div><p><b>AI thấy gì?</b> Không có con số nào. "Ở trên" và "hình" không nằm trong chunk; "loại này" không rõ là loại nào. AI có lời dặn tốt sẽ trả lời "không tìm thấy"; AI không có lời dặn có thể đoán bừa.</p>',
+    ai:'<div class="chunk hit"><span class="id">Chunk tìm được · "Thời hạn đổi trả hàng giảm giá"</span><br>[Chính sách đổi trả › Thời hạn đổi trả hàng giảm giá] Hàng giảm giá được đổi trả trong 7 ngày kể từ ngày nhận hàng. Áp dụng cho cả đơn mua tại cửa hàng và đơn online. Áp dụng từ 01/09/2026.</div><p><b>AI thấy gì?</b> Đủ thông tin để trả lời "7 ngày", biết phạm vi (cả đơn online) và thời điểm hiệu lực, và trích được nguồn.</p>'
+  };
+  var vH=document.getElementById('vHuman'), vA=document.getElementById('vAi'), wb=document.getElementById('writeBody');
+  function setWrite(k){wb.innerHTML=WRITE[k];vH.classList.toggle('on',k==='human');vA.classList.toggle('on',k==='ai');vH.setAttribute('aria-pressed',String(k==='human'));vA.setAttribute('aria-pressed',String(k==='ai'))}
+  vH.addEventListener('click',function(){setWrite('human')});vA.addEventListener('click',function(){setWrite('ai')});
+  setWrite('human');
+
+  // ---------- Glossary ----------
+  var G={base:'Nền tảng',src:'Nguồn & kết nối',ing:'Ingestion',idx:'Metadata & index',ops:'Vận hành',struct:'Cấu trúc & graph',qual:'Chất lượng'};
+  // [id, group, name, alias, definition, example, related ids, optional external link [href,label]]
+  var T=[
+    ['kb','base','Knowledge base','kho tri thức','Tập tri thức đã được thu thập, làm sạch, tổ chức và gắn metadata để con người và AI tra cứu được.','Wiki chính sách + FAQ + ticket đã xử lý, cắt thành chunk và index.',['rag','ingestion','metadata']],
+    ['rag','base','RAG','Retrieval-Augmented Generation','Cách dùng KB lúc trả lời: tìm vài đoạn liên quan trong kho rồi đưa vào prompt cho LLM. KB là kho, RAG là cách dùng kho.','',['kb','retriever'],['../rag/','Trang Hiểu RAG']],
+    ['retriever','base','Retriever','','Thành phần nhận câu hỏi và trả về các chunk liên quan nhất trong kho, sau khi lọc theo quyền và metadata.','',['vector-index','keyword-index','acl']],
+    ['sot','base','Nguồn chính thức','source of truth','Nơi được coi là bản gốc, đúng nhất cho một loại thông tin. Khi các nguồn mâu thuẫn, nguồn chính thức được ưu tiên.','Chính sách trên wiki CSKH là bản chính thức; câu trả lời trong ticket cũ chỉ để tham khảo.',['conflict','owner']],
+    ['owner','base','Chủ sở hữu nội dung','content owner','Người hoặc nhóm chịu trách nhiệm nội dung đúng và mới; là người sửa khi AI trả lời sai vì tài liệu sai.','Nhóm CSKH sở hữu chính sách đổi trả.',['feedback','review-date']],
+    ['self-contained','base','Mục tự đủ nghĩa','self-contained','Đoạn đọc riêng vẫn hiểu, không dựa vào phần trước hay sau. Quan trọng vì AI chỉ thấy vài chunk rời.','Thay "xem ở trên" bằng tên mục cụ thể.',['chunk','context-header']],
+    ['connector','src','Connector','bộ kết nối','Thành phần đọc dữ liệu từ một hệ thống nguồn kèm thông tin như ngày sửa, người sửa, quyền xem.','Connector cho wiki, ổ tài liệu dùng chung, hệ thống ticket.',['ingestion','acl','change-detect']],
+    ['unstructured','src','Dữ liệu phi cấu trúc','unstructured','Văn bản tự do: tài liệu, trang wiki, email, nội dung trao đổi. Tìm bằng chunk + vector/từ khóa.','',['structured','chunk']],
+    ['structured','src','Dữ liệu có cấu trúc','structured','Dữ liệu dạng bảng, cột rõ ràng trong database. Hợp truy vấn chính xác: đếm, tổng, lọc.','Bảng đơn hàng, bảng sản phẩm.',['text-to-sql','unstructured']],
+    ['semi','src','Dữ liệu bán cấu trúc','semi-structured','Có một phần trường rõ ràng và một phần chữ tự do. Trường đưa vào metadata, phần chữ cắt thành chunk.','Ticket có trường trạng thái, sản phẩm và nội dung trao đổi.',['metadata','chunk']],
+    ['live','src','Nguồn sống qua API','','Dữ liệu đổi liên tục (tồn kho, trạng thái đơn) thường được hỏi thẳng qua API lúc trả lời thay vì chép vào kho, để không bị cũ.','',['structured','freshness']],
+    ['ingestion','ing','Ingestion','nạp dữ liệu','Quy trình đưa dữ liệu từ nguồn vào KB: kết nối, trích, làm sạch, chunk, metadata, embedding và index, kiểm tra.','',['connector','parsing','quality-gate']],
+    ['parsing','ing','Parsing','trích văn bản','Đọc file gốc và lấy ra văn bản đúng thứ tự đọc, giữ cấu trúc tiêu đề, danh sách, bảng.','HTML → văn bản có tiêu đề; PDF hai cột phải đọc hết cột trái rồi mới sang cột phải.',['ocr','table-extract']],
+    ['ocr','ing','OCR','nhận dạng chữ','Nhận dạng chữ trong ảnh. PDF scan chỉ chứa ảnh, không có OCR thì văn bản trích ra rỗng.','',['parsing']],
+    ['table-extract','ing','Trích bảng','','Giữ quan hệ hàng–cột khi trích bảng. Bảng bị dàn phẳng thành một chuỗi chữ thì con số dễ bị ghép sai.','"Hàng giảm giá | 7 ngày" phải nằm cùng một dòng.',['parsing']],
+    ['boilerplate','ing','Boilerplate','','Phần lặp lại không mang nội dung: menu, header, footer, dòng bản quyền. Cần loại bỏ vì làm nhiễu tìm kiếm.','',['cleaning']],
+    ['cleaning','ing','Làm sạch & chuẩn hóa','','Bỏ boilerplate, chuẩn hóa khoảng trắng và Unicode. Chữ tiếng Việt có thể lưu theo hai dạng (dựng sẵn hoặc tổ hợp), cần đưa về một dạng (thường là NFC).','',['boilerplate','dedup']],
+    ['dedup','ing','Khử trùng lặp','deduplication','Loại các bản sao giống hệt (so content hash) để một nội dung không chiếm nhiều chỗ trong top-k.','Cùng đoạn chính sách xuất hiện ở wiki, FAQ và email.',['near-dup','content-hash']],
+    ['near-dup','ing','Gần trùng','near-duplicate','Hai nội dung gần giống nhưng khác vài chỗ: có thể là bản chỉnh nhẹ, cũng có thể là hai phiên bản mâu thuẫn. Phải phân biệt, không xóa bừa.','"30 ngày" và "14 ngày" trong hai bản chính sách.',['conflict','versioning']],
+    ['chunk','ing','Chunk','đoạn','Đơn vị nhỏ nhất được index và tìm kiếm; mỗi chunk mang metadata riêng.','',['chunking','metadata']],
+    ['chunking','ing','Chunking','cắt đoạn','Chia văn bản thành chunk. Với KB nên cắt theo cấu trúc (tiêu đề, mục) và giữ bảng trọn vẹn.','',['chunk','context-header'],['../rag/#vi-du','Ví dụ chunking ở trang RAG']],
+    ['context-header','ing','Gắn ngữ cảnh vào chunk','','Thêm đường dẫn tiêu đề (tài liệu › mục) vào đầu chunk để chunk đọc riêng vẫn rõ đang nói về gì.','"[Chính sách đổi trả › 1. Thời hạn đổi trả] …"',['chunk','self-contained']],
+    ['metadata','idx','Metadata','','Thông tin mô tả đi kèm mỗi tài liệu/chunk: nguồn, chủ sở hữu, ngày, phiên bản, quyền, ngôn ngữ, loại. Dùng để lọc, ưu tiên, trích nguồn và vận hành.','',['schema','acl','metadata-filter']],
+    ['schema','idx','Schema metadata','','Danh sách trường metadata thống nhất cho mọi nguồn, có trường bắt buộc và quy định cách điền.','Thiếu chủ sở hữu hoặc quyền xem thì không cho vào kho.',['metadata','quality-gate']],
+    ['acl','idx','Quyền truy cập','ACL','Danh sách ai được xem tài liệu; lấy từ nguồn, lưu trong metadata và dùng để lọc ngay lúc tìm, trước khi đoạn nào đến LLM.','',['permission-sync','retriever'],['../governance/','Trang Governance']],
+    ['content-hash','idx','Content hash','','Dấu vân tay ngắn tính từ nội dung; đổi một chữ thì hash đổi. Dùng để phát hiện thay đổi và trùng lặp.','',['incremental','dedup']],
+    ['embedding','idx','Embedding','','Vector số biểu diễn nghĩa của đoạn văn. Kho và câu hỏi phải dùng cùng một embedding model.','',['vector-index','full-reindex'],['../rag/#embedding','Embedding ở trang RAG']],
+    ['vector-index','idx','Vector index','','Chỉ mục tìm theo nghĩa trên embedding của các chunk.','Tìm ra "đổi trả hàng giảm giá" khi hỏi "đồ sale đổi được mấy hôm".',['embedding','hybrid']],
+    ['keyword-index','idx','Keyword index','inverted index','Chỉ mục từ → các chunk chứa từ đó, thường chấm điểm kiểu BM25. Mạnh với mã số, tên riêng, cụm chính xác.','Tìm đúng "CS-112".',['hybrid','vector-index']],
+    ['hybrid','idx','Hybrid search','','Kết hợp tìm theo vector và theo từ khóa rồi trộn kết quả.','',['vector-index','keyword-index'],['../hybrid-search/','Trang Hybrid search']],
+    ['metadata-filter','idx','Lọc theo metadata','metadata filtering','Chỉ tìm trong các chunk thỏa điều kiện: người hỏi có quyền, phiên bản còn hiệu lực, đúng ngôn ngữ, đúng loại.','',['metadata','acl']],
+    ['incremental','ops','Đồng bộ tăng dần','incremental sync','Chỉ xử lý tài liệu/chunk mới, đổi hoặc bị xóa kể từ lần đồng bộ trước, thay vì làm lại cả kho.','Sửa một câu trong tài liệu 50 trang → embed lại một chunk.',['change-detect','content-hash','deletion']],
+    ['change-detect','ops','Phát hiện thay đổi','','Biết nguồn nào đã đổi bằng ngày sửa, content hash, hoặc sự kiện do hệ thống nguồn gửi đến (webhook).','',['incremental','connector']],
+    ['full-reindex','ops','Index lại toàn bộ','full re-index','Xử lý lại cả kho. Bắt buộc khi đổi embedding model, cách chunk hoặc schema. Nên dựng index mới song song rồi chuyển sau khi kiểm tra.','',['embedding','incremental']],
+    ['versioning','ops','Phiên bản','versioning','Ghi phiên bản và thời gian hiệu lực; bản bị thay thế được đánh dấu để không vào kết quả mặc định.','Chính sách v3 bị thay bởi v4 từ 10/11/2026.',['freshness','conflict']],
+    ['freshness','ops','Độ mới','freshness','Nội dung trong kho còn khớp với thực tế không. Đo bằng ngày cập nhật, hạn xem lại, độ trễ đồng bộ.','',['review-date','incremental']],
+    ['review-date','ops','Hạn xem lại','review date','Ngày chủ sở hữu phải xác nhận lại nội dung còn đúng; quá hạn thì gắn cảnh báo "có thể đã cũ".','',['owner','freshness']],
+    ['deletion','ops','Xóa & thu hồi','','Tài liệu bị xóa ở nguồn hoặc bị rút quyền phải biến khỏi mọi index và cache, không chỉ khỏi file gốc.','',['acl','incremental'],['../governance/','Trang Governance']],
+    ['conflict','ops','Tài liệu mâu thuẫn','','Hai nguồn nói khác nhau về cùng một điều. Giải bằng quy tắc ưu tiên (chính thức, còn hiệu lực, mới hơn) và báo chủ sở hữu.','',['sot','versioning','near-dup']],
+    ['permission-sync','ops','Đồng bộ quyền','','Quyền ở nguồn đổi thì quyền lưu trong kho phải đổi theo. Độ trễ đồng bộ là khoảng thời gian có rủi ro lộ dữ liệu.','',['acl','deletion']],
+    ['feedback','ops','Vòng phản hồi','feedback loop','Thu câu hỏi, đánh giá và câu "không biết" → chủ sở hữu sửa/bổ sung nguồn → ingest lại → đo lại.','',['unanswered','owner']],
+    ['text-to-sql','struct','Text-to-SQL','','LLM đọc mô tả bảng và câu hỏi, viết câu truy vấn; hệ thống chạy với quyền chỉ đọc rồi đưa kết quả cho LLM trả lời.','"Tháng 10 có bao nhiêu đơn bị trả lại?"',['structured','db-schema']],
+    ['db-schema','struct','Schema database','','Mô tả bảng, cột và ý nghĩa nghiệp vụ. Mô tả càng rõ, LLM càng ít viết truy vấn sai nghĩa.','Ghi rõ "đơn bị trả" là trạng thái nào.',['text-to-sql']],
+    ['kg','struct','Knowledge graph','đồ thị tri thức','Tri thức biểu diễn bằng thực thể (nút) và quan hệ (cạnh).','Tai nghe X —thuộc→ Điện tử —áp dụng→ chính sách v4.',['entity','triple','graphrag']],
+    ['entity','struct','Thực thể','entity','Một "thứ" được đặt tên trong tri thức: sản phẩm, người, phòng ban, chính sách, danh mục.','',['kg','triple']],
+    ['triple','struct','Bộ ba','triple','Một cạnh của graph dạng (chủ thể, quan hệ, đối tượng).','(Tai nghe X, thuộc, Điện tử)',['kg','entity']],
+    ['entity-extract','struct','Trích thực thể & quan hệ','','Dùng LLM hoặc công cụ NLP đọc văn bản và rút ra thực thể, quan hệ để xây graph. Có thể sai nên cần kiểm tra.','',['kg','graphrag']],
+    ['graphrag','struct','GraphRAG','','Dùng knowledge graph trong bước tìm kiếm: tìm thực thể trong câu hỏi, đi theo quan hệ để gom thông tin; một số cách còn tóm tắt từng cụm thực thể để trả lời câu hỏi tổng quan.','',['kg','multi-hop','entity-extract']],
+    ['multi-hop','struct','Câu hỏi nhiều bước','multi-hop','Câu hỏi cần nối nhiều mẩu thông tin nằm ở các chỗ khác nhau.','Tai nghe X đổi trả mấy ngày? → cần biết X thuộc danh mục nào.',['graphrag']],
+    ['taxonomy','struct','Taxonomy','hệ phân loại','Bộ danh mục, chủ đề thống nhất dùng chung cho metadata và graph, để mọi nguồn gọi cùng một thứ bằng cùng một tên.','',['metadata','kg']],
+    ['coverage','qual','Độ phủ câu hỏi','coverage','Tỷ lệ câu hỏi thật mà kho có nội dung trả lời.','',['unanswered','eval-set']],
+    ['unanswered','qual','Câu hỏi không trả lời được','','Câu hệ thống trả "không biết" hoặc trả lời bị đánh giá sai. Cần tách "kho không có" với "kho có mà không tìm ra".','',['content-gap','feedback']],
+    ['content-gap','qual','Lỗ hổng nội dung','content gap','Chủ đề người dùng hay hỏi nhưng kho không có tài liệu trả lời. Sửa bằng cách viết thêm, không phải chỉnh retrieval.','',['unanswered','owner']],
+    ['eval-set','qual','Bộ câu hỏi mẫu','golden questions','Câu hỏi kèm tài liệu và đáp án đúng, chạy lại sau mỗi thay đổi lớn của kho để phát hiện kết quả bị kém đi.','',['quality-gate','coverage'],['../rag/#danh-gia','Đánh giá ở trang RAG']],
+    ['quality-gate','qual','Cổng kiểm tra chất lượng','quality gate','Các kiểm tra tự động trước khi dữ liệu mới được dùng: lỗi nặng thì chặn, lỗi nhẹ thì báo.','Văn bản rỗng → chặn; thiếu chữ mô tả hình → báo.',['schema','eval-set']]
+  ];
+  var byId={};T.forEach(function(t){byId[t[0]]=t});
+  var grid=document.getElementById('glossGrid'), chips=document.getElementById('glossChips'), search=document.getElementById('glossSearch'), activeG='all';
+  function fold(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\u0111/g,'d')}
+  function renderGloss(){
+    var q=fold(search.value.trim()); grid.innerHTML='';var n=0;
+    T.forEach(function(t){
+      if(activeG!=='all'&&t[1]!==activeG)return;
+      var hay=fold(t[2]+' '+t[3]+' '+t[4]+' '+t[5]); if(q&&hay.indexOf(q)<0)return; n++;
+      var d=document.createElement('div');d.className='card term';d.id='term-'+t[0];
+      var rel=t[6].filter(function(r){return byId[r]}).map(function(r){return '<a href="#term-'+r+'" data-goto="'+r+'">'+esc(byId[r][2])+'</a>'}).join(', ');
+      var ext=t[7]?'<div class="rel">Xem thêm: <a href="'+esc(t[7][0])+'">'+esc(t[7][1])+'</a></div>':'';
+      d.innerHTML='<span class="tag">'+esc(G[t[1]])+'</span><h4>'+esc(t[2])+(t[3]?' <span class="en">· '+esc(t[3])+'</span>':'')+'</h4><p>'+esc(t[4])+'</p>'+(t[5]?'<p class="ex">Ví dụ: '+esc(t[5])+'</p>':'')+(rel?'<div class="rel">Liên quan: '+rel+'</div>':'')+ext;
+      grid.appendChild(d);
+    });
+    if(!n)grid.innerHTML='<p class="muted">Không có khái niệm khớp.</p>';
+  }
+  var all=document.createElement('button');all.className='chip on';all.textContent='Tất cả ('+T.length+')';all.dataset.g='all';chips.appendChild(all);
+  Object.keys(G).forEach(function(k){var b=document.createElement('button');b.className='chip';b.dataset.g=k;b.textContent=G[k];chips.appendChild(b)});
+  chips.addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;activeG=b.dataset.g;[].forEach.call(chips.children,function(c){c.classList.toggle('on',c===b)});renderGloss()});
+  search.addEventListener('input',renderGloss);
+  grid.addEventListener('click',function(e){var a=e.target.closest('a[data-goto]');if(!a)return;e.preventDefault();
+    if(!document.getElementById('term-'+a.dataset.goto)){activeG='all';search.value='';[].forEach.call(chips.children,function(c){c.classList.toggle('on',c.dataset.g==='all')});renderGloss()}
+    var t=document.getElementById('term-'+a.dataset.goto);if(!t)return;t.scrollIntoView({behavior:'smooth',block:'center'});t.style.outline='2px solid var(--accent)';setTimeout(function(){t.style.outline=''},1500)});
+  renderGloss();
+
+  // ---------- Checklist persistence ----------
+  [].forEach.call(document.querySelectorAll('input[data-k]'),function(cb){
+    cb.checked=safeGet('kb-'+cb.dataset.k)==='1';
+    cb.addEventListener('change',function(){safeSet('kb-'+cb.dataset.k,cb.checked?'1':'0')});
+  });
+
+  // ---------- Active TOC ----------
+  var links=[].slice.call(document.querySelectorAll('#toc a'));
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(l){var on=l.getAttribute('href')==='#'+e.target.id;l.classList.toggle('active',on);if(on){var nav=l.parentNode;nav.scrollLeft=l.offsetLeft-nav.offsetLeft-(nav.clientWidth-l.offsetWidth)/2}})}})},{rootMargin:'-40% 0px -55% 0px'});
+    document.querySelectorAll('main section').forEach(function(s){io.observe(s)});
+  }
+})();
+</script>
+</body>
+</html>
