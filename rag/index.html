@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hiểu RAG từ gốc</title>
+<script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+:root{
+  --bg:#f7f6f2; --surface:#ffffff; --surface-2:#f0eee8; --text:#1f2328; --muted:#5b6370;
+  --border:#dcd8cf; --accent:#2f6fde; --accent-soft:#e3ecfc; --ok:#1f8a4c; --ok-soft:#e1f3e8;
+  --warn:#b4610e; --warn-soft:#fbeedd; --bad:#c23b3b; --bad-soft:#fae3e3;
+  --p1:#2f6fde; --p2:#8a4fd1; --p3:#1f8a4c; --p4:#b4610e;
+  --code-bg:#f0eee8; --shadow:0 1px 2px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04); --on-accent:#ffffff;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+    --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+    --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+    --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --code-bg:#252930; --shadow:none; --on-accent:#15171a;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+  --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+  --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+  --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --code-bg:#252930; --shadow:none; --on-accent:#15171a;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+a{color:var(--accent)}
+header.top{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
+.top-inner{max-width:1100px;margin:0 auto;padding:10px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.brand{font-weight:700;white-space:nowrap}
+.home{white-space:nowrap;text-decoration:none;color:var(--text);border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:4px 10px;font-size:14px}
+.home:hover{border-color:var(--accent);color:var(--accent)}
+nav.toc{display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin;flex:1}
+nav.toc a{white-space:nowrap;text-decoration:none;color:var(--muted);padding:4px 10px;border-radius:999px;font-size:14px}
+nav.toc a:hover,nav.toc a.active{background:var(--accent-soft);color:var(--accent)}
+button{font:inherit;cursor:pointer}
+.theme-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:4px 10px;font-size:14px}
+main{max-width:1100px;margin:0 auto;padding:16px}
+section{padding:28px 0;border-bottom:1px solid var(--border);scroll-margin-top:56px}
+section:last-child{border-bottom:none}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.2;margin:16px 0 8px}
+h2{font-size:clamp(22px,3.5vw,28px);margin:0 0 12px}
+h3{font-size:18px;margin:20px 0 8px}
+p{margin:8px 0}
+.lead{font-size:18px;color:var(--muted);max-width:760px}
+.muted{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 10px 10px 0;margin:12px 0}
+.callout.ok{border-color:var(--ok);background:var(--ok-soft)}
+.callout.warn{border-color:var(--warn);background:var(--warn-soft)}
+.callout.bad{border-color:var(--bad);background:var(--bad-soft)}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);margin-right:4px}
+.tag.p1{background:var(--accent-soft);color:var(--p1)}
+.tag.p3{background:var(--ok-soft);color:var(--p3)}
+.tag.p4{background:var(--warn-soft);color:var(--p4)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+th{background:var(--surface-2);font-weight:600}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.mono,code{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:14px}
+code{background:var(--code-bg);padding:1px 5px;border-radius:5px}
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-word;margin:8px 0;font-size:14px;line-height:1.55}
+svg text{fill:var(--text);font-family:inherit}
+.diagram{width:100%;height:auto;display:block}
+.svgbox{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;overflow-x:auto}
+.svgbox svg{min-width:640px}
+/* Glossary */
+.gloss-tools{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+.gloss-tools input{flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
+.chip{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:999px;padding:4px 12px;font-size:14px}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.term h4{margin:0 0 4px;font-size:16px}
+.term .en{font-weight:400;color:var(--muted);font-size:14px}
+.term p{margin:4px 0;font-size:15px}
+.term .ex{font-size:14px;color:var(--muted)}
+.term .rel{font-size:13px;margin-top:6px}
+.term .rel a{font-size:13px}
+/* Stepper */
+.stepper{display:grid;grid-template-columns:240px 1fr;gap:12px}
+@media (max-width:720px){.stepper{grid-template-columns:1fr}}
+.steps{display:flex;flex-direction:column;gap:6px}
+@media (max-width:720px){.steps{flex-direction:row;overflow-x:auto}}
+.steps button{text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px;white-space:nowrap}
+.steps button .n{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--surface-2);text-align:center;line-height:22px;font-size:12px;margin-right:6px}
+.steps button.on{border-color:var(--accent);background:var(--accent-soft)}
+.steps button.on .n{background:var(--accent);color:var(--on-accent)}
+.step-nav{display:flex;gap:8px;margin-top:12px}
+.step-nav button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 14px}
+.chunk{border:1px dashed var(--border);border-radius:8px;padding:8px 10px;margin:6px 0;font-size:14px;background:var(--surface)}
+.chunk.hit{border-style:solid;border-color:var(--ok);background:var(--ok-soft)}
+.chunk .id{font-weight:700;font-size:12px;color:var(--muted)}
+.vec{font-family:ui-monospace,Consolas,monospace;font-size:13px;color:var(--p2)}
+.bar{height:8px;background:var(--surface-2);border-radius:4px;overflow:hidden;margin-top:4px}
+.bar>span{display:block;height:100%;background:var(--ok)}
+/* Space demo */
+.space{display:grid;grid-template-columns:1fr 300px;gap:12px}
+@media (max-width:820px){.space{grid-template-columns:1fr}}
+.qbtns{display:flex;flex-direction:column;gap:6px}
+.qbtns button{text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px}
+.qbtns button.on{border-color:var(--p4);background:var(--warn-soft)}
+#spaceSvg{width:100%;height:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px}
+details{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin:8px 0}
+details summary{cursor:pointer;font-weight:600}
+details[open] summary{margin-bottom:6px}
+.check{display:flex;gap:8px;align-items:flex-start;padding:6px 0}
+.check input{margin-top:6px}
+footer{max-width:1100px;margin:0 auto;padding:24px 16px;color:var(--muted);font-size:14px}
+.kpi{display:flex;gap:10px;flex-wrap:wrap}
+.kpi .card{flex:1;min-width:160px}
+.kpi b{display:block;font-size:20px}
+.card>h4:first-child,.card>.tag+h4{margin-top:4px}
+.card h4{margin-bottom:6px}
+.m-only{display:none}
+.vflow .box,.vflow .node,.vflow .ar{display:block}
+.vflow .ph{font-weight:700;font-size:14px;margin:4px 0 8px}
+.vflow .ph1{color:var(--p1)} .vflow .ph2{color:var(--p3)}
+.vflow .node{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px}
+.vflow .node b{display:block}
+.vflow .node span{font-size:13px;color:var(--muted)}
+.vflow .node.r{border:2px solid var(--p1)} .vflow .node.a{border:2px solid var(--p2)} .vflow .node.g{border:2px solid var(--p3)} .vflow .node.db{border:2px solid var(--p2)}
+.vflow .opt{background:var(--warn-soft);border-color:var(--p4)}
+.vflow .ar{text-align:center;color:var(--muted);font-size:13px;line-height:1.3;padding:4px 0}
+.vflow .box{border-radius:12px;padding:10px;margin-bottom:10px}
+.vflow .box1{background:var(--accent-soft)} .vflow .box2{background:var(--ok-soft)}
+.vflow .note{font-size:13px;color:var(--muted);margin-top:6px}
+@media (max-width:600px){
+  .brand{display:none} body{font-size:15px}
+  .d-only{display:none}
+  .m-only{display:block}
+  .theme-btn .lbl,.home .lbl{display:none}
+  main{padding:12px 16px}
+  section{padding:22px 0}
+  .card{padding:14px}
+  table.stack thead{display:none}
+  table.stack,table.stack tbody,table.stack tr,table.stack td{display:block;width:100%}
+  table.stack tr{border-bottom:1px solid var(--border);padding:8px 0}
+  table.stack tr:last-child{border-bottom:none}
+  table.stack td{border:none;padding:3px 12px}
+  table.stack td[data-label]::before{content:attr(data-label);display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  table.stack td:first-child{font-size:16px}
+  table.stack td:first-child::before{display:none}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <a class="home" href="../" aria-label="Về trang tất cả chủ đề">←<span class="lbl"> Chủ đề</span></a>
+    <span class="brand">Hiểu RAG</span>
+    <nav class="toc" id="toc">
+      <a href="#tong-quan">1. Tổng quan</a>
+      <a href="#flow">2. Flow</a>
+      <a href="#vi-du">3. Ví dụ từng bước</a>
+      <a href="#embedding">4. Embedding</a>
+      <a href="#khai-niem">5. Khái niệm</a>
+      <a href="#quan-he">6. Mối quan hệ</a>
+      <a href="#so-sanh">7. So sánh</a>
+      <a href="#loi">8. Lỗi &amp; chẩn đoán</a>
+      <a href="#nang-cao">9. Nâng cao</a>
+      <a href="#danh-gia">10. Đánh giá</a>
+      <a href="#lo-trinh">11. Lộ trình</a>
+    </nav>
+    <button class="theme-btn" id="themeBtn" aria-label="Đổi giao diện sáng/tối">◐<span class="lbl"> Giao diện</span></button>
+  </div>
+</header>
+
+<main>
+
+<!-- 1. TỔNG QUAN -->
+<section id="tong-quan">
+  <h1>Hiểu RAG từ gốc</h1>
+  <p class="lead">RAG (Retrieval-Augmented Generation) là cách cho một mô hình ngôn ngữ lớn (LLM) trả lời dựa trên tài liệu của bạn: trước khi trả lời, hệ thống <b>tìm</b> vài đoạn tài liệu liên quan rồi <b>đưa</b> chúng vào prompt để LLM đọc.</p>
+
+  <h3>Vì sao cần RAG?</h3>
+  <div class="grid g3">
+    <div class="card"><span class="tag p4">Vấn đề 1</span><h4>LLM không biết tài liệu của bạn</h4><p>Nội quy công ty, hợp đồng, ghi chú cá nhân không nằm trong dữ liệu huấn luyện của LLM.</p></div>
+    <div class="card"><span class="tag p4">Vấn đề 2</span><h4>Kiến thức có hạn sử dụng</h4><p>LLM chỉ biết những gì có trước thời điểm dừng huấn luyện (knowledge cutoff). Chính sách đổi tuần trước thì nó không biết.</p></div>
+    <div class="card"><span class="tag p4">Vấn đề 3</span><h4>LLM có thể bịa</h4><p>Khi không biết, LLM vẫn có thể viết ra câu trả lời nghe rất hợp lý nhưng sai (hallucination).</p></div>
+  </div>
+
+  <p class="muted">RAG giúp giải quyết cả ba vấn đề, nhưng chỉ <b>giảm</b> chứ không loại bỏ hoàn toàn việc bịa: LLM vẫn có thể hiểu sai hoặc thêm ý không có trong tài liệu, nên cần trích nguồn và đánh giá (mục 10).</p>
+  <div class="callout">
+    <b>Vì sao không dán hết tài liệu vào prompt?</b> Mỗi LLM chỉ đọc được một lượng chữ giới hạn trong một lần (context window). Dù giới hạn đó lớn, việc dán hàng nghìn trang cho mỗi câu hỏi vẫn chậm, tốn tiền, và LLM dễ bỏ sót chi tiết khi phải đọc quá nhiều. RAG chỉ chọn đúng vài đoạn cần thiết.
+  </div>
+
+  <h3>Hình dung bằng một ví dụ đời thường</h3>
+  <div class="grid g2">
+    <div class="card">
+      <h4>📚 Thủ thư và nhà văn</h4>
+      <p><b>LLM</b> là một nhà văn viết rất giỏi nhưng chưa đọc tài liệu của bạn.</p>
+      <p><b>Retrieval</b> là người thủ thư: khi có câu hỏi, thủ thư chạy vào kho, tìm đúng 3–5 trang liên quan.</p>
+      <p><b>Augmentation</b> là việc đưa mấy trang đó cho nhà văn kèm lời dặn: "chỉ trả lời dựa trên những trang này".</p>
+      <p><b>Generation</b> là lúc nhà văn đọc và viết câu trả lời.</p>
+    </div>
+    <div class="card">
+      <h4>🎓 Thi không được và thi được mở tài liệu</h4>
+      <p><b>LLM thường</b> giống thi không được mở tài liệu: trả lời bằng trí nhớ, nhớ sai vẫn viết.</p>
+      <p><b>LLM + RAG</b> giống thi được mở tài liệu: được tra tài liệu trước khi trả lời. Nhưng nếu lật nhầm trang thì vẫn trả lời sai.</p>
+      <p class="muted">Đây là lý do <b>tìm đúng đoạn</b> thường là phần quyết định chất lượng của RAG.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 2. FLOW -->
+<section id="flow">
+  <h2>2. Flow hoạt động: hai pha</h2>
+  <p>RAG chạy thành hai pha tách biệt. <b>Pha chuẩn bị</b> (indexing) làm trước, một lần hoặc mỗi khi tài liệu thay đổi. <b>Pha trả lời</b> (querying) chạy mỗi lần có câu hỏi. Tách ra như vậy vì việc biến hàng nghìn đoạn tài liệu thành vector (gọi là <i>embed</i>, xem mục 4) rất tốn thời gian, không thể làm lại mỗi lần người dùng hỏi.</p>
+
+  <div class="vflow m-only" aria-label="Sơ đồ hai pha của RAG (dạng dọc)">
+    <div class="box box1">
+      <div class="ph ph1">PHA 1 · CHUẨN BỊ (indexing) — chạy trước</div>
+      <div class="node"><b>Tài liệu</b><span>PDF, Word, web…</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>Cắt đoạn</b><span>đọc chữ + chunking + metadata</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>Embedding</b><span>mỗi đoạn → một vector</span></div>
+      <div class="ar">↓</div>
+      <div class="node db"><b>Vector database</b><span>lưu vector + đoạn gốc</span></div>
+    </div>
+    <div class="ar" style="color:var(--p2)">↓ pha 2 tìm trong kho này ↓</div>
+    <div class="box box2">
+      <div class="ph ph2">PHA 2 · TRẢ LỜI (querying) — mỗi câu hỏi</div>
+      <div class="node"><b>Câu hỏi</b><span>của người dùng</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>Embedding</b><span>câu hỏi → vector (cùng model với pha 1)</span></div>
+      <div class="ar">↓</div>
+      <div class="node r"><b>R · Retrieval</b><span>lấy top-k đoạn gần nhất trong kho</span></div>
+      <div class="ar">↓</div>
+      <div class="node a"><b>A · Augmentation</b><span>ghép lời dặn + các đoạn + câu hỏi gốc</span></div>
+      <div class="ar">↓</div>
+      <div class="node g"><b>G · Generation</b><span>LLM viết câu trả lời</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>Trả lời + nguồn</b></div>
+    </div>
+  </div>
+  <div class="svgbox d-only">
+  <svg class="diagram" viewBox="0 0 1000 420" role="img" aria-label="Sơ đồ hai pha của RAG">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+    </defs>
+    <!-- Phase 1 -->
+    <rect x="10" y="10" width="980" height="150" rx="14" fill="var(--accent-soft)" stroke="var(--p1)" stroke-opacity=".4"/>
+    <text x="28" y="38" font-weight="700" font-size="16" style="fill:var(--p1)">PHA 1 · CHUẨN BỊ (indexing) — chạy trước, offline</text>
+    <g font-size="14">
+      <rect x="30" y="60" width="160" height="78" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="110" y="92" text-anchor="middle" font-weight="600">Tài liệu</text>
+      <text x="110" y="114" text-anchor="middle" font-size="12" style="fill:var(--muted)">PDF, Word, web…</text>
+      <rect x="230" y="60" width="160" height="78" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="310" y="92" text-anchor="middle" font-weight="600">Cắt đoạn</text>
+      <text x="310" y="114" text-anchor="middle" font-size="12" style="fill:var(--muted)">đọc chữ + chunking</text>
+      <rect x="430" y="60" width="160" height="78" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="510" y="92" text-anchor="middle" font-weight="600">Embedding</text>
+      <text x="510" y="114" text-anchor="middle" font-size="12" style="fill:var(--muted)">đoạn → vector</text>
+      <rect x="630" y="60" width="200" height="78" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="730" y="92" text-anchor="middle" font-weight="600">Vector database</text>
+      <text x="730" y="114" text-anchor="middle" font-size="12" style="fill:var(--muted)">lưu vector + đoạn gốc</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="2" marker-end="url(#arr)">
+      <line x1="190" y1="99" x2="228" y2="99"/><line x1="390" y1="99" x2="428" y2="99"/><line x1="590" y1="99" x2="628" y2="99"/>
+    </g>
+    <!-- Phase 2 -->
+    <rect x="10" y="200" width="980" height="210" rx="14" fill="var(--ok-soft)" stroke="var(--p3)" stroke-opacity=".4"/>
+    <text x="28" y="228" font-weight="700" font-size="16" style="fill:var(--p3)">PHA 2 · TRẢ LỜI (querying) — chạy mỗi khi có câu hỏi</text>
+    <g font-size="14">
+      <rect x="30" y="250" width="140" height="78" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="100" y="282" text-anchor="middle" font-weight="600">Câu hỏi</text>
+      <text x="100" y="304" text-anchor="middle" font-size="12" style="fill:var(--muted)">của người dùng</text>
+      <rect x="200" y="250" width="140" height="78" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="270" y="282" text-anchor="middle" font-weight="600">Embedding</text>
+      <text x="270" y="304" text-anchor="middle" font-size="12" style="fill:var(--muted)">câu hỏi → vector</text>
+      <rect x="370" y="250" width="150" height="78" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="445" y="276" text-anchor="middle" font-weight="700" style="fill:var(--p1)">R</text>
+      <text x="445" y="296" text-anchor="middle" font-weight="600">Retrieval</text>
+      <text x="445" y="316" text-anchor="middle" font-size="12" style="fill:var(--muted)">lấy top-k đoạn gần nhất</text>
+      <rect x="550" y="250" width="170" height="78" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="635" y="276" text-anchor="middle" font-weight="700" style="fill:var(--p2)">A</text>
+      <text x="635" y="296" text-anchor="middle" font-weight="600">Augmentation</text>
+      <text x="635" y="316" text-anchor="middle" font-size="12" style="fill:var(--muted)">ghép đoạn + câu hỏi</text>
+      <rect x="750" y="250" width="140" height="78" rx="10" fill="var(--surface)" stroke="var(--p3)" stroke-width="2"/>
+      <text x="820" y="276" text-anchor="middle" font-weight="700" style="fill:var(--p3)">G</text>
+      <text x="820" y="296" text-anchor="middle" font-weight="600">Generation</text>
+      <text x="820" y="316" text-anchor="middle" font-size="12" style="fill:var(--muted)">LLM viết câu trả lời</text>
+      <text x="940" y="296" text-anchor="middle" font-size="13" font-weight="600">Trả lời</text>
+      <text x="940" y="314" text-anchor="middle" font-size="12" style="fill:var(--muted)">+ nguồn</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="2" marker-end="url(#arr)">
+      <line x1="170" y1="289" x2="198" y2="289"/><line x1="340" y1="289" x2="368" y2="289"/><line x1="520" y1="289" x2="548" y2="289"/><line x1="720" y1="289" x2="748" y2="289"/><line x1="890" y1="289" x2="912" y2="289"/>
+    </g>
+    <!-- link between phases -->
+    <path d="M730 138 C 730 190, 445 190, 445 248" fill="none" stroke="var(--p2)" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+    <text x="745" y="182" font-size="12" style="fill:var(--p2)">tìm trong kho đã chuẩn bị</text>
+    <path d="M100 330 C 100 395, 635 395, 635 330" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#arr)"/>
+    <text x="300" y="392" font-size="12" style="fill:var(--muted)">câu hỏi gốc cũng được đưa vào prompt</text>
+    <text x="250" y="182" font-size="11" style="fill:var(--muted)">cùng một embedding model cho cả hai pha</text>
+  </svg>
+  </div>
+
+  <h3>Tên gọi RAG đến từ ba bước cuối của pha 2</h3>
+  <div class="grid g3">
+    <div class="card"><span class="tag p1">R · Retrieval</span><p><b>Tìm.</b> Biến câu hỏi thành vector, so với vector của mọi đoạn trong kho, lấy ra k đoạn gần nhất (thường k = 3–5).</p></div>
+    <div class="card"><span class="tag" style="color:var(--p2)">A · Augmented</span><p><b>Bổ sung.</b> Ghép lời dặn + các đoạn tìm được + câu hỏi thành một prompt. LLM "được bổ sung" kiến thức ngay lúc hỏi.</p></div>
+    <div class="card"><span class="tag p3">G · Generation</span><p><b>Sinh.</b> LLM đọc prompt và viết câu trả lời, lý tưởng là kèm trích dẫn đoạn nào nói điều gì.</p></div>
+  </div>
+  <div class="callout ok"><b>Điều cần nhớ:</b> LLM <i>không</i> tự đi tìm tài liệu. Phần tìm kiếm là một hệ thống riêng chạy trước. LLM chỉ nhìn thấy đúng những gì được ghép vào prompt.</div>
+</section>
+
+<!-- 3. VÍ DỤ TỪNG BƯỚC -->
+<section id="vi-du">
+  <h2>3. Ví dụ đi qua từng bước</h2>
+  <p>Một công ty nhỏ muốn làm chatbot hỏi đáp về nội quy. Bấm từng bước để xem dữ liệu thay đổi thế nào. <span class="muted">Các con số vector và điểm số dưới đây là <b>minh họa</b>, không phải đầu ra thật của một model cụ thể. Gặp chữ "vector", "embedding", "cosine" mà chưa rõ thì xem mục 4 rồi quay lại.</span></p>
+  <div class="stepper card">
+    <div class="steps" id="steps"></div>
+    <div>
+      <div id="stepBody"></div>
+      <div class="step-nav"><button id="prevStep">← Trước</button><button id="nextStep">Tiếp →</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. EMBEDDING -->
+<section id="embedding">
+  <h2>4. Embedding: trái tim của việc tìm theo nghĩa</h2>
+  <p><b>Embedding</b> là một dãy số (vector) mà một model chuyên dụng tạo ra từ một đoạn văn bản. Model được huấn luyện sao cho <b>hai đoạn có nghĩa giống nhau thì vector nằm gần nhau</b>, kể cả khi chúng không trùng chữ nào.</p>
+  <div class="grid g2">
+    <div class="card">
+      <h4>Vector trông như thế nào?</h4>
+      <pre class="mono">"Nhân viên được nghỉ phép 12 ngày/năm"
+→ [0.021, -0.113, 0.087, 0.004, …]   (vài trăm đến vài nghìn số)</pre>
+      <p class="muted">Từng con số riêng lẻ không mang nghĩa mà con người đọc được. Chỉ <b>khoảng cách giữa các vector</b> là có ý nghĩa.</p>
+    </div>
+    <div class="card">
+      <h4>Đo "gần nhau" bằng cách nào?</h4>
+      <p>Phổ biến nhất là <b>cosine similarity</b>: đo góc giữa hai vector. Cùng hướng → gần 1 (rất giống nghĩa). Vuông góc → gần 0 (không liên quan).</p>
+      <p class="muted">Ví dụ: "xin nghỉ phép" và "số ngày nghỉ hằng năm" có cosine cao dù khác chữ; "xin nghỉ phép" và "mật khẩu wifi" có cosine thấp.</p>
+      <p class="muted">Cosine nằm trong khoảng −1 đến 1. Với model thật, điểm chủ yếu dùng để <b>xếp hạng</b>; không có một ngưỡng chung kiểu "trên 0.8 là liên quan" áp dụng cho mọi model.</p>
+    </div>
+  </div>
+
+  <h3>Thử tìm kiếm trong "không gian nghĩa"</h3>
+  <p>Thực tế vector có hàng trăm chiều. Hình dưới thu gọn còn 2 chiều để dễ nhìn (<b>minh họa</b>). Mỗi chấm là một đoạn tài liệu, màu theo chủ đề. Chọn một câu hỏi: hệ thống sẽ nối tới 3 đoạn gần nhất — đó chính là retrieval top-3. <span class="muted">Hình 2 chiều dùng khoảng cách đường thẳng cho dễ nhìn; hệ thống thật thường dùng cosine, nhưng ý tưởng "gần nhau = giống nghĩa" là như nhau.</span></p>
+  <div class="space">
+    <svg id="spaceSvg" viewBox="0 0 600 420" role="img" aria-label="Minh họa không gian embedding 2 chiều"></svg>
+    <div>
+      <div class="qbtns" id="qbtns"></div>
+      <div class="card" style="margin-top:10px" id="spaceResult"><p class="muted">Chọn một câu hỏi ở trên.</p></div>
+    </div>
+  </div>
+  <div class="callout warn"><b>Bẫy quan trọng:</b> câu hỏi và tài liệu phải được embed bằng <b>cùng một model</b>. Hai model khác nhau tạo ra hai "bản đồ" khác nhau, so khoảng cách giữa hai bản đồ là vô nghĩa. Hệ quả: <b>đổi embedding model thì phải embed lại toàn bộ kho</b>. Ngoài ra, cần chọn model hiểu tốt tiếng Việt nếu tài liệu là tiếng Việt.</div>
+</section>
+
+<!-- 5. KHÁI NIỆM -->
+<section id="khai-niem">
+  <h2>5. Từ điển khái niệm</h2>
+  <p>Mỗi thẻ có định nghĩa ngắn, ví dụ, và liên kết sang khái niệm liên quan. Lọc theo nhóm hoặc gõ để tìm.</p>
+  <div class="gloss-tools">
+    <input id="glossSearch" type="search" placeholder="Tìm khái niệm… (vd: chunk, vector, rerank)">
+  </div>
+  <div class="gloss-tools" id="glossChips"></div>
+  <div class="grid g3" id="glossGrid"></div>
+</section>
+
+<!-- 6. MỐI QUAN HỆ -->
+<section id="quan-he">
+  <h2>6. Bản đồ mối quan hệ</h2>
+  <p>Các khái niệm không đứng riêng. Hình dưới cho thấy thành phần nào tạo ra cái gì, cái gì dùng cái gì, và chỗ các kỹ thuật nâng cao "cắm" vào.</p>
+  <div class="vflow m-only" aria-label="Bản đồ quan hệ (dạng dọc)">
+    <div class="box box1">
+      <div class="ph ph1">Chuẩn bị kho</div>
+      <div class="node"><b>Tài liệu</b></div>
+      <div class="ar">↓ cắt thành</div>
+      <div class="node"><b>Chunk</b><span>+ metadata</span></div>
+      <div class="ar">↓ đưa vào</div>
+      <div class="node db"><b>Embedding model</b><span>dùng chung cho cả câu hỏi</span></div>
+      <div class="ar">↓ tạo ra</div>
+      <div class="node"><b>Vector</b></div>
+      <div class="ar">↓ lưu vào</div>
+      <div class="node db"><b>Vector DB</b><span>index (ANN)</span></div>
+    </div>
+    <div class="box box2">
+      <div class="ph ph2">Trả lời</div>
+      <div class="node"><b>Câu hỏi</b></div>
+      <div class="ar">↓</div>
+      <div class="node opt"><b>Query rewriting</b><span>tùy chọn</span></div>
+      <div class="ar">↓ embed câu hỏi (cùng embedding model)</div>
+      <div class="node r"><b>Retriever</b><span>tìm trong Vector DB · có thể kết hợp <b style="display:inline">BM25</b> (hybrid search, tùy chọn)</span></div>
+      <div class="ar">↓ top-k thô</div>
+      <div class="node opt"><b>Reranker</b><span>tùy chọn</span></div>
+      <div class="ar">↓ top-k tốt nhất</div>
+      <div class="node a"><b>Prompt hoàn chỉnh</b><span>prompt template (lời dặn grounding) + các đoạn + câu hỏi gốc · phải vừa context window</span></div>
+      <div class="ar">↓</div>
+      <div class="node g"><b>LLM</b></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>Câu trả lời</b><span>+ trích nguồn</span></div>
+    </div>
+    <div class="node" style="border:1px dashed var(--bad);background:var(--bad-soft)"><b>Đánh giá</b><span>đo chất lượng tìm (hit@k ở Retriever/Reranker) và chất lượng câu trả lời (faithfulness, đúng/sai)</span></div>
+  </div>
+  <div class="svgbox d-only">
+  <svg class="diagram" viewBox="0 0 1000 560" role="img" aria-label="Bản đồ quan hệ giữa các khái niệm RAG">
+    <defs>
+      <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+    </defs>
+    <g font-size="13">
+      <!-- row 1 -->
+      <rect x="20" y="30" width="150" height="54" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="95" y="62" text-anchor="middle" font-weight="600">Tài liệu</text>
+      <rect x="230" y="30" width="150" height="54" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="305" y="55" text-anchor="middle" font-weight="600">Chunk</text><text x="305" y="73" text-anchor="middle" font-size="11" style="fill:var(--muted)">+ metadata</text>
+      <rect x="440" y="30" width="150" height="54" rx="10" fill="var(--surface)" stroke="var(--p2)"/><text x="515" y="55" text-anchor="middle" font-weight="600">Embedding model</text><text x="515" y="73" text-anchor="middle" font-size="11" style="fill:var(--muted)">dùng chung 2 pha</text>
+      <rect x="650" y="30" width="150" height="54" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="725" y="62" text-anchor="middle" font-weight="600">Vector</text>
+      <rect x="830" y="30" width="150" height="54" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/><text x="905" y="55" text-anchor="middle" font-weight="600">Vector DB</text><text x="905" y="73" text-anchor="middle" font-size="11" style="fill:var(--muted)">index (ANN)</text>
+      <!-- row 2 -->
+      <rect x="20" y="190" width="150" height="54" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="95" y="222" text-anchor="middle" font-weight="600">Câu hỏi</text>
+      <rect x="230" y="190" width="150" height="54" rx="10" fill="var(--warn-soft)" stroke="var(--p4)"/><text x="305" y="215" text-anchor="middle" font-weight="600">Query rewriting</text><text x="305" y="233" text-anchor="middle" font-size="11" style="fill:var(--muted)">tùy chọn</text>
+      <rect x="440" y="190" width="150" height="54" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/><text x="515" y="215" text-anchor="middle" font-weight="600">Retriever</text><text x="515" y="233" text-anchor="middle" font-size="11" style="fill:var(--muted)">similarity + top-k</text>
+      <rect x="650" y="190" width="150" height="54" rx="10" fill="var(--warn-soft)" stroke="var(--p4)"/><text x="725" y="215" text-anchor="middle" font-weight="600">BM25 (từ khóa)</text><text x="725" y="233" text-anchor="middle" font-size="11" style="fill:var(--muted)">hybrid search, tùy chọn</text>
+      <rect x="440" y="290" width="150" height="54" rx="10" fill="var(--warn-soft)" stroke="var(--p4)"/><text x="515" y="315" text-anchor="middle" font-weight="600">Reranker</text><text x="515" y="333" text-anchor="middle" font-size="11" style="fill:var(--muted)">tùy chọn</text>
+      <!-- row 3 -->
+      <rect x="230" y="400" width="150" height="54" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="305" y="425" text-anchor="middle" font-weight="600">Prompt template</text><text x="305" y="443" text-anchor="middle" font-size="11" style="fill:var(--muted)">lời dặn grounding</text>
+      <rect x="440" y="400" width="150" height="54" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/><text x="515" y="425" text-anchor="middle" font-weight="600">Prompt hoàn chỉnh</text><text x="515" y="443" text-anchor="middle" font-size="11" style="fill:var(--muted)">≤ context window</text>
+      <rect x="650" y="400" width="150" height="54" rx="10" fill="var(--surface)" stroke="var(--p3)" stroke-width="2"/><text x="725" y="432" text-anchor="middle" font-weight="600">LLM</text>
+      <rect x="830" y="400" width="150" height="54" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="905" y="425" text-anchor="middle" font-weight="600">Câu trả lời</text><text x="905" y="443" text-anchor="middle" font-size="11" style="fill:var(--muted)">+ trích nguồn</text>
+      <!-- eval -->
+      <rect x="650" y="490" width="330" height="54" rx="10" fill="var(--bad-soft)" stroke="var(--bad)" stroke-dasharray="5 4"/><text x="815" y="515" text-anchor="middle" font-weight="600">Đánh giá</text><text x="815" y="533" text-anchor="middle" font-size="11" style="fill:var(--muted)">đo retrieval (hit@k) và câu trả lời (faithfulness, đúng/sai)</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="1.8" fill="none" marker-end="url(#arr2)" font-size="11">
+      <line x1="170" y1="57" x2="228" y2="57"/>
+      <line x1="380" y1="57" x2="438" y2="57"/>
+      <line x1="590" y1="57" x2="648" y2="57"/>
+      <line x1="800" y1="57" x2="828" y2="57"/>
+      <line x1="170" y1="217" x2="228" y2="217"/>
+      <line x1="380" y1="217" x2="438" y2="217"/>
+      <path d="M515 84 L515 188"/>
+      <path d="M905 84 C 905 150, 560 140, 545 188"/>
+      <path d="M590 210 L648 210"/>
+      <path d="M648 228 L592 228"/>
+      <line x1="515" y1="244" x2="515" y2="288"/>
+      <line x1="515" y1="344" x2="515" y2="398"/>
+      <line x1="380" y1="427" x2="438" y2="427"/>
+      <line x1="590" y1="427" x2="648" y2="427"/>
+      <line x1="800" y1="427" x2="828" y2="427"/>
+      <path d="M95 244 C 95 380, 470 360, 490 398"/>
+      <path d="M905 454 L905 488" stroke-dasharray="4 4"/>
+      <path d="M590 317 C 700 317, 760 400, 760 488" stroke-dasharray="4 4"/>
+    </g>
+    <g font-size="11" style="fill:var(--muted)">
+      <text x="185" y="50">cắt</text><text x="393" y="50">đưa vào</text><text x="600" y="50">tạo ra</text><text x="806" y="50">lưu</text>
+      <text x="522" y="140">embed câu hỏi</text><text x="740" y="150">trả về đoạn gần nhất</text>
+      <text x="522" y="275">top-k thô</text><text x="522" y="378">top-k tốt nhất</text>
+      <text x="110" y="330">câu hỏi gốc</text>
+      <text x="660" y="300">đo chất lượng tìm</text>
+    </g>
+  </svg>
+  </div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h4>Quan hệ "phụ thuộc" quan trọng nhất</h4>
+      <ul>
+        <li><b>Chunking quyết định</b> retrieval tìm được gì: đoạn cắt dở thì không có đoạn nào chứa trọn đáp án.</li>
+        <li><b>Embedding model quyết định</b> "gần nhau" nghĩa là gì: model kém tiếng Việt thì khoảng cách sai.</li>
+        <li><b>Retrieval quyết định</b> LLM được thấy gì: LLM không thể trả lời đúng từ đoạn sai.</li>
+        <li><b>Prompt quyết định</b> LLM có bám tài liệu hay tự bịa.</li>
+      </ul>
+    </div>
+    <div class="card"><h4>Đánh đổi xuyên suốt</h4>
+      <ul>
+        <li><b>Chunk to ↔ chunk nhỏ:</b> đủ ngữ cảnh ↔ khớp nghĩa chính xác.</li>
+        <li><b>k lớn ↔ k nhỏ:</b> ít bỏ sót ↔ ít nhiễu, rẻ hơn.</li>
+        <li><b>Thêm reranker / hybrid:</b> chính xác hơn ↔ chậm hơn, phức tạp hơn.</li>
+        <li><b>Lời dặn chặt ↔ lỏng:</b> ít bịa ↔ hay từ chối trả lời.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 7. SO SÁNH -->
+<section id="so-sanh">
+  <h2>7. RAG so với các cách khác</h2>
+  <p>RAG không phải cách duy nhất để LLM "biết" thêm điều gì. Bảng dưới so sánh ở mức khái niệm.</p>
+  <div class="table-wrap">
+  <table class="stack">
+    <thead><tr><th>Cách làm</th><th>Ý tưởng</th><th>Hợp khi</th><th>Hạn chế</th></tr></thead>
+    <tbody>
+      <tr><td><b>Prompt thường</b></td><td>Chỉ hỏi, LLM trả lời bằng kiến thức sẵn có.</td><td>Kiến thức phổ thông.</td><td>Không biết tài liệu riêng; có thể bịa.</td></tr>
+      <tr><td><b>Dán toàn bộ tài liệu vào prompt</b></td><td>Đưa hết tài liệu vào context window.</td><td>Tài liệu ngắn, ít câu hỏi.</td><td>Bị giới hạn context window; tốn tiền và chậm khi tài liệu lớn; dễ bỏ sót chi tiết.</td></tr>
+      <tr><td><b>RAG</b></td><td>Tìm đúng vài đoạn, đưa vào prompt.</td><td>Kho tài liệu lớn, hay cập nhật, cần trích nguồn.</td><td>Chất lượng phụ thuộc vào bước tìm kiếm; thêm hệ thống cần vận hành.</td></tr>
+      <tr><td><b>Fine-tuning</b></td><td>Huấn luyện thêm để thay đổi trọng số của model.</td><td>Dạy <i>cách</i> trả lời: giọng văn, định dạng, kỹ năng chuyên biệt.</td><td>Tốn công huấn luyện lại khi dữ liệu đổi; không phải cách đáng tin để nạp sự kiện mới; khó trích nguồn.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="callout"><b>Quy tắc dễ nhớ:</b> RAG cho LLM <b>biết thêm thông tin</b>; fine-tuning dạy LLM <b>làm việc theo cách khác</b>. Hai cách có thể kết hợp với nhau.</div>
+</section>
+
+<!-- 8. LỖI -->
+<section id="loi">
+  <h2>8. Lỗi thường gặp và cách chẩn đoán</h2>
+  <p>Khi RAG trả lời sai, đừng vội đổi LLM. Trong thực tế, việc nhanh nhất là <b>nhìn top-k được tìm ra trước</b> (bước 3). Nếu thiếu đoạn đúng thì lùi ngược về bước 2, rồi bước 1. Cây dưới đây liệt kê đủ bốn chỗ có thể hỏng.</p>
+  <div class="grid g2">
+    <div class="card">
+      <h4>Cây chẩn đoán</h4>
+      <ol>
+        <li><b>Tài liệu có chứa đáp án không?</b><br><span class="muted">Không → bổ sung tài liệu. RAG không tạo ra thông tin không tồn tại. Kiểm tra cả bước đọc chữ: PDF scan cần OCR, bảng biểu hay bị trích sai.</span></li>
+        <li><b>Có đoạn nào chứa trọn đáp án không?</b><br><span class="muted">Không → lỗi chunking: đáp án bị cắt đôi. Đổi kích thước, thêm overlap, cắt theo cấu trúc.</span></li>
+        <li><b>Đoạn đó có nằm trong top-k được tìm ra không?</b><br><span class="muted">Không → lỗi retrieval. Thử embedding model khác, hybrid search, reranking, query rewriting.</span></li>
+        <li><b>Đoạn đúng đã vào prompt mà LLM vẫn trả lời sai?</b><br><span class="muted">Có → lỗi generation. Sửa lời dặn, giảm số đoạn gây nhiễu, đổi LLM.</span></li>
+      </ol>
+    </div>
+    <div class="card">
+      <h4>Bảng triệu chứng</h4>
+      <div class="table-wrap"><table class="stack">
+        <thead><tr><th>Triệu chứng</th><th>Nguyên nhân thường gặp</th></tr></thead>
+        <tbody>
+          <tr><td>Trả lời "không biết" dù tài liệu có</td><td>Retrieval không tìm ra đoạn đúng.</td></tr>
+          <tr><td>Trả lời đúng một nửa</td><td>Chunk cắt ngang ý; đáp án nằm rải nhiều đoạn.</td></tr>
+          <tr><td>Trả lời nghe hợp lý nhưng không có trong tài liệu</td><td>Lời dặn grounding yếu; LLM dùng kiến thức riêng.</td></tr>
+          <tr><td>Hỏi mã số, tên riêng thì tìm sai</td><td>Vector search kém với từ khóa chính xác → cần hybrid search.</td></tr>
+          <tr><td>Trả lời theo chính sách cũ</td><td>Kho vector chưa cập nhật sau khi tài liệu đổi.</td></tr>
+          <tr><td>Kết quả gần như ngẫu nhiên</td><td>Embedding model không hợp ngôn ngữ, hoặc dùng hai model khác nhau cho hai pha.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+</section>
+
+<!-- 9. NÂNG CAO -->
+<section id="nang-cao">
+  <h2>9. Kỹ thuật nâng cao (ở mức ý tưởng)</h2>
+  <p>Mọi kỹ thuật dưới đây đều nhằm một mục tiêu: <b>đưa đúng đoạn vào prompt</b>. Mỗi cái cắm vào một vị trí trong flow.</p>
+  <div class="grid g2">
+    <div class="card"><span class="tag p4">Trước khi tìm</span><h4>Query rewriting</h4><p>Dùng LLM viết lại câu hỏi cho rõ, hoặc sinh vài cách hỏi khác rồi tìm cho tất cả.</p><p class="muted">Ví dụ: câu hỏi nối tiếp "còn người mới vào thì sao?" được viết lại thành "Nhân viên mới vào có bao nhiêu ngày nghỉ phép?".</p></div>
+    <div class="card"><span class="tag p4">Lúc tìm</span><h4>Hybrid search</h4><p>Chạy song song tìm theo nghĩa (vector) và tìm theo từ khóa (BM25), rồi trộn hai danh sách kết quả, thường bằng Reciprocal Rank Fusion.</p><p class="muted">Có ích với mã sản phẩm, số hiệu điều luật, tên riêng — những thứ vector search hay bỏ lỡ.</p></div>
+    <div class="card"><span class="tag p4">Sau khi tìm</span><h4>Reranking</h4><p>Lấy rộng (vd. top-20), rồi dùng một model chấm điểm kỹ từng cặp (câu hỏi, đoạn) — thường là cross-encoder — để chọn ra top-3.</p><p class="muted">Chính xác hơn vì model đọc câu hỏi và đoạn <i>cùng lúc</i>, nhưng chậm hơn nên chỉ áp dụng cho một số ít ứng viên.</p></div>
+    <div class="card"><span class="tag p4">Lúc cắt đoạn</span><h4>Chunking theo cấu trúc</h4><p>Cắt theo tiêu đề, mục, đoạn văn thay vì theo số ký tự cố định; gắn tiêu đề mục vào đầu mỗi chunk để chunk tự đủ nghĩa.</p></div>
+    <div class="card"><span class="tag p4">Lúc lọc</span><h4>Metadata filtering</h4><p>Lọc theo thuộc tính trước hoặc trong khi tìm: phòng ban, năm, loại tài liệu, quyền truy cập của người hỏi.</p></div>
+    <div class="card"><span class="tag p4">Điều khiển cả flow</span><h4>Agentic RAG</h4><p>LLM tự quyết định có cần tìm không, tìm gì, và có cần tìm thêm lượt nữa không. Phù hợp câu hỏi nhiều bước (multi-hop).</p><p class="muted">Linh hoạt hơn nhưng khó kiểm soát chi phí và khó đánh giá hơn.</p></div>
+  </div>
+  <div class="callout warn"><b>Nguyên tắc:</b> thêm từng kỹ thuật một và đo lại sau mỗi lần thêm. Bật tất cả cùng lúc thì không biết cái nào thật sự giúp.</div>
+</section>
+
+<!-- 10. ĐÁNH GIÁ -->
+<section id="danh-gia">
+  <h2>10. Đánh giá RAG tốt hay dở</h2>
+  <p>Luôn đánh giá <b>hai lớp riêng</b>, vì hai lớp hỏng có cách sửa khác nhau.</p>
+  <div class="grid g2">
+    <div class="card"><span class="tag p1">Lớp 1 · Retrieval</span><h4>Tìm có đúng không?</h4>
+      <ul>
+        <li><b>hit@k</b>: tỷ lệ câu hỏi có ít nhất một đoạn đúng nằm trong top-k.</li>
+        <li><b>recall@k</b>: tỷ lệ các đoạn đúng được tìm thấy trong top-k. Hai số bằng nhau khi mỗi câu hỏi chỉ có một đoạn đúng; khác nhau khi câu hỏi cần nhiều đoạn (như ví dụ c7 + c8 ở mục 3).</li>
+        <li><b>MRR</b>: đoạn đúng đứng ở vị trí càng cao thì điểm càng cao (vị trí 1 → 1; vị trí 2 → 0.5; vị trí 3 → 0.33…).</li>
+      </ul>
+    </div>
+    <div class="card"><span class="tag p3">Lớp 2 · Generation</span><h4>Trả lời có đúng không?</h4>
+      <ul>
+        <li><b>Faithfulness</b>: mọi ý trong câu trả lời có nằm trong các đoạn được đưa vào không (không bịa).</li>
+        <li><b>Correctness</b>: câu trả lời có đúng với đáp án chuẩn không.</li>
+        <li><b>Từ chối đúng lúc</b>: câu hỏi ngoài phạm vi tài liệu thì nói "không biết".</li>
+      </ul>
+    </div>
+  </div>
+  <h3>Cần chuẩn bị gì để đánh giá?</h3>
+  <p>Một <b>bộ câu hỏi kiểm tra</b> (eval set): vài chục câu hỏi thật, mỗi câu ghi rõ đoạn nào chứa đáp án và đáp án đúng là gì. Nên có câu hỏi dùng từ ngữ khác tài liệu, và vài câu hỏi ngoài phạm vi.</p>
+  <p><b>LLM-as-judge</b>: dùng một LLM chấm điểm câu trả lời cho nhanh. Tiện nhưng có thiên lệch, nên chấm tay một phần để đối chiếu.</p>
+  <div class="callout"><b>Đọc kết quả:</b> lớp 1 thấp → sửa chunking / embedding / tìm kiếm. Lớp 1 cao mà lớp 2 thấp → sửa prompt hoặc LLM.</div>
+</section>
+
+<!-- 11. LỘ TRÌNH -->
+<section id="lo-trinh">
+  <h2>11. Lộ trình tự học 3 tuần (không cần code)</h2>
+  <p class="muted">Khoảng 5 giờ mỗi tuần. Các ô đã đánh dấu được lưu trong trình duyệt của bạn.</p>
+  <div class="grid g3">
+    <div class="card"><span class="tag p1">Tuần 1</span><h4>Vì sao và flow</h4><p>Đọc mục 1, 2, 3.</p>
+      <label class="check"><input type="checkbox" data-k="w1a"><span>Tự vẽ lại sơ đồ hai pha không nhìn tài liệu.</span></label>
+      <label class="check"><input type="checkbox" data-k="w1b"><span>Giải thích RAG cho một người khác trong 2 phút, dùng ví dụ thủ thư.</span></label>
+    </div>
+    <div class="card"><span class="tag p1">Tuần 2</span><h4>Embedding, khái niệm, mối quan hệ</h4><p>Đọc mục 4, 5, 6, 7.</p>
+      <label class="check"><input type="checkbox" data-k="w2a"><span><b>RAG bằng tay:</b> chọn tài liệu ~10 trang, tự chia đoạn, tự chọn 3 đoạn cho một câu hỏi, dán vào ChatGPT/Claude kèm lời dặn "chỉ dựa vào tài liệu này".</span></label>
+      <label class="check"><input type="checkbox" data-k="w2b"><span>Lặp lại nhưng cố tình dán <b>sai đoạn</b>, quan sát câu trả lời hỏng thế nào.</span></label>
+    </div>
+    <div class="card"><span class="tag p1">Tuần 3</span><h4>Lỗi, nâng cao, đánh giá</h4><p>Đọc mục 8, 9, 10.</p>
+      <label class="check"><input type="checkbox" data-k="w3a"><span>Viết 10 câu hỏi cho tài liệu tuần 2, ghi đoạn chứa đáp án.</span></label>
+      <label class="check"><input type="checkbox" data-k="w3b"><span>Với mỗi câu trả lời sai, xác định sai ở lớp 1 hay lớp 2.</span></label>
+    </div>
+  </div>
+
+  <h3>Tự kiểm tra: trả lời được là đã nắm cốt lõi</h3>
+  <details><summary>1. Pha chuẩn bị và pha trả lời mỗi pha làm gì? Vì sao phải tách?</summary>
+    <p>Pha chuẩn bị cắt tài liệu, embed từng đoạn và lưu vào vector database. Pha trả lời embed câu hỏi, tìm đoạn gần nhất, ghép vào prompt và cho LLM trả lời. Tách vì embed toàn bộ tài liệu rất tốn thời gian, chỉ nên làm một lần (hoặc khi tài liệu đổi), còn pha trả lời phải nhanh.</p></details>
+  <details><summary>2. Vì sao "xin nghỉ" có thể tìm ra đoạn viết "nghỉ phép năm" dù không trùng chữ hoàn toàn?</summary>
+    <p>Vì tìm kiếm so sánh <b>vector embedding</b>, không so chữ. Embedding model đặt các câu có nghĩa gần nhau vào vị trí gần nhau trong không gian vector.</p></details>
+  <details><summary>3. RAG trả lời sai, bạn kiểm tra bước nào đầu tiên?</summary>
+    <p>Kiểm tra các đoạn được tìm ra có chứa đáp án không (lớp retrieval). Nếu đoạn đúng không có trong prompt thì LLM không thể trả lời đúng, sửa LLM hay prompt cũng vô ích.</p></details>
+  <details><summary>4. Khi nào nên dùng hybrid search?</summary>
+    <p>Khi câu hỏi chứa từ khóa phải khớp chính xác: mã sản phẩm, số hiệu điều luật, tên riêng, từ viết tắt. Tìm theo nghĩa có thể bỏ lỡ những thứ này, còn BM25 khớp chữ chính xác.</p></details>
+  <details><summary>5. RAG khác fine-tuning thế nào?</summary>
+    <p>RAG đưa thông tin vào prompt lúc hỏi, cập nhật bằng cách đổi tài liệu, trích được nguồn. Fine-tuning thay đổi trọng số model, hợp để dạy cách trả lời (giọng văn, định dạng), không phải cách đáng tin để nạp sự kiện mới.</p></details>
+  <details><summary>6. Vì sao không nên lấy k = 20 đoạn cho chắc?</summary>
+    <p>Nhiều đoạn không liên quan làm nhiễu LLM, tốn token và tiền hơn. Muốn lấy rộng thì lấy nhiều rồi dùng reranker chọn lại vài đoạn tốt nhất.</p></details>
+</section>
+</main>
+
+<footer>
+  Tài liệu học RAG ở mức khái niệm. Các con số vector, điểm số và hình 2 chiều trong trang là minh họa để hiểu cơ chế, không phải số liệu đo từ một model cụ thể.
+</footer>
+
+<script>
+(function(){
+  // ---------- Theme ----------
+  var root=document.documentElement;
+  function safeGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+  function safeSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  var saved=safeGet('rag-theme'); if(saved) root.setAttribute('data-theme',saved);
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme');
+    if(!cur){cur=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+    var next=cur==='dark'?'light':'dark'; root.setAttribute('data-theme',next); safeSet('rag-theme',next);
+  });
+
+  // ---------- Stacked tables on phones: give each cell its column name ----------
+  function labelTables(root){
+    [].forEach.call(root.querySelectorAll('table.stack'),function(t){
+      var heads=[].map.call(t.querySelectorAll('thead th'),function(th){return th.textContent});
+      [].forEach.call(t.querySelectorAll('tbody tr'),function(tr){[].forEach.call(tr.children,function(td,i){if(heads[i])td.setAttribute('data-label',heads[i])})});
+    });
+  }
+  labelTables(document);
+
+  // ---------- Stepper example ----------
+  var STEPS=[
+    {t:'Tài liệu gốc',h:'<span class="tag p1">Pha 1</span><h3>Bước 1 · Thu thập tài liệu</h3><p>Công ty có một file "Nội quy nhân sự" khoảng 30 trang. Trích một phần:</p><pre>Chương 3. Nghỉ phép\nĐiều 7. Nhân viên chính thức được nghỉ phép năm 12 ngày, hưởng nguyên lương.\nĐiều 8. Nhân viên làm việc dưới 12 tháng được tính phép theo tỷ lệ số tháng làm việc.\nĐiều 9. Đơn xin nghỉ phép phải gửi quản lý trực tiếp trước ít nhất 3 ngày làm việc.\n\nChương 5. Trang thiết bị\nĐiều 15. Mật khẩu wifi văn phòng do phòng IT cấp và đổi mỗi quý.</pre><p class="muted">Đây là "kiến thức" mà LLM chưa từng thấy.</p>'},
+    {t:'Cắt đoạn (chunking)',h:'<span class="tag p1">Pha 1</span><h3>Bước 2 · Cắt thành các đoạn</h3><p>Tài liệu được cắt theo từng điều, mỗi đoạn kèm metadata (nguồn, vị trí). Tiêu đề chương được gắn vào đầu đoạn để đoạn tự đủ nghĩa.</p><div class="chunk"><span class="id">#c7 · noi-quy.pdf · tr.12</span><br>[Nghỉ phép] Nhân viên chính thức được nghỉ phép năm 12 ngày, hưởng nguyên lương.</div><div class="chunk"><span class="id">#c8 · noi-quy.pdf · tr.12</span><br>[Nghỉ phép] Nhân viên làm việc dưới 12 tháng được tính phép theo tỷ lệ số tháng làm việc.</div><div class="chunk"><span class="id">#c9 · noi-quy.pdf · tr.13</span><br>[Nghỉ phép] Đơn xin nghỉ phép phải gửi quản lý trực tiếp trước ít nhất 3 ngày làm việc.</div><div class="chunk"><span class="id">#c15 · noi-quy.pdf · tr.21</span><br>[Trang thiết bị] Mật khẩu wifi văn phòng do phòng IT cấp và đổi mỗi quý.</div><p class="muted">Nếu cắt cứng theo 50 ký tự, câu ở #c7 có thể bị cắt đôi: "…nghỉ phép năm 12" | "ngày, hưởng nguyên lương". Đó là lỗi chunking.</p>'},
+    {t:'Embedding tài liệu',h:'<span class="tag p1">Pha 1</span><h3>Bước 3 · Biến mỗi đoạn thành vector</h3><p>Embedding model đọc từng đoạn và trả về một vector (ở đây rút gọn còn 4 số để dễ nhìn):</p><div class="chunk"><span class="id">#c7</span> <span class="vec">[0.81, 0.12, -0.05, 0.33]</span></div><div class="chunk"><span class="id">#c8</span> <span class="vec">[0.76, 0.20, -0.02, 0.41]</span></div><div class="chunk"><span class="id">#c9</span> <span class="vec">[0.70, 0.05, 0.31, 0.18]</span></div><div class="chunk"><span class="id">#c15</span> <span class="vec">[-0.10, 0.88, 0.02, -0.25]</span></div><p class="muted">Ba đoạn về nghỉ phép có vector "cùng hướng" với nhau; đoạn wifi nằm ở hướng khác hẳn.</p>'},
+    {t:'Lưu vào vector DB',h:'<span class="tag p1">Pha 1</span><h3>Bước 4 · Lưu vào vector database</h3><p>Mỗi bản ghi gồm: <b>vector</b> + <b>văn bản gốc</b> + <b>metadata</b>. Vector dùng để tìm; văn bản gốc là thứ sẽ được đưa cho LLM đọc; metadata dùng để trích nguồn và lọc.</p><div class="table-wrap"><table class="stack"><thead><tr><th>id</th><th>vector</th><th>văn bản</th><th>metadata</th></tr></thead><tbody><tr><td>c7</td><td class="vec">[0.81, …]</td><td>Nhân viên chính thức được nghỉ phép năm 12 ngày…</td><td>tr.12</td></tr><tr><td>c8</td><td class="vec">[0.76, …]</td><td>Nhân viên làm việc dưới 12 tháng…</td><td>tr.12</td></tr><tr><td>…</td><td>…</td><td>…</td><td>…</td></tr></tbody></table></div><div class="callout ok">Pha 1 xong. Từ đây, mỗi câu hỏi chỉ chạy pha 2.</div>'},
+    {t:'Câu hỏi → vector',h:'<span class="tag p3">Pha 2</span><h3>Bước 5 · Người dùng hỏi</h3><pre>"Mình mới vào làm được 6 tháng thì có bao nhiêu ngày phép?"</pre><p>Câu hỏi được embed bằng <b>cùng embedding model</b> ở bước 3:</p><p><span class="vec">[0.74, 0.18, 0.00, 0.39]</span></p><p class="muted">Để ý: câu hỏi không chứa chữ "tỷ lệ" hay "dưới 12 tháng", nhưng nghĩa thì gần #c8.</p>'},
+    {t:'Retrieval (R)',h:'<span class="tag p3">Pha 2</span><h3>Bước 6 · Tìm top-3 đoạn gần nhất</h3><p>So vector câu hỏi với các vector trong kho bằng cosine similarity, lấy 3 đoạn điểm cao nhất (điểm tính từ đúng 4 số minh họa ở bước 3 và 5):</p><div class="chunk hit"><span class="id">#c8 · điểm 0.999</span><div class="bar"><span style="width:99.9%"></span></div>Nhân viên làm việc dưới 12 tháng được tính phép theo tỷ lệ số tháng làm việc.</div><div class="chunk hit"><span class="id">#c7 · điểm 0.991</span><div class="bar"><span style="width:99.1%"></span></div>Nhân viên chính thức được nghỉ phép năm 12 ngày, hưởng nguyên lương.</div><div class="chunk hit"><span class="id">#c9 · điểm 0.886</span><div class="bar"><span style="width:88.6%"></span></div>Đơn xin nghỉ phép phải gửi quản lý trực tiếp trước ít nhất 3 ngày làm việc.</div><div class="chunk"><span class="id">#c15 · điểm −0.017 — không được chọn</span><div class="bar"><span style="width:0%"></span></div>Mật khẩu wifi văn phòng…</div><p class="muted">Cần cả #c7 (12 ngày/năm) và #c8 (tính theo tỷ lệ) mới trả lời được. Nếu k = 1, LLM sẽ thiếu thông tin.</p><p class="muted">Về ý tưởng là so với mọi vector. Khi kho có hàng triệu đoạn, index (ANN) giúp chỉ phải so với một phần nhỏ mà vẫn tìm ra gần đúng các đoạn gần nhất.</p><div class="callout warn"><b>Lưu ý:</b> top-k <b>luôn trả về đủ k đoạn</b>, kể cả khi không đoạn nào liên quan. Retriever không biết nói "không tìm thấy"; việc đó phụ thuộc vào lời dặn cho LLM ở bước 7.</div>'},
+    {t:'Augmentation (A)',h:'<span class="tag p3">Pha 2</span><h3>Bước 7 · Ghép prompt</h3><p>Hệ thống ghép lời dặn + các đoạn + câu hỏi thành một prompt:</p><pre>Bạn là trợ lý nhân sự. CHỈ trả lời dựa trên tài liệu dưới đây.\nNếu tài liệu không có thông tin, hãy nói "Tôi không tìm thấy trong nội quy".\nGhi rõ mã đoạn đã dùng.\n\n[c8] Nhân viên làm việc dưới 12 tháng được tính phép theo tỷ lệ số tháng làm việc.\n[c7] Nhân viên chính thức được nghỉ phép năm 12 ngày, hưởng nguyên lương.\n[c9] Đơn xin nghỉ phép phải gửi quản lý trực tiếp trước ít nhất 3 ngày làm việc.\n\nCâu hỏi: Mình mới vào làm được 6 tháng thì có bao nhiêu ngày phép?</pre><p class="muted">Lời dặn "CHỈ trả lời dựa trên tài liệu" gọi là grounding — giảm việc LLM tự bịa.</p>'},
+    {t:'Generation (G)',h:'<span class="tag p3">Pha 2</span><h3>Bước 8 · LLM trả lời</h3><pre>Theo nội quy, nhân viên làm việc dưới 12 tháng được tính phép theo tỷ lệ\nsố tháng làm việc [c8]. Mức phép năm đầy đủ là 12 ngày [c7], nên với 6 tháng\nbạn có khoảng 12 × 6/12 = 6 ngày phép.\nLưu ý: đơn xin nghỉ cần gửi quản lý trước ít nhất 3 ngày làm việc [c9].</pre><div class="callout ok">LLM kết hợp thông tin từ hai đoạn và có trích nguồn, nên người dùng kiểm tra lại được.</div><div class="callout warn"><b>Nếu retrieval sai</b> (ví dụ chỉ lấy được #c15 về wifi), LLM có lời dặn tốt sẽ nói "không tìm thấy"; LLM không có lời dặn có thể bịa ra "15 ngày phép".</div>'}
+  ];
+  var cur=0, stepsEl=document.getElementById('steps'), bodyEl=document.getElementById('stepBody');
+  STEPS.forEach(function(s,i){var b=document.createElement('button');b.innerHTML='<span class="n">'+(i+1)+'</span>'+s.t;b.addEventListener('click',function(){show(i)});stepsEl.appendChild(b)});
+  function show(i){cur=i;bodyEl.innerHTML=STEPS[i].h;labelTables(bodyEl);[].forEach.call(stepsEl.children,function(b,j){b.classList.toggle('on',j===i)});
+    document.getElementById('prevStep').disabled=i===0;var ab=stepsEl.children[i];if(stepsEl.scrollWidth>stepsEl.clientWidth){stepsEl.scrollLeft=ab.offsetLeft-stepsEl.offsetLeft-8}document.getElementById('nextStep').disabled=i===STEPS.length-1;}
+  document.getElementById('prevStep').addEventListener('click',function(){if(cur>0)show(cur-1)});
+  document.getElementById('nextStep').addEventListener('click',function(){if(cur<STEPS.length-1)show(cur+1)});
+  show(0);
+
+  // ---------- 2D embedding space demo ----------
+  var TOPICS={leave:{n:'Nghỉ phép',c:'var(--p1)'},salary:{n:'Lương thưởng',c:'var(--p3)'},it:{n:'Thiết bị / IT',c:'var(--p2)'},office:{n:'Văn phòng',c:'var(--p4)'}};
+  var DOCS=[
+    {id:'c7',t:'leave',x:105,y:80,s:'Nghỉ phép năm 12 ngày'},
+    {id:'c8',t:'leave',x:165,y:135,s:'Dưới 12 tháng tính phép theo tỷ lệ'},
+    {id:'c9',t:'leave',x:90,y:165,s:'Đơn nghỉ phép gửi trước 3 ngày'},
+    {id:'c10',t:'leave',x:230,y:60,s:'Nghỉ ốm cần giấy bác sĩ'},
+    {id:'c11',t:'salary',x:430,y:95,s:'Lương trả ngày 5 hằng tháng'},
+    {id:'c12',t:'salary',x:490,y:150,s:'Thưởng Tết tháng 13'},
+    {id:'c13',t:'salary',x:400,y:150,s:'Phụ cấp ăn trưa'},
+    {id:'c15',t:'it',x:450,y:320,s:'Mật khẩu wifi đổi mỗi quý'},
+    {id:'c16',t:'it',x:500,y:280,s:'Laptop cấp cho nhân viên mới'},
+    {id:'c17',t:'it',x:410,y:360,s:'Báo hỏng thiết bị qua IT'},
+    {id:'c18',t:'office',x:140,y:320,s:'Giờ làm việc 8h–17h'},
+    {id:'c19',t:'office',x:190,y:360,s:'Gửi xe ở tầng hầm B2'},
+    {id:'c20',t:'office',x:250,y:300,s:'Làm việc từ xa thứ Sáu'}
+  ];
+  var QS=[
+    {q:'Mới vào 6 tháng được mấy ngày phép?',x:140,y:118},
+    {q:'Khi nào nhận lương?',x:440,y:125},
+    {q:'Quên mật khẩu wifi thì hỏi ai?',x:470,y:345},
+    {q:'Thứ Sáu có được làm ở nhà không?',x:280,y:200,note:'Câu hỏi nằm giữa nhiều chủ đề: đoạn đúng (c20) vẫn đứng đầu, nhưng hai đoạn còn lại thuộc chủ đề khác và chỉ là nhiễu. Top-k luôn trả đủ k đoạn; reranking giúp loại bớt nhiễu.'}
+  ];
+  var svg=document.getElementById('spaceSvg'), NS='http://www.w3.org/2000/svg';
+  function el(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);return e}
+  var K=1, curQ=-1;
+  function drawBase(){
+    K=(svg.getBoundingClientRect().width||600)<500?1.8:1;
+    svg.setAttribute('viewBox',K>1?'0 0 600 470':'0 0 600 420');
+    while(svg.firstChild)svg.removeChild(svg.firstChild);
+    svg.appendChild(el('text',{x:12,y:12+10*K,'font-size':12*K,style:'fill:var(--muted)'})).textContent='Không gian embedding (thu gọn 2 chiều, minh họa)';
+    Object.keys(TOPICS).forEach(function(k,i){var lx=K>1?20+(i%2)*290:20+i*145, ly=K>1?415+Math.floor(i/2)*32:400;var g=el('g',{});g.appendChild(el('circle',{cx:lx,cy:ly,r:6*K,fill:TOPICS[k].c}));var t=el('text',{x:lx+12*K,y:ly+4*K,'font-size':12*K});t.textContent=TOPICS[k].n;g.appendChild(t);svg.appendChild(g)});
+    DOCS.forEach(function(d){var g=el('g',{});g.appendChild(el('circle',{cx:d.x,cy:d.y,r:8*K,fill:TOPICS[d.t].c,'fill-opacity':.85}));var t=el('text',{x:d.x+11*K,y:d.y+4*K,'font-size':11*K,style:'fill:var(--muted)'});t.textContent=d.id;g.appendChild(t);var ti=el('title',{});ti.textContent=d.id+': '+d.s;g.appendChild(ti);d.g=g;svg.appendChild(g)});
+  }
+  var qbtns=document.getElementById('qbtns'), res=document.getElementById('spaceResult');
+  QS.forEach(function(q,i){var b=document.createElement('button');b.textContent='❓ '+q.q;b.addEventListener('click',function(){pick(i)});qbtns.appendChild(b)});
+  function pick(i){
+    curQ=i;
+    var q=QS[i];[].forEach.call(qbtns.children,function(b,j){b.classList.toggle('on',j===i)});
+    drawBase();
+    var ranked=DOCS.map(function(d){return{d:d,dist:Math.hypot(d.x-q.x,d.y-q.y)}}).sort(function(a,b){return a.dist-b.dist}).slice(0,3);
+    var max=Math.hypot(600,420);
+    ranked.forEach(function(r){svg.insertBefore(el('line',{x1:q.x,y1:q.y,x2:r.d.x,y2:r.d.y,stroke:'var(--p4)','stroke-width':2,'stroke-dasharray':'5 4'}),svg.children[1]);r.d.g.firstChild.setAttribute('r',11*K);r.d.g.firstChild.setAttribute('stroke','var(--text)');r.d.g.firstChild.setAttribute('stroke-width',2)});
+    var qg=el('g',{});qg.appendChild(el('rect',{x:q.x-6*K,y:q.y-6*K,width:12*K,height:12*K,rx:3,fill:'var(--p4)',transform:'rotate(45 '+q.x+' '+q.y+')'}));var qt=el('text',{x:q.x+14*K,y:q.y-10*K,'font-size':12*K,'font-weight':700,style:'fill:var(--p4)'});qt.textContent='câu hỏi';qg.appendChild(qt);svg.appendChild(qg);
+    var html='<b>Top-3 gần nhất:</b>';
+    ranked.forEach(function(r,k){var sim=(1-r.dist/max).toFixed(2);html+='<div class="chunk hit"><span class="id">#'+(k+1)+' · '+r.d.id+' · độ gần ≈ '+sim+'</span><br>'+r.d.s+' <span class="tag" style="color:'+TOPICS[r.d.t].c+'">'+TOPICS[r.d.t].n+'</span></div>'});
+    if(q.note)html+='<div class="callout warn" style="margin:8px 0 0">'+q.note+'</div>';
+    res.innerHTML=html;
+  }
+  drawBase();
+  var rzT;window.addEventListener('resize',function(){clearTimeout(rzT);rzT=setTimeout(function(){if(curQ>=0)pick(curQ);else drawBase()},150)});
+
+  // ---------- Glossary ----------
+  var G={llm:'Nền tảng LLM',chunk:'Chuẩn bị dữ liệu',emb:'Embedding & tìm kiếm',gen:'Ghép prompt & sinh',adv:'Nâng cao',eval:'Đánh giá'};
+  var T=[
+    ['llm','llm','LLM','Large Language Model','Mô hình ngôn ngữ lớn: đọc văn bản đầu vào và sinh văn bản đầu ra bằng cách lần lượt dự đoán token tiếp theo.','ChatGPT, Claude, Gemini đều chạy trên LLM.',['prompt','context-window','hallucination']],
+    ['prompt','llm','Prompt','','Toàn bộ văn bản gửi cho LLM trong một lần: lời dặn, dữ liệu, câu hỏi. LLM chỉ "thấy" những gì có trong prompt.','Trong RAG, các đoạn tìm được nằm ngay trong prompt.',['augmentation','prompt-template']],
+    ['token','llm','Token','','Đơn vị chữ mà LLM xử lý, thường là một từ hoặc một phần của từ. Chi phí và giới hạn đều tính theo token.','Với phần lớn tokenizer, tiếng Việt có dấu thường tốn nhiều token hơn tiếng Anh cho cùng ý.',['context-window']],
+    ['context-window','llm','Context window','','Số token tối đa LLM đọc được trong một lần (gồm cả prompt và câu trả lời).','Lý do không thể dán cả kho tài liệu vào mỗi câu hỏi.',['token','top-k']],
+    ['hallucination','llm','Hallucination','ảo giác','LLM sinh ra thông tin nghe hợp lý nhưng sai hoặc không có căn cứ.','Hỏi chính sách công ty, LLM bịa "15 ngày phép".',['grounding','faithfulness']],
+    ['cutoff','llm','Knowledge cutoff','','Thời điểm dữ liệu huấn luyện của LLM dừng lại. Sự kiện sau thời điểm đó LLM không biết.','RAG khắc phục bằng cách đưa tài liệu mới vào prompt.',['llm']],
+    ['fine-tuning','llm','Fine-tuning','','Huấn luyện thêm để thay đổi trọng số của model. Hợp dạy cách trả lời hơn là nạp sự kiện mới.','Dạy model luôn trả lời theo mẫu báo cáo của công ty.',['llm']],
+    ['document','chunk','Tài liệu nguồn','document','Dữ liệu gốc mà RAG tìm kiếm trong đó: PDF, Word, trang web, ticket, email…','Nội quy nhân sự 30 trang.',['chunk','loader']],
+    ['loader','chunk','Loader / parsing','','Bước đọc tài liệu và trích ra văn bản sạch (bỏ header, footer, xử lý bảng).','PDF scan cần OCR trước khi dùng được.',['document']],
+    ['chunk','chunk','Chunk','đoạn','Một mẩu văn bản được cắt từ tài liệu, là đơn vị nhỏ nhất để embed và tìm kiếm.','Một điều khoản trong nội quy.',['chunking','chunk-size','embedding']],
+    ['chunking','chunk','Chunking','cắt đoạn','Quá trình chia tài liệu thành các chunk: theo số ký tự/token cố định, theo câu, hoặc theo cấu trúc (tiêu đề, mục).','Cắt theo từng "Điều" thay vì mỗi 500 ký tự.',['chunk-size','overlap']],
+    ['chunk-size','chunk','Chunk size','','Độ dài mỗi chunk. To quá thì loãng nghĩa; nhỏ quá thì mất ngữ cảnh.','Thường thử vài trăm token rồi đo.',['overlap','chunk']],
+    ['overlap','chunk','Overlap','chồng lấn','Phần văn bản lặp lại giữa hai chunk liền nhau, giúp không mất ý ở chỗ cắt.','Chunk 2 lặp lại câu cuối của chunk 1.',['chunk-size']],
+    ['metadata','chunk','Metadata','','Thông tin đi kèm mỗi chunk: file nguồn, trang, mục, ngày, quyền truy cập.','Dùng để trích nguồn và lọc kết quả.',['citation','metadata-filter']],
+    ['embedding','emb','Embedding','','Vector số biểu diễn nghĩa của một đoạn văn bản. Nghĩa giống nhau → vector gần nhau.','"xin nghỉ" và "nghỉ phép năm" có embedding gần nhau.',['embedding-model','vector','cosine']],
+    ['embedding-model','emb','Embedding model','','Model chuyên biến văn bản thành vector. Khác LLM: không sinh chữ. Phải dùng cùng model cho tài liệu và câu hỏi.','Chọn model hỗ trợ tốt tiếng Việt cho tài liệu tiếng Việt.',['embedding','llm']],
+    ['vector','emb','Vector','','Dãy số có thứ tự, ví dụ [0.12, -0.4, …]. Embedding thường có vài trăm đến vài nghìn chiều.','',['embedding','cosine']],
+    ['cosine','emb','Cosine similarity','','Đo góc giữa hai vector: gần 1 là rất giống nghĩa, gần 0 là không liên quan.','Thước đo phổ biến nhất trong RAG.',['vector','retrieval']],
+    ['vector-db','emb','Vector database','','Kho lưu vector kèm văn bản gốc và metadata, hỗ trợ tìm nhanh các vector gần nhất.','Chroma, Qdrant (cơ sở dữ liệu vector); pgvector (tiện ích mở rộng của PostgreSQL); FAISS (thư viện index, không phải database đầy đủ).',['index','ann']],
+    ['index','emb','Index','','Cấu trúc dữ liệu giúp tìm vector gần nhất nhanh, thay vì so với từng vector một.','',['ann','vector-db']],
+    ['ann','emb','ANN','Approximate Nearest Neighbor','Tìm láng giềng gần đúng: rất nhanh với hàng triệu vector, đổi lại có thể bỏ sót đôi chút so với so từng cái.','',['index']],
+    ['retrieval','emb','Retrieval','R — truy xuất','Bước tìm các chunk liên quan nhất tới câu hỏi. Quyết định LLM được thấy gì.','Thường là điểm hỏng phổ biến của RAG.',['top-k','cosine','hybrid']],
+    ['top-k','emb','Top-k','','Số chunk lấy ra sau khi tìm. k nhỏ dễ thiếu thông tin; k lớn dễ nhiễu và tốn token.','Thường bắt đầu với k = 3–5.',['retrieval','rerank']],
+    ['augmentation','gen','Augmentation','A — bổ sung','Ghép các chunk tìm được vào prompt cùng câu hỏi và lời dặn.','',['prompt-template','prompt']],
+    ['prompt-template','gen','Prompt template','','Khung prompt cố định có chỗ trống để điền chunk và câu hỏi.','"Chỉ dựa vào tài liệu sau: {chunks}. Câu hỏi: {question}"',['grounding']],
+    ['grounding','gen','Grounding','bám nguồn','Yêu cầu LLM chỉ trả lời dựa trên tài liệu được cung cấp, và nói "không biết" khi tài liệu không có. Giảm bịa, không loại bỏ hoàn toàn.','',['hallucination','faithfulness']],
+    ['generation','gen','Generation','G — sinh','Bước LLM đọc prompt và viết câu trả lời.','',['llm','citation']],
+    ['citation','gen','Citation','trích nguồn','Câu trả lời ghi rõ chunk/tài liệu nào chứa thông tin, để người dùng kiểm chứng.','"…12 ngày [c7]"',['metadata']],
+    ['hybrid','adv','Hybrid search','','Kết hợp tìm theo nghĩa (vector) và tìm theo từ khóa (BM25), rồi trộn kết quả.','Hữu ích với mã sản phẩm, số hiệu, tên riêng.',['bm25','rrf']],
+    ['bm25','adv','BM25','','Thuật toán tìm kiếm theo từ khóa cổ điển: đoạn chứa từ của câu hỏi được cộng điểm; từ càng hiếm trong kho thì càng nặng điểm, có điều chỉnh theo độ dài đoạn.','Tìm "Điều 15" chính xác hơn vector search.',['hybrid']],
+    ['rrf','adv','Reciprocal Rank Fusion','RRF','Cách trộn nhiều danh sách xếp hạng: đoạn nào đứng cao ở nhiều danh sách thì được xếp cao.','',['hybrid']],
+    ['rerank','adv','Reranking','xếp hạng lại','Lấy rộng nhiều ứng viên rồi dùng model mạnh hơn (thường là cross-encoder) chấm lại, giữ vài đoạn tốt nhất.','Lấy top-20 → rerank → giữ top-3.',['cross-encoder','top-k']],
+    ['cross-encoder','adv','Cross-encoder','','Model đọc câu hỏi và đoạn văn cùng lúc để chấm mức liên quan. Chính xác hơn so vector nhưng chậm hơn.','',['rerank']],
+    ['query-rewrite','adv','Query rewriting','','Viết lại câu hỏi cho rõ (hoặc sinh nhiều biến thể) trước khi tìm.','"còn người mới thì sao?" → câu hỏi đầy đủ.',['retrieval']],
+    ['metadata-filter','adv','Metadata filtering','','Lọc kết quả theo thuộc tính: phòng ban, năm, quyền truy cập…','Chỉ tìm trong tài liệu năm nay.',['metadata']],
+    ['agentic','adv','Agentic RAG','','LLM tự quyết định khi nào cần tìm, tìm gì, có cần tìm thêm lượt nữa không.','Câu hỏi nhiều bước (multi-hop).',['retrieval','llm']],
+    ['eval-set','eval','Eval set','bộ câu hỏi kiểm tra','Danh sách câu hỏi mẫu kèm đoạn chứa đáp án và đáp án đúng, dùng để đo hệ thống.','Vài chục câu, có câu dùng từ khác tài liệu.',['hit-k','faithfulness']],
+    ['hit-k','eval','hit@k','','Tỷ lệ câu hỏi có ít nhất một đoạn đúng nằm trong top-k kết quả. Đo chất lượng retrieval.','hit@3 = 80% nghĩa là 8/10 câu có đoạn đúng trong 3 đoạn đầu.',['recall-k','mrr','top-k']],
+    ['recall-k','eval','recall@k','','Tỷ lệ các đoạn đúng được tìm thấy trong top-k. Khác hit@k khi một câu hỏi cần nhiều đoạn.','Câu hỏi 6 tháng cần cả c7 và c8; k = 1 chỉ lấy được c8 → hit@1 = 1 nhưng recall@1 = 0.5.',['hit-k']],
+    ['mrr','eval','MRR','Mean Reciprocal Rank','Trung bình của 1/(vị trí đoạn đúng đầu tiên). Đoạn đúng càng đứng cao điểm càng cao.','Vị trí 1 → 1; vị trí 2 → 0.5.',['hit-k']],
+    ['faithfulness','eval','Faithfulness','độ trung thực','Câu trả lời có hoàn toàn dựa trên các đoạn được cung cấp không, hay có ý bịa thêm.','',['grounding','hallucination']],
+    ['judge','eval','LLM-as-judge','','Dùng một LLM để chấm điểm câu trả lời. Nhanh nhưng có thiên lệch, nên đối chiếu với chấm tay.','',['faithfulness','eval-set']]
+  ];
+  var byId={};T.forEach(function(t){byId[t[0]]=t});
+  var grid=document.getElementById('glossGrid'), chips=document.getElementById('glossChips'), search=document.getElementById('glossSearch'), activeG='all';
+  function fold(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d')}
+  function esc(s){return s.replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function renderGloss(){
+    var q=fold(search.value.trim()); grid.innerHTML='';var n=0;
+    T.forEach(function(t){
+      if(activeG!=='all'&&t[1]!==activeG)return;
+      var hay=fold(t[2]+' '+t[3]+' '+t[4]+' '+t[5]); if(q&&hay.indexOf(q)<0)return; n++;
+      var d=document.createElement('div');d.className='card term';d.id='term-'+t[0];
+      var rel=t[6].filter(function(r){return byId[r]}).map(function(r){return '<a href="#term-'+r+'" data-goto="'+r+'">'+esc(byId[r][2])+'</a>'}).join(', ');
+      d.innerHTML='<span class="tag">'+G[t[1]]+'</span><h4>'+esc(t[2])+(t[3]?' <span class="en">· '+esc(t[3])+'</span>':'')+'</h4><p>'+esc(t[4])+'</p>'+(t[5]?'<p class="ex">Ví dụ: '+esc(t[5])+'</p>':'')+(rel?'<div class="rel">Liên quan: '+rel+'</div>':'');
+      grid.appendChild(d);
+    });
+    if(!n)grid.innerHTML='<p class="muted">Không có khái niệm khớp.</p>';
+  }
+  var all=document.createElement('button');all.className='chip on';all.textContent='Tất cả ('+T.length+')';all.dataset.g='all';chips.appendChild(all);
+  Object.keys(G).forEach(function(k){var b=document.createElement('button');b.className='chip';b.dataset.g=k;b.textContent=G[k];chips.appendChild(b)});
+  chips.addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;activeG=b.dataset.g;[].forEach.call(chips.children,function(c){c.classList.toggle('on',c===b)});renderGloss()});
+  search.addEventListener('input',renderGloss);
+  grid.addEventListener('click',function(e){var a=e.target.closest('a[data-goto]');if(!a)return;e.preventDefault();
+    if(!document.getElementById('term-'+a.dataset.goto)){activeG='all';search.value='';[].forEach.call(chips.children,function(c){c.classList.toggle('on',c.dataset.g==='all')});renderGloss()}
+    var t=document.getElementById('term-'+a.dataset.goto);t.scrollIntoView({behavior:'smooth',block:'center'});t.style.outline='2px solid var(--accent)';setTimeout(function(){t.style.outline=''},1500)});
+  renderGloss();
+
+  // ---------- Checklist persistence ----------
+  [].forEach.call(document.querySelectorAll('input[data-k]'),function(cb){
+    cb.checked=safeGet('rag-'+cb.dataset.k)==='1';
+    cb.addEventListener('change',function(){safeSet('rag-'+cb.dataset.k,cb.checked?'1':'0')});
+  });
+
+  // ---------- Active TOC ----------
+  var links=[].slice.call(document.querySelectorAll('#toc a'));
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(l){var on=l.getAttribute('href')==='#'+e.target.id;l.classList.toggle('active',on);if(on){var nav=l.parentNode;nav.scrollLeft=l.offsetLeft-nav.offsetLeft-(nav.clientWidth-l.offsetWidth)/2}})}})},{rootMargin:'-40% 0px -55% 0px'});
+    document.querySelectorAll('main section').forEach(function(s){io.observe(s)});
+  }
+})();
+</script>
+</body>
+</html>
