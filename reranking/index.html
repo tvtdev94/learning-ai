@@ -1,0 +1,973 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hiểu Reranking từ gốc</title>
+<script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+:root{
+  --bg:#f7f6f2; --surface:#ffffff; --surface-2:#f0eee8; --text:#1f2328; --muted:#5b6370;
+  --border:#dcd8cf; --accent:#2f6fde; --accent-soft:#e3ecfc; --ok:#1f8a4c; --ok-soft:#e1f3e8;
+  --warn:#b4610e; --warn-soft:#fbeedd; --bad:#c23b3b; --bad-soft:#fae3e3;
+  --p1:#2f6fde; --p2:#8a4fd1; --p3:#1f8a4c; --p4:#b4610e;
+  --code-bg:#f0eee8; --shadow:0 1px 2px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04); --on-accent:#ffffff; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+    --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+    --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+    --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --code-bg:#252930; --shadow:none; --on-accent:#15171a; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+  --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+  --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+  --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --code-bg:#252930; --shadow:none; --on-accent:#15171a; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+a{color:var(--accent)}
+header.top{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
+.top-inner{max-width:1100px;margin:0 auto;padding:10px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.brand{font-weight:700;white-space:nowrap}
+.home{white-space:nowrap;text-decoration:none;color:var(--text);border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:4px 10px;font-size:14px}
+.home:hover{border-color:var(--accent);color:var(--accent)}
+nav.toc{display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin;flex:1}
+nav.toc a{white-space:nowrap;text-decoration:none;color:var(--muted);padding:4px 10px;border-radius:999px;font-size:14px}
+nav.toc a:hover,nav.toc a.active{background:var(--accent-soft);color:var(--accent)}
+button{font:inherit;cursor:pointer}
+.theme-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:4px 10px;font-size:14px}
+main{max-width:1100px;margin:0 auto;padding:16px}
+section{padding:28px 0;border-bottom:1px solid var(--border);scroll-margin-top:56px}
+section:last-child{border-bottom:none}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.2;margin:16px 0 8px}
+h2{font-size:clamp(22px,3.5vw,28px);margin:0 0 12px}
+h3{font-size:18px;margin:20px 0 8px}
+p{margin:8px 0}
+.lead{font-size:18px;color:var(--muted);max-width:760px}
+.muted{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 10px 10px 0;margin:12px 0}
+.callout.ok{border-color:var(--ok);background:var(--ok-soft)}
+.callout.warn{border-color:var(--warn);background:var(--warn-soft)}
+.callout.bad{border-color:var(--bad);background:var(--bad-soft)}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);margin-right:4px}
+.tag.p1{background:var(--accent-soft);color:var(--p1)}
+.tag.p3{background:var(--ok-soft);color:var(--p3)}
+.tag.p4{background:var(--warn-soft);color:var(--p4)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+th{background:var(--surface-2);font-weight:600}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.mono,code{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:14px}
+code{background:var(--code-bg);padding:1px 5px;border-radius:5px}
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-word;margin:8px 0;font-size:14px;line-height:1.55}
+svg text{fill:var(--text);font-family:inherit}
+.diagram{width:100%;height:auto;display:block}
+.svgbox{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;overflow-x:auto}
+.svgbox svg{min-width:640px}
+/* Glossary */
+.gloss-tools{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+.gloss-tools input{flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
+.chip{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:999px;padding:4px 12px;font-size:14px}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.term h4{margin:0 0 4px;font-size:16px}
+.term .en{font-weight:400;color:var(--muted);font-size:14px}
+.term p{margin:4px 0;font-size:15px}
+.term .ex{font-size:14px;color:var(--muted)}
+.term .rel{font-size:13px;margin-top:6px}
+.term .rel a{font-size:13px}
+/* Stepper */
+.stepper{display:grid;grid-template-columns:240px 1fr;gap:12px}
+@media (max-width:720px){.stepper{grid-template-columns:1fr}}
+.steps{display:flex;flex-direction:column;gap:6px}
+@media (max-width:720px){.steps{flex-direction:row;overflow-x:auto}}
+.steps button{text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px;white-space:nowrap}
+.steps button .n{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--surface-2);text-align:center;line-height:22px;font-size:12px;margin-right:6px}
+.steps button.on{border-color:var(--accent);background:var(--accent-soft)}
+.steps button.on .n{background:var(--accent);color:var(--on-accent)}
+.step-nav{display:flex;gap:8px;margin-top:12px}
+.step-nav button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 14px}
+.chunk{border:1px dashed var(--border);border-radius:8px;padding:8px 10px;margin:6px 0;font-size:14px;background:var(--surface)}
+.chunk.hit{border-style:solid;border-color:var(--ok);background:var(--ok-soft)}
+.chunk .id{font-weight:700;font-size:12px;color:var(--muted)}
+.bar{height:8px;background:var(--surface-2);border-radius:4px;overflow:hidden;margin-top:4px}
+.bar>span{display:block;height:100%;background:var(--p1)}
+/* Simulation */
+.sim-q{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.sim-q button{text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px}
+.sim-q button.on{border-color:var(--p4);background:var(--warn-soft)}
+.sim-ctrl{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin:10px 0}
+.sim-ctrl .grp{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.sim-ctrl .lbl{font-size:14px;color:var(--muted)}
+.btn-main{border:1px solid var(--accent);background:var(--accent);color:var(--on-accent);border-radius:8px;padding:6px 16px;font-weight:600}
+.btn-sec{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 14px}
+.sim-ctrl label{font-size:14px;display:flex;gap:6px;align-items:center}
+.rk-col h4{margin:0 0 6px}
+.rk{display:grid;grid-template-columns:34px 1fr auto;gap:8px;align-items:start;border:1px solid var(--border);border-radius:8px;padding:6px 8px;margin:5px 0;background:var(--surface);font-size:14px;transition:background .3s}
+.rk .pos{font-weight:700;color:var(--muted);font-size:13px;padding-top:1px}
+.rk .txt{min-width:0}
+.rk .txt b{font-size:12px;color:var(--muted)}
+.rk .sc{font-family:ui-monospace,Consolas,monospace;font-size:13px;text-align:right;white-space:nowrap}
+.rk.out{opacity:.45}
+.rk.g2v{border-left:4px solid var(--ok)}
+.rk.g1v{border-left:4px solid var(--warn)}
+.rk.new{animation:pop .6s ease}
+@keyframes pop{from{background:var(--accent-soft)}to{background:var(--surface)}}
+@media (prefers-reduced-motion:reduce){.rk.new{animation:none}}
+.gl{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:0 6px;margin-left:4px}
+.gl.g2{background:var(--ok-soft);color:var(--ok)} .gl.g1{background:var(--warn-soft);color:var(--warn)} .gl.g0{background:var(--surface-2);color:var(--muted)}
+.dl{font-size:12px;font-weight:700;display:block}
+.dl.up{color:var(--ok)} .dl.down{color:var(--bad)} .dl.same{color:var(--muted)}
+.cutline{font-size:12px;color:var(--p4);text-align:center;border-top:2px dashed var(--p4);margin:8px 0 4px;padding-top:2px}
+.cutline.n{color:var(--p2);border-color:var(--p2)}
+.placeholder{border:1px dashed var(--border);border-radius:10px;padding:24px 12px;text-align:center;color:var(--muted)}
+.pos-neg{color:var(--muted)} .pos-pos{color:var(--ok);font-weight:700}
+details{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin:8px 0}
+details summary{cursor:pointer;font-weight:600}
+details[open] summary{margin-bottom:6px}
+.check{display:flex;gap:8px;align-items:flex-start;padding:6px 0}
+.check input{margin-top:6px}
+footer{max-width:1100px;margin:0 auto;padding:24px 16px;color:var(--muted);font-size:14px}
+.card>h4:first-child,.card>.tag+h4{margin-top:4px}
+.card h4{margin-bottom:6px}
+.formula{font-family:ui-monospace,Consolas,monospace;font-size:14px;background:var(--code-bg);border-radius:8px;padding:8px 10px;margin:6px 0;overflow-x:auto}
+sup.cite{font-size:max(11px,.72em);line-height:0;margin-left:1px;white-space:nowrap}
+sup.cite a{text-decoration:none;font-weight:600;padding:12px 4px;margin:-12px 0}
+sup.cite a:hover{text-decoration:underline}
+sup.cite a+a{margin-left:2px}
+ol.sources{padding-left:1.6em;margin:8px 0}
+ol.sources li{margin:0 0 10px;font-size:15px;overflow-wrap:anywhere;scroll-margin-top:64px}
+ol.sources li:target{background:var(--accent-soft);border-radius:6px}
+.m-only{display:none}
+.vflow .box,.vflow .node,.vflow .ar{display:block}
+.vflow .ph{font-weight:700;font-size:14px;margin:4px 0 8px}
+.vflow .ph1{color:var(--p1)} .vflow .ph2{color:var(--p3)}
+.vflow .node{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px}
+.vflow .node b{display:block}
+.vflow .node span{font-size:13px;color:var(--muted)}
+.vflow .node.r{border:2px solid var(--p1)} .vflow .node.a{border:2px solid var(--p2)} .vflow .node.g{border:2px solid var(--p3)} .vflow .node.db{border:2px solid var(--p2)}
+.vflow .opt{background:var(--warn-soft);border-color:var(--p4)}
+.vflow .ar{text-align:center;color:var(--muted);font-size:13px;line-height:1.3;padding:4px 0}
+.vflow .box{border-radius:12px;padding:10px;margin-bottom:10px}
+.vflow .box1{background:var(--accent-soft)} .vflow .box2{background:var(--ok-soft)}
+.vflow .note{font-size:13px;color:var(--muted);margin-top:6px}
+.mini{margin-top:8px}
+.mini .node{padding:6px 10px}
+@media (max-width:600px){
+  .brand{display:none} body{font-size:15px}
+  .d-only{display:none}
+  .m-only{display:block}
+  .theme-btn .lbl,.home .lbl{display:none}
+  main{padding:12px 16px}
+  section{padding:22px 0}
+  .card{padding:14px}
+  table.stack thead{display:none}
+  table.stack,table.stack tbody,table.stack tr,table.stack td{display:block;width:100%}
+  table.stack tr{border-bottom:1px solid var(--border);padding:8px 0}
+  table.stack tr:last-child{border-bottom:none}
+  table.stack td{border:none;padding:3px 12px}
+  table.stack td[data-label]::before{content:attr(data-label);display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  table.stack td:first-child{font-size:16px}
+  table.stack td:first-child::before{display:none}
+  .rk{grid-template-columns:28px 1fr auto;gap:6px}
+  .chunk,.rk,.term .ex,.term p,pre{font-size:15px}
+  .vflow .node span{font-size:14px}
+  section{scroll-margin-top:64px}
+  button,.chip{min-height:40px}
+  .home,.theme-btn,nav.toc a{min-height:40px;display:inline-flex;align-items:center}
+  .check{min-height:40px}
+  .term .rel a{display:inline-block;padding:9px 2px}
+  details summary{padding:8px 0;min-height:40px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <a class="home" href="../" aria-label="Về trang tất cả chủ đề">←<span class="lbl"> Chủ đề</span></a>
+    <span class="brand">Hiểu Reranking</span>
+    <nav class="toc" id="toc">
+      <a href="#tong-quan">1. Tổng quan</a>
+      <a href="#flow">2. Flow</a>
+      <a href="#vi-du">3. Ví dụ từng bước</a>
+      <a href="#mo-phong">4. Mô phỏng</a>
+      <a href="#khai-niem">5. Khái niệm</a>
+      <a href="#quan-he">6. Mối quan hệ</a>
+      <a href="#so-sanh">7. So sánh &amp; đánh đổi</a>
+      <a href="#loi">8. Lỗi &amp; chẩn đoán</a>
+      <a href="#danh-gia">9. Đánh giá</a>
+      <a href="#lo-trinh">10. Lộ trình</a>
+      <a href="#nguon">Nguồn</a>
+    </nav>
+    <button class="theme-btn" id="themeBtn" aria-label="Đổi giao diện sáng/tối">◐<span class="lbl"> Giao diện</span></button>
+  </div>
+</header>
+
+<main>
+
+<!-- 1. TỔNG QUAN -->
+<section id="tong-quan">
+  <h1>Hiểu Reranking từ gốc</h1>
+  <p class="lead">Reranking (xếp hạng lại) là bước thứ hai của việc tìm kiếm: sau khi retriever lấy <b>nhanh</b> một nhóm ứng viên từ cả kho, một model <b>kỹ hơn</b> đọc lại từng ứng viên cùng với câu hỏi rồi sắp xếp lại, để những đoạn đúng nhất đứng đầu trước khi được đưa vào prompt của LLM.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+  <p class="muted">Trang này giả định bạn đã nắm flow RAG cơ bản (<a href="../rag/">Hiểu RAG từ gốc</a>). Reranking cắm vào giữa bước <b>R</b> (Retrieval) và bước <b>A</b> (Augmentation).</p>
+  <p class="muted">Quy ước trong trang: <b>đoạn</b> = chunk; <b>ứng viên</b> = đoạn mà giai đoạn 1 chọn ra để reranker chấm lại.</p>
+
+  <h3>Vì sao cần reranking?</h3>
+  <div class="grid g3">
+    <div class="card"><span class="tag p4">Vấn đề 1</span><h4>Tìm nhanh thì thô</h4><p>Vector search so vector câu hỏi với vector đoạn đã <b>tính sẵn từ trước</b>, khi chưa biết câu hỏi là gì.<sup class="cite"><a href="#src-2">[2]</a></sup> Cả đoạn bị nén thành một vector nên chi tiết dễ mất: đoạn "nói về cùng chủ đề" và đoạn "trả lời đúng câu hỏi" có thể nhận điểm gần như nhau (xem ví dụ ở mục 3).</p></div>
+    <div class="card"><span class="tag p4">Vấn đề 2</span><h4>Chỉ vài đoạn được vào prompt</h4><p>Prompt thường chỉ chứa vài đoạn (top-k, vd. 3–5, minh họa). Đoạn đúng đứng thứ 6 cũng coi như không được tìm thấy. Vì vậy <b>thứ tự ở đầu danh sách</b> quan trọng hơn thứ tự ở cuối.</p></div>
+    <div class="card"><span class="tag p4">Vấn đề 3</span><h4>Chấm kỹ thì chậm</h4><p>Model đọc câu hỏi và đoạn cùng lúc chấm chính xác hơn, nhưng phải chạy lại cho <b>từng cặp</b> (câu hỏi, đoạn). Chấm hàng nghìn hay hàng triệu cặp cho mỗi câu hỏi thì quá chậm.<sup class="cite"><a href="#src-1">[1]</a></sup></p></div>
+  </div>
+  <div class="callout"><b>Ý tưởng cốt lõi (retrieve-then-rerank):</b> dùng cách nhanh để <b>lọc rộng</b> từ cả kho xuống vài chục ứng viên, rồi dùng cách chậm mà kỹ để <b>chọn tinh</b> vài đoạn tốt nhất trong số đó. Mỗi giai đoạn làm đúng việc nó giỏi.<sup class="cite"><a href="#src-1">[1]</a></sup></div>
+
+  <h3>Hình dung bằng ví dụ đời thường</h3>
+  <div class="grid g2">
+    <div class="card">
+      <h4>🧑‍💼 Tuyển dụng hai vòng</h4>
+      <p><b>Vòng 1 (retrieval):</b> lọc 2.000 hồ sơ bằng tiêu chí nhanh (từ khóa, kinh nghiệm) còn 30 người. Nhanh, nhưng có thể để lọt người không hợp.</p>
+      <p><b>Vòng 2 (reranking):</b> phỏng vấn kỹ 30 người đó, xếp hạng lại, chọn 3 người tốt nhất.</p>
+      <p class="muted">Phỏng vấn cả 2.000 người thì không kịp; chỉ lọc hồ sơ thì dễ chọn nhầm.</p>
+    </div>
+    <div class="card">
+      <h4>⚠️ Bài học quan trọng nhất</h4>
+      <p>Vòng phỏng vấn <b>không thể chọn người đã bị loại ở vòng hồ sơ</b>. Tương tự, reranker chỉ sắp xếp lại những gì giai đoạn 1 đưa cho nó; nó <b>không tìm thêm</b> đoạn mới.<sup class="cite"><a href="#src-10">[10]</a></sup></p>
+      <p class="muted">Nếu đoạn chứa đáp án không nằm trong danh sách ứng viên, rerank kỹ đến đâu cũng không cứu được (xem mục 4 và 8).</p>
+    </div>
+  </div>
+</section>
+
+<!-- 2. FLOW -->
+<section id="flow">
+  <h2>2. Flow hoạt động: hai giai đoạn</h2>
+  <p>Kho có thể chứa hàng nghìn đến hàng triệu đoạn. <b>Giai đoạn 1</b> lấy ra <b>N</b> ứng viên bằng cách tìm nhanh; một tài liệu lấy ví dụ N = 100,<sup class="cite"><a href="#src-1">[1]</a></sup> một dịch vụ chỉ đưa 50 kết quả đầu vào bước rerank.<sup class="cite"><a href="#src-10">[10]</a></sup> <b>Giai đoạn 2</b> chấm từng ứng viên kỹ hơn và chỉ giữ <b>k</b> đoạn (vài đoạn, vd. 3–5) để đưa vào prompt.</p>
+
+  <div class="vflow m-only" role="group" aria-label="Sơ đồ hai giai đoạn (dạng dọc)">
+    <div class="node db"><b>Kho tài liệu</b><span>nghìn → triệu đoạn · vector đoạn đã tính sẵn ở pha chuẩn bị</span></div>
+    <div class="ar">↓</div>
+    <div class="node"><b>Câu hỏi</b><span>của người dùng</span></div>
+    <div class="ar">↓</div>
+    <div class="box box1">
+      <div class="ph ph1">GIAI ĐOẠN 1 · RETRIEVAL</div>
+      <div class="node r"><b>Retriever</b><span>bi-encoder (vector) / BM25 / hybrid · so với vector tính sẵn</span></div>
+      <div class="note">nhanh · thô · ưu tiên không bỏ sót (recall)</div>
+    </div>
+    <div class="ar">↓ N ứng viên (vd. 50, minh họa)</div>
+    <div class="box box2">
+      <div class="ph ph2">GIAI ĐOẠN 2 · RERANKING</div>
+      <div class="node g"><b>Reranker</b><span>đọc từng cặp (câu hỏi, đoạn) → điểm liên quan → sắp xếp lại</span></div>
+      <div class="note">chậm hơn · kỹ · ưu tiên đúng ở đầu danh sách (precision: những gì đứng đầu phải đúng)</div>
+    </div>
+    <div class="ar">↓ giữ top-k (vd. 3–5) · có thể thêm ngưỡng cắt</div>
+    <div class="node a"><b>Prompt + LLM</b><span>bước A và G của RAG</span></div>
+  </div>
+  <div class="svgbox d-only">
+  <svg class="diagram" viewBox="0 0 1000 340" role="img" aria-label="Sơ đồ hai giai đoạn: retrieval rồi reranking">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+    </defs>
+    <rect x="200" y="14" width="270" height="270" rx="14" fill="var(--accent-soft)" stroke="var(--p1)" stroke-opacity=".4"/>
+    <text x="216" y="40" font-weight="700" font-size="14" style="fill:var(--p1)">GIAI ĐOẠN 1 · RETRIEVAL</text>
+    <text x="216" y="270" font-size="12" style="fill:var(--p1)">nhanh · thô · ưu tiên recall</text>
+    <rect x="630" y="14" width="220" height="270" rx="14" fill="var(--ok-soft)" stroke="var(--p3)" stroke-opacity=".4"/>
+    <text x="646" y="40" font-weight="700" font-size="14" style="fill:var(--p3)">GIAI ĐOẠN 2 · RERANKING</text>
+    <text x="646" y="270" font-size="12" style="fill:var(--p3)">chậm hơn · kỹ · ưu tiên precision</text>
+    <g font-size="14">
+      <rect x="20" y="40" width="150" height="86" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="95" y="68" text-anchor="middle" font-weight="600">Kho tài liệu</text>
+      <text x="95" y="88" text-anchor="middle" font-size="11" style="fill:var(--muted)">nghìn → triệu đoạn</text>
+      <text x="95" y="106" text-anchor="middle" font-size="11" style="fill:var(--muted)">vector tính sẵn</text>
+      <rect x="20" y="170" width="150" height="70" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="95" y="200" text-anchor="middle" font-weight="600">Câu hỏi</text>
+      <text x="95" y="220" text-anchor="middle" font-size="11" style="fill:var(--muted)">của người dùng</text>
+      <rect x="220" y="110" width="230" height="96" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="335" y="138" text-anchor="middle" font-weight="600">Retriever</text>
+      <text x="335" y="160" text-anchor="middle" font-size="12" style="fill:var(--muted)">bi-encoder / BM25 / hybrid</text>
+      <text x="335" y="180" text-anchor="middle" font-size="12" style="fill:var(--muted)">so với vector đã tính sẵn</text>
+      <rect x="490" y="110" width="120" height="96" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="550" y="140" text-anchor="middle" font-weight="600">N ứng viên</text>
+      <text x="550" y="162" text-anchor="middle" font-size="12" style="fill:var(--muted)">vd. 50</text>
+      <text x="550" y="180" text-anchor="middle" font-size="11" style="fill:var(--muted)">(minh họa)</text>
+      <rect x="650" y="110" width="180" height="96" rx="10" fill="var(--surface)" stroke="var(--p3)" stroke-width="2"/>
+      <text x="740" y="138" text-anchor="middle" font-weight="600">Reranker</text>
+      <text x="740" y="160" text-anchor="middle" font-size="12" style="fill:var(--muted)">chấm từng cặp</text>
+      <text x="740" y="180" text-anchor="middle" font-size="12" style="fill:var(--muted)">(câu hỏi, đoạn)</text>
+      <rect x="870" y="110" width="115" height="96" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="927" y="140" text-anchor="middle" font-weight="600">top-k</text>
+      <text x="927" y="162" text-anchor="middle" font-size="12" style="fill:var(--muted)">vd. 3–5</text>
+      <text x="927" y="182" text-anchor="middle" font-size="12" style="fill:var(--muted)">→ prompt LLM</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="2" fill="none" marker-end="url(#arr)">
+      <path d="M170 83 C 195 83, 200 130, 218 140"/>
+      <path d="M170 205 C 195 205, 200 180, 218 176"/>
+      <line x1="450" y1="158" x2="488" y2="158"/>
+      <line x1="610" y1="158" x2="648" y2="158"/>
+      <line x1="830" y1="158" x2="868" y2="158"/>
+    </g>
+    <path d="M95 240 L95 312 L740 312 L740 210" fill="none" stroke="var(--p4)" stroke-width="1.8" stroke-dasharray="6 5" marker-end="url(#arr)"/>
+    <text x="260" y="330" font-size="12" style="fill:var(--p4)">câu hỏi gốc được đọc lại cùng với từng ứng viên ở giai đoạn 2</text>
+  </svg>
+  </div>
+
+  <h3>Vì sao giai đoạn 2 chính xác hơn? Hai cách "đọc"</h3>
+  <div class="grid g2">
+    <div class="card"><span class="tag p1">Giai đoạn 1 · thường dùng</span><h4>Bi-encoder: đọc riêng rồi so</h4>
+      <p>Câu hỏi và đoạn được biến thành vector <b>riêng rẽ</b>, rồi so bằng cosine.<sup class="cite"><a href="#src-2">[2]</a></sup> Đây chính là embedding model trong <a href="../rag/#embedding">RAG</a>.</p>
+      <div class="vflow mini">
+        <div class="node"><b>Đoạn → vector</b><span>làm sẵn một lần ở pha chuẩn bị</span></div>
+        <div class="ar">+</div>
+        <div class="node"><b>Câu hỏi → vector</b><span>một lần mỗi câu hỏi</span></div>
+        <div class="ar">↓ so hai vector</div>
+        <div class="node r"><b>Điểm (cosine)</b></div>
+      </div>
+      <p class="muted">Nhanh vì phần nặng (embed đoạn) làm sẵn. Nhưng lúc embed đoạn, model <b>chưa biết câu hỏi</b> nên phải tóm cả đoạn thành một vector chung chung.</p>
+    </div>
+    <div class="card"><span class="tag p3">Giai đoạn 2 · thường dùng</span><h4>Cross-encoder: đọc cùng lúc</h4>
+      <p>Câu hỏi và đoạn được <b>ghép thành một chuỗi</b> và model đọc cả hai cùng lúc: mỗi từ trong câu hỏi "nhìn thấy" từng từ trong đoạn (attention giữa câu hỏi và đoạn). Kết quả là một con số: mức liên quan.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-2">[2]</a></sup></p>
+      <div class="vflow mini">
+        <div class="node"><b>[câu hỏi] + [đoạn]</b><span>ghép thành một đầu vào</span></div>
+        <div class="ar">↓ model đọc cả cặp</div>
+        <div class="node g"><b>Điểm liên quan</b><span>phải chạy lại cho từng cặp</span></div>
+      </div>
+      <p class="muted">Chính xác hơn vì thấy được chi tiết như "dưới 12 tháng" có khớp với "mới vào 6 tháng" không. Nhưng cross-encoder <b>không tạo ra vector</b> để lưu sẵn (phải có câu hỏi mới chạy), nên N ứng viên = N cặp phải chấm mỗi lần hỏi.<sup class="cite"><a href="#src-2">[2]</a></sup></p>
+    </div>
+  </div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><span class="tag" style="color:var(--p2)">Ở giữa</span><h4>Late interaction (ý tưởng ColBERT)</h4><p>Câu hỏi và đoạn vẫn được mã hóa <b>riêng</b>, nhưng mỗi đoạn được lưu thành <b>nhiều vector</b> (về cơ bản mỗi token một vector), tính sẵn được. Lúc hỏi, mỗi vector của câu hỏi tìm vector khớp nhất trong đoạn, rồi cộng các điểm khớp lại (MaxSim).<sup class="cite"><a href="#src-6">[6]</a></sup></p><p class="muted">So khớp chi tiết hơn một vector/đoạn và nhanh hơn nhiều so với cross-encoder kiểu BERT; dùng được để rerank hoặc tìm trực tiếp trong cả kho.<sup class="cite"><a href="#src-6">[6]</a></sup> Đổi lại, lưu nhiều vector cho mỗi đoạn làm dung lượng lưu trữ tăng khoảng một bậc độ lớn (cỡ 10 lần) so với lưu một vector cho mỗi đoạn.<sup class="cite"><a href="#src-7">[7]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Linh hoạt</span><h4>LLM làm reranker</h4><p>Đưa câu hỏi và đoạn vào prompt, yêu cầu LLM chấm điểm (<b>pointwise</b>), chọn đoạn tốt hơn trong hai đoạn (<b>pairwise</b>), hoặc sắp xếp cả danh sách (<b>listwise</b>).<sup class="cite"><a href="#src-8">[8]</a><a href="#src-9">[9]</a></sup></p><p class="muted">Có thể thêm chỉ dẫn bằng lời ngay trong prompt (vd. "ưu tiên văn bản còn hiệu lực"). Đổi lại, mỗi lần chấm là một hoặc nhiều lượt gọi LLM, nên cần đo kỹ độ trễ và chi phí. Chi tiết ở mục 7.</p></div>
+  </div>
+  <div class="callout ok"><b>Điều cần nhớ:</b> giai đoạn 1 tối ưu cho <b>không bỏ sót</b> (đoạn đúng phải lọt vào N ứng viên); giai đoạn 2 tối ưu cho <b>xếp đúng ở đầu</b> (đoạn đúng phải vào top-k; gọi là precision ở đầu danh sách). Hai mục tiêu khác nhau nên đo bằng chỉ số khác nhau (mục 9).</div>
+</section>
+
+<!-- 3. VÍ DỤ TỪNG BƯỚC -->
+<section id="vi-du">
+  <h2>3. Ví dụ đi qua từng bước</h2>
+  <p>Tiếp tục chatbot nội quy công ty ở trang RAG. Bấm từng bước để xem dữ liệu thay đổi thế nào. <span class="muted">Mọi điểm số dưới đây là <b>minh họa</b>, không phải đầu ra thật của một model cụ thể.</span></p>
+  <div class="stepper card">
+    <div class="steps" id="steps"></div>
+    <div>
+      <div id="stepBody"></div>
+      <div class="step-nav"><button id="prevStep">← Trước</button><button id="nextStep">Tiếp →</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. MÔ PHỎNG -->
+<section id="mo-phong">
+  <h2>4. Mô phỏng: bấm Rerank và xem thứ tự đổi</h2>
+  <p>Chọn một câu hỏi. Cột trái là kết quả giai đoạn 1 (10 ứng viên, điểm cosine). Chọn <b>N</b> = số ứng viên chuyển cho reranker, rồi bấm <b>Rerank</b>. Hệ thống luôn giữ <b>top-3</b> để đưa vào prompt. <span class="muted">Mọi điểm là <b>minh họa</b>.</span></p>
+  <div class="callout"><b>Đọc nhãn:</b> <span class="gl g2">2 · chứa đáp án</span> <span class="gl g1">1 · có ích một phần</span> <span class="gl g0">0 · không liên quan</span>. Nhãn đến từ <b>eval set</b> do người chấm sẵn, chỉ để tính chỉ số. Lúc chạy thật, hệ thống <b>không biết</b> nhãn; reranker chỉ nhìn chữ.</div>
+  <div class="sim-q" id="simQ"></div>
+  <div class="sim-ctrl">
+    <div class="grp" id="simN"><span class="lbl">N ứng viên cho reranker:</span></div>
+    <label><input type="checkbox" id="simTh"><span>Ngưỡng cắt: chỉ giữ đoạn có điểm rerank ≥ 2.0 <span class="muted">(ngưỡng minh họa)</span></span></label>
+    <div class="grp"><button class="btn-main" id="simRun">Rerank ▶</button><button class="btn-sec" id="simReset">Đặt lại</button></div>
+  </div>
+  <div class="grid g2">
+    <div class="rk-col"><h4>Trước · giai đoạn 1 <span class="muted" style="font-weight:400;font-size:13px">(cosine)</span></h4><div id="simBefore"></div></div>
+    <div class="rk-col" style="scroll-margin-top:64px"><h4>Sau rerank <span class="muted" style="font-weight:400;font-size:13px">(điểm reranker)</span></h4><div id="simAfter" aria-live="polite"></div></div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <h4>Chỉ số cho câu hỏi này</h4>
+    <div class="table-wrap"><table class="stack" id="simMetrics">
+      <thead><tr><th>Chỉ số</th><th>Trước (giai đoạn 1)</th><th>Sau rerank</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <p class="muted" style="font-size:14px">hit@3: có đoạn đúng trong top-3 không · RR: 1 / vị trí đoạn đúng đầu tiên · nDCG@3: chất lượng thứ tự, 0–1. Giải thích ở <a href="#danh-gia">mục 9</a>.</p>
+    <div id="simMsg" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- 5. KHÁI NIỆM -->
+<section id="khai-niem">
+  <h2>5. Từ điển khái niệm</h2>
+  <p>Mỗi thẻ có định nghĩa ngắn, ví dụ, và liên kết sang khái niệm liên quan. Lọc theo nhóm hoặc gõ để tìm (gõ không dấu cũng được).</p>
+  <div class="gloss-tools">
+    <input id="glossSearch" type="search" aria-label="Tìm khái niệm" placeholder="Tìm khái niệm… (vd: cross, nguong, ndcg)">
+  </div>
+  <div class="gloss-tools" id="glossChips"></div>
+  <div class="grid g3" id="glossGrid"></div>
+</section>
+
+<!-- 6. MỐI QUAN HỆ -->
+<section id="quan-he">
+  <h2>6. Bản đồ mối quan hệ</h2>
+  <p>Reranking nằm giữa hệ thống tìm kiếm và LLM. Hình dưới cho thấy cái gì đưa vào reranker, cái gì giới hạn nó, và kết quả của nó đi đâu. Khi dùng hybrid search, bước rerank chạy <b>sau</b> bước trộn kết quả bằng RRF.<sup class="cite"><a href="#src-11">[11]</a></sup></p>
+  <div class="vflow m-only" role="group" aria-label="Bản đồ quan hệ (dạng dọc)">
+    <div class="node"><b>Câu hỏi</b></div>
+    <div class="ar">↓</div>
+    <div class="box box1">
+      <div class="ph ph1">Giai đoạn 1 · tìm ứng viên</div>
+      <div class="node r"><b>Vector search (bi-encoder)</b><span>tìm theo nghĩa</span></div>
+      <div class="ar">+ (tùy chọn)</div>
+      <div class="node opt"><b>BM25</b><span>tìm theo từ khóa · trộn bằng RRF = <a href="../hybrid-search/">hybrid search</a></span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>N ứng viên</b><span>recall@N = trần của reranker</span></div>
+    </div>
+    <div class="box box2">
+      <div class="ph ph2">Giai đoạn 2 · xếp hạng lại</div>
+      <div class="node g"><b>Reranker</b><span>cross-encoder · late interaction · LLM · đọc lại câu hỏi gốc cùng từng đoạn</span></div>
+      <div class="ar">↑ bị giới hạn bởi</div>
+      <div class="node"><b>Ngân sách độ trễ &amp; chi phí</b><span>quyết định N và kích thước model</span></div>
+      <div class="node" style="margin-top:6px"><b>Độ dài tối đa của model</b><span>đoạn dài bị cắt cụt → ảnh hưởng tới cách chia chunk</span></div>
+      <div class="ar">↓ điểm liên quan (chỉ để xếp hạng)</div>
+      <div class="node"><b>Sắp xếp + ngưỡng</b><span>ngưỡng cắt là tùy chọn</span></div>
+      <div class="ar">↓</div>
+      <div class="node opt"><b>Chọn k đoạn</b><span>lấy top-k, hoặc chọn bằng MMR / bỏ trùng để đa dạng (tùy chọn)</span></div>
+    </div>
+    <div class="ar">↓</div>
+    <div class="node a"><b>Prompt → LLM → câu trả lời</b><span>bước A và G của RAG</span></div>
+    <div class="node" style="margin-top:10px;border:1px dashed var(--bad);background:var(--bad-soft)"><b>Đánh giá</b><span>recall@N cho giai đoạn 1 · nDCG@k, MRR, hit@k trước/sau rerank · độ trễ</span></div>
+  </div>
+  <div class="svgbox d-only">
+  <svg class="diagram" viewBox="0 0 1000 540" role="img" aria-label="Bản đồ quan hệ quanh reranker">
+    <defs>
+      <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+    </defs>
+    <g font-size="13">
+      <rect x="20" y="62" width="150" height="54" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="95" y="94" text-anchor="middle" font-weight="600">Câu hỏi</text>
+      <rect x="230" y="20" width="170" height="54" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/><text x="315" y="44" text-anchor="middle" font-weight="600">Vector search</text><text x="315" y="62" text-anchor="middle" font-size="11" style="fill:var(--muted)">bi-encoder, theo nghĩa</text>
+      <rect x="230" y="100" width="170" height="54" rx="10" fill="var(--warn-soft)" stroke="var(--p4)"/><text x="315" y="124" text-anchor="middle" font-weight="600">BM25</text><text x="315" y="142" text-anchor="middle" font-size="11" style="fill:var(--muted)">theo từ khóa, tùy chọn</text>
+      <rect x="450" y="62" width="150" height="54" rx="10" fill="var(--warn-soft)" stroke="var(--p4)"/><text x="525" y="86" text-anchor="middle" font-weight="600">Trộn (RRF)</text><text x="525" y="104" text-anchor="middle" font-size="11" style="fill:var(--muted)">hybrid search</text>
+      <rect x="660" y="62" width="150" height="54" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="735" y="86" text-anchor="middle" font-weight="600">N ứng viên</text><text x="735" y="104" text-anchor="middle" font-size="11" style="fill:var(--muted)">trần: recall@N</text>
+      <rect x="230" y="210" width="170" height="54" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="315" y="234" text-anchor="middle" font-weight="600">Ngân sách độ trễ</text><text x="315" y="252" text-anchor="middle" font-size="11" style="fill:var(--muted)">và chi phí</text>
+      <rect x="230" y="290" width="170" height="54" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="315" y="314" text-anchor="middle" font-weight="600">Độ dài tối đa</text><text x="315" y="332" text-anchor="middle" font-size="11" style="fill:var(--muted)">của model reranker</text>
+      <rect x="640" y="220" width="190" height="80" rx="10" fill="var(--surface)" stroke="var(--p3)" stroke-width="2"/><text x="735" y="248" text-anchor="middle" font-weight="700">Reranker</text><text x="735" y="268" text-anchor="middle" font-size="11" style="fill:var(--muted)">cross-encoder · late interaction</text><text x="735" y="285" text-anchor="middle" font-size="11" style="fill:var(--muted)">· LLM reranker</text>
+      <rect x="865" y="233" width="120" height="54" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="925" y="257" text-anchor="middle" font-weight="600">Điểm</text><text x="925" y="275" text-anchor="middle" font-size="11" style="fill:var(--muted)">chỉ để xếp hạng</text>
+      <rect x="835" y="380" width="150" height="54" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="910" y="404" text-anchor="middle" font-weight="600">Sắp xếp</text><text x="910" y="422" text-anchor="middle" font-size="11" style="fill:var(--muted)">+ ngưỡng (tùy chọn)</text>
+      <rect x="640" y="380" width="160" height="54" rx="10" fill="var(--warn-soft)" stroke="var(--p4)"/><text x="720" y="404" text-anchor="middle" font-weight="600">Chọn k đoạn</text><text x="720" y="422" text-anchor="middle" font-size="11" style="fill:var(--muted)">top-k hoặc MMR</text>
+      <rect x="450" y="380" width="150" height="54" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/><text x="525" y="404" text-anchor="middle" font-weight="600">Prompt</text><text x="525" y="422" text-anchor="middle" font-size="11" style="fill:var(--muted)">bước A của RAG</text>
+      <rect x="250" y="380" width="150" height="54" rx="10" fill="var(--surface)" stroke="var(--p3)" stroke-width="2"/><text x="325" y="412" text-anchor="middle" font-weight="600">LLM</text>
+      <rect x="20" y="380" width="180" height="54" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="110" y="404" text-anchor="middle" font-weight="600">Câu trả lời</text><text x="110" y="422" text-anchor="middle" font-size="11" style="fill:var(--muted)">+ trích nguồn</text>
+      <rect x="20" y="470" width="600" height="54" rx="10" fill="var(--bad-soft)" stroke="var(--bad)" stroke-dasharray="5 4"/><text x="320" y="494" text-anchor="middle" font-weight="600">Đánh giá</text><text x="320" y="512" text-anchor="middle" font-size="11" style="fill:var(--muted)">recall@N (giai đoạn 1) · nDCG@k, MRR, hit@k trước/sau rerank · độ trễ</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="1.8" fill="none" marker-end="url(#arr2)">
+      <path d="M170 82 L228 50"/>
+      <path d="M170 96 L228 124"/>
+      <path d="M400 47 L448 80"/>
+      <path d="M400 127 L448 100"/>
+      <line x1="600" y1="89" x2="658" y2="89"/>
+      <line x1="735" y1="116" x2="735" y2="218"/>
+      <line x1="830" y1="260" x2="863" y2="260"/>
+      <line x1="925" y1="287" x2="925" y2="378"/>
+      <line x1="835" y1="407" x2="802" y2="407"/>
+      <line x1="640" y1="407" x2="602" y2="407"/>
+      <line x1="450" y1="407" x2="402" y2="407"/>
+      <line x1="250" y1="407" x2="202" y2="407"/>
+      <path d="M95 116 L95 180 L600 180 C 640 180, 660 200, 680 218" stroke="var(--p4)" stroke-dasharray="6 5"/>
+      <path d="M400 237 L638 250" stroke-dasharray="4 4"/>
+      <path d="M400 317 L638 285" stroke-dasharray="4 4"/>
+      <path d="M810 95 L850 95 L850 352 L612 352 L612 466" stroke="var(--bad)" stroke-dasharray="4 4"/>
+      <path d="M880 434 C 860 480, 680 497, 622 497" stroke="var(--bad)" stroke-dasharray="4 4"/>
+    </g>
+    <g font-size="11" style="fill:var(--muted)">
+      <text x="610" y="82">đưa vào</text>
+      <text x="420" y="174" style="fill:var(--p4)">câu hỏi gốc đọc cùng từng đoạn</text>
+      <text x="745" y="170">chấm từng cặp</text>
+      <text x="460" y="232">giới hạn N, kích thước model</text>
+      <text x="440" y="318">cắt cụt đoạn dài</text>
+      <text x="932" y="340">sắp xếp</text>
+      <text x="856" y="200" style="fill:var(--bad)">đo</text><text x="740" y="478" style="fill:var(--bad)">đo</text>
+    </g>
+  </svg>
+  </div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h4>Quan hệ "phụ thuộc" quan trọng nhất</h4>
+      <ul>
+        <li><b>Giai đoạn 1 quyết định trần:</b> reranker chỉ sắp xếp lại N ứng viên, không chạy lại tìm kiếm trên cả kho. Đoạn đúng không lọt vào N thì không bao giờ vào prompt.<sup class="cite"><a href="#src-10">[10]</a></sup></li>
+        <li><b>N quyết định độ trễ:</b> với cross-encoder, mỗi ứng viên là một cặp phải chấm, nên khối lượng tính toán của phần rerank tăng theo N.</li>
+        <li><b>Chunking ảnh hưởng reranker:</b> đoạn dài hơn độ dài tối đa của model thường bị cắt bỏ phần vượt, model không thấy; một số dịch vụ tự chia nhỏ đoạn rồi lấy điểm của phần cao nhất.<sup class="cite"><a href="#src-12">[12]</a></sup><sup class="cite"><a href="#src-3">[3]</a><a href="#src-10">[10]</a></sup></li>
+        <li><b>Thứ tự sau rerank quyết định</b> LLM được đọc gì, vì chỉ top-k đi vào prompt.</li>
+        <li><b>Reranker chỉ chấm mức liên quan</b>, không biết văn bản còn hiệu lực hay người hỏi có quyền xem không. Những điều đó nên xử lý bằng metadata filter trước khi rerank.</li>
+        <li><b>Câu hỏi đưa cho reranker</b> nên là câu hỏi đầy đủ ý: trong hội thoại nhiều lượt, dùng bản đã viết lại (query rewriting) thay vì câu nối tiếp cụt như "còn người mới thì sao?".</li>
+      </ul>
+    </div>
+    <div class="card"><h4>Đánh đổi xuyên suốt</h4>
+      <ul>
+        <li><b>N lớn ↔ N nhỏ:</b> ít bỏ sót ↔ nhanh, rẻ.</li>
+        <li><b>k lớn ↔ k nhỏ:</b> LLM có đủ thông tin ↔ ít nhiễu, ít token.</li>
+        <li><b>Reranker lớn ↔ nhỏ:</b> có thể chính xác hơn ↔ nhanh hơn.</li>
+        <li><b>Ngưỡng cao ↔ thấp:</b> ít đoạn rác ↔ ít bỏ sót, ít trả lời "không tìm thấy" oan.</li>
+        <li><b>Rerank có thể giảm chi phí ở bước sau:</b> top-k tốt hơn cho phép dùng k nhỏ hơn, ít token đưa vào LLM hơn.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 7. SO SÁNH -->
+<section id="so-sanh">
+  <h2>7. So sánh và đánh đổi</h2>
+  <h3>Bốn kiểu chấm điểm</h3>
+  <div class="table-wrap">
+  <table class="stack">
+    <thead><tr><th>Kiểu</th><th>Cách đọc</th><th>Tính sẵn phía đoạn?</th><th>Tốc độ / chi phí</th><th>Hay dùng ở</th><th>Hạn chế</th></tr></thead>
+    <tbody>
+      <tr><td><b>Bi-encoder</b></td><td>Câu hỏi và đoạn thành 2 vector riêng, so cosine.<sup class="cite"><a href="#src-2">[2]</a></sup></td><td>Có: một vector/đoạn.</td><td>Rất nhanh, tìm được trong kho hàng triệu đoạn (nhờ index).<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>Giai đoạn 1.</td><td>Nén cả đoạn vào một vector; kém chính xác hơn cross-encoder.<sup class="cite"><a href="#src-2">[2]</a></sup></td></tr>
+      <tr><td><b>Late interaction</b></td><td>Nhiều vector cho mỗi đoạn; mỗi vector câu hỏi tìm vector khớp nhất trong đoạn (MaxSim).<sup class="cite"><a href="#src-6">[6]</a></sup></td><td>Có: nhiều vector/đoạn.</td><td>Nhanh hơn nhiều so với cross-encoder kiểu BERT; dung lượng lưu trữ tăng khoảng 10 lần so với một vector/đoạn.<sup class="cite"><a href="#src-6">[6]</a><a href="#src-7">[7]</a></sup></td><td>Giai đoạn 1 hoặc 2.</td><td>Cần hạ tầng lưu và nén nhiều vector.</td></tr>
+      <tr><td><b>Cross-encoder</b></td><td>Đọc câu hỏi + đoạn cùng lúc, ra một điểm.<sup class="cite"><a href="#src-2">[2]</a><a href="#src-5">[5]</a></sup></td><td>Không: không tạo vector để lưu sẵn.</td><td>Mỗi cặp một lượt chấm; hợp với danh sách ứng viên cỡ vài chục đến khoảng một trăm.<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>Giai đoạn 2 (cách phổ biến trong tài liệu).</td><td>Đầu vào dài bị cắt bớt; chậm khi N lớn.<sup class="cite"><a href="#src-3">[3]</a></sup></td></tr>
+      <tr><td><b>LLM reranker</b></td><td>Prompt LLM chấm/so/sắp xếp ứng viên.<sup class="cite"><a href="#src-8">[8]</a><a href="#src-9">[9]</a></sup></td><td>Không.</td><td>Một hoặc nhiều lượt gọi LLM; cần đo độ trễ và chi phí.</td><td>Giai đoạn 2, khi cần thêm chỉ dẫn bằng lời.</td><td>Nhạy với thứ tự đầu vào; danh sách dài phải chia cửa sổ.<sup class="cite"><a href="#src-8">[8]</a><a href="#src-9">[9]</a></sup></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>LLM làm reranker: ba cách hỏi</h3>
+  <div class="table-wrap">
+  <table class="stack">
+    <thead><tr><th>Cách</th><th>Hỏi LLM thế nào</th><th>Số lần gọi (N ứng viên)</th><th>Ưu điểm</th><th>Nhược điểm</th></tr></thead>
+    <tbody>
+      <tr><td><b>Pointwise</b></td><td>"Đoạn này liên quan tới câu hỏi mức nào (0–3)?"</td><td>N lần, chạy song song được.</td><td>Đơn giản, dễ cắt theo ngưỡng.</td><td>Phải có điểm "hiệu chỉnh" giữa các lần gọi để so được với nhau; điều này khó đạt.<sup class="cite"><a href="#src-9">[9]</a></sup></td></tr>
+      <tr><td><b>Pairwise</b></td><td>"Đoạn A hay đoạn B liên quan hơn?"</td><td>So mọi cặp: cỡ N² lần; dùng thuật toán sắp xếp còn cỡ N log N; mỗi lượt cửa sổ trượt cỡ N, cần khoảng k lượt để có top-k.<sup class="cite"><a href="#src-9">[9]</a></sup></td><td>Giảm tải cho LLM so với chấm tuyệt đối hay sắp cả danh sách; dễ khử thiên lệch bằng cách hỏi hai lần, đảo thứ tự A/B.<sup class="cite"><a href="#src-9">[9]</a></sup></td><td>Số lần gọi tăng nhanh theo N nếu so mọi cặp.</td></tr>
+      <tr><td><b>Listwise</b></td><td>"Sắp xếp các đoạn sau theo mức liên quan", LLM trả về thứ tự dạng [2] &gt; [3] &gt; [1].<sup class="cite"><a href="#src-8">[8]</a></sup></td><td>Ít lần; danh sách dài thì chia cửa sổ trượt, đi từ cuối lên đầu.<sup class="cite"><a href="#src-8">[8]</a></sup></td><td>LLM thấy các đoạn cùng lúc, so được với nhau.</td><td>Bị giới hạn context window; nhạy với thứ tự đầu vào; có thể trả về thứ tự thiếu hoặc lặp đoạn.<sup class="cite"><a href="#src-8">[8]</a><a href="#src-9">[9]</a></sup></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Các núm vặn và tác động</h3>
+  <div class="table-wrap">
+  <table class="stack">
+    <thead><tr><th>Núm vặn</th><th>Tăng lên thì</th><th>Giảm xuống thì</th><th>Cách chọn</th></tr></thead>
+    <tbody>
+      <tr><td><b>N</b> (ứng viên cho reranker)</td><td>Ít bỏ sót đoạn đúng; chậm và tốn hơn tương ứng.</td><td>Nhanh; dễ để lọt đoạn đúng ra ngoài.</td><td>Đo recall@N của giai đoạn 1 với vài giá trị N; chọn mức mà recall gần bão hòa và độ trễ còn chấp nhận được.</td></tr>
+      <tr><td><b>k</b> (giữ lại cho prompt)</td><td>LLM đủ thông tin cho câu hỏi cần nhiều đoạn; nhiều nhiễu và token hơn.</td><td>Gọn, rẻ; thiếu thông tin khi đáp án nằm rải nhiều đoạn.</td><td>Bắt đầu 3–5, xem câu trả lời sai vì thiếu hay vì nhiễu.</td></tr>
+      <tr><td><b>Ngưỡng cắt</b></td><td>Ít đoạn rác vào prompt; dễ trả lời "không tìm thấy" oan.</td><td>Ít bỏ sót; nhiều đoạn rác hơn.</td><td>Hiệu chỉnh trên một bộ câu hỏi đại diện của chính bạn, cho đúng model đang dùng.<sup class="cite"><a href="#src-12">[12]</a></sup></td></tr>
+      <tr><td><b>Độ dài chunk</b></td><td>Đủ ngữ cảnh; dễ vượt độ dài tối đa, phần cuối bị cắt bỏ, chấm chậm hơn.<sup class="cite"><a href="#src-3">[3]</a><a href="#src-10">[10]</a></sup></td><td>Chấm nhanh, không bị cắt; thiếu ngữ cảnh để chấm.</td><td>Giữ chunk nằm gọn trong giới hạn của reranker, hoặc tự cắt đoạn trước khi đưa vào.<sup class="cite"><a href="#src-12">[12]</a></sup></td></tr>
+      <tr><td><b>Cỡ reranker</b></td><td>Có thể chính xác hơn; chậm, tốn hơn.</td><td>Nhanh; có thể kém với miền chuyên biệt hoặc tiếng Việt.</td><td>So trước/sau trên eval set của mình; không chọn theo tên tuổi.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Sau khi có điểm: ngưỡng và đa dạng</h3>
+  <div class="grid g2">
+    <div class="card"><span class="tag p4">Không phải xác suất đã hiệu chỉnh</span><h4>Đọc điểm reranker thế nào?</h4>
+      <p>Điểm reranker chủ yếu có nghĩa để <b>so các đoạn của cùng một câu hỏi</b>. Cross-encoder có thể trả về số thô, có thể âm (khoảng −10 đến 10 với một số model), hoặc được đưa về khoảng 0–1 bằng hàm sigmoid; có dịch vụ dùng thang 0–4.<sup class="cite"><a href="#src-3">[3]</a><a href="#src-4">[4]</a><a href="#src-10">[10]</a></sup> Kể cả khi nằm trong 0–1, không nên đọc 0.9 thành "90% chắc chắn liên quan".<sup class="cite"><a href="#src-12">[12]</a></sup></p>
+      <ul>
+        <li>Điểm phụ thuộc câu hỏi và các đoạn được gửi vào; đừng diễn giải con số theo nghĩa đen.<sup class="cite"><a href="#src-12">[12]</a></sup></li>
+        <li>Cập nhật model có thể làm đổi phân bố điểm, nên đừng đặt ngưỡng quá chi li (vd. phân biệt 2.35 với 2.40).<sup class="cite"><a href="#src-10">[10]</a></sup></li>
+        <li>Muốn dùng ngưỡng: lấy vài chục câu hỏi đại diện, kèm đoạn "vừa đủ liên quan", xem điểm phân bố thế nào rồi chọn mức cắt (hiệu chỉnh, calibration).<sup class="cite"><a href="#src-12">[12]</a></sup> Một ngưỡng chung chỉ dùng được khi điểm của model so được tương đối giữa các câu hỏi; hãy kiểm tra điều đó trên eval set.</li>
+      </ul>
+    </div>
+    <div class="card"><span class="tag p4">Đa dạng kết quả</span><h4>MMR: liên quan nhưng đừng trùng ý</h4>
+      <p>Nếu kho có 3 bản gần giống nhau của cùng một điều khoản (bản cũ, bản mới, bản copy), reranker có thể xếp cả 3 vào top-3, chiếm hết chỗ trong prompt.</p>
+      <p><b>MMR</b> (Maximal Marginal Relevance) tối ưu cùng lúc hai thứ: giống câu hỏi <b>và</b> đa dạng giữa các đoạn được chọn.<sup class="cite"><a href="#src-13">[13]</a></sup> Nó chọn lần lượt từng đoạn từ một nhóm ứng viên, mỗi lần lấy đoạn có điểm cao nhất theo ý tưởng</p>
+      <div class="formula">λ × (độ liên quan với câu hỏi) − (1 − λ) × (độ giống lớn nhất với các đoạn đã chọn)</div>
+      <p class="muted">Theo quy ước của tham số lambda_mult trong LangChain: λ = 1 là ít đa dạng nhất (gần như chỉ xét liên quan), λ = 0 là đa dạng tối đa.<sup class="cite"><a href="#src-13">[13]</a></sup> Công cụ khác có thể đặt tên hoặc chiều tham số khác, nên đọc kỹ tài liệu của công cụ bạn dùng. Trong công cụ được dẫn, MMR chạy trên độ giống embedding: lấy fetch_k ứng viên rồi chọn ra k.<sup class="cite"><a href="#src-13">[13]</a></sup> Nếu áp dụng sau rerank, phải đưa điểm reranker và độ giống giữa các đoạn về cùng thang trước khi trộn. Cách đơn giản hơn: bỏ trùng theo nguồn/phiên bản bằng metadata.</p>
+    </div>
+  </div>
+  <div class="callout"><b>Khi nào không cần reranker?</b> Rerank không có lợi trong mọi tình huống và tốn thêm tài nguyên, thời gian.<sup class="cite"><a href="#src-10">[10]</a></sup> Khi giai đoạn 1 đã đưa đoạn đúng lên đầu cho hầu hết câu hỏi (hit@k đã cao), hoặc khi ngân sách độ trễ quá chặt, có thể bỏ. Chỉ giữ reranker nếu đo thấy nó giúp.</div>
+</section>
+
+<!-- 8. LỖI -->
+<section id="loi">
+  <h2>8. Lỗi thường gặp và cách chẩn đoán</h2>
+  <p>Khi kết quả sau rerank vẫn sai, đừng vội đổi reranker. Đi theo cây dưới đây, từ trên xuống.</p>
+  <div class="grid g2">
+    <div class="card">
+      <h4>Cây chẩn đoán</h4>
+      <ol>
+        <li><b>Đoạn đúng có nằm trong N ứng viên không?</b><br><span class="muted">Không → lỗi giai đoạn 1, reranker vô can. Tăng N, thêm <a href="../hybrid-search/">hybrid search</a> (nhất là với mã số, tên riêng), query rewriting, xem lại chunking.</span></li>
+        <li><b>Có trong N, nhưng sau rerank không vào top-k?</b><br><span class="muted">Lỗi reranker. Kiểm tra đoạn có bị cắt cụt vì quá dài không; reranker có hợp tiếng Việt / miền chuyên ngành không; thử reranker khác hoặc huấn luyện thêm trên dữ liệu của mình.</span></li>
+        <li><b>Vào top-k, nhưng các đoạn trùng ý nhau?</b><br><span class="muted">Thiếu đa dạng. Bỏ trùng theo metadata, dùng MMR, hoặc tăng k một chút.</span></li>
+        <li><b>Top-k đúng mà câu trả lời vẫn sai?</b><br><span class="muted">Không phải lỗi rerank: chuyển sang chẩn đoán bước generation (<a href="../rag/#loi">RAG mục 8</a>).</span></li>
+      </ol>
+    </div>
+    <div class="card">
+      <h4>Bảng triệu chứng</h4>
+      <div class="table-wrap"><table class="stack">
+        <thead><tr><th>Triệu chứng</th><th>Nguyên nhân thường gặp</th></tr></thead>
+        <tbody>
+          <tr><td>Bật rerank mà kết quả không khá hơn</td><td>Đoạn đúng không có trong N ứng viên; hoặc giai đoạn 1 vốn đã tốt.</td></tr>
+          <tr><td>Bật rerank mà kết quả tệ hơn</td><td>Reranker không hợp ngôn ngữ/miền; đoạn bị cắt cụt; cấu hình sai (ví dụ đưa vào đoạn không kèm tiêu đề mục).</td></tr>
+          <tr><td>Hệ thống chậm hẳn sau khi thêm rerank</td><td>N quá lớn, đoạn quá dài, model quá lớn, chấm từng cặp tuần tự thay vì theo lô (batch).</td></tr>
+          <tr><td>Đáp án ở cuối đoạn dài luôn bị bỏ qua</td><td>Vượt độ dài tối đa của reranker, phần cuối bị cắt.<sup class="cite"><a href="#src-3">[3]</a><a href="#src-10">[10]</a></sup></td></tr>
+          <tr><td>Ngưỡng cắt lúc bỏ hết, lúc giữ rác</td><td>Đọc điểm theo nghĩa đen như xác suất; ngưỡng chưa hiệu chỉnh hoặc giữ từ model cũ.<sup class="cite"><a href="#src-10">[10]</a><a href="#src-12">[12]</a></sup></td></tr>
+          <tr><td>Top-3 là ba bản gần giống nhau</td><td>Kho có bản trùng/phiên bản cũ; chưa bỏ trùng hay dùng MMR.</td></tr>
+          <tr><td>Hỏi mã số, số hiệu điều khoản thì luôn sai</td><td>Vector search bỏ lỡ từ khóa chính xác ở giai đoạn 1 → cần hybrid search trước rerank.</td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+  <div class="callout warn"><b>N quá nhỏ hay quá lớn đều hỏng:</b> N quá nhỏ (vd. N = k) thì reranker gần như không có gì để chọn lại; N quá lớn thì chậm, tốn, và nhiều đoạn "trông giống" hơn có thể làm tăng khả năng reranker xếp nhầm. Mô phỏng ở mục 4 cho thấy vế N quá nhỏ: thử N = 3, 5, 10.</div>
+</section>
+
+<!-- 9. ĐÁNH GIÁ -->
+<section id="danh-gia">
+  <h2>9. Đánh giá: reranker có thật sự giúp không?</h2>
+  <p>Cần một <b>eval set</b>: vài chục câu hỏi thật, mỗi câu có nhãn cho các đoạn liên quan (nhị phân đúng/sai, hoặc theo mức 0/1/2 như mô phỏng). Đo <b>hai tầng</b> và luôn so <b>trước/sau rerank</b> trên cùng eval set. Nếu dùng eval set để chọn ngưỡng hay N, hãy giữ riêng một phần câu hỏi để báo cáo kết quả cuối, tránh "tự ra đề rồi tự chấm".</p>
+  <div class="callout"><b>Hai quy ước trang này dùng:</b> (1) với nhãn 0/1/2, chỉ mức 2 được coi là "đoạn đúng" khi tính hit@k và MRR; (2) IDCG tính trên <b>mọi</b> đoạn có nhãn liên quan trong kho, kể cả đoạn giai đoạn 1 bỏ sót. Nếu chỉ tính trên các đoạn đã lấy được, nDCG sẽ che mất lỗi của giai đoạn 1.</div>
+  <div class="grid g2">
+    <div class="card"><span class="tag p1">Tầng 1 · Giai đoạn 1</span><h4>Đoạn đúng có lọt vào N không?</h4>
+      <p><b>recall@N</b>: tỷ lệ đoạn đúng nằm trong N ứng viên. Đây là <b>trần</b> của reranker: nếu recall@50 = 70% (minh họa) thì dù reranker hoàn hảo, 30% đoạn đúng vẫn không thể vào prompt.</p>
+    </div>
+    <div class="card"><span class="tag p3">Tầng 2 · Sau rerank</span><h4>Đoạn đúng có đứng đầu không?</h4>
+      <ul>
+        <li><b>hit@k</b>: tỷ lệ câu hỏi có ít nhất một đoạn đúng trong top-k.</li>
+        <li><b>MRR</b>: trung bình của 1 / (vị trí đoạn đúng đầu tiên); không có đoạn đúng thì tính 0.<sup class="cite"><a href="#src-15">[15]</a></sup></li>
+        <li><b>nDCG@k</b>: tính cả <i>mức</i> liên quan và <i>vị trí</i>, từ 0 đến 1.<sup class="cite"><a href="#src-14">[14]</a></sup></li>
+        <li><b>Độ trễ</b>: thời gian thêm vào mỗi câu hỏi (nên xem cả trường hợp chậm, không chỉ trung bình).</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Công thức nDCG, tính tay một lần</h3>
+  <div class="formula">DCG@k = Σ (mức liên quan ở vị trí i) / log₂(i + 1),  i = 1…k<br>IDCG@k = DCG@k của thứ tự lý tưởng (đoạn tốt nhất xếp đầu)<br>nDCG@k = DCG@k / IDCG@k</div>
+  <p class="muted">log₂2 = 1, log₂3 ≈ 1.585, log₂4 = 2: vị trí càng sâu, điểm càng bị chia lớn. Có biến thể dùng 2<sup>mức</sup> − 1 thay cho mức liên quan để thưởng mạnh hơn cho đoạn rất liên quan; trang này dùng dạng tuyến tính cho dễ tính. Hai dạng cho cùng kết quả khi nhãn chỉ là 0/1. Khi báo cáo, ghi rõ dùng biến thể nào.<sup class="cite"><a href="#src-14">[14]</a></sup></p>
+  <div class="grid g2">
+    <div class="card"><h4>Câu hỏi "6 tháng được bao nhiêu ngày phép?"</h4>
+      <p>Thứ tự lý tưởng có mức 2, 2, 1 (c8, c7, c21):</p>
+      <div class="formula">IDCG@3 = 2/1 + 2/1.585 + 1/2 ≈ 3.762</div>
+      <p><b>N = 10</b>, sau rerank top-3 là c8 (2), c7 (2), c21 (1):</p>
+      <div class="formula">DCG@3 ≈ 3.762 → nDCG@3 = 1.00</div>
+      <p><b>N = 5</b>, c7 không lọt vào N; top-3 là c8 (2), c23 (0), c9 (0):</p>
+      <div class="formula">DCG@3 = 2/1 = 2 → nDCG@3 ≈ 2 / 3.762 ≈ 0.53</div>
+      <p class="muted">Trước rerank top-3 là c9, c22, c10, đều mức 0 → nDCG@3 = 0.</p>
+      <p class="muted">Để ý: ở N = 5, hit@3 = 1 dù thiếu c7 và LLM vẫn không đủ thông tin để trả lời. hit@k không đo độ đầy đủ; nDCG (0.53) thì thấy được.</p>
+    </div>
+    <div class="card"><h4>Gộp cả 3 câu hỏi trong mô phỏng (N = 10)</h4>
+      <div class="table-wrap"><table class="stack">
+        <thead><tr><th>Câu hỏi</th><th>RR trước</th><th>RR sau</th></tr></thead>
+        <tbody>
+          <tr><td>Phép khi mới vào</td><td>1/4 = 0.25</td><td>1</td></tr>
+          <tr><td>"Điều 15" quy định gì</td><td>0</td><td>0</td></tr>
+          <tr><td>Làm từ xa thứ Sáu</td><td>1</td><td>1</td></tr>
+        </tbody>
+      </table></div>
+      <p><b>MRR</b> trước ≈ (0.25 + 0 + 1) / 3 ≈ 0.42; sau ≈ (1 + 0 + 1) / 3 ≈ 0.67.<br><b>hit@3</b> trước = 1/3; sau = 2/3.</p>
+      <p class="muted">Câu "Điều 15" kéo cả hai số xuống và rerank không sửa được: đó là tín hiệu cần sửa giai đoạn 1 chứ không phải đổi reranker. RR = reciprocal rank của một câu hỏi; MRR là trung bình RR.</p>
+    </div>
+  </div>
+  <div class="callout"><b>Đọc kết quả:</b> recall@N thấp → sửa giai đoạn 1 (tăng N, hybrid search, chunking). recall@N cao mà nDCG@k/hit@k sau rerank vẫn thấp → sửa reranker (model khác, độ dài chunk). Chỉ số tốt mà độ trễ quá cao → giảm N hoặc dùng reranker nhỏ hơn. Muốn xem cả câu trả lời cuối cùng có tốt hơn không, đo thêm faithfulness/correctness như ở <a href="../rag/#danh-gia">RAG mục 10</a>.</div>
+</section>
+
+<!-- 10. LỘ TRÌNH -->
+<section id="lo-trinh">
+  <h2>10. Lộ trình tự học 2 tuần (không cần code)</h2>
+  <p class="muted">Khoảng 4 giờ mỗi tuần. Các ô đã đánh dấu được lưu trong trình duyệt của bạn.</p>
+  <div class="grid g2">
+    <div class="card"><span class="tag p1">Tuần 1</span><h4>Vì sao, flow, hai cách đọc</h4><p>Đọc mục 1, 2, 3, 4, 5.</p>
+      <label class="check"><input type="checkbox" data-k="w1a"><span>Tự vẽ lại flow hai giai đoạn và ghi mục tiêu của từng giai đoạn (recall / precision).</span></label>
+      <label class="check"><input type="checkbox" data-k="w1b"><span>Giải thích cho người khác vì sao cross-encoder chính xác hơn nhưng không tính sẵn được.</span></label>
+      <label class="check"><input type="checkbox" data-k="w1c"><span>Trong mô phỏng, trong ba giá trị N có sẵn, tìm giá trị nhỏ nhất để câu "phép khi mới vào" đạt nDCG@3 = 1.</span></label>
+    </div>
+    <div class="card"><span class="tag p1">Tuần 2</span><h4>Đánh đổi, lỗi, đánh giá</h4><p>Đọc mục 6, 7, 8, 9.</p>
+      <label class="check"><input type="checkbox" data-k="w2a"><span><b>Rerank bằng tay:</b> chọn một tài liệu, tự lấy 8 đoạn "có vẻ liên quan" cho một câu hỏi, dán vào ChatGPT/Claude và yêu cầu sắp xếp theo mức liên quan (listwise). Đảo thứ tự đầu vào rồi làm lại, so kết quả.</span></label>
+      <label class="check"><input type="checkbox" data-k="w2b"><span>Với 5 câu hỏi, tự gán nhãn 0/1/2 cho các đoạn và tính tay hit@3, MRR, nDCG@3 trước/sau.</span></label>
+      <label class="check"><input type="checkbox" data-k="w2c"><span>Viết ra một trường hợp rerank không cứu được và cách sửa đúng chỗ.</span></label>
+    </div>
+  </div>
+
+  <h3>Tự kiểm tra: trả lời được là đã nắm cốt lõi</h3>
+  <details><summary>1. Vì sao không dùng cross-encoder để tìm trong cả kho luôn?</summary>
+    <p>Cross-encoder phải đọc cặp (câu hỏi, đoạn) cùng lúc nên không tính sẵn được gì cho đoạn. Mỗi câu hỏi sẽ cần một lượt chạy model cho <b>mỗi</b> đoạn trong kho, quá chậm với kho lớn. Vì vậy chỉ dùng nó cho N ứng viên đã được lọc nhanh.</p></details>
+  <details><summary>2. Giai đoạn 1 và giai đoạn 2 tối ưu cho điều gì khác nhau?</summary>
+    <p>Giai đoạn 1 tối ưu <b>recall</b>: đoạn đúng phải lọt vào N ứng viên, chấp nhận lẫn nhiều đoạn sai. Giai đoạn 2 tối ưu <b>precision ở đầu danh sách</b>: đoạn đúng phải đứng trong top-k.</p></details>
+  <details><summary>3. Rerank xong mà vẫn sai, việc đầu tiên cần kiểm tra là gì?</summary>
+    <p>Đoạn đúng có nằm trong N ứng viên của giai đoạn 1 không. Nếu không, đổi reranker cũng vô ích; phải sửa giai đoạn 1 (tăng N, hybrid search, query rewriting, chunking).</p></details>
+  <details><summary>4. Reranker cho đoạn A điểm 0.92. Có thể nói "A đúng với xác suất 92%" không?</summary>
+    <p>Không. Điểm reranker dùng để xếp hạng các đoạn của cùng một câu hỏi, không phải xác suất đã hiệu chỉnh. Muốn dùng ngưỡng, phải chọn ngưỡng dựa trên eval set của mình và cho đúng model đó.</p></details>
+  <details><summary>5. Tăng N từ 20 lên 200 có hại gì không?</summary>
+    <p>Khối lượng tính toán của phần rerank tăng khoảng 10 lần (với cross-encoder, mỗi ứng viên một lượt chấm); độ trễ thực tế còn tùy cách chấm theo lô và phần cứng. Lợi ích chỉ có nếu recall@N còn tăng đáng kể; ngoài ra nhiều đoạn "trông giống" hơn có thể làm tăng khả năng reranker xếp nhầm.</p></details>
+  <details><summary>6. Late interaction khác bi-encoder và cross-encoder ở đâu?</summary>
+    <p>Như bi-encoder, phía đoạn tính sẵn được; nhưng lưu một vector cho mỗi token thay vì một vector cho cả đoạn. Lúc hỏi, mỗi token câu hỏi tìm token khớp nhất trong đoạn (MaxSim), nên so khớp chi tiết hơn bi-encoder, nhanh hơn cross-encoder, đổi lại tốn dung lượng lưu trữ hơn.</p></details>
+  <details><summary>7. Pointwise, pairwise, listwise khác nhau thế nào khi dùng LLM làm reranker?</summary>
+    <p>Pointwise chấm từng đoạn riêng (N lần gọi, dễ song song, nhưng điểm giữa các lần gọi khó so với nhau). Pairwise so hai đoạn một lần (so mọi cặp thì số lần gọi cỡ N²). Listwise đưa cả danh sách và xin thứ tự (ít lần gọi, nhưng bị giới hạn context window và nhạy với thứ tự đầu vào).</p></details>
+  <details><summary>8. Vì sao nDCG phù hợp hơn hit@k khi có nhãn 0/1/2?</summary>
+    <p>hit@k chỉ hỏi "có đoạn đúng trong top-k không", không quan tâm đoạn đó đứng thứ mấy hay mức liên quan bao nhiêu. nDCG thưởng nhiều hơn khi đoạn liên quan cao đứng ở vị trí đầu, nên phản ánh đúng mục tiêu của reranker.</p></details>
+</section>
+
+<!-- 11. NGUỒN -->
+<section id="nguon">
+  <h2>Nguồn tham khảo</h2>
+  <p class="muted">Các khẳng định kỹ thuật chính trong trang dẫn về những nguồn dưới đây. Tất cả truy cập ngày 2026-11-14. Ví dụ, điểm số và đoạn nội quy là minh họa, không lấy từ nguồn nào.</p>
+  <ol class="sources">
+    <li id="src-1">Sentence Transformers documentation — "Retrieve &amp; Re-Rank". UKPLab / Sentence Transformers. <a href="https://www.sbert.net/examples/sentence_transformer/applications/retrieve_rerank/README.html" target="_blank" rel="noopener">sbert.net/…/retrieve_rerank</a>. Truy cập 2026-11-14.</li>
+    <li id="src-2">Sentence Transformers documentation — "Cross-Encoders". UKPLab / Sentence Transformers. <a href="https://www.sbert.net/examples/cross_encoder/applications/README.html" target="_blank" rel="noopener">sbert.net/…/cross_encoder/applications</a>. Truy cập 2026-11-14.</li>
+    <li id="src-3">Sentence Transformers documentation — CrossEncoder API reference (max_length, predict, rank). <a href="https://www.sbert.net/docs/package_reference/cross_encoder/cross_encoder.html" target="_blank" rel="noopener">sbert.net/docs/package_reference/cross_encoder</a>. Truy cập 2026-11-14.</li>
+    <li id="src-4">Sentence Transformers documentation — "Pretrained Models" (Cross-Encoder, MS MARCO). <a href="https://www.sbert.net/docs/cross_encoder/pretrained_models.html" target="_blank" rel="noopener">sbert.net/docs/cross_encoder/pretrained_models</a>. Truy cập 2026-11-14.</li>
+    <li id="src-5">Nogueira, R. &amp; Cho, K. (2019). "Passage Re-ranking with BERT". arXiv:1901.04085. <a href="https://arxiv.org/abs/1901.04085" target="_blank" rel="noopener">arxiv.org/abs/1901.04085</a>. Truy cập 2026-11-14.</li>
+    <li id="src-6">Khattab, O. &amp; Zaharia, M. (2020). "ColBERT: Efficient and Effective Passage Search via Contextualized Late Interaction over BERT". SIGIR 2020. <a href="https://arxiv.org/abs/2004.12832" target="_blank" rel="noopener">arxiv.org/abs/2004.12832</a>. Truy cập 2026-11-14.</li>
+    <li id="src-7">Santhanam, K., Khattab, O. et al. (2022). "ColBERTv2: Effective and Efficient Retrieval via Lightweight Late Interaction". NAACL 2022. <a href="https://arxiv.org/abs/2112.01488" target="_blank" rel="noopener">arxiv.org/abs/2112.01488</a>. Truy cập 2026-11-14.</li>
+    <li id="src-8">Sun, W. et al. (2023). "Is ChatGPT Good at Search? Investigating Large Language Models as Re-Ranking Agents". EMNLP 2023. <a href="https://arxiv.org/abs/2304.09542" target="_blank" rel="noopener">arxiv.org/abs/2304.09542</a>. Truy cập 2026-11-14.</li>
+    <li id="src-9">Qin, Z. et al. (2024). "Large Language Models are Effective Text Rankers with Pairwise Ranking Prompting". NAACL 2024. <a href="https://arxiv.org/abs/2306.17563" target="_blank" rel="noopener">arxiv.org/abs/2306.17563</a>. Truy cập 2026-11-14.</li>
+    <li id="src-10">Microsoft Learn — "Semantic Ranking Overview", Azure AI Search. Microsoft. <a href="https://learn.microsoft.com/en-us/azure/search/semantic-search-overview" target="_blank" rel="noopener">learn.microsoft.com/…/semantic-search-overview</a>. Truy cập 2026-11-14.</li>
+    <li id="src-11">Microsoft Learn — "Hybrid Search Scoring (RRF)", Azure AI Search. Microsoft. <a href="https://learn.microsoft.com/en-us/azure/search/hybrid-search-ranking" target="_blank" rel="noopener">learn.microsoft.com/…/hybrid-search-ranking</a>. Truy cập 2026-11-14.</li>
+    <li id="src-12">Cohere documentation — "Rerank Best Practices". Cohere. <a href="https://docs.cohere.com/docs/reranking-best-practices" target="_blank" rel="noopener">docs.cohere.com/docs/reranking-best-practices</a>. Truy cập 2026-11-14.</li>
+    <li id="src-13">LangChain reference — <code>VectorStore.max_marginal_relevance_search</code>. LangChain. <a href="https://reference.langchain.com/python/langchain-core/vectorstores/base/VectorStore/max_marginal_relevance_search" target="_blank" rel="noopener">reference.langchain.com/…/max_marginal_relevance_search</a>. Truy cập 2026-11-14.</li>
+    <li id="src-14">Wikipedia — "Discounted cumulative gain" (dẫn Järvelin &amp; Kekäläinen, 2002, ACM TOIS). <a href="https://en.wikipedia.org/wiki/Discounted_cumulative_gain" target="_blank" rel="noopener">en.wikipedia.org/wiki/Discounted_cumulative_gain</a>. Truy cập 2026-11-14.</li>
+    <li id="src-15">Wikipedia — "Mean reciprocal rank". <a href="https://en.wikipedia.org/wiki/Mean_reciprocal_rank" target="_blank" rel="noopener">en.wikipedia.org/wiki/Mean_reciprocal_rank</a>. Truy cập 2026-11-14.</li>
+  </ol>
+</section>
+</main>
+
+<footer>
+  Tài liệu học Reranking ở mức khái niệm. Mọi điểm số, câu hỏi và đoạn nội quy trong trang là minh họa để hiểu cơ chế, không phải số liệu đo từ một model cụ thể. Xem thêm: <a href="../rag/">Hiểu RAG</a> · <a href="../hybrid-search/">Hybrid search</a>.
+</footer>
+
+<script>
+(function(){
+  // ---------- Theme ----------
+  var root=document.documentElement;
+  function safeGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+  function safeSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  var saved=safeGet('rag-theme'); if(saved) root.setAttribute('data-theme',saved);
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme');
+    if(!cur){cur=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+    var next=cur==='dark'?'light':'dark'; root.setAttribute('data-theme',next); safeSet('rag-theme',next);
+  });
+
+  // ---------- Stacked tables on phones: give each cell its column name ----------
+  function labelTables(root){
+    [].forEach.call(root.querySelectorAll('table.stack'),function(t){
+      var heads=[].map.call(t.querySelectorAll('thead th'),function(th){return th.textContent});
+      [].forEach.call(t.querySelectorAll('tbody tr'),function(tr){[].forEach.call(tr.children,function(td,i){if(heads[i])td.setAttribute('data-label',heads[i])})});
+    });
+  }
+  labelTables(document);
+
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function fmt(x){return (Math.round(x*100)/100).toFixed(2)}
+  function sgn(x){return (x>0?'+':x<0?'−':'')+Math.abs(x).toFixed(1)}
+
+  // ---------- Shared illustrative data ----------
+  var CH={
+    c1:'Điều 1. Nội quy áp dụng cho toàn bộ nhân viên của công ty.',
+    c5:'Điều 5. Nhân viên phải đeo thẻ khi ra vào văn phòng.',
+    c7:'Điều 7. Nhân viên chính thức được nghỉ phép năm 12 ngày, hưởng nguyên lương.',
+    c8:'Điều 8. Nhân viên làm việc dưới 12 tháng được tính phép theo tỷ lệ số tháng làm việc.',
+    c9:'Điều 9. Đơn xin nghỉ phép phải gửi quản lý trực tiếp trước ít nhất 3 ngày làm việc.',
+    c10:'Điều 10. Nghỉ ốm từ 2 ngày trở lên cần nộp giấy xác nhận của cơ sở y tế.',
+    c11:'Điều 11. Lương được trả vào ngày 5 hằng tháng.',
+    c12:'Điều 12. Thưởng Tết bằng một tháng lương (lương tháng 13).',
+    c13:'Điều 13. Nhân viên được phụ cấp ăn trưa cho mỗi ngày làm việc.',
+    c15:'Điều 15. Mật khẩu wifi văn phòng do phòng IT cấp và đổi mỗi quý.',
+    c16:'Điều 16. Laptop được cấp cho nhân viên mới trong tuần đầu tiên.',
+    c17:'Điều 17. Thiết bị hỏng báo qua phòng IT để sửa hoặc thay.',
+    c18:'Điều 18. Giờ làm việc từ 8h đến 17h, thứ Hai đến thứ Sáu.',
+    c19:'Điều 19. Xe máy gửi ở tầng hầm B2.',
+    c20:'Điều 20. Nhân viên được làm việc từ xa vào thứ Sáu nếu quản lý trực tiếp đồng ý.',
+    c21:'Điều 21. Phép năm được tính theo năm dương lịch, từ 1/1 đến 31/12.',
+    c22:'Điều 22. Hợp đồng lao động có thời hạn dưới 12 tháng được xem xét gia hạn trước khi hết hạn 30 ngày.',
+    c23:'Điều 23. Ngày phép năm chưa dùng hết được chuyển sang quý 1 năm sau.',
+    c24:'Điều 24. Nhân viên nghỉ việc được thanh toán tiền cho những ngày phép chưa nghỉ.',
+    c25:'Điều 25. Dữ liệu khách hàng không được lưu trên thiết bị cá nhân.',
+    c26:'Điều 26. Muốn làm việc từ xa cần đăng ký trên hệ thống trước 17h ngày hôm trước.'
+  };
+  // Each candidate: [chunk id, stage-1 cosine, relevance label 0/1/2, reranker score]. ideal = best possible label order (incl. relevant chunks stage 1 missed).
+  var SC=[
+    {short:'Phép khi mới vào',q:'Mới vào làm 6 tháng thì được bao nhiêu ngày phép?',ideal:[2,2,1],
+     c:[['c9',.83,0,-0.8],['c22',.81,0,-1.5],['c10',.79,0,-4.1],['c8',.78,2,7.4],['c23',.76,0,0.3],['c7',.74,2,5.9],['c21',.71,1,2.2],['c24',.69,0,-2.6],['c18',.62,0,-7.6],['c11',.58,0,-6.9]]},
+    {short:'"Điều 15" quy định gì',q:'Điều 15 quy định gì?',ideal:[2],missing:'c15',
+     c:[['c5',.71,0,0.6],['c13',.70,0,-0.4],['c16',.69,0,1.4],['c25',.67,0,-1.0],['c12',.66,0,-1.8],['c1',.65,0,0.9],['c17',.63,0,-0.2],['c19',.61,0,-2.3],['c20',.60,0,-2.9],['c9',.58,0,-1.1]]},
+    {short:'Làm từ xa thứ Sáu',q:'Thứ Sáu có được làm ở nhà không?',ideal:[2,1],
+     c:[['c20',.86,2,6.1],['c18',.80,0,-0.5],['c26',.78,1,3.4],['c19',.66,0,-5.2],['c9',.63,0,-2.8],['c16',.61,0,-1.9],['c10',.58,0,-4.4],['c11',.55,0,-6.0],['c5',.53,0,-3.7],['c15',.50,0,-4.9]]}
+  ];
+  var K=3, TH=2.0;
+  function toObj(a,i){return{id:a[0],s1:a[1],g:a[2],r:a[3],p1:i+1}}
+  function dcg(gs){var s=0;for(var i=0;i<Math.min(K,gs.length);i++)s+=gs[i]/Math.log2(i+2);return s}
+  function metrics(list,ideal){
+    var gs=list.map(function(x){return x.g});
+    var hit=gs.slice(0,K).indexOf(2)>=0?1:0;
+    var first=gs.indexOf(2), rr=first>=0?1/(first+1):0;
+    var idcg=dcg(ideal.slice().sort(function(a,b){return b-a}));
+    return{hit:hit,rr:rr,ndcg:idcg?dcg(gs)/idcg:0,firstPos:first+1};
+  }
+  function rerank(sc,N,useTh){
+    var pool=sc.c.slice(0,N).map(toObj).sort(function(a,b){return b.r-a.r});
+    if(useTh)pool=pool.filter(function(x){return x.r>=TH});
+    return pool;
+  }
+
+  // ---------- Stepper example (built from scenario 1, N = 10) ----------
+  var S1=SC[0], S1all=S1.c.map(toObj), S1after=rerank(S1,10,false);
+  function rowsHtml(list,mode){
+    return list.map(function(x,i){
+      var score=mode==='s1'?x.s1.toFixed(2):sgn(x.r);
+      var bar=mode==='s1'?'<div class="bar"><span style="width:'+Math.round(x.s1*100)+'%"></span></div>':'<br>';
+      var cls='chunk'+(mode==='final'&&i<K?' hit':'');
+      return '<div class="'+cls+'"><span class="id">#'+(i+1)+' · '+x.id+' · '+(mode==='s1'?'cosine ':'điểm rerank ')+score+'</span>'+bar+esc(CH[x.id])+'</div>';
+    }).join('');
+  }
+  var S1b=metrics(S1all,S1.ideal), S1a=metrics(S1after,S1.ideal);
+  function rrTxt(m){return m.rr?('1/'+m.firstPos+' = '+fmt(m.rr)):'0'}
+  var S1table='<div class="table-wrap"><table class="stack"><thead><tr><th>Chỉ số</th><th>Trước rerank</th><th>Sau rerank</th></tr></thead><tbody><tr><td>hit@3</td><td>'+S1b.hit+'</td><td>'+S1a.hit+'</td></tr><tr><td>RR (vị trí đoạn đúng đầu tiên)</td><td>'+rrTxt(S1b)+'</td><td>'+rrTxt(S1a)+'</td></tr><tr><td>nDCG@3</td><td>'+fmt(S1b.ndcg)+'</td><td>'+fmt(S1a.ndcg)+'</td></tr></tbody></table></div>';
+  var STEPS=[
+    {t:'Câu hỏi đến',h:'<span class="tag p1">Bắt đầu</span><h3>Bước 1 · Người dùng hỏi</h3><pre>"'+esc(S1.q)+'"</pre><p>Để trả lời đúng cần <b>hai</b> điều khoản: Điều 8 (người làm dưới 12 tháng tính phép theo tỷ lệ) và Điều 7 (mức đầy đủ là 12 ngày/năm).</p><p class="muted">Kho nội quy có vài chục điều khoản. Trong hệ thống thật, kho có thể có hàng triệu đoạn, nên không thể chấm kỹ từng đoạn.</p>'},
+    {t:'Giai đoạn 1: lấy N',h:'<span class="tag p1">Giai đoạn 1</span><h3>Bước 2 · Retriever lấy N = 10 ứng viên</h3><p>Câu hỏi được embed thành vector, so với vector các đoạn đã tính sẵn. Lấy 10 đoạn có cosine cao nhất:</p>'+rowsHtml(S1all,'s1')+'<div class="callout warn">Nếu chỉ lấy top-3 ở đây, LLM nhận <b>c9, c22, c10</b>: nói về nghỉ phép, hợp đồng dưới 12 tháng, nghỉ ốm. Đều "cùng chủ đề" nhưng <b>không trả lời</b> câu hỏi. c22 có cụm "dưới 12 tháng" nên trông rất giống đáp án: một <i>hard negative</i>.</div>'},
+    {t:'Ghép cặp',h:'<span class="tag p3">Giai đoạn 2</span><h3>Bước 3 · Tạo N cặp (câu hỏi, đoạn)</h3><p>Mỗi ứng viên được ghép với câu hỏi gốc thành một đầu vào cho cross-encoder:</p><pre>[câu hỏi] Mới vào làm 6 tháng thì được bao nhiêu ngày phép?\n[đoạn]    Điều 8. Nhân viên làm việc dưới 12 tháng được tính phép theo tỷ lệ…</pre><p>10 ứng viên → 10 cặp → 10 lượt chạy model. Các cặp độc lập với nhau nên có thể chấm cùng lúc theo lô (batch).</p><p class="muted">Nếu đoạn dài hơn độ dài tối đa model đọc được, phần cuối bị cắt bỏ trước khi chấm.</p>'},
+    {t:'Chấm điểm',h:'<span class="tag p3">Giai đoạn 2</span><h3>Bước 4 · Cross-encoder chấm từng cặp</h3><p>Model đọc câu hỏi và đoạn cùng lúc, nên thấy "mới vào 6 tháng" khớp với "làm việc dưới 12 tháng… theo tỷ lệ", còn "hợp đồng dưới 12 tháng… gia hạn" thì không trả lời câu hỏi. Điểm theo đúng thứ tự giai đoạn 1:</p>'+S1all.map(function(x){return '<div class="chunk"><span class="id">'+x.id+' · điểm rerank <span class="'+(x.r>0?'pos-pos':'pos-neg')+'">'+sgn(x.r)+'</span></span><br>'+esc(CH[x.id])+'</div>'}).join('')+'<div class="callout warn"><b>Điểm này không phải xác suất đã hiệu chỉnh.</b> Nhiều cross-encoder trả về số có thể âm; chủ yếu có nghĩa khi so các đoạn của <b>cùng</b> câu hỏi với nhau. Ngưỡng ở bước 6 chỉ là minh họa (xem mục 7).</div>'},
+    {t:'Sắp xếp lại',h:'<span class="tag p3">Giai đoạn 2</span><h3>Bước 5 · Sắp xếp theo điểm rerank</h3>'+rowsHtml(S1after,'r')+'<p class="muted">c8 nhảy từ vị trí 4 lên 1; c7 từ 6 lên 2; c22 (hard negative) tụt từ 2 xuống 6.</p>'},
+    {t:'Giữ top-k',h:'<span class="tag p3">Giai đoạn 2</span><h3>Bước 6 · Giữ top-3 (và ngưỡng nếu có)</h3>'+rowsHtml(S1after.slice(0,K),'final')+'<p>Ba đoạn được giữ: c8, c7 (chứa đáp án) và c21 (có ích: cách tính năm phép). Nếu thêm ngưỡng minh họa ≥ 2.0, cả ba vẫn được giữ vì điểm 7.4, 5.9, 2.2 đều vượt ngưỡng.</p>'+S1table+'<p class="muted" style="font-size:14px">hit@3: có đoạn đúng trong top-3 không · RR: 1 / vị trí đoạn đúng đầu tiên · nDCG@3: chất lượng thứ tự, 0–1. Giải thích ở <a href="#danh-gia">mục 9</a>.</p>'},
+    {t:'Vào prompt (A, G)',h:'<span class="tag p1">Quay về RAG</span><h3>Bước 7 · Đưa top-3 vào prompt</h3><pre>CHỈ trả lời dựa trên tài liệu dưới đây. Ghi rõ mã đoạn đã dùng.\n\n[c8] Điều 8. Nhân viên làm việc dưới 12 tháng được tính phép theo tỷ lệ số tháng làm việc.\n[c7] Điều 7. Nhân viên chính thức được nghỉ phép năm 12 ngày, hưởng nguyên lương.\n[c21] Điều 21. Phép năm được tính theo năm dương lịch, từ 1/1 đến 31/12.\n\nCâu hỏi: Mới vào làm 6 tháng thì được bao nhiêu ngày phép?</pre><div class="callout ok">LLM có đủ cả hai điều khoản để trả lời "khoảng 12 × 6/12 = 6 ngày [c8][c7]". Không có rerank, prompt chỉ chứa c9, c22, c10 và LLM không thể trả lời đúng.</div><p class="muted">Muốn thấy khi nào rerank <b>không</b> cứu được, thử câu "Điều 15" trong mô phỏng ở mục 4.</p>'}
+  ];
+  var cur=0, stepsEl=document.getElementById('steps'), bodyEl=document.getElementById('stepBody');
+  STEPS.forEach(function(s,i){var b=document.createElement('button');b.innerHTML='<span class="n">'+(i+1)+'</span>'+s.t;b.addEventListener('click',function(){show(i)});stepsEl.appendChild(b)});
+  function show(i){cur=i;bodyEl.innerHTML=STEPS[i].h;labelTables(bodyEl);[].forEach.call(stepsEl.children,function(b,j){b.classList.toggle('on',j===i);if(j===i)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current')});
+    document.getElementById('prevStep').disabled=i===0;var ab=stepsEl.children[i];if(stepsEl.scrollWidth>stepsEl.clientWidth){stepsEl.scrollLeft=ab.offsetLeft-stepsEl.offsetLeft-8}document.getElementById('nextStep').disabled=i===STEPS.length-1;}
+  document.getElementById('prevStep').addEventListener('click',function(){if(cur>0)show(cur-1)});
+  document.getElementById('nextStep').addEventListener('click',function(){if(cur<STEPS.length-1)show(cur+1)});
+  show(0);
+
+  // ---------- Rerank simulation ----------
+  var simQ=document.getElementById('simQ'), simN=document.getElementById('simN'), simTh=document.getElementById('simTh'),
+      bEl=document.getElementById('simBefore'), aEl=document.getElementById('simAfter'),
+      mBody=document.querySelector('#simMetrics tbody'), msgEl=document.getElementById('simMsg');
+  var st={q:0,N:10,done:false};
+  var NS=[3,5,10];
+  SC.forEach(function(s,i){var b=document.createElement('button');b.textContent='❓ '+s.q;b.addEventListener('click',function(){st.q=i;st.done=false;renderSim()});simQ.appendChild(b)});
+  NS.forEach(function(n){var b=document.createElement('button');b.className='chip';b.textContent='N = '+n;b.dataset.n=n;b.addEventListener('click',function(){st.N=n;renderSim()});simN.appendChild(b)});
+  simTh.addEventListener('change',renderSim);
+  document.getElementById('simRun').addEventListener('click',function(){st.done=true;renderSim(true);if(window.matchMedia('(max-width:820px)').matches){aEl.parentNode.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})}});
+  document.getElementById('simReset').addEventListener('click',function(){st.done=false;st.N=10;simTh.checked=false;renderSim()});
+  function gl(g){return '<span class="gl g'+g+'">'+g+'</span>'}
+  function rowHtml(x,pos,mode,extra){
+    var cls='rk'+(x.g===2?' g2v':x.g===1?' g1v':'')+(extra||'');
+    var right=mode==='s1'?x.s1.toFixed(2):'<span class="'+(x.r>0?'pos-pos':'pos-neg')+'">'+sgn(x.r)+'</span>';
+    if(mode==='r'){var d=x.p1-pos;right+='<span class="dl '+(d>0?'up':d<0?'down':'same')+'">'+(d>0?'↑'+d:d<0?'↓'+(-d):'=')+' (từ #'+x.p1+')</span>'}
+    return '<div class="'+cls+'"><span class="pos">#'+pos+'</span><span class="txt"><b>'+x.id+'</b>'+gl(x.g)+'<br>'+esc(CH[x.id])+'</span><span class="sc">'+right+'</span></div>';
+  }
+  function renderSim(animate){
+    var s=SC[st.q], N=st.N, useTh=simTh.checked;
+    [].forEach.call(simQ.children,function(b,j){b.classList.toggle('on',j===st.q);b.setAttribute('aria-pressed',j===st.q)});
+    [].forEach.call(simN.querySelectorAll('.chip'),function(b){b.classList.toggle('on',+b.dataset.n===N);b.setAttribute('aria-pressed',+b.dataset.n===N)});
+    var all=s.c.map(toObj), html='';
+    all.forEach(function(x,i){
+      if(i===K&&N!==K)html+='<div class="cutline">▲ top-3 nếu không rerank ▲</div>';
+      if(i===N&&N!==K)html+='<div class="cutline n">▲ N = '+N+' ứng viên chuyển cho reranker ▲</div>';
+      if(i===N&&N===K)html+='<div class="cutline n">▲ top-3 = N = 3 ứng viên chuyển cho reranker ▲</div>';
+      html+=rowHtml(x,i+1,'s1',i>=N?' out':'');
+    });
+    if(N>=all.length)html+='<div class="cutline n">▲ cả '+all.length+' ứng viên đều chuyển cho reranker ▲</div>';
+    if(s.missing)html+='<div class="placeholder" style="padding:10px;margin-top:6px">Đoạn chứa đáp án <b>'+s.missing+'</b> ('+esc(CH[s.missing])+') <b>không nằm trong 10 ứng viên</b> của giai đoạn 1.</div>';
+    bEl.innerHTML=html;
+    var before=metrics(all,s.ideal), after=null, list=null;
+    var relTotal=s.ideal.filter(function(g){return g===2}).length;
+    var inN=all.slice(0,N).filter(function(x){return x.g===2}).length;
+    if(st.done){
+      list=rerank(s,N,useTh); after=metrics(list,s.ideal);
+      var h='';
+      if(!list.length)h='<div class="placeholder">Không đoạn nào đạt ngưỡng 2.0.<br>Hệ thống nên trả lời "không tìm thấy trong nội quy" thay vì đưa đoạn rác vào prompt.</div>';
+      list.forEach(function(x,i){if(i===K)h+='<div class="cutline">▲ top-3 đưa vào prompt ▲</div>';h+=rowHtml(x,i+1,'r',animate?' new':'')});
+      if(useTh&&list.length&&list.length<N)h+='<p class="muted" style="font-size:13px">'+(N-list.length)+' đoạn bị ngưỡng cắt bỏ.</p>';
+      aEl.innerHTML=h;
+    }else{
+      aEl.innerHTML='<div class="placeholder">Bấm <b>Rerank ▶</b> để reranker chấm '+N+' ứng viên đầu và sắp xếp lại.</div>';
+    }
+    function cell(v,f){return after?f(v):'—'}
+    var rows=[
+      ['hit@3',before.hit?'1 (có)':'0 (không)',after?(after.hit?'1 (có)':'0 (không)'):'—'],
+      ['RR (1 / vị trí đoạn đúng đầu tiên)',before.rr?('1/'+before.firstPos+' = '+fmt(before.rr)):'0',after?(after.rr?('1/'+after.firstPos+' = '+fmt(after.rr)):'0'):'—'],
+      ['nDCG@3',fmt(before.ndcg),after?fmt(after.ndcg):'—'],
+      ['Số cặp reranker phải chấm','0',after?String(N):'—']
+    ];
+    mBody.innerHTML=rows.map(function(r){return '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td></tr>'}).join('');
+    labelTables(document.getElementById('simMetrics').parentNode);
+    var m='<p class="muted" style="margin-top:10px">recall@N của giai đoạn 1 (đoạn chứa đáp án lọt vào N): <b>'+inN+'/'+relTotal+'</b>. Đây là trần của reranker.</p>';
+    if(after){
+      var cls='callout ok', t='';
+      if(relTotal&&inN===0)
+        {cls='callout bad';t='Không có đoạn chứa đáp án trong '+N+' ứng viên, nên reranker <b>không thể cứu</b>. '+(s.missing?'Truy vấn chứa số hiệu chính xác ("Điều 15") mà vector search bỏ lỡ: cần <a href="../hybrid-search/">hybrid search</a> (BM25 khớp đúng chữ) ở giai đoạn 1.':'Thử tăng N.')}
+      else if(!before.hit&&after.hit)t='Rerank kéo đoạn đúng từ vị trí #'+before.firstPos+' lên #'+after.firstPos+'. hit@3 từ 0 thành 1.'+(inN<relTotal?' Nhưng mới có '+inN+'/'+relTotal+' đoạn chứa đáp án lọt vào N, nên nDCG@3 chưa tối đa: thử tăng N.':'');
+      else if(before.hit&&after.hit&&after.ndcg>before.ndcg+1e-9)t='Giai đoạn 1 vốn đã tốt; rerank chỉ cải thiện nhẹ thứ tự (nDCG@3 '+fmt(before.ndcg)+' → '+fmt(after.ndcg)+'). Cần cân nhắc có đáng thêm độ trễ của '+N+' lượt chấm không.';
+      else if(before.hit&&after.hit)t='Giai đoạn 1 vốn đã tốt; rerank không đổi kết quả đáng kể.';
+      else t='Rerank chưa đưa được đoạn đúng vào top-3.';
+      if(useTh&&!list.length&&relTotal&&inN===0)t+=' Ngưỡng cắt giúp hệ thống <b>trung thực</b>: không có đoạn tin cậy thì nói không tìm thấy, thay vì đưa '+K+' đoạn không liên quan cho LLM.';
+      if(!useTh&&s.missing)t+=' Bật ngưỡng cắt để xem hệ thống có thể từ chối trả lời thay vì đưa đoạn rác vào prompt.';
+      m+='<div class="'+cls+'" style="margin-bottom:0">'+t+'</div>';
+    }
+    msgEl.innerHTML=m;
+  }
+  renderSim();
+
+  // ---------- Glossary ----------
+  var G={core:'Nền tảng',model:'Kiểu model chấm điểm',llm:'LLM làm reranker',tune:'Tham số & vận hành',eval:'Đánh giá'};
+  var T=[
+    ['two-stage','core','Two-stage retrieval','retrieve-then-rerank','Tìm theo hai giai đoạn: giai đoạn 1 lấy nhanh N ứng viên từ cả kho; giai đoạn 2 chấm kỹ N ứng viên đó và giữ k đoạn tốt nhất.','Kho 1 triệu đoạn → 50 ứng viên → 3 đoạn vào prompt (minh họa).',['first-stage','rerank','candidate-n']],
+    ['first-stage','core','First-stage retriever','bộ tìm giai đoạn 1','Thành phần tìm nhanh trong toàn bộ kho: vector search (bi-encoder), BM25 hoặc hybrid. Mục tiêu chính là không bỏ sót đoạn đúng.','Vector search qua index ANN.',['bi-encoder','bm25','recall-n']],
+    ['rerank','core','Reranking','xếp hạng lại','Chấm lại mức liên quan của một danh sách ứng viên có sẵn bằng cách chính xác hơn rồi sắp xếp lại. Không tìm thêm đoạn mới.','c8 từ vị trí 4 lên vị trí 1 sau rerank.',['reranker','two-stage','top-k']],
+    ['reranker','core','Reranker','','Thành phần làm việc reranking: cross-encoder, late interaction hoặc LLM. Nhận câu hỏi và danh sách đoạn, trả về điểm cho từng đoạn.','',['cross-encoder','late-interaction','llm-reranker']],
+    ['relevance','core','Relevance score','điểm liên quan','Con số reranker gán cho mỗi cặp (câu hỏi, đoạn); cao hơn là liên quan hơn. Dùng để so các đoạn của cùng một câu hỏi.','c8: +7.4; c9: −0.8 (minh họa).',['score-not-prob','threshold']],
+    ['recall-precision','core','Recall và precision','','Recall: lấy được bao nhiêu phần trong số đoạn đúng. Precision: trong những gì lấy ra, bao nhiêu phần là đúng. Giai đoạn 1 ưu tiên recall; giai đoạn 2 nâng precision ở đầu danh sách.','',['first-stage','recall-n']],
+    ['pair','core','Cặp (câu hỏi, đoạn)','query–document pair','Đơn vị đầu vào của cross-encoder: câu hỏi và một đoạn ghép thành một chuỗi rồi đọc cùng lúc. N ứng viên → N cặp → N lượt chấm.','',['cross-encoder','candidate-n']],
+    ['hard-negative','core','Hard negative','mẫu âm khó','Đoạn trông rất giống đáp án nhưng không trả lời câu hỏi. Giai đoạn 1 hay nhầm ở đây; reranker tốt phải đẩy chúng xuống.','c22 "hợp đồng dưới 12 tháng…" với câu hỏi về phép của người làm 6 tháng.',['rerank','domain']],
+    ['bi-encoder','model','Bi-encoder','','Model mã hóa câu hỏi và đoạn riêng rẽ thành hai vector rồi so bằng cosine. Vector đoạn tính sẵn được nên tìm rất nhanh trong kho lớn.','Embedding model trong RAG là một bi-encoder.',['embedding','cross-encoder','first-stage']],
+    ['embedding','model','Embedding','','Vector biểu diễn nghĩa của một đoạn văn bản; nghĩa giống nhau thì vector gần nhau. Xem trang RAG mục 4.','',['bi-encoder']],
+    ['cross-encoder','model','Cross-encoder','','Model đọc câu hỏi và đoạn trong cùng một lần, mỗi từ của câu hỏi "nhìn thấy" từng từ của đoạn, rồi xuất ra một điểm. Chính xác hơn bi-encoder nhưng không tính sẵn được.','N = 50 ứng viên → 50 lượt chạy model cho mỗi câu hỏi.',['pair','bi-encoder','max-length']],
+    ['late-interaction','model','Late interaction','tương tác muộn','Lưu mỗi đoạn thành nhiều vector (về cơ bản mỗi token một vector), tính sẵn được; lúc hỏi, mỗi token câu hỏi tìm token khớp nhất trong đoạn rồi cộng điểm.','Ý tưởng tiêu biểu: ColBERT.',['colbert','maxsim']],
+    ['colbert','model','ColBERT','','Phương pháp late interaction tiêu biểu (Khattab & Zaharia, SIGIR 2020), dùng được cho cả rerank lẫn tìm trực tiếp trong kho. Đổi lại chỗ lưu tăng khoảng một bậc độ lớn; ColBERTv2 nén để giảm bớt.','',['late-interaction']],
+    ['maxsim','model','MaxSim','','Cách tính điểm trong late interaction: với mỗi token câu hỏi, lấy độ giống lớn nhất với các token của đoạn, rồi cộng lại.','"phép" khớp mạnh nhất với "phép" trong đoạn; "tháng" khớp với "tháng".',['late-interaction']],
+    ['bm25','model','BM25','','Tìm theo từ khóa: đoạn chứa từ của câu hỏi được cộng điểm, từ càng hiếm càng nặng. Hay đi cùng vector search ở giai đoạn 1.','Khớp đúng "Điều 15" mà vector search có thể bỏ lỡ.',['hybrid','first-stage']],
+    ['hybrid','model','Hybrid search','','Kết hợp vector search và BM25, trộn kết quả (thường bằng RRF) thành danh sách ứng viên cho reranker.','',['bm25','rrf']],
+    ['rrf','model','RRF','Reciprocal Rank Fusion','Cách trộn nhiều danh sách theo thứ hạng, không theo điểm, và không đọc nội dung đoạn nên không phải là reranker. Thường đứng ngay trước reranker trong hybrid search.','',['hybrid']],
+    ['domain','model','Reranker theo miền','domain adaptation','Một hướng khi reranker có sẵn làm kém với thuật ngữ chuyên ngành hoặc tiếng Việt: huấn luyện thêm trên các cặp (câu hỏi, đoạn) có nhãn của lĩnh vực mình. Cần dữ liệu có nhãn và đo lại trước/sau.','',['hard-negative','eval-set']],
+    ['llm-reranker','llm','LLM reranker','','Dùng LLM chấm, so sánh hoặc sắp xếp ứng viên qua prompt. Linh hoạt, nhận thêm chỉ dẫn bằng lời; mỗi lần chấm là một hoặc nhiều lượt gọi LLM nên cần đo độ trễ và chi phí.','"Ưu tiên văn bản còn hiệu lực" là chỉ dẫn mà cross-encoder thường không hiểu được.',['pointwise','pairwise','listwise']],
+    ['pointwise','llm','Pointwise','chấm từng đoạn','Hỏi LLM về từng đoạn riêng: "liên quan mức nào (0–3)?". Đơn giản, chạy song song được; nhưng khó có điểm được hiệu chỉnh để so giữa các lần gọi.','',['llm-reranker','threshold']],
+    ['pairwise','llm','Pairwise','so từng cặp đoạn','Đưa hai đoạn, hỏi đoạn nào liên quan hơn; ghép kết quả nhiều lần so thành thứ hạng. So mọi cặp có N(N−1)/2 cặp; hỏi mỗi cặp hai lần (đảo thứ tự A/B để khử thiên lệch) thì gấp đôi.','N = 20 → 190 cặp, tức 380 lượt gọi nếu hỏi hai lần.',['llm-reranker']],
+    ['listwise','llm','Listwise','sắp cả danh sách','Đưa cả danh sách vào một prompt, yêu cầu trả về thứ tự. LLM thấy các đoạn cùng lúc, nhưng bị giới hạn context window.','',['sliding-window','position-bias']],
+    ['sliding-window','llm','Sliding window','cửa sổ trượt','Khi danh sách quá dài cho một prompt: sắp xếp từng nhóm nhỏ chồng lấn. Cách trong nghiên cứu của Sun et al. (2023) đi từ cuối danh sách lên đầu, để đoạn tốt "nổi" dần lên trên.','',['listwise']],
+    ['position-bias','llm','Position bias','thiên lệch vị trí','Kết quả của LLM có thể đổi theo thứ tự các đoạn trong prompt, dù nội dung không đổi. Giảm bằng cách hỏi lại với thứ tự đảo (pairwise) hoặc xáo thứ tự rồi so kết quả.','',['listwise']],
+    ['candidate-n','tune','N ứng viên','candidate depth','Số đoạn giai đoạn 1 chuyển cho reranker. N nhỏ dễ bỏ sót đoạn đúng; N lớn chậm và tốn hơn.','Trong mô phỏng: N = 3 bỏ sót cả c8 lẫn c7.',['recall-n','latency','top-k']],
+    ['top-k','tune','Top-k','','Số đoạn giữ lại sau rerank để đưa vào prompt, k ≤ N.','Thường bắt đầu với k = 3–5.',['candidate-n','threshold']],
+    ['threshold','tune','Ngưỡng cắt','score threshold','Bỏ đoạn có điểm rerank dưới một mức, để không đưa rác vào prompt và cho phép trả lời "không tìm thấy". Phải hiệu chỉnh trên eval set cho đúng model.','',['score-not-prob','top-k']],
+    ['score-not-prob','tune','Không phải xác suất đã hiệu chỉnh','calibration','Điểm reranker chủ yếu dùng để xếp hạng trong cùng một câu hỏi và phụ thuộc vào câu hỏi. Không nên đọc 0.9 thành "90% chắc chắn đúng"; cập nhật model có thể đổi phân bố điểm.','',['threshold','relevance']],
+    ['max-length','tune','Độ dài tối đa','max input length','Reranker chỉ đọc được số token giới hạn cho cả câu hỏi + đoạn. Phần vượt thường bị cắt bỏ (một số dịch vụ tự chia nhỏ), nên đáp án ở cuối đoạn dài có thể bị bỏ qua.','',['cross-encoder','chunk']],
+    ['chunk','tune','Chunk','đoạn','Mẩu văn bản cắt từ tài liệu (xem trang RAG). Quá dài thì bị reranker cắt cụt; quá ngắn thì thiếu ngữ cảnh để chấm.','',['max-length']],
+    ['latency','tune','Độ trễ','latency','Thời gian thêm vào mỗi câu hỏi. Phần rerank tăng theo N và độ dài đoạn. Giảm bằng N nhỏ hơn, model nhỏ hơn, chấm theo lô, đoạn ngắn hơn.','',['candidate-n','max-length']],
+    ['mmr','tune','MMR','Maximal Marginal Relevance','Chọn lần lượt từng đoạn, cân giữa "liên quan câu hỏi" và "khác các đoạn đã chọn", để top-k không toàn đoạn trùng ý.','',['diversity']],
+    ['diversity','tune','Đa dạng kết quả','','Top-k nên bao phủ các ý khác nhau thay vì lặp lại một ý. Bản trùng hay phiên bản cũ của cùng điều khoản lãng phí chỗ trong prompt.','',['mmr']],
+    ['eval-set','eval','Eval set','bộ câu hỏi kiểm tra','Danh sách câu hỏi mẫu kèm nhãn cho các đoạn liên quan, dùng để đo trước/sau rerank.','Vài chục câu, có câu dùng từ khác tài liệu.',['label','hit-k']],
+    ['label','eval','Nhãn liên quan','relevance judgment','Mức liên quan người chấm gán cho cặp (câu hỏi, đoạn): nhị phân hoặc theo mức (0, 1, 2). Lúc chạy thật, hệ thống không biết nhãn.','c8: 2 · c21: 1 · c22: 0.',['eval-set','ndcg']],
+    ['recall-n','eval','recall@N','','Tỷ lệ đoạn đúng lọt vào N ứng viên của giai đoạn 1. Đây là trần của reranker.','recall@5 = 1/2 ở câu "phép khi mới vào" (chỉ c8 lọt).',['candidate-n','first-stage']],
+    ['hit-k','eval','hit@k','','Tỷ lệ câu hỏi có ít nhất một đoạn đúng trong top-k.','hit@3 từ 1/3 lên 2/3 sau rerank trong mô phỏng.',['mrr','ndcg']],
+    ['mrr','eval','MRR','Mean Reciprocal Rank','Trung bình của 1 / (vị trí đoạn đúng đầu tiên); không có đoạn đúng thì tính 0.','Vị trí 4 → 0.25; vị trí 1 → 1.',['hit-k','ndcg']],
+    ['ndcg','eval','nDCG@k','','Đo chất lượng thứ tự có tính mức liên quan: đoạn càng liên quan và đứng càng cao thì điểm càng cao; chia cho thứ tự lý tưởng để ra 0–1.','',['dcg','label']],
+    ['dcg','eval','DCG và IDCG','','DCG@k = Σ mức liên quan / log₂(i+1). IDCG là DCG của thứ tự lý tưởng. nDCG = DCG / IDCG.','2/1 + 2/1.585 + 1/2 ≈ 3.762.',['ndcg']],
+    ['ab','eval','So trước/sau rerank','','Chạy cùng eval set khi có và không có reranker, so cùng chỉ số và cả độ trễ. Reranker không phải lúc nào cũng giúp.','',['eval-set','latency']]
+  ];
+  var byId={};T.forEach(function(t){byId[t[0]]=t});
+  var grid=document.getElementById('glossGrid'), chips=document.getElementById('glossChips'), search=document.getElementById('glossSearch'), activeG='all';
+  function fold(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d')}
+  function renderGloss(){
+    var q=fold(search.value.trim()); grid.innerHTML='';var n=0;
+    T.forEach(function(t){
+      if(activeG!=='all'&&t[1]!==activeG)return;
+      var hay=fold(t[2]+' '+t[3]+' '+t[4]+' '+t[5]); if(q&&hay.indexOf(q)<0)return; n++;
+      var d=document.createElement('div');d.className='card term';d.id='term-'+t[0];
+      var rel=t[6].filter(function(r){return byId[r]}).map(function(r){return '<a href="#term-'+r+'" data-goto="'+r+'">'+esc(byId[r][2])+'</a>'}).join(', ');
+      d.innerHTML='<span class="tag">'+G[t[1]]+'</span><h4>'+esc(t[2])+(t[3]?' <span class="en">· '+esc(t[3])+'</span>':'')+'</h4><p>'+esc(t[4])+'</p>'+(t[5]?'<p class="ex">Ví dụ: '+esc(t[5])+'</p>':'')+(rel?'<div class="rel">Liên quan: '+rel+'</div>':'');
+      grid.appendChild(d);
+    });
+    if(!n)grid.innerHTML='<p class="muted">Không có khái niệm khớp.</p>';
+  }
+  var all=document.createElement('button');all.className='chip on';all.textContent='Tất cả ('+T.length+')';all.dataset.g='all';chips.appendChild(all);
+  Object.keys(G).forEach(function(k){var b=document.createElement('button');b.className='chip';b.dataset.g=k;b.textContent=G[k];chips.appendChild(b)});
+  chips.addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;activeG=b.dataset.g;[].forEach.call(chips.children,function(c){c.classList.toggle('on',c===b)});renderGloss()});
+  search.addEventListener('input',renderGloss);
+  grid.addEventListener('click',function(e){var a=e.target.closest('a[data-goto]');if(!a)return;e.preventDefault();
+    if(!document.getElementById('term-'+a.dataset.goto)){activeG='all';search.value='';[].forEach.call(chips.children,function(c){c.classList.toggle('on',c.dataset.g==='all')});renderGloss()}
+    var t=document.getElementById('term-'+a.dataset.goto);t.scrollIntoView({behavior:'smooth',block:'center'});t.style.outline='2px solid var(--accent)';setTimeout(function(){t.style.outline=''},1500)});
+  renderGloss();
+
+  // ---------- Checklist persistence ----------
+  [].forEach.call(document.querySelectorAll('input[data-k]'),function(cb){
+    cb.checked=safeGet('rerank-'+cb.dataset.k)==='1';
+    cb.addEventListener('change',function(){safeSet('rerank-'+cb.dataset.k,cb.checked?'1':'0')});
+  });
+
+  // ---------- Active TOC ----------
+  var links=[].slice.call(document.querySelectorAll('#toc a'));
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(l){var on=l.getAttribute('href')==='#'+e.target.id;l.classList.toggle('active',on);if(on){var nav=l.parentNode;nav.scrollLeft=l.offsetLeft-nav.offsetLeft-(nav.clientWidth-l.offsetWidth)/2}})}})},{rootMargin:'-40% 0px -55% 0px'});
+    document.querySelectorAll('main section').forEach(function(s){io.observe(s)});
+  }
+})();
+</script>
+</body>
+</html>
