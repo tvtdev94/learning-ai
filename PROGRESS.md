@@ -17,6 +17,8 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 | `_work/notes/kongming-*-review.md` | Report review của kongming cho từng trang | Không |
 | `_work/notes/researcher-261114-2030-next-ai-topics.md` | Danh sách 14 chủ đề đề xuất, có nguồn và thứ tự học | Không |
 | `PROGRESS.md` | File này | Không |
+| `manifest.webmanifest`, `sw.js`, `icons/` | PWA: cài site như app điện thoại, đọc offline các trang đã mở. Đổi `CACHE` trong `sw.js` nếu cần xóa cache cũ | Có |
+| `_work/add-pwa-head.py` | Gắn thẻ PWA vào `<head>` của trang; chạy lại an toàn | Không |
 
 ## Quy trình đã thống nhất với người dùng
 
@@ -29,6 +31,7 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 7. **Dọn dẹp khi xong:** dừng http.server, đóng tab Orca, xóa file tạm.
 8. **Publish:**
    - Bỏ slug khỏi `exclude` trong `_config.yml` và thêm thẻ vào `TOPICS` trong `index.html`.
+   - Chạy `python3 _work/add-pwa-head.py <slug>/index.html` để gắn thẻ PWA (manifest, icon, service worker).
    - Commit theo conventional commits, rồi push.
    - Chờ Pages build, kiểm link thật bằng Orca ở 390px.
    - Gửi link qua Telegram.

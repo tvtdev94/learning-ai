@@ -22,6 +22,8 @@ Tạo MỘT trang HTML học một chủ đề AI cho site https://tvtdev94.gith
 
 Một file tự chứa, không dùng CDN hay thư viện ngoài.
 
+Site là một PWA (`manifest.webmanifest`, `sw.js`, `icons/`). Phiên chính chạy `python3 _work/add-pwa-head.py <slug>/index.html` trước khi publish để gắn thẻ PWA; phiên chủ đề không cần tự thêm.
+
 Liên kết sang các trang liên quan khi hợp lý: `../rag/`, `../ai-agent/`, `../harness/`, `../hybrid-search/`, `../reranking/`, `../embedding-performance/`, `../governance/`, `../knowledge-base/`, và các slug đợt 2 bên dưới.
 
 ## Cấu trúc trang
