@@ -61,7 +61,9 @@ footer{color:var(--muted);font-size:14px;margin-top:32px}
     {href:'embedding-performance/',icon:'⚡',title:'Embedding Performance',sub:'Tìm đúng và chạy nhanh, nhẹ',desc:'Hai nghĩa của hiệu năng embedding: tìm đúng và chạy nhanh, nhẹ. Đo recall@k, tính bộ nhớ vector, Matryoshka, quantization, HNSW, đổi model.',tags:['Embedding','Có máy tính','Vector search']},
     {href:'governance/',icon:'🛡️',title:'AI Governance',sub:'Quản trị RAG/agent doanh nghiệp',desc:'Quản trị AI cho RAG/agent doanh nghiệp: vòng đời, phân quyền dữ liệu, rủi ro ↔ kiểm soát, xử lý sự cố, checklist sẵn sàng.',tags:['Rủi ro','Dữ liệu','Có checklist']},
     {href:'knowledge-base/',icon:'🗄️',title:'Knowledge Base',sub:'Kho tri thức cho AI',desc:'Kho tri thức cho AI: pipeline nạp dữ liệu, metadata, đồng bộ, quyền truy cập, knowledge graph và cách đo chất lượng. Có mô phỏng từng bước.',tags:['Ingestion','Metadata','Có mô phỏng']},
-    {href:'hybrid-search/',icon:'🔎',title:'Hybrid Search',sub:'BM25 + vector + RRF',desc:'BM25 và vector chạy song song rồi trộn bằng RRF: vì sao cần, cách tính, tiếng Việt, mô phỏng tương tác và cách đánh giá.',tags:['BM25','RRF','Có mô phỏng']}
+    {href:'hybrid-search/',icon:'🔎',title:'Hybrid Search',sub:'BM25 + vector + RRF',desc:'BM25 và vector chạy song song rồi trộn bằng RRF: vì sao cần, cách tính, tiếng Việt, mô phỏng tương tác và cách đánh giá.',tags:['BM25','RRF','Có mô phỏng']},
+    {href:'harness/',icon:'🧰',title:'Agent Harness',sub:'Phần mềm bao quanh model',desc:'Harness là mọi thứ quanh model: vòng lặp agent, ghép context, tool, quyền, hook, sandbox, log. Đi qua 9 bước một coding agent sửa test.',tags:['Agent loop','Context','Có ví dụ từng bước']},
+    {href:'multi-agent-agentic-rag/',icon:'🕸️',title:'Multi-agent & Agentic RAG',sub:'Khi nào cho agent tự quyết',desc:'Khi nào nên cho agent tự quyết cách tìm và chia việc cho nhiều agent: flow, mô phỏng token, CRAG, lỗi MAST, cách đo.',tags:['Multi-agent','Agentic RAG','Đánh đổi']}
   ];
   var grid=document.getElementById('topics');
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}

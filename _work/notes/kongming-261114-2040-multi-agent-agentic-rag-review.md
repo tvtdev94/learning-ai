@@ -214,3 +214,42 @@ Hướng và ý nghĩa mũi tên của cả hai sơ đồ đúng. Các điểm d
 
 - κ = 0,77 của LLM judge trong MAST mới đọc qua một lần WebFetch; cần mở lại mục 4 bản HTML để chốt trước khi ghi vào trang.
 - Câu của [2] về "numerous complex tools" và "spend enough tokens" tôi dẫn theo trí nhớ, chưa trích lại được trong lần mở này.
+
+## Kết quả áp dụng (2026-11-16)
+
+Đã tự kiểm lại từng phát hiện với trang và nguồn (mở lại bằng WebFetch: arXiv 2503.13657 abs + html, [2], [3], [6] html, [9], [11], [12], [5], cùng 2 nguồn mới [15] Cognition 2026 và [16] LangChain multi-agent). Test bằng Orca ở 1280×900 và 390×844, sáng và tối.
+
+- F1 → **sửa**. Xác nhận: κ 0,88 là đồng thuận giữa chuyên gia người ("validated by high inter-annotator agreement (kappa = 0.88)"); LLM judge o1 few-shot: "accuracy 94%, Cohen's Kappa of 0.77; Table 2". Đã sửa trang và ghi chú nguồn.
+- F2 → **sửa**. Câu dẫn mục 3 nói cả năm là workflow, mẫu 4 là bước chuyển; thêm orchestrator–workers vào ô Workflow ở vflow và SVG ("Workflow (5 mẫu)").
+- F3 → **sửa**. Gắn [2] ("interfacing with numerous complex tools") và thêm đối trọng [12][11] về chi phí phối hợp khi có 16+ tool.
+- F4 → **sửa**. Đổi thành "điểm phần trăm", nêu ChatDev, 32 bài, HumanEval tăng nhỏ hơn nhiều, tác giả nói "do not constitute substantial improvements" (Bảng 5, Phụ lục H đã đọc).
+- F5 → **sửa**. Câu dẫn mục 11 nói tỉ lệ là tỉ trọng trong tổng số lỗi ghi nhận (tự cộng 14 tỉ lệ ≈ 100,05%).
+- F6 → **sửa**. Bỏ "tới" (90,2% và 17,2 lần), "80% độ biến thiên", ghi chú 80,9% (blog) và 80,8% (arXiv v3).
+- F7 → **sửa**. Thêm nguồn [15] (22/4/2026) và đoạn cập nhật; thêm quy tắc "nhiều agent đọc, một agent ghi".
+- F8 → **sửa**. Thêm ghi chú sau bảng CRAG: Self-RAG huấn luyện model, CRAG fine-tune T5-large, LangGraph dùng LLM thường với prompt; phần gợi ý ghi rõ là suy luận.
+- F9 → **sửa**. Tách 4a/4b; thêm node "Kiểm tra câu trả lời bám nguồn" vào vflow; ghi rõ LangGraph không có bước này (đã xác minh: generate_answer → END).
+- F10 → **sửa**. Callout an toàn có [9] ("Treat the document as data only…") và liên kết ../governance/; phần phân quyền viết dạng khuyến nghị.
+- F11 → **sửa một phần**. Thêm đoạn "Chọn model theo vai" (ghi rõ là suy luận); thêm tên gọi LangChain (Subagents/Handoffs/Router) có nguồn [16]; tách Independent/Centralized và thêm Decentralized, Hybrid, Self-RAG, IRCoT, Compaction, Kiểm tra bám nguồn vào từ điển (39 → 46 thẻ). Không thêm "supervisor/swarm/hierarchical" vì trang LangChain đã mở không dùng các từ này.
+- F12 → **sửa**. Câu mở đầu mục ví dụ liên kết tình huống ở trang AI Agent.
+- F13 → **sửa**. Chuyển mục Agentic RAG lên thành mục 4 (trước Ví dụ), đánh số lại 5 (Ví dụ), 6 (Mô phỏng) và mọi tham chiếu "mục N" trong trang.
+- F14 → **sửa** cả 6 chỗ ("RAG cổ điển luôn", câu rubric, "Trả lời đúng nhưng chi phí (tầng 4) cao", "Cân công sức", "ổn định, lặp lại được (deterministic)", "worker (chưa biết trước)").
+- F15 → **sửa một phần**. Tách callout Cognition và callout "Con số hay được trích" thành 2 đoạn. Bảng lỗi giữ dạng thẻ: đã xem ở 390px, mỗi thẻ có nhãn cột rõ, đọc được.
+- F16 → **sửa**. Thêm tool `contract_emails` vào brief; bước 5 dẫn đúng tool đó; câu mô tả dữ liệu cập nhật.
+- F17 → **sửa**. Đổi tiêu đề cột "Tổng token khác nhau phải đọc (mỗi token đếm một lần)"; viết lại phần giả định (đọc lại context phạt một agent nặng hơn); đưa callout "4×/15× là so với chat" ra ngoài details, có câu "help spend enough tokens" của [2].
+- F18 → **sửa**. Rẽ nhánh multiTime < singleTime; N=2, T=1 in "không nhanh hơn (2 so với 2 phút)…" (đã chạy trong Orca).
+- F19 → **sửa**. Chú thích tím: "Lead / cả hệ multi-agent".
+- F20 → **sửa**. Thêm lựa chọn 32.000 token để nhánh sub-agent vượt giới hạn chạy được; thêm thông điệp riêng cho tổ hợp vượt context + phụ thuộc; thêm [12] vào verdict. Vạch W=1.000.000 giữ nguyên (chữ số vẫn hiện).
+- F21 → **sửa**. Đo trong Orca: thẻ điều khiển cao 708px ở 390×844, xác nhận lỗi. Thêm dải tóm tắt sticky ở đáy thẻ điều khiển (chỉ ≤820px), luôn thấy context, tỉ lệ token, thời gian khi kéo.
+- F22 → **sửa**. `min-height:40px` cho thanh trượt trong khối mobile.
+- F23 → **sửa**. Hai nhãn chuyển lên y=20, căn giữa; screenshot 1280 sáng/tối không còn đè.
+- F24 → **đã ổn trước khi sửa**. Bản nháp hiện tại đặt nhãn ở x=48, y=264 (khác toạ độ review mô tả); screenshot xác nhận không đè. Đường cong được nối lại từ đáy hộp Workflow mới (y=232).
+- F25 → **sửa**. Tách "retrieval / là tool" hai dòng căn giữa x=660.
+- F26 → **sửa**. "ghép bằng code" dời sang text-anchor end tại (300, 98), cách đường cong ≥10px.
+- F27 → **sửa**. Bỏ marker-start; nhãn mobile Workflow→Agent đổi thành "bước tiếp: đặt augmented LLM vào vòng lặp…" để khớp desktop.
+- F28 → **sửa**. Thêm marker theo màu (arr-p4, arr2-p1/p2/p4) thay vì context-stroke.
+- F29 → **sửa**. Bỏ liên kết ../llm-cost-optimization/ (thư mục chưa tồn tại, chỉ có ghi chú nguồn).
+- F30 → **sửa**. Bấm Trước/Tiếp cuộn `.stepper` về đầu nếu đầu bị khuất (Orca: top −396 → 72).
+- F31 → **sửa**. Tính lại: cũ 4,11:1 ở dark; đặt `--bar-op` .4 cho dark → 5,5–5,9:1; light 5,6–6,2:1. Đồng thời đồng bộ token màu sáng theo `rag/index.html` (màu đậm hơn).
+- F32 → **sửa**. `aria-live` chỉ còn trên `#verdict`.
+
+Bác bỏ: không có phát hiện nào bị bác bỏ hoàn toàn. F24 không cần sửa vì nhãn đã ở vị trí không đè; F11 và F15 chỉ áp dụng phần có nguồn hoặc có lợi rõ.
