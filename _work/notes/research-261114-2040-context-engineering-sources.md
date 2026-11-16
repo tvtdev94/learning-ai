@@ -1,6 +1,6 @@
 # Ghi chú nguồn: Context engineering (2026-11-14)
 
-Trang: `D:\WORKSPACES\learning-ai\context-engineering\index.html`. Mỗi dòng: khẳng định → URL → câu trích làm bằng chứng. Tất cả URL đã mở bằng WebFetch ngày 2026-11-14.
+Trang: `context-engineering/index.html`. Mỗi dòng: khẳng định → URL → câu trích làm bằng chứng. Tất cả URL đã mở bằng WebFetch ngày 2026-11-14.
 
 ## [1] Anthropic, Effective context engineering for AI agents (2025-09-29, Rajasekaran, Dixon, Ryan, Hadfield)
 URL: https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents
@@ -118,6 +118,25 @@ URL: https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Buildi
 - Nén khôi phục được → [13] → "Our compression strategies are always designed to be restorable." / "the content of a web page can be dropped from the context as long as the URL is preserved"
 - todo.md → [13] → "By constantly rewriting the todo list, Manus is reciting its objectives into the end of the context."
 - Giữ lỗi → [13] → "Erasing failure removes evidence. And without evidence, the model can't adapt."
+
+## Bổ sung khi áp dụng kongming review (2026-11-16, mở lại bằng WebFetch)
+- [2] Thinking cũng tính vào cửa sổ → https://platform.claude.com/docs/en/build-with-claude/context-windows → "The output Claude generates for the turn, including its extended thinking, counts too."
+- [2] Điều kiện stop_reason → https://platform.claude.com/docs/en/build-with-claude/context-windows → "On Claude 4.5 models and newer, if input tokens plus `max_tokens` exceeds the context window size, the API accepts the request. If generation then reaches the context window limit, it stops with `stop_reason: "model_context_window_exceeded"`."
+- [2] Compaction đang beta → https://platform.claude.com/docs/en/build-with-claude/context-windows → "It is available in beta for Claude 4.6 and later models"
+- [3] Distractor → https://www.trychroma.com/research/context-rot → "Even a single distractor reduces performance relative to the baseline"
+- [3] LongMemEval không gồm cả 18 model → https://www.trychroma.com/research/context-rot → "Not all 18 models are included in each experiement due to context window or thinking_budget constraints."
+- [6] Compaction beta → https://platform.claude.com/docs/en/build-with-claude/compaction → "both it and Compaction at a token threshold are in beta"
+- [7] Context editing cần beta header → https://platform.claude.com/docs/en/build-with-claude/context-editing → "This requires the beta header `context-management-2025-06-27`."
+- [9] 55k là cấu hình nhiều server (không ghi chữ MCP) → https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool → "A typical multiserver setup (GitHub, Slack, Sentry, Grafana, and Splunk) can consume ~55k tokens in definitions"
+- [11] 80% là trên BrowseComp → https://www.anthropic.com/engineering/multi-agent-research-system → "three factors explained 95% of the performance variance" / "token usage by itself explains 80% of the variance"
+- [11] Méo thông tin qua nhiều tầng → https://www.anthropic.com/engineering/multi-agent-research-system → "Subagent output to a filesystem to minimize the 'game of telephone.'" / "This prevents information loss during multi-stage processing"
+- [12] TTL và làm mới → https://platform.claude.com/docs/en/build-with-claude/prompt-caching → "By default, the cache has a 5-minute lifetime. The cache is refreshed for no additional cost each time the cached content is used."
+- [12] Ngoại lệ giá đọc cache → https://platform.claude.com/docs/en/build-with-claude/prompt-caching → "Cache hits and refreshes on Claude Opus 5.5 and Claude Sonnet 5.5 are priced at 0.05x the base input price."
+
+## [14] Anthropic, Compaction on demand (tài liệu Claude API, truy cập 2026-11-16)
+URL: https://platform.claude.com/docs/en/build-with-claude/compaction-on-demand
+- Lần tóm tắt tính phí như request thường → [14] → "The summarization call is billed and rate-limited like any other request"
+- Beta → [14] → frontmatter "status: beta", "betaHeader: compact-2026-09-04"
 
 ## Số liệu minh họa trong trang
 Mọi số token trong ví dụ từng bước và mô phỏng (2.500 system prompt, 18.000 tool definitions, kết quả tool 12.000…) là minh họa, ghi rõ "minh họa" trong trang. Chỉ các số có nguồn ở trên được nêu như sự thật.
