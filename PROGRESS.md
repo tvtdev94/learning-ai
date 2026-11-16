@@ -71,7 +71,7 @@ Bảng port (8781–8794) và phạm vi nội dung của từng chủ đề nằ
 
 ## Việc chung còn tồn đọng
 
-1. **Màu chế độ sáng toàn site.** `rag` và `embedding-performance` đã làm đậm token màu để chữ nhỏ đạt ≥ 4.5:1. Các trang `ai-agent`, `reranking`, `governance`, `knowledge-base`, `hybrid-search` có thể vẫn dùng màu cũ (khoảng 3.6–4.4:1). Cần một lượt đồng bộ màu theo `rag/index.html`, rồi đo lại bằng Orca.
+1. **Màu chế độ sáng toàn site: đã xong (2026-11-16).** `reranking`, `governance`, `knowledge-base`, `hybrid-search` đã dùng token màu của `rag/index.html`; `ai-agent` và `embedding-performance` đã đậm sẵn. Đo bằng Orca ở 390px, cả sáng và tối: 0 chữ dưới 4.5:1 trên cả 7 trang. Trang mới phải chép token màu từ `rag/index.html`.
 2. **Link nội bộ trỏ tới trang chưa publish**, ví dụ `../harness/` và `../llm-cost-optimization/`. Chúng sẽ hết 404 khi các trang đó được publish. Có thể quét bằng: `rg -o 'href="\.\./[a-z-]+/' */index.html`.
 3. Key localStorage cho theme là `rag-theme`, **dùng chung toàn site**. Đừng đổi tên key này.
 
@@ -86,5 +86,5 @@ Bảng port (8781–8794) và phạm vi nội dung của từng chủ đề nằ
    - `gh` đã đăng nhập tài khoản `tvtdev94` để push.
    Nếu thiếu công cụ nào thì báo người dùng, không tự thay bằng công cụ khác.
 4. Ghi chú, report và file ở `_work/notes/` từ giờ ghi thẳng vào repo, không còn ghi vào `D:\WORKSPACES\reseacher\plans\reports\` như trên máy cũ.
-5. Thứ tự gợi ý khi làm tiếp: lượt đồng bộ màu, rồi lần lượt từng bản nháp (ưu tiên `context-engineering`, `llm-evaluation`, `query-transformation` vì Multi-agent đang link tới), rồi đến các chủ đề mới. Mỗi lần 1–2 chủ đề.
+5. Thứ tự gợi ý khi làm tiếp: lần lượt từng bản nháp (ưu tiên `context-engineering`, `llm-evaluation`, `query-transformation` vì Multi-agent đang link tới), rồi đến các chủ đề mới. Mỗi lần 1–2 chủ đề.
 6. Máy hiện tại (2026-11-16) đã có đủ `kongming`, `orca`, `mcgram`, `gh` (tài khoản `tvtdev94`). Mẹo Orca: `orca viewport --width 1280 --height 900` không kèm `--mobile` thì bị bỏ qua (cửa sổ vẫn 512px); thêm `--mobile` mới ra đúng 1280px.
