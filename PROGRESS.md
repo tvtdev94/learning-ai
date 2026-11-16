@@ -1,6 +1,6 @@
 # Tiến trình learning-ai
 
-Cập nhật lần cuối: 2026-11-16 (Asia/Bangkok). File này dùng để làm tiếp trên máy khác.
+Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng để làm tiếp trên máy khác.
 
 - Site: https://tvtdev94.github.io/learning-ai/
 - Repo: https://github.com/tvtdev94/learning-ai (public). Nhánh `main`, GitHub Pages build từ thư mục gốc.
@@ -36,24 +36,24 @@ Cập nhật lần cuối: 2026-11-16 (Asia/Bangkok). File này dùng để làm
 
 ## Trạng thái các chủ đề
 
-### Đã publish (7)
+### Đã publish (9)
 
 | Slug | Nguồn | Ghi chú |
 |---|---|---|
 | `rag` | 34 | Đã bổ sung evidence. Màu chế độ sáng đã làm đậm, đạt ≥ 4.5:1 |
-| `ai-agent` | 18 | Có link sang `../harness/`, link này **đang 404** vì Harness chưa publish |
+| `ai-agent` | 18 | |
 | `reranking` | 15 | |
 | `embedding-performance` | 17 | Màu chế độ sáng đã làm đậm |
 | `governance` | 19 | |
 | `knowledge-base` | 21 | |
 | `hybrid-search` | 21 | |
+| `harness` | 24 | Publish 2026-11-16 |
+| `multi-agent-agentic-rag` | 16 | Publish 2026-11-16. Đã áp dụng review kongming (kết quả ở cuối file review). Có link tới `context-engineering`, `llm-evaluation`, `query-transformation`: **404 tới khi các trang đó publish** |
 
 ### Bản nháp trong repo, chưa publish (nằm trong `exclude`)
 
 | Slug | Tình trạng khi dừng | Việc còn lại |
 |---|---|---|
-| `harness` | **Gần xong.** Đã review, đã sửa, đã test bằng Orca; đang dọn dẹp thì bị dừng | Kiểm nhanh bằng Orca ở 390px và 1280px, sau đó publish. Publish xong thì link 404 từ trang ai-agent hết lỗi |
-| `multi-agent-agentic-rag` | Có bản nháp và review kongming với 32 phát hiện, **chưa áp dụng** | Áp dụng các phát hiện trong `_work/notes/kongming-261114-2040-multi-agent-agentic-rag-review.md`. Quan trọng nhất: F1 (kappa 0.88 là mức đồng thuận giữa người với người; con số của LLM judge là 0.77, cần mở lại nguồn để xác nhận), F2 (mâu thuẫn "5 mẫu"), F17/F18 (mô phỏng), F23/F24 (nhãn SVG bị đè). Sau đó test và publish |
 | `context-engineering` | Có bản nháp; đang test mô phỏng thì dừng | Chưa có kongming review. Cần review, test, publish |
 | `llm-evaluation` | Có bản nháp | Chưa review và chưa test |
 | `llm-fundamentals` | Có bản nháp | Chưa review và chưa test |
@@ -86,4 +86,5 @@ Bảng port (8781–8794) và phạm vi nội dung của từng chủ đề nằ
    - `gh` đã đăng nhập tài khoản `tvtdev94` để push.
    Nếu thiếu công cụ nào thì báo người dùng, không tự thay bằng công cụ khác.
 4. Ghi chú, report và file ở `_work/notes/` từ giờ ghi thẳng vào repo, không còn ghi vào `D:\WORKSPACES\reseacher\plans\reports\` như trên máy cũ.
-5. Thứ tự gợi ý khi làm tiếp: Harness, rồi Multi-agent, rồi lượt đồng bộ màu, rồi lần lượt từng bản nháp, rồi đến các chủ đề mới. Mỗi lần 1–2 chủ đề.
+5. Thứ tự gợi ý khi làm tiếp: lượt đồng bộ màu, rồi lần lượt từng bản nháp (ưu tiên `context-engineering`, `llm-evaluation`, `query-transformation` vì Multi-agent đang link tới), rồi đến các chủ đề mới. Mỗi lần 1–2 chủ đề.
+6. Máy hiện tại (2026-11-16) đã có đủ `kongming`, `orca`, `mcgram`, `gh` (tài khoản `tvtdev94`). Mẹo Orca: `orca viewport --width 1280 --height 900` không kèm `--mobile` thì bị bỏ qua (cửa sổ vẫn 512px); thêm `--mobile` mới ra đúng 1280px.
