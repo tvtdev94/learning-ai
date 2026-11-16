@@ -1,0 +1,841 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hiểu Agent Harness từ gốc</title>
+<script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+:root{
+  --bg:#f7f6f2; --surface:#ffffff; --surface-2:#f0eee8; --text:#1f2328; --muted:#5b6370;
+  --border:#dcd8cf; --accent:#2f6fde; --accent-soft:#e3ecfc; --ok:#1f8a4c; --ok-soft:#e1f3e8;
+  --warn:#b4610e; --warn-soft:#fbeedd; --bad:#c23b3b; --bad-soft:#fae3e3;
+  --p1:#2f6fde; --p2:#8a4fd1; --p3:#1f8a4c; --p4:#b4610e; --p2-soft:#efe6fa;
+  --code-bg:#f0eee8; --shadow:0 1px 2px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04); --on-accent:#ffffff;
+  --ink1:#2457b5; --ink2:#6c37ad; --ink3:#17693a; --ink4:#8a4a0b; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+    --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+    --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+    --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --p2-soft:#2c2340; --code-bg:#252930; --shadow:none; --on-accent:#15171a;
+    --ink1:#6b9cf5; --ink2:#b388f0; --ink3:#4cc184; --ink4:#e39a4f; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+  --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+  --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+  --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --p2-soft:#2c2340; --code-bg:#252930; --shadow:none; --on-accent:#15171a;
+  --ink1:#6b9cf5; --ink2:#b388f0; --ink3:#4cc184; --ink4:#e39a4f; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+a{color:var(--accent)}
+header.top{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
+.top-inner{max-width:1100px;margin:0 auto;padding:10px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.brand{font-weight:700;white-space:nowrap}
+.home{white-space:nowrap;text-decoration:none;color:var(--text);border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:4px 10px;font-size:14px}
+.home:hover{border-color:var(--accent);color:var(--accent)}
+nav.toc{display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin;flex:1}
+nav.toc a{white-space:nowrap;text-decoration:none;color:var(--muted);padding:4px 10px;border-radius:999px;font-size:14px}
+nav.toc a:hover,nav.toc a.active{background:var(--accent-soft);color:var(--accent)}
+button{font:inherit;cursor:pointer}
+button:disabled{cursor:default;opacity:.5}
+.theme-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:4px 10px;font-size:14px}
+main{max-width:1100px;margin:0 auto;padding:16px}
+section{padding:28px 0;border-bottom:1px solid var(--border);scroll-margin-top:56px}
+section:last-child{border-bottom:none}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.2;margin:16px 0 8px}
+h2{font-size:clamp(22px,3.5vw,28px);margin:0 0 12px}
+h3{font-size:18px;margin:20px 0 8px}
+p{margin:8px 0}
+.lead{font-size:18px;color:var(--muted);max-width:760px}
+.muted{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.g5{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 10px 10px 0;margin:12px 0}
+.callout.ok{border-color:var(--ok);background:var(--ok-soft)}
+.callout.warn{border-color:var(--warn);background:var(--warn-soft)}
+.callout.bad{border-color:var(--bad);background:var(--bad-soft)}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);margin-right:4px}
+.tag.p1{background:var(--accent-soft);color:var(--ink1)}
+.tag.p2{background:var(--p2-soft);color:var(--ink2)}
+.tag.p3{background:var(--ok-soft);color:var(--ink3)}
+.tag.p4{background:var(--warn-soft);color:var(--ink4)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+th{background:var(--surface-2);font-weight:600}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.mono,code{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:14px}
+code{background:var(--code-bg);padding:1px 5px;border-radius:5px}
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-word;margin:8px 0;font-size:14px;line-height:1.55}
+svg text{fill:var(--text);font-family:inherit}
+.diagram{width:100%;height:auto;display:block}
+.svgbox{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;overflow-x:auto}
+.svgbox svg{min-width:840px}
+/* Glossary */
+.gloss-tools{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+.gloss-tools input{flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
+.chip{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:999px;padding:4px 12px;font-size:14px}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.term h4{margin:0 0 4px;font-size:16px}
+.term .en{font-weight:400;color:var(--muted);font-size:14px}
+.term p{margin:4px 0;font-size:15px}
+.term .ex{font-size:14px;color:var(--muted)}
+.term .rel{font-size:13px;margin-top:6px}
+.term .rel a{font-size:13px}
+/* Stepper */
+.stepper{display:grid;grid-template-columns:240px 1fr;gap:12px}
+.stepper>div{min-width:0}
+@media (max-width:720px){.stepper{grid-template-columns:1fr}}
+.steps{display:flex;flex-direction:column;gap:6px}
+@media (max-width:720px){.steps{flex-direction:row;overflow-x:auto}}
+.steps button{text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px;white-space:nowrap}
+.steps button .n{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--surface-2);text-align:center;line-height:22px;font-size:12px;margin-right:6px}
+.steps button.on{border-color:var(--accent);background:var(--accent-soft)}
+.steps button.on .n{background:var(--accent);color:var(--on-accent)}
+.step-nav{display:flex;gap:8px;margin-top:12px}
+.step-nav button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 14px}
+.chunk{border:1px dashed var(--border);border-radius:8px;padding:8px 10px;margin:6px 0;font-size:14px;background:var(--surface);overflow-wrap:anywhere}
+.chunk.hit{border-style:solid;border-color:var(--ok);background:var(--ok-soft)}
+.chunk .id{font-weight:700;font-size:12px;color:var(--muted)}
+.bar{height:8px;background:var(--surface-2);border-radius:4px;overflow:hidden;margin-top:4px}
+.bar>span{display:block;height:100%;background:var(--ok)}
+.ctxbox{margin-top:14px;border-top:1px dashed var(--border);padding-top:10px}
+.ctxbox h4{margin:0 0 4px;font-size:15px}
+.ctxbox .chunk{padding:6px 10px;margin:4px 0}
+details{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin:8px 0}
+details summary{cursor:pointer;font-weight:600}
+details[open] summary{margin-bottom:6px}
+.check{display:flex;gap:8px;align-items:flex-start;padding:6px 0}
+.check input{margin-top:6px}
+footer{max-width:1100px;margin:0 auto;padding:24px 16px;color:var(--muted);font-size:14px}
+sup.cite{font-size:max(11px,.72em);line-height:0;margin-left:1px;white-space:nowrap}
+sup.cite a{text-decoration:none;font-weight:600}
+sup.cite a:hover{text-decoration:underline}
+sup.cite a+a{margin-left:2px}
+.sources{padding-left:22px}
+.sources li{margin:8px 0;overflow-wrap:anywhere;font-size:15px;scroll-margin-top:80px}
+.sources li:target{outline:2px solid var(--accent);outline-offset:3px;border-radius:4px}
+.card>h4:first-child,.card>.tag+h4{margin-top:4px}
+.card h4{margin-bottom:6px}
+.num{display:inline-block;width:24px;height:24px;border-radius:50%;background:var(--accent);color:var(--on-accent);text-align:center;line-height:24px;font-size:13px;font-weight:700;margin-right:6px}
+.m-only{display:none}
+@media (max-width:900px){.d-only{display:none}.m-only{display:block}}
+.vflow .box,.vflow .node,.vflow .ar{display:block}
+.vflow .ph{font-weight:700;font-size:14px;margin:4px 0 8px}
+.vflow .ph1{color:var(--p1)} .vflow .ph2{color:var(--p3)}
+.vflow .node{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px}
+.vflow .node b{display:block}
+.vflow .node span{font-size:13px;color:var(--muted)}
+.vflow .node.r{border:2px solid var(--p1)} .vflow .node.a{border:2px solid var(--p2)} .vflow .node.g{border:2px solid var(--p3)} .vflow .node.db{border:2px solid var(--p2)}
+.vflow .node.m{border:2px solid var(--p2);background:var(--p2-soft)}
+.vflow .opt{background:var(--warn-soft);border-color:var(--p4)}
+.vflow .ar{text-align:center;color:var(--muted);font-size:13px;line-height:1.3;padding:4px 0}
+.vflow .box{border-radius:12px;padding:10px;margin-bottom:10px}
+.vflow .box1{background:var(--accent-soft)} .vflow .box2{background:var(--ok-soft)} .vflow .box3{background:var(--surface-2)}
+.vflow .note{font-size:13px;color:var(--muted);margin-top:6px}
+.vflow .side{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+@media (max-width:600px){
+  .brand{display:none} body{font-size:15px}
+  .d-only{display:none}
+  .m-only{display:block}
+  .theme-btn .lbl,.home .lbl{display:none}
+  main{padding:12px 16px}
+  section{padding:22px 0}
+  .card{padding:14px}
+  table.stack thead{display:none}
+  table.stack,table.stack tbody,table.stack tr,table.stack td{display:block;width:100%}
+  table.stack tr{border-bottom:1px solid var(--border);padding:8px 0}
+  table.stack tr:last-child{border-bottom:none}
+  table.stack td{border:none;padding:3px 12px}
+  table.stack td[data-label]::before{content:attr(data-label);display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  table.stack td:first-child{font-size:16px}
+  table.stack td:first-child::before{display:none}
+  /* Readable text and comfortable tap targets on phones */
+  .home,.theme-btn{min-height:44px;min-width:44px;display:inline-flex;align-items:center;justify-content:center}
+  nav.toc a{padding:11px 12px}
+  .steps button,.step-nav button,.chip{min-height:44px}
+  .step-nav button{flex:1}
+  .chunk,.term p,.term .ex,.vflow .note,.ctxbox .muted{font-size:15px}
+  .term .rel,.term .rel a{font-size:15px;line-height:2}
+  .vflow .node span{font-size:14px}
+  .check input{width:22px;height:22px;flex:none;margin-top:2px}
+  section{scroll-margin-top:72px}
+  .gloss-tools input{font-size:16px}
+  sup.cite a{display:inline-block;line-height:1;padding:14px 4px;margin:-14px -3px}
+  details summary{padding:8px 0}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <a class="home" href="../" aria-label="Về trang tất cả chủ đề">←<span class="lbl"> Chủ đề</span></a>
+    <span class="brand">Hiểu Harness</span>
+    <nav class="toc" id="toc">
+      <a href="#tong-quan">1. Tổng quan</a>
+      <a href="#flow">2. Flow</a>
+      <a href="#vi-du">3. Ví dụ từng bước</a>
+      <a href="#khai-niem">4. Khái niệm</a>
+      <a href="#quan-he">5. Mối quan hệ</a>
+      <a href="#so-sanh">6. So sánh &amp; đánh đổi</a>
+      <a href="#loi">7. Lỗi &amp; chẩn đoán</a>
+      <a href="#danh-gia">8. Đánh giá</a>
+      <a href="#lo-trinh">9. Lộ trình</a>
+      <a href="#nguon">Nguồn</a>
+    </nav>
+    <button class="theme-btn" id="themeBtn" aria-label="Đổi giao diện sáng/tối">◐<span class="lbl"> Giao diện</span></button>
+  </div>
+</header>
+
+<main>
+
+<!-- 1. TỔNG QUAN -->
+<section id="tong-quan">
+  <h1>Hiểu Agent Harness từ gốc</h1>
+  <p class="lead">Một LLM tự nó chỉ làm được một việc: nhận văn bản vào và sinh văn bản ra. Để nó đọc file, chạy lệnh, sửa code qua nhiều bước một cách an toàn, cần cả một lớp phần mềm bao quanh: gọi model, chạy tool, ghép context, kiểm quyền, biết khi nào dừng. Lớp phần mềm đó gọi là <b>agent harness</b> (còn gọi là <i>scaffold</i>): hệ thống giúp model hoạt động như một agent, xử lý đầu vào, điều phối các lần gọi tool và trả kết quả.<sup class="cite"><a href="#src-24">[24]</a></sup></p>
+
+  <div class="callout"><b>Cách nhớ gọn:</b> <b>agent = model + harness.</b> Model là phần "suy nghĩ" (được huấn luyện sẵn, gọi qua API). Harness là mọi thứ còn lại do con người viết bằng code và cấu hình. Anthropic mô tả agent về cơ bản là "LLM dùng tool dựa trên phản hồi từ môi trường, trong một vòng lặp"<sup class="cite"><a href="#src-1">[1]</a></sup>, và gọi bộ Claude Agent SDK của họ là một "agent harness" đa dụng<sup class="cite"><a href="#src-2">[2]</a></sup>. Danh sách thành phần chi tiết trên trang này là phần tổng hợp từ nhiều nguồn ở cuối trang. Trang <a href="../ai-agent/">AI Agent</a> nói về agent nói chung; trang này đi sâu vào phần "khung" bên trong.</div>
+
+  <h3>Vì sao gọi là "harness"?</h3>
+  <div class="grid g2">
+    <div class="card">
+      <h4>🐎 Ngựa và bộ yên cương</h4>
+      <p>"Harness" nghĩa gốc là bộ yên cương, dây đai để <b>khai thác sức</b> của con ngựa. Ngựa khỏe (model) mà không có yên cương thì không kéo được xe, cũng không ai điều khiển được.</p>
+      <p>Harness biến sức mạnh thô của model thành công việc <b>có hướng, có giới hạn</b>.</p>
+    </div>
+    <div class="card">
+      <h4>🚗 Động cơ và chiếc xe</h4>
+      <p><b>Model</b> giống động cơ. <b>Harness</b> giống phần còn lại của xe: vô lăng (vòng lặp điều khiển), bánh xe (tool), phanh (quyền, giới hạn), bình xăng (ngân sách context), đồng hồ (log).</p>
+      <p class="muted">Cùng một động cơ lắp vào hai chiếc xe khác nhau thì chạy rất khác nhau. Tương tự, nghiên cứu SWE-agent cho thấy chỉ riêng cách thiết kế giao diện giữa agent và máy tính đã ảnh hưởng tới hành vi và hiệu quả của agent.<sup class="cite"><a href="#src-10">[10]</a></sup></p>
+    </div>
+  </div>
+
+  <h3>Vì sao cần harness?</h3>
+  <div class="grid g2">
+    <div class="card"><span class="tag p4">Lý do 1</span><h4>Model không tự hành động</h4><p>Khi model "gọi tool", nó chỉ <b>viết ra</b> một yêu cầu có cấu trúc (tên tool + tham số). Code của ứng dụng mới là bên thực sự chạy, rồi gửi kết quả lại cho model.<sup class="cite"><a href="#src-5">[5]</a><a href="#src-6">[6]</a></sup></p><p class="muted">Ngoại lệ: một số tool do chính nhà cung cấp chạy sẵn trên server của họ (ví dụ tìm kiếm web).<sup class="cite"><a href="#src-5">[5]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Lý do 2</span><h4>Model không nhớ giữa các lần gọi</h4><p>Với cách dùng API phổ biến, mỗi lần gọi là độc lập (stateless): ứng dụng phải gửi lại toàn bộ lịch sử hội thoại.<sup class="cite"><a href="#src-7">[7]</a></sup> Harness giữ lịch sử và quyết định gửi lại những gì.</p><p class="muted">Một số API có thêm tùy chọn để server giữ hội thoại giúp bạn, nhưng việc chọn đưa gì vào context vẫn là việc của harness.</p></div>
+    <div class="card"><span class="tag p4">Lý do 3</span><h4>Model có thể sai hoặc làm liều</h4><p>Model có thể chọn lệnh nguy hiểm, hoặc làm theo chỉ dẫn độc hại nằm trong file, trang web (prompt injection).<sup class="cite"><a href="#src-19">[19]</a></sup> Harness đặt quyền, sandbox, giới hạn và hỏi người dùng khi cần.<sup class="cite"><a href="#src-16">[16]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Lý do 4</span><h4>Context có giới hạn</h4><p>Model chỉ đọc được một lượng token giới hạn mỗi lần (context window). Context càng dài, model nhớ lại thông tin càng kém chính xác<sup class="cite"><a href="#src-3">[3]</a></sup>; một nghiên cứu năm 2023 còn thấy thông tin nằm ở giữa context dài bị dùng kém nhất.<sup class="cite"><a href="#src-11">[11]</a></sup> Harness chọn đưa gì vào, cắt gì, tóm tắt gì.</p></div>
+  </div>
+
+  <h3>Model lo gì, harness lo gì?</h3>
+  <div class="table-wrap">
+  <table class="stack">
+    <thead><tr><th>Khía cạnh</th><th>Model</th><th>Harness</th></tr></thead>
+    <tbody>
+      <tr><td><b>Bản chất</b></td><td>Mạng nơ-ron đã huấn luyện, gọi qua API.</td><td>Phần mềm thường: code, prompt, cấu hình, luật.</td></tr>
+      <tr><td><b>Thay đổi bằng cách</b></td><td>Đổi model khác hoặc huấn luyện thêm (fine-tuning).</td><td>Sửa lời dặn, mô tả tool, luật quyền, cách quản lý context.</td></tr>
+      <tr><td><b>Nhìn thấy</b></td><td>Chỉ đúng phần context được gửi trong lần gọi đó. Với tool, model chỉ thấy mô tả và kết quả, không thấy code bên trong.<sup class="cite"><a href="#src-5">[5]</a></sup></td><td>Mọi thứ nó được cấp quyền truy cập: file, hệ thống, người dùng, toàn bộ lịch sử.</td></tr>
+      <tr><td><b>Việc chính</b></td><td>Hiểu yêu cầu, suy luận, chọn bước tiếp theo, viết nội dung.</td><td>Chạy tool, giữ trạng thái, kiểm quyền, xử lý lỗi, quyết định dừng, ghi log, hiển thị.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="callout ok"><b>Ví dụ quen thuộc:</b> các coding agent dạng CLI hoặc tích hợp IDE là harness bao quanh một model. Phần bạn cài đặt và tương tác (giao diện, quyền, file hướng dẫn, lịch sử) là harness; model được gọi qua API. Ví dụ, tài liệu công khai của Claude Code mô tả các thành phần kiểu harness như luật quyền<sup class="cite"><a href="#src-16">[16]</a></sup>, hooks<sup class="cite"><a href="#src-17">[17]</a></sup> và file hướng dẫn dự án<sup class="cite"><a href="#src-15">[15]</a></sup>. <span class="muted">Trang này mô tả cấu trúc chung, không mô tả nội bộ của sản phẩm cụ thể nào.</span></div>
+  <p class="muted">Từ "harness" còn một nghĩa khác: <b>evaluation harness</b>, khung chạy bộ bài kiểm tra để chấm điểm model hoặc agent. Nghĩa này được giải thích ở mục 8.</p>
+</section>
+
+<!-- 2. FLOW -->
+<section id="flow">
+  <h2>2. Flow hoạt động: vòng lặp agent</h2>
+  <p>Trái tim của harness là một <b>vòng lặp</b>: ghép context → gọi model → đọc output. Nếu model yêu cầu gọi tool (một hoặc nhiều tool trong cùng một lượt), harness kiểm quyền, chạy tool, đưa kết quả vào lịch sử rồi lặp lại. Khi model trả lời mà không yêu cầu tool nào nữa (hoặc chạm một giới hạn), vòng lặp dừng.<sup class="cite"><a href="#src-5">[5]</a></sup></p>
+  <p class="muted">Ý tưởng để model xen kẽ "suy nghĩ" và "hành động" với môi trường bên ngoài, rồi dùng kết quả hành động để suy nghĩ tiếp, được trình bày sớm trong nghiên cứu ReAct.<sup class="cite"><a href="#src-9">[9]</a></sup></p>
+
+  <div class="vflow m-only" role="group" aria-label="Sơ đồ vòng lặp agent (dạng dọc)">
+    <div class="box box1">
+      <div class="ph ph1">VÒNG LẶP AGENT · mỗi lượt</div>
+      <div class="node"><b>Yêu cầu</b><span>người dùng gõ vào giao diện</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>Ghép context</b><span>lời dặn + mô tả tool + lịch sử + yêu cầu</span></div>
+      <div class="ar">↓</div>
+      <div class="node m"><b>Gọi model</b><span>qua API · phần duy nhất không thuộc harness</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>Đọc output</b><span>có tool call không?</span></div>
+      <div class="ar">↓ có tool call</div>
+      <div class="node" style="border:2px solid var(--p4)"><b>Kiểm quyền + hook</b><span>cho phép · hỏi người dùng · chặn</span></div>
+      <div class="ar">↓ được phép</div>
+      <div class="node"><b>Chạy tool</b><span>trong sandbox, có timeout</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>Kết quả tool</b><span>thêm vào lịch sử (kể cả lỗi hoặc "bị chặn")</span></div>
+      <div class="ar">↺ quay lại "Ghép context" cho lượt tiếp theo</div>
+    </div>
+    <div class="box box2">
+      <div class="ph ph2">DỪNG khi</div>
+      <div class="node g"><b>Trả kết quả</b><span>model không còn tool call, hoặc chạm giới hạn lượt / chi phí / thời gian, hoặc người dùng dừng</span></div>
+    </div>
+    <div class="box box3">
+      <div class="ph" style="color:var(--muted)">XUYÊN SUỐT MỌI LƯỢT</div>
+      <div class="side">
+        <div class="node"><b>Quản lý context</b><span>cắt, tóm tắt</span></div>
+        <div class="node"><b>Bộ nhớ</b><span>trạng thái phiên</span></div>
+        <div class="node"><b>Log / trace</b><span>ghi mọi bước</span></div>
+        <div class="node"><b>Retry</b><span>khi API lỗi</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="svgbox d-only">
+  <svg class="diagram" viewBox="0 0 1000 470" role="img" aria-label="Sơ đồ vòng lặp agent bên trong harness">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+    </defs>
+    <rect x="10" y="10" width="980" height="320" rx="14" fill="var(--accent-soft)" stroke="var(--p1)" stroke-opacity=".4"/>
+    <text x="28" y="36" font-weight="700" font-size="15" style="fill:var(--p1)">HARNESS · vòng lặp agent</text>
+    <text x="972" y="36" text-anchor="end" font-size="13" style="fill:var(--muted)">viền tím = model (gọi qua API) · còn lại do harness làm</text>
+    <g font-size="14">
+      <rect x="20" y="55" width="130" height="70" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="85" y="85" text-anchor="middle" font-weight="600">Yêu cầu</text>
+      <text x="85" y="106" text-anchor="middle" font-size="13" style="fill:var(--muted)">từ người dùng</text>
+      <rect x="190" y="55" width="170" height="70" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="275" y="85" text-anchor="middle" font-weight="600">Ghép context</text>
+      <text x="275" y="106" text-anchor="middle" font-size="13" style="fill:var(--muted)">lời dặn, tool, lịch sử</text>
+      <rect x="400" y="55" width="150" height="70" rx="10" fill="var(--p2-soft)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="475" y="85" text-anchor="middle" font-weight="700" style="fill:var(--p2)">Gọi model</text>
+      <text x="475" y="106" text-anchor="middle" font-size="13" style="fill:var(--muted)">qua API</text>
+      <rect x="590" y="55" width="160" height="70" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="670" y="85" text-anchor="middle" font-weight="600">Đọc output</text>
+      <text x="670" y="106" text-anchor="middle" font-size="13" style="fill:var(--muted)">có tool call không?</text>
+      <rect x="830" y="55" width="150" height="70" rx="10" fill="var(--surface)" stroke="var(--p3)" stroke-width="2"/>
+      <text x="905" y="85" text-anchor="middle" font-weight="600">Trả kết quả</text>
+      <text x="905" y="106" text-anchor="middle" font-size="13" style="fill:var(--muted)">vòng lặp dừng</text>
+
+      <rect x="590" y="205" width="160" height="70" rx="10" fill="var(--surface)" stroke="var(--p4)" stroke-width="2"/>
+      <text x="670" y="235" text-anchor="middle" font-weight="600">Kiểm quyền + hook</text>
+      <text x="670" y="256" text-anchor="middle" font-size="13" style="fill:var(--muted)">cho phép · hỏi · chặn</text>
+      <rect x="400" y="205" width="150" height="70" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="475" y="235" text-anchor="middle" font-weight="600">Chạy tool</text>
+      <text x="475" y="256" text-anchor="middle" font-size="13" style="fill:var(--muted)">trong sandbox</text>
+      <rect x="190" y="205" width="170" height="70" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="275" y="235" text-anchor="middle" font-weight="600">Kết quả tool</text>
+      <text x="275" y="256" text-anchor="middle" font-size="13" style="fill:var(--muted)">thêm vào lịch sử</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="2" fill="none" marker-end="url(#arr)">
+      <line x1="150" y1="90" x2="188" y2="90"/><line x1="360" y1="90" x2="398" y2="90"/><line x1="550" y1="90" x2="588" y2="90"/>
+      <line x1="750" y1="90" x2="828" y2="90"/>
+      <line x1="670" y1="125" x2="670" y2="203"/>
+      <line x1="590" y1="240" x2="552" y2="240"/><line x1="400" y1="240" x2="362" y2="240"/>
+      <line x1="275" y1="205" x2="275" y2="127"/>
+      <path d="M670 275 C 670 297, 275 297, 275 277" stroke-dasharray="5 4"/>
+    </g>
+    <g font-size="13" style="fill:var(--muted)">
+      <text x="789" y="82" text-anchor="middle">không còn</text><text x="789" y="112" text-anchor="middle">tool call</text>
+      <text x="678" y="170">có tool call</text>
+      <text x="283" y="170">lặp lại lượt mới</text>
+      <text x="472" y="318" text-anchor="middle">bị chặn → báo lại cho model như một kết quả tool</text>
+    </g>
+    <text x="475" y="170" text-anchor="middle" font-size="16" font-weight="700" style="fill:var(--p1)">↻ VÒNG LẶP</text>
+    <!-- cross-cutting -->
+    <rect x="10" y="345" width="980" height="115" rx="14" fill="var(--surface-2)" stroke="var(--border)"/>
+    <text x="28" y="370" font-weight="700" font-size="14" style="fill:var(--muted)">XUYÊN SUỐT MỌI LƯỢT (cũng là harness)</text>
+    <g font-size="13">
+      <rect x="28" y="385" width="175" height="58" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="115" y="410" text-anchor="middle" font-weight="600">Quản lý context</text><text x="115" y="429" text-anchor="middle" font-size="13" style="fill:var(--muted)">cắt, tóm tắt</text>
+      <rect x="220" y="385" width="175" height="58" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="307" y="410" text-anchor="middle" font-weight="600">Bộ nhớ &amp; trạng thái</text><text x="307" y="429" text-anchor="middle" font-size="13" style="fill:var(--muted)">phiên, ghi chú</text>
+      <rect x="412" y="385" width="175" height="58" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="499" y="410" text-anchor="middle" font-weight="600">Log / trace</text><text x="499" y="429" text-anchor="middle" font-size="13" style="fill:var(--muted)">ghi lại mọi bước</text>
+      <rect x="604" y="385" width="175" height="58" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="691" y="410" text-anchor="middle" font-weight="600">Xử lý lỗi</text><text x="691" y="429" text-anchor="middle" font-size="13" style="fill:var(--muted)">retry, timeout</text>
+      <rect x="796" y="385" width="175" height="58" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="883" y="410" text-anchor="middle" font-weight="600">Giới hạn</text><text x="883" y="429" text-anchor="middle" font-size="13" style="fill:var(--muted)">lượt, token, thời gian</text>
+    </g>
+  </svg>
+  </div>
+
+  <h3>Ba điều cần nhớ về vòng lặp</h3>
+  <div class="grid g3">
+    <div class="card"><span class="tag p2">Model</span><h4>Chỉ quyết định, không làm</h4><p>Mỗi lượt, model đọc context rồi trả về <b>văn bản</b> hoặc <b>tool call</b>. Nó không tự chạy lệnh, không tự đọc file.<sup class="cite"><a href="#src-5">[5]</a></sup></p></div>
+    <div class="card"><span class="tag p1">Harness</span><h4>Làm và ghi lại</h4><p>Harness thực thi tool call, rồi đưa kết quả (kể cả lỗi) vào lịch sử để lượt sau model "thấy" chuyện gì đã xảy ra.<sup class="cite"><a href="#src-6">[6]</a></sup></p></div>
+    <div class="card"><span class="tag p3">Dừng</span><h4>Phải có điểm dừng rõ ràng</h4><p>Thường là khi model trả lời không kèm tool call. Ngoài ra nên có điều kiện dừng như số vòng lặp tối đa để giữ quyền kiểm soát.<sup class="cite"><a href="#src-1">[1]</a></sup></p></div>
+  </div>
+  <div class="callout ok"><b>Liên hệ với RAG:</b> trong <a href="../rag/">RAG</a>, hệ thống tìm tài liệu <i>một lần</i> rồi đưa vào prompt. Trong agent, việc tìm kiếm có thể là một <b>tool</b> mà model tự quyết định gọi, gọi nhiều lần (đây chính là agentic RAG).</div>
+</section>
+
+<!-- 3. VÍ DỤ TỪNG BƯỚC -->
+<section id="vi-du">
+  <h2>3. Ví dụ đi qua từng bước</h2>
+  <p>Một lập trình viên nhờ coding agent sửa test đang fail. Bấm từng bước để xem harness làm gì và <b>model thực sự nhìn thấy gì</b> (khung "Context" bên dưới mỗi bước). <span class="muted">Tên tool, nội dung file, số lượt, token và phần trăm context đều là <b>minh họa</b>, không lấy từ sản phẩm cụ thể nào.</span></p>
+  <div class="stepper card">
+    <div class="steps" id="steps"></div>
+    <div>
+      <div id="stepBody" aria-live="polite"></div>
+      <div id="stepCtx" class="ctxbox"></div>
+      <div class="step-nav"><button id="prevStep">← Trước</button><button id="nextStep">Tiếp →</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. KHÁI NIỆM -->
+<section id="khai-niem">
+  <h2>4. Từ điển khái niệm</h2>
+  <p>Mỗi thẻ có định nghĩa ngắn, ví dụ, và liên kết sang khái niệm liên quan. Lọc theo nhóm hoặc gõ để tìm (gõ không dấu cũng được).</p>
+  <div class="gloss-tools">
+    <input id="glossSearch" type="search" placeholder="Tìm khái niệm… (vd: tool, compaction, sandbox)" aria-label="Tìm khái niệm">
+  </div>
+  <div class="gloss-tools" id="glossChips"></div>
+  <div class="grid g3" id="glossGrid"></div>
+</section>
+
+<!-- 5. MỐI QUAN HỆ -->
+<section id="quan-he">
+  <h2>5. Bản đồ mối quan hệ</h2>
+  <p>Vòng lặp agent là "trạm điều phối" ở giữa: nó lấy context đã ghép gửi cho model, nhận lại tool call, đưa qua kiểm quyền, cho chạy tool, rồi cập nhật context. Các thành phần khác cắm vào trạm này.</p>
+  <div class="vflow m-only" role="group" aria-label="Bản đồ quan hệ (dạng dọc)">
+    <div class="node"><b>Người dùng / UI</b><span>gửi yêu cầu · nhận kết quả · duyệt quyền</span></div>
+    <div class="ar">↕</div>
+    <div class="box box1">
+      <div class="ph ph1">HARNESS</div>
+      <div class="side">
+        <div class="node"><b>System prompt</b><span>+ file hướng dẫn</span></div>
+        <div class="node"><b>Định nghĩa tool</b><span>tên, mô tả, tham số</span></div>
+        <div class="node"><b>Bộ nhớ</b><span>trạng thái, ghi chú</span></div>
+        <div class="node"><b>Lịch sử</b><span>các lượt trước</span></div>
+      </div>
+      <div class="ar">↓ tất cả đi vào</div>
+      <div class="node g"><b>Quản lý context</b><span>ghép · cắt · tóm tắt (compaction) · phải vừa context window</span></div>
+      <div class="ar">↓ input mỗi lượt</div>
+      <div class="node r"><b>Vòng lặp agent</b><span>gửi context cho model ⇄ nhận text hoặc tool call</span></div>
+      <div class="ar">↓ tool call</div>
+      <div class="node"><b>Quyền</b><span>cho phép · hỏi người dùng · chặn (bị chặn thì báo lại vòng lặp)</span></div>
+      <div class="ar">↓ được phép</div>
+      <div class="node"><b>Thực thi tool</b><span>trong sandbox, có timeout → tác động lên môi trường (file, shell, web, API)</span></div>
+      <div class="ar">↑ kết quả tool quay lại vòng lặp → vào lịch sử</div>
+      <div class="node opt"><b>Hooks</b><span>script chạy ở sự kiện: trước/sau tool, khi dừng…</span></div>
+      <div class="note">Xuyên suốt: log/trace · điều kiện dừng &amp; ngân sách · xử lý lỗi/retry</div>
+    </div>
+    <div class="ar">⇅ context đã ghép / text hoặc tool call</div>
+    <div class="node m"><b>Model</b><span>bên ngoài harness · chỉ thấy context được gửi</span></div>
+    <div class="ar">↓ cả agent được đem đi chấm</div>
+    <div class="node" style="border:1px dashed var(--bad);background:var(--bad-soft)"><b>Evaluation harness</b><span>(nghĩa khác) đặt cả agent = model + harness vào bộ task, chạy, chấm điểm</span></div>
+  </div>
+  <div class="svgbox d-only">
+  <svg class="diagram" viewBox="0 0 1000 640" role="img" aria-label="Bản đồ quan hệ giữa các thành phần của harness">
+    <defs>
+      <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+    </defs>
+    <rect x="150" y="10" width="680" height="480" rx="16" fill="var(--accent-soft)" stroke="var(--p1)" stroke-opacity=".4"/>
+    <text x="168" y="34" font-weight="700" font-size="15" style="fill:var(--p1)">HARNESS</text>
+    <text x="815" y="34" text-anchor="end" font-size="13" style="fill:var(--muted)">xuyên suốt: log/trace · điều kiện dừng &amp; ngân sách · retry</text>
+    <g font-size="13">
+      <!-- inputs -->
+      <rect x="170" y="48" width="190" height="54" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="265" y="72" text-anchor="middle" font-weight="600">System prompt</text><text x="265" y="90" text-anchor="middle" font-size="13" style="fill:var(--muted)">+ file hướng dẫn dự án</text>
+      <rect x="405" y="48" width="190" height="54" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="500" y="72" text-anchor="middle" font-weight="600">Định nghĩa tool</text><text x="500" y="90" text-anchor="middle" font-size="13" style="fill:var(--muted)">tên, mô tả, tham số</text>
+      <rect x="630" y="48" width="190" height="54" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="725" y="72" text-anchor="middle" font-weight="600">Bộ nhớ &amp; lịch sử</text><text x="725" y="90" text-anchor="middle" font-size="13" style="fill:var(--muted)">các lượt trước, ghi chú</text>
+      <!-- context manager -->
+      <rect x="400" y="150" width="200" height="56" rx="10" fill="var(--surface)" stroke="var(--p3)" stroke-width="2"/><text x="500" y="174" text-anchor="middle" font-weight="600">Quản lý context</text><text x="500" y="192" text-anchor="middle" font-size="13" style="fill:var(--muted)">ghép · cắt · tóm tắt</text>
+      <!-- loop hub -->
+      <rect x="400" y="270" width="200" height="60" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2.5"/><text x="500" y="296" text-anchor="middle" font-weight="700" style="fill:var(--p1)">Vòng lặp agent</text><text x="500" y="315" text-anchor="middle" font-size="13" style="fill:var(--muted)">trạm điều phối</text>
+      <!-- bottom row -->
+      <rect x="170" y="400" width="190" height="56" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="265" y="424" text-anchor="middle" font-weight="600">Quyền</text><text x="265" y="442" text-anchor="middle" font-size="13" style="fill:var(--muted)">cho phép · hỏi · chặn</text>
+      <rect x="405" y="400" width="190" height="56" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="500" y="424" text-anchor="middle" font-weight="600">Thực thi tool</text><text x="500" y="442" text-anchor="middle" font-size="13" style="fill:var(--muted)">trong sandbox, có timeout</text>
+      <rect x="630" y="400" width="190" height="56" rx="10" fill="var(--warn-soft)" stroke="var(--p4)"/><text x="725" y="424" text-anchor="middle" font-weight="600">Hooks</text><text x="725" y="442" text-anchor="middle" font-size="13" style="fill:var(--muted)">script chạy ở sự kiện</text>
+      <!-- outside -->
+      <rect x="10" y="270" width="125" height="60" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="72" y="296" text-anchor="middle" font-weight="600">Người dùng</text><text x="72" y="314" text-anchor="middle" font-size="13" style="fill:var(--muted)">qua UI / CLI / IDE</text>
+      <rect x="850" y="270" width="140" height="60" rx="10" fill="var(--p2-soft)" stroke="var(--p2)" stroke-width="2"/><text x="920" y="296" text-anchor="middle" font-weight="700" style="fill:var(--p2)">Model</text><text x="920" y="314" text-anchor="middle" font-size="13" style="fill:var(--muted)">chỉ thấy context</text>
+      <rect x="410" y="512" width="180" height="50" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="500" y="533" text-anchor="middle" font-weight="600">Môi trường</text><text x="500" y="550" text-anchor="middle" font-size="13" style="fill:var(--muted)">file, shell, web, API</text>
+      <rect x="10" y="578" width="980" height="52" rx="10" fill="var(--bad-soft)" stroke="var(--bad)" stroke-dasharray="5 4"/><text x="500" y="600" text-anchor="middle" font-weight="600">Evaluation harness (nghĩa khác của từ "harness")</text><text x="500" y="618" text-anchor="middle" font-size="13" style="fill:var(--muted)">đặt cả agent = model + harness vào một bộ task, chạy trong môi trường sạch, rồi chấm điểm</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="1.8" fill="none" marker-end="url(#arr2)">
+      <path d="M265 102 L420 148"/><path d="M500 102 L500 148"/><path d="M725 102 L580 148"/>
+      <path d="M500 206 L500 268"/>
+      <path d="M600 290 L848 290"/><path d="M850 312 L602 312"/>
+      <path d="M135 290 L398 290"/><path d="M400 312 L137 312"/>
+      <path d="M440 330 L300 398" marker-start="url(#arr2)"/><path d="M360 428 L403 428"/>
+      <path d="M520 398 L520 332"/>
+      <path d="M500 456 L500 510"/>
+      <path d="M700 398 L580 332" stroke-dasharray="4 4" marker-start="url(#arr2)"/>
+      <path d="M470 268 L470 208" stroke-dasharray="4 4"/>
+    </g>
+    <g font-size="13" style="fill:var(--muted)">
+      <text x="508" y="236">input mỗi lượt</text>
+      <text x="462" y="244" text-anchor="end">cập nhật lịch sử</text>
+      <text x="724" y="283" text-anchor="middle">context đã ghép</text>
+      <text x="724" y="328" text-anchor="middle">text hoặc tool call</text>
+      <text x="268" y="283" text-anchor="middle">yêu cầu</text>
+      <text x="268" y="328" text-anchor="middle">kết quả · hỏi duyệt</text>
+      <text x="300" y="356" text-anchor="end">tool call ⇅</text><text x="300" y="372" text-anchor="end">bị chặn thì báo lại</text>
+      <text x="528" y="372">kết quả tool</text>
+      <text x="660" y="356">gọi hook ⇅ kết quả</text>
+      <text x="508" y="482">tác động thật</text>
+    </g>
+  </svg>
+  </div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h4>Quan hệ "phụ thuộc" quan trọng nhất</h4>
+      <ul>
+        <li><b>Context quyết định</b> model biết gì: thông tin không được ghép vào thì với model coi như không tồn tại.</li>
+        <li><b>Mô tả tool quyết định</b> model dùng tool có đúng không: mô tả mơ hồ hoặc nhiều tool trùng chức năng thì model dễ chọn nhầm.<sup class="cite"><a href="#src-4">[4]</a></sup></li>
+        <li><b>Kết quả tool quyết định</b> model sửa sai được không: thông báo lỗi rõ ràng, có hướng sửa thì model tự điều chỉnh được; mã lỗi khó hiểu thì model đoán mò.<sup class="cite"><a href="#src-4">[4]</a></sup></li>
+        <li><b>Quyền và sandbox quyết định</b> sai lầm của model gây hại tới đâu.</li>
+      </ul>
+    </div>
+    <div class="card"><h4>Model không thấy phần lớn harness</h4>
+      <ul>
+        <li>Luật quyền, sandbox, hooks, retry, log chạy <b>bên ngoài</b> model. Model chỉ biết về chúng nếu được mô tả trong context hoặc khi nhận kết quả (ví dụ "bị chặn").</li>
+        <li>Vì vậy khi một hành động bị chặn, harness nên <b>báo lại lý do</b> như một kết quả tool để model đổi hướng, thay vì im lặng.</li>
+        <li>Ngược lại, lời dặn và file hướng dẫn chỉ là <b>context</b>, không phải luật cưỡng chế. Muốn chắc chắn chặn một hành động thì phải dùng quyền hoặc hook ở phía harness.<sup class="cite"><a href="#src-15">[15]</a></sup></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 6. SO SÁNH -->
+<section id="so-sanh">
+  <h2>6. So sánh và đánh đổi</h2>
+  <h3>Ba cách dùng model, khác nhau ở chỗ ai quyết định bước tiếp theo</h3>
+  <p>Anthropic phân biệt <b>workflow</b> (LLM và tool được điều phối theo đường đi viết sẵn trong code) với <b>agent</b> (LLM tự điều khiển quá trình và việc dùng tool).<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+  <div class="table-wrap">
+  <table class="stack">
+    <thead><tr><th>Cách dùng</th><th>Ai quyết định bước tiếp</th><th>Hợp khi</th><th>Hạn chế</th></tr></thead>
+    <tbody>
+      <tr><td><b>Gọi model một lần</b> (chat, RAG)</td><td>Không có bước tiếp: một câu hỏi, một câu trả lời.</td><td>Hỏi đáp, viết, tóm tắt.</td><td>Không tự hành động, không tự kiểm chứng.</td></tr>
+      <tr><td><b>Workflow cố định</b></td><td>Code của bạn: các bước được viết sẵn, model chỉ làm từng bước.</td><td>Quy trình biết trước, cần ổn định và dễ kiểm soát.</td><td>Cứng nhắc, không xử lý được tình huống ngoài kịch bản.</td></tr>
+      <tr><td><b>Agent (model + harness)</b></td><td>Model chọn bước tiếp trong vòng lặp; harness thực thi và đặt giới hạn.</td><td>Việc nhiều bước, không biết trước đường đi (sửa lỗi, điều tra, nghiên cứu).</td><td>Khó đoán, tốn token hơn, cần quyền và đánh giá cẩn thận.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Các trục đánh đổi khi thiết kế harness</h3>
+  <div class="table-wrap">
+  <table class="stack">
+    <thead><tr><th>Trục</th><th>Nghiêng một phía</th><th>Nghiêng phía kia</th><th>Gợi ý</th></tr></thead>
+    <tbody>
+      <tr><td><b>Tự chủ ↔ kiểm soát</b></td><td>Cho tự chạy: nhanh, ít làm phiền người dùng, nhưng rủi ro cao hơn.</td><td>Hỏi duyệt nhiều: an toàn hơn, nhưng chậm và dễ dẫn tới duyệt theo quán tính (approval fatigue: người dùng bấm đồng ý mà không đọc kỹ).<sup class="cite"><a href="#src-18">[18]</a></sup></td><td>Tự động với việc đọc trong thư mục dự án và việc đảo ngược được; hỏi với việc ghi, xóa, gửi ra ngoài.</td></tr>
+      <tr><td><b>Context nhiều ↔ gọn</b></td><td>Đưa nhiều vào: model đủ thông tin, nhưng tốn tiền, chậm, và model nhớ chính xác kém đi khi context dài ra.<sup class="cite"><a href="#src-3">[3]</a></sup></td><td>Đưa ít: rẻ và tập trung, nhưng dễ thiếu thông tin quan trọng.</td><td>Đưa đúng thứ cần cho bước hiện tại; cho model tool để tự lấy thêm khi cần.</td></tr>
+      <tr><td><b>Tóm tắt mạnh ↔ giữ nguyên</b></td><td>Compaction sớm: phiên chạy được lâu, nhưng có thể mất chi tiết.<sup class="cite"><a href="#src-3">[3]</a></sup></td><td>Giữ nguyên lịch sử: đầy đủ, nhưng nhanh chạm giới hạn context.</td><td>Luôn giữ nguyên văn yêu cầu gốc và các quyết định quan trọng; tóm tắt phần kết quả tool cũ.</td></tr>
+      <tr><td><b>Nhiều tool ↔ ít tool</b></td><td>Nhiều tool chuyên biệt: làm được nhiều việc.</td><td>Ít tool, mục đích rõ: model ít bị rối khi chọn, mô tả chiếm ít context hơn. Nhiều tool hơn không phải lúc nào cũng tốt hơn.<sup class="cite"><a href="#src-4">[4]</a></sup></td><td>Mỗi tool một mục đích rõ, không trùng nhau; tên và mô tả dễ hiểu.</td></tr>
+      <tr><td><b>Một agent ↔ nhiều subagent</b></td><td>Một agent: đơn giản, dễ theo dõi.</td><td>Subagent: mỗi cái có context sạch cho một việc con, nhưng tốn nhiều token hơn hẳn (so với chat) và phải phối hợp.<sup class="cite"><a href="#src-12">[12]</a></sup></td><td>Dùng subagent cho việc con độc lập, cần đọc nhiều nhưng chỉ trả về bản tóm tắt ngắn.<sup class="cite"><a href="#src-3">[3]</a></sup></td></tr>
+      <tr><td><b>Retry nhiều ↔ dừng sớm</b></td><td>Retry nhiều: chịu được lỗi mạng tạm thời.</td><td>Dừng sớm và báo lỗi: không đốt tiền vào lỗi không tự hết.</td><td>Retry có giới hạn và giãn cách tăng dần (exponential backoff) cho lỗi tạm thời như quá tải, rate limit<sup class="cite"><a href="#src-20">[20]</a></sup>; lỗi logic thì báo cho model hoặc người dùng. Retry lần gọi model thường an toàn; chạy lại một tool có tác dụng phụ (ghi file, gửi tin) có thể làm việc đó hai lần.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="callout"><b>Quy tắc dễ nhớ:</b> đổi model là đổi "bộ não"; đổi harness là đổi "những gì bộ não được thấy, được làm và được phép làm". Khi agent làm kém, hãy kiểm tra harness (context, tool, luật) trước khi kết luận model kém. Anthropic kể rằng khi làm agent cho SWE-bench, họ dành nhiều thời gian tối ưu tool hơn cả prompt tổng thể.<sup class="cite"><a href="#src-1">[1]</a></sup></div>
+</section>
+
+<!-- 7. LỖI -->
+<section id="loi">
+  <h2>7. Lỗi thường gặp và cách chẩn đoán</h2>
+  <p>Khi agent làm sai, đừng vội kết luận "model kém". Việc đầu tiên là mở <b>transcript</b> (còn gọi là trace hay trajectory: bản ghi đầy đủ một lần chạy, gồm cả tool call và kết quả tool)<sup class="cite"><a href="#src-24">[24]</a></sup> và xem model đã thực sự nhận được gì, đã yêu cầu gì, harness đã làm gì.<sup class="cite"><a href="#src-4">[4]</a></sup> Đi theo thứ tự dưới đây.</p>
+  <div class="grid g2">
+    <div class="card">
+      <h4>Cây chẩn đoán</h4>
+      <ol>
+        <li><b>Model có nhận đủ thông tin không?</b><br><span class="muted">Không → lỗi ghép context: file hướng dẫn không được nạp, yêu cầu gốc bị tóm tắt mất, kết quả tool bị cắt đúng phần quan trọng.</span></li>
+        <li><b>Tool có được mô tả rõ, và trả kết quả rõ không?</b><br><span class="muted">Không → lỗi thiết kế tool: mô tả mơ hồ, tham số khó hiểu, thông báo lỗi trống trơn kiểu "failed".</span></li>
+        <li><b>Harness có làm đúng điều model yêu cầu không?</b><br><span class="muted">Không → bug harness: đọc sai tham số, timeout quá ngắn, bị chặn mà không báo lại cho model.</span></li>
+        <li><b>Thông tin đủ, tool tốt, harness đúng mà model vẫn chọn sai?</b><br><span class="muted">Có → giới hạn của model hoặc lời dặn chưa rõ: sửa system prompt, chia nhỏ nhiệm vụ, thêm bước kiểm chứng, hoặc thử model mạnh hơn.</span></li>
+      </ol>
+    </div>
+    <div class="card">
+      <h4>Bảng triệu chứng</h4>
+      <div class="table-wrap"><table class="stack">
+        <thead><tr><th>Triệu chứng</th><th>Nguyên nhân thường gặp</th></tr></thead>
+        <tbody>
+          <tr><td>Gọi đi gọi lại cùng một tool</td><td>Kết quả tool không cho thấy lỗi rõ; thiếu giới hạn số vòng lặp.<sup class="cite"><a href="#src-1">[1]</a></sup></td></tr>
+          <tr><td>Quên yêu cầu hoặc ràng buộc ban đầu sau phiên dài</td><td>Compaction làm mất chi tiết; context quá dài khiến model nhớ kém.<sup class="cite"><a href="#src-3">[3]</a></sup></td></tr>
+          <tr><td>Gọi tool sai tham số, dùng nhầm tool</td><td>Mô tả tool mơ hồ; nhiều tool trùng chức năng.<sup class="cite"><a href="#src-4">[4]</a></sup></td></tr>
+          <tr><td>Báo "đã xong" nhưng chưa xong</td><td>Không có bước kiểm chứng (chạy test, kiểm tra đầu-cuối); chỉ tin lời model.<sup class="cite"><a href="#src-2">[2]</a></sup></td></tr>
+          <tr><td>Làm hành động nguy hiểm hoặc ngoài phạm vi</td><td>Quyền quá rộng; không có sandbox; không hỏi duyệt việc khó đảo ngược.<sup class="cite"><a href="#src-19">[19]</a></sup></td></tr>
+          <tr><td>Làm theo chỉ dẫn lạ nằm trong file hoặc trang web</td><td>Indirect prompt injection: nội dung từ nguồn bên ngoài bị model làm theo như lệnh.<sup class="cite"><a href="#src-19">[19]</a></sup></td></tr>
+          <tr><td>Chi phí hoặc thời gian tăng vọt</td><td>Context phình to (output tool dài không cắt); quá nhiều lượt; không tận dụng prompt caching.<sup class="cite"><a href="#src-4">[4]</a><a href="#src-8">[8]</a></sup></td></tr>
+          <tr><td>Phiên chết giữa chừng</td><td>Lỗi tạm thời (quá tải, rate limit) mà không có retry; không lưu trạng thái để chạy tiếp.<sup class="cite"><a href="#src-20">[20]</a></sup></td></tr>
+          <tr><td>Cùng yêu cầu, lúc tốt lúc tệ</td><td>Output của model được lấy mẫu nên có thể khác nhau giữa các lần chạy; một lần chạy không đủ để kết luận.<sup class="cite"><a href="#src-23">[23]</a></sup></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+  <div class="callout bad"><b>Prompt injection đáng sợ hơn với agent:</b> lời dặn của bạn và dữ liệu từ bên ngoài cùng nằm trong một context, nên model có thể nhầm dữ liệu thành lệnh. Chatbot thường chỉ nói sai; agent có tool thì có thể <b>làm</b> sai (xóa file, gửi dữ liệu ra ngoài). OWASP nhận định chưa rõ có cách phòng chống tuyệt đối nào, và khuyên giới hạn quyền ở mức tối thiểu, có người duyệt cho thao tác đặc quyền.<sup class="cite"><a href="#src-19">[19]</a></sup> Sandbox vẫn giữ giới hạn ngay cả khi injection qua mặt được quyết định của model.<sup class="cite"><a href="#src-16">[16]</a><a href="#src-18">[18]</a></sup></div>
+</section>
+
+<!-- 8. ĐÁNH GIÁ -->
+<section id="danh-gia">
+  <h2>8. Đánh giá: evaluation harness và đánh giá harness</h2>
+  <div class="callout warn"><b>Hai nghĩa, đừng nhầm:</b> <b>agent harness</b> là khung để model <i>làm việc</i>. <b>Evaluation harness</b> là hạ tầng chạy việc đánh giá từ đầu đến cuối: chạy các task, ghi lại mọi bước, chấm điểm và tổng hợp kết quả.<sup class="cite"><a href="#src-24">[24]</a></sup> Ví dụ: dự án mã nguồn mở <i>lm-evaluation-harness</i> của EleutherAI là "khung thống nhất" để chấm model ngôn ngữ trên rất nhiều tác vụ đánh giá<sup class="cite"><a href="#src-21">[21]</a></sup>; benchmark SWE-bench có evaluation harness chạy trong container Docker để kết quả lặp lại được.<sup class="cite"><a href="#src-22">[22]</a></sup></div>
+
+  <h3>Một evaluation harness gồm những gì?</h3>
+  <div class="grid g5">
+    <div class="card"><span class="num">1</span><b>Bộ task</b><p class="muted">Danh sách việc cần làm, mỗi việc có cách xác định đúng/sai.</p></div>
+    <div class="card"><span class="num">2</span><b>Môi trường sạch</b><p class="muted">Mỗi task chạy trong trạng thái ban đầu giống nhau (ví dụ container), không bị lần chạy trước ảnh hưởng.<sup class="cite"><a href="#src-22">[22]</a></sup></p></div>
+    <div class="card"><span class="num">3</span><b>Chạy agent</b><p class="muted">Mỗi lần thử một task gọi là một <i>trial</i>; ghi lại toàn bộ transcript.<sup class="cite"><a href="#src-24">[24]</a></sup></p></div>
+    <div class="card"><span class="num">4</span><b>Grader</b><p class="muted">Chấm kết quả: chạy test tự động, so đáp án, hoặc dùng LLM-as-judge.</p></div>
+    <div class="card"><span class="num">5</span><b>Báo cáo</b><p class="muted">Tỷ lệ thành công, chi phí, thời gian; so với lần trước.</p></div>
+  </div>
+
+  <h3>Đánh giá một agent harness tốt hay dở</h3>
+  <div class="grid g2">
+    <div class="card"><span class="tag p1">Cách làm</span><h4>Giữ model cố định, đổi harness</h4>
+      <ul>
+        <li>Chạy <b>cùng model</b> trên <b>cùng bộ task</b> với harness cũ và mới. Đổi một thứ mỗi lần (lời dặn, một tool, cách compaction) để biết cái gì thật sự giúp.</li>
+        <li>Task nên lấy cảm hứng từ việc thật, dữ liệu thật, không quá đơn giản.<sup class="cite"><a href="#src-4">[4]</a></sup></li>
+        <li>Chạy mỗi task <b>nhiều trial</b>, vì output của model thay đổi giữa các lần chạy.<sup class="cite"><a href="#src-24">[24]</a></sup></li>
+        <li>Đọc <b>transcript</b> thô (gồm tool call và kết quả tool) của các task thất bại, đừng chỉ nhìn con số tổng.<sup class="cite"><a href="#src-4">[4]</a></sup></li>
+        <li>Giữ một bộ task cũ làm <b>regression</b>: sửa chỗ này không được làm hỏng chỗ khác.</li>
+      </ul>
+    </div>
+    <div class="card"><span class="tag p3">Đo gì</span><h4>Không chỉ "làm xong hay không"</h4>
+      <ul>
+        <li><b>Tỷ lệ hoàn thành</b> task, kiểm bằng grader khách quan khi có thể (ví dụ test tự động).</li>
+        <li><b>Chi phí</b>: token, số lượt, thời gian.</li>
+        <li><b>An toàn</b>: số hành động bị chặn, số vi phạm luật.</li>
+        <li><b>Sự can thiệp</b>: người dùng phải duyệt hoặc sửa bao nhiêu lần.</li>
+        <li><b>pass@k</b>: một bài được tính là giải được nếu ít nhất một trong k lần thử qua được test<sup class="cite"><a href="#src-23">[23]</a></sup>. Hợp khi chỉ cần thành công một lần.</li>
+        <li><b>pass^k</b>: xác suất <i>cả</i> k lần thử đều thành công. Hợp khi người dùng cần agent ổn định mọi lần. Ví dụ của nguồn: thành công 75% mỗi lần thì cả 3 lần đều đạt chỉ khoảng 42% (0,75³ ≈ 0,42).<sup class="cite"><a href="#src-24">[24]</a></sup></li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout"><b>Đọc kết quả:</b> nếu đổi harness mà tỷ lệ thành công tăng trong khi model giữ nguyên (cùng phiên bản, cùng cấu hình), và mức tăng lớn hơn dao động giữa các lần chạy, thì có thể quy phần tăng đó cho harness. Khi đánh giá agent, thứ được đo là harness và model làm việc cùng nhau.<sup class="cite"><a href="#src-24">[24]</a></sup> Đây là lý do khi so sánh hai agent, cần biết cả model <i>và</i> harness, chỉ biết tên model là chưa đủ.</div>
+</section>
+
+<!-- 9. LỘ TRÌNH -->
+<section id="lo-trinh">
+  <h2>9. Lộ trình tự học 3 tuần (không cần code)</h2>
+  <p class="muted">Khoảng 3–4 giờ mỗi tuần. Các ô đã đánh dấu được lưu trong trình duyệt của bạn. Nên đọc trang <a href="../rag/">RAG</a> và <a href="../ai-agent/">AI Agent</a> song song.</p>
+  <div class="grid g3">
+    <div class="card"><span class="tag p1">Tuần 1</span><h4>Vòng lặp và model vs harness</h4><p>Đọc mục 1, 2, 3.</p>
+      <label class="check"><input type="checkbox" data-k="w1a"><span>Tự vẽ lại vòng lặp agent, đánh dấu ô nào là model, ô nào là harness.</span></label>
+      <label class="check"><input type="checkbox" data-k="w1b"><span><b>Làm harness bằng tay:</b> dặn một chatbot "khi cần đọc file, chỉ viết <code>ĐỌC tên-file</code> rồi dừng". Bạn tự dán nội dung file vào làm "kết quả tool". Lặp vài lượt và để ý bạn đang đóng vai harness.</span></label>
+    </div>
+    <div class="card"><span class="tag p1">Tuần 2</span><h4>Khái niệm, quan hệ, đánh đổi</h4><p>Đọc mục 4, 5, 6.</p>
+      <label class="check"><input type="checkbox" data-k="w2a"><span>Đọc tài liệu của một coding agent bạn đang dùng, tìm các phần: quyền, file hướng dẫn, hooks, cách tóm tắt context. Đặt từng phần vào bản đồ mục 5.</span></label>
+      <label class="check"><input type="checkbox" data-k="w2b"><span>Viết bảng chính sách quyền cho 5 tool tưởng tượng: tool nào tự cho phép, tool nào phải hỏi, tool nào chặn, và vì sao.</span></label>
+    </div>
+    <div class="card"><span class="tag p1">Tuần 3</span><h4>Lỗi và đánh giá</h4><p>Đọc mục 7, 8.</p>
+      <label class="check"><input type="checkbox" data-k="w3a"><span>Viết 5 task nhỏ kèm cách chấm đúng/sai khách quan.</span></label>
+      <label class="check"><input type="checkbox" data-k="w3b"><span>Cho agent làm một task 3 lần, ghi lại khác biệt; với lần sai, xác định sai ở tầng nào trong cây chẩn đoán.</span></label>
+    </div>
+  </div>
+
+  <h3>Tự kiểm tra: trả lời được là đã nắm cốt lõi</h3>
+  <details><summary>1. Model và harness khác nhau thế nào? Nêu một việc chỉ harness làm được.</summary>
+    <p>Model là mạng nơ-ron đã huấn luyện, chỉ nhận context và sinh text hoặc tool call. Harness là phần mềm bao quanh: ghép context, chạy tool, kiểm quyền, giữ lịch sử, quyết định dừng, ghi log. Ví dụ việc chỉ harness làm được: thực sự chạy một lệnh trên máy, hoặc chặn một lệnh nguy hiểm.</p></details>
+  <details><summary>2. Khi model "gọi tool", ai thực sự chạy tool? Model thấy gì sau đó?</summary>
+    <p>Harness chạy. Model chỉ viết ra yêu cầu có cấu trúc (tên tool + tham số). Sau khi chạy, harness đưa kết quả (hoặc lỗi, hoặc "bị chặn") vào lịch sử, và ở lượt sau model đọc thấy kết quả đó trong context.</p></details>
+  <details><summary>3. Vì sao harness phải gửi lại lịch sử mỗi lượt, và điều đó gây ra vấn đề gì?</summary>
+    <p>Vì với cách dùng API phổ biến, model không nhớ gì giữa các lần gọi. Hệ quả: context lớn dần theo số lượt, tốn token và có lúc chạm giới hạn context window. Harness xử lý bằng cách cắt output dài, tóm tắt (compaction), và một số nhà cung cấp có prompt caching để giảm chi phí phần lặp lại.</p></details>
+  <details><summary>4. Vòng lặp agent dừng khi nào? Nêu ít nhất ba điều kiện.</summary>
+    <p>Khi model trả lời mà không còn tool call; khi chạm giới hạn số lượt; khi hết ngân sách token, tiền hoặc thời gian; khi người dùng bấm dừng; khi gặp lỗi không phục hồi được. Lưu ý: model cũng có thể dừng vì output bị cắt hoặc vì từ chối; đó không phải là xong việc.</p></details>
+  <details><summary>5. Compaction giúp gì và có rủi ro gì?</summary>
+    <p>Giúp phiên làm việc dài không bị tràn context bằng cách tóm tắt các lượt cũ. Rủi ro: bản tóm tắt bỏ sót chi tiết quan trọng (ràng buộc, quyết định), khiến agent "quên" và làm sai về sau.</p></details>
+  <details><summary>6. Agent làm sai, bạn kiểm tra theo thứ tự nào?</summary>
+    <p>Mở trace. (1) Model có nhận đủ thông tin không? (2) Tool có mô tả và kết quả rõ không? (3) Harness có làm đúng điều model yêu cầu không? (4) Nếu ba điều trên đều ổn mà vẫn sai, lúc đó mới xét lời dặn hoặc model.</p></details>
+  <details><summary>7. "Evaluation harness" khác "agent harness" thế nào?</summary>
+    <p>Agent harness (scaffold) giúp model làm việc. Evaluation harness là hạ tầng chạy cả agent qua một bộ task trong môi trường kiểm soát, ghi lại transcript và chấm điểm. Một bên để làm, một bên để đo.</p></details>
+  <details><summary>8. Làm sao biết harness mới tốt hơn harness cũ?</summary>
+    <p>Giữ nguyên model, chạy cả hai harness trên cùng bộ task, mỗi task nhiều lần. So tỷ lệ thành công, chi phí, số lượt, số lần người dùng phải can thiệp, và đọc transcript các lần thất bại.</p></details>
+  <details><summary>9. Vì sao ghi một quy tắc vào file hướng dẫn chưa đủ để chặn một hành động? Dùng gì thay thế?</summary>
+    <p>Vì file hướng dẫn chỉ được nạp vào context như lời dặn; model có thể bỏ qua, hoặc bị prompt injection lôi đi. Muốn chặn chắc chắn phải dùng cơ chế phía harness: luật quyền (chặn hoặc hỏi), hook kiểm tra trước khi chạy tool, và sandbox giới hạn file, mạng.</p></details>
+</section>
+
+<!-- NGUỒN -->
+<section id="nguon">
+  <h2>Nguồn tham khảo</h2>
+  <p class="muted">Các nguồn dưới đây đã được mở và đối chiếu nội dung ngày 2026-11-14. Số trong ngoặc vuông ở thân bài trỏ về đây. Tài liệu sản phẩm (Claude Code, Claude API) được dùng làm ví dụ về cách một harness công khai mô tả thành phần của nó, không khẳng định chi tiết nội bộ.</p>
+  <ol class="sources">
+    <li id="src-1">Erik S., Barry Zhang (Anthropic). <i>Building effective agents</i>. 2024. <a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener">anthropic.com/engineering/building-effective-agents</a>. Truy cập 2026-11-14.</li>
+    <li id="src-2">Anthropic. <i>Effective harnesses for long-running agents</i>. 2025. <a href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents" target="_blank" rel="noopener">anthropic.com/engineering/effective-harnesses-for-long-running-agents</a>. Truy cập 2026-11-14.</li>
+    <li id="src-3">Anthropic. <i>Effective context engineering for AI agents</i>. 2025. <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank" rel="noopener">anthropic.com/engineering/effective-context-engineering-for-ai-agents</a>. Truy cập 2026-11-14.</li>
+    <li id="src-4">Anthropic. <i>Writing effective tools for agents — with agents</i>. 2025. <a href="https://www.anthropic.com/engineering/writing-tools-for-agents" target="_blank" rel="noopener">anthropic.com/engineering/writing-tools-for-agents</a>. Truy cập 2026-11-14.</li>
+    <li id="src-5">Anthropic. <i>How tool use works</i> (Claude Docs). Tài liệu trực tuyến. <a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/how-tool-use-works" target="_blank" rel="noopener">platform.claude.com/docs/en/agents-and-tools/tool-use/how-tool-use-works</a>. Truy cập 2026-11-14.</li>
+    <li id="src-6">OpenAI. <i>Function calling</i> (OpenAI API docs). Tài liệu trực tuyến. <a href="https://developers.openai.com/api/docs/guides/function-calling" target="_blank" rel="noopener">developers.openai.com/api/docs/guides/function-calling</a>. Truy cập 2026-11-14.</li>
+    <li id="src-7">Anthropic. <i>Using the Messages API</i> (Claude Docs). Tài liệu trực tuyến. <a href="https://platform.claude.com/docs/en/build-with-claude/working-with-messages" target="_blank" rel="noopener">platform.claude.com/docs/en/build-with-claude/working-with-messages</a>. Truy cập 2026-11-14.</li>
+    <li id="src-8">Anthropic. <i>Prompt caching</i> (Claude Docs). Tài liệu trực tuyến. <a href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching" target="_blank" rel="noopener">platform.claude.com/docs/en/build-with-claude/prompt-caching</a>. Truy cập 2026-11-14.</li>
+    <li id="src-9">Shunyu Yao và cộng sự. <i>ReAct: Synergizing Reasoning and Acting in Language Models</i>. arXiv 2210.03629, 2022 (ICLR 2023). <a href="https://arxiv.org/abs/2210.03629" target="_blank" rel="noopener">arxiv.org/abs/2210.03629</a>. Truy cập 2026-11-14.</li>
+    <li id="src-10">John Yang và cộng sự. <i>SWE-agent: Agent-Computer Interfaces Enable Automated Software Engineering</i>. arXiv 2405.15793, 2024. <a href="https://arxiv.org/abs/2405.15793" target="_blank" rel="noopener">arxiv.org/abs/2405.15793</a>. Truy cập 2026-11-14.</li>
+    <li id="src-11">Nelson F. Liu và cộng sự. <i>Lost in the Middle: How Language Models Use Long Contexts</i>. arXiv 2307.03172, 2023 (TACL). <a href="https://arxiv.org/abs/2307.03172" target="_blank" rel="noopener">arxiv.org/abs/2307.03172</a>. Truy cập 2026-11-14.</li>
+    <li id="src-12">Anthropic. <i>How we built our multi-agent research system</i>. 2025. <a href="https://www.anthropic.com/engineering/multi-agent-research-system" target="_blank" rel="noopener">anthropic.com/engineering/multi-agent-research-system</a>. Truy cập 2026-11-14.</li>
+    <li id="src-13">Model Context Protocol. <i>What is the Model Context Protocol (MCP)?</i> Tài liệu trực tuyến. <a href="https://modelcontextprotocol.io/introduction" target="_blank" rel="noopener">modelcontextprotocol.io/introduction</a>. Truy cập 2026-11-14.</li>
+    <li id="src-14">AGENTS.md. <i>A simple, open format for guiding coding agents</i>. Trang web. <a href="https://agents.md/" target="_blank" rel="noopener">agents.md</a>. Truy cập 2026-11-14.</li>
+    <li id="src-15">Anthropic. <i>How Claude remembers your project</i> (Claude Code Docs). Tài liệu trực tuyến. <a href="https://code.claude.com/docs/en/memory" target="_blank" rel="noopener">code.claude.com/docs/en/memory</a>. Truy cập 2026-11-14.</li>
+    <li id="src-16">Anthropic. <i>Configure permissions</i> (Claude Code Docs). Tài liệu trực tuyến. <a href="https://code.claude.com/docs/en/permissions" target="_blank" rel="noopener">code.claude.com/docs/en/permissions</a>. Truy cập 2026-11-14.</li>
+    <li id="src-17">Anthropic. <i>Hooks reference</i> (Claude Code Docs). Tài liệu trực tuyến. <a href="https://code.claude.com/docs/en/hooks" target="_blank" rel="noopener">code.claude.com/docs/en/hooks</a>. Truy cập 2026-11-14.</li>
+    <li id="src-18">Anthropic. <i>Beyond permission prompts: making Claude Code more secure and autonomous</i>. 2025. <a href="https://www.anthropic.com/engineering/claude-code-sandboxing" target="_blank" rel="noopener">anthropic.com/engineering/claude-code-sandboxing</a>. Truy cập 2026-11-14.</li>
+    <li id="src-19">OWASP GenAI Security Project. <i>LLM01:2025 Prompt Injection</i>. 2025. <a href="https://genai.owasp.org/llmrisk/llm01-prompt-injection/" target="_blank" rel="noopener">genai.owasp.org/llmrisk/llm01-prompt-injection</a>. Truy cập 2026-11-14.</li>
+    <li id="src-20">Anthropic. <i>Claude API errors</i> (Claude Docs). Tài liệu trực tuyến. <a href="https://platform.claude.com/docs/en/api/errors" target="_blank" rel="noopener">platform.claude.com/docs/en/api/errors</a>. Truy cập 2026-11-14.</li>
+    <li id="src-21">EleutherAI. <i>lm-evaluation-harness</i> (GitHub). Mã nguồn mở. <a href="https://github.com/EleutherAI/lm-evaluation-harness" target="_blank" rel="noopener">github.com/EleutherAI/lm-evaluation-harness</a>. Truy cập 2026-11-14.</li>
+    <li id="src-22">SWE-bench. <i>SWE-bench</i> (GitHub). Mã nguồn mở. <a href="https://github.com/SWE-bench/SWE-bench" target="_blank" rel="noopener">github.com/SWE-bench/SWE-bench</a>. Truy cập 2026-11-14.</li>
+    <li id="src-23">Mark Chen và cộng sự. <i>Evaluating Large Language Models Trained on Code</i>. arXiv 2107.03374, 2021. <a href="https://arxiv.org/abs/2107.03374" target="_blank" rel="noopener">arxiv.org/abs/2107.03374</a>. Truy cập 2026-11-14.</li>
+    <li id="src-24">Anthropic. <i>Demystifying evals for AI agents</i>. 2026. <a href="https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents" target="_blank" rel="noopener">anthropic.com/engineering/demystifying-evals-for-ai-agents</a>. Truy cập 2026-11-14.</li>
+  </ol>
+</section>
+</main>
+
+<footer>
+  Tài liệu học agent harness ở mức khái niệm. Tên tool, nội dung file, số lượt, token và phần trăm context trong ví dụ là minh họa để hiểu cơ chế, không mô tả nội bộ của sản phẩm hay model cụ thể nào.
+</footer>
+
+<script>
+(function(){
+  // ---------- Theme ----------
+  var root=document.documentElement;
+  function safeGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+  function safeSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  var saved=safeGet('rag-theme'); if(saved) root.setAttribute('data-theme',saved);
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme');
+    if(!cur){cur=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+    var next=cur==='dark'?'light':'dark'; root.setAttribute('data-theme',next); safeSet('rag-theme',next);
+  });
+
+  // ---------- Stacked tables on phones: give each cell its column name ----------
+  function labelTables(scope){
+    [].forEach.call(scope.querySelectorAll('table.stack'),function(t){
+      var heads=[].map.call(t.querySelectorAll('thead th'),function(th){return th.textContent});
+      [].forEach.call(t.querySelectorAll('tbody tr'),function(tr){[].forEach.call(tr.children,function(td,i){if(heads[i])td.setAttribute('data-label',heads[i])})});
+    });
+  }
+  labelTables(document);
+
+  // ---------- Stepper example ----------
+  // Context blocks the model sees, in order. Each step reveals the first n blocks.
+  var KIND={sys:['p1','Lời dặn hệ thống'],proj:['p1','Hướng dẫn dự án'],tools:['p2','Mô tả tool'],user:['p4','Người dùng'],model:['p2','Model'],res:['p3','Kết quả tool']};
+  var CTX=[
+    ['sys','Vai trò: trợ lý lập trình. Quy tắc: giải thích ngắn, kiểm chứng trước khi báo xong.'],
+    ['proj','Nạp từ file hướng dẫn trong repo: "chạy test bằng npm test".'],
+    ['tools','read_file, edit_file, run_command: tên + mô tả + tham số của từng tool.'],
+    ['user','Test đăng nhập đang fail, sửa giúp mình.'],
+    ['model','Gọi run_command { command: "npm test -- login" }'],
+    ['res','1 test fail: expected 200, received 401 tại src/auth.js:42 (đã cắt bớt 300 dòng log)'],
+    ['model','Gọi read_file { path: "src/auth.js" }'],
+    ['res','Nội dung src/auth.js (120 dòng)'],
+    ['model','Gọi edit_file: đổi điều kiện hết hạn ở dòng 42'],
+    ['res','Người dùng đã duyệt. File đã sửa.'],
+    ['model','Gọi run_command { command: "npm test -- login" }'],
+    ['res','12/12 test pass'],
+    ['model','Đã sửa điều kiện kiểm tra hết hạn token ở src/auth.js:42; test đăng nhập đã pass.']
+  ];
+  var STEPS=[
+    {t:'Nhận yêu cầu',n:0,f:0,g:0,h:'<span class="tag p4">Đầu vào</span><h3>Bước 1 · Người dùng gõ yêu cầu</h3><p>Trong giao diện (CLI, IDE hoặc web), người dùng gõ:</p><pre>"Test đăng nhập đang fail, sửa giúp mình."</pre><p>Harness tạo (hoặc tiếp tục) một <b>phiên</b> (session): nơi giữ lịch sử, trạng thái, cấu hình quyền. Model <b>chưa</b> được gọi.</p><p class="muted">Yêu cầu này quá ngắn để model hiểu dự án. Phần còn lại phải do harness bổ sung ở bước 2.</p>'},
+    {t:'Ghép context',n:4,f:0,g:6,h:'<span class="tag p1">Harness</span><h3>Bước 2 · Ghép context cho lượt 1</h3><p>Harness ghép bốn khối thành input gửi cho model:</p><ul><li><b>Lời dặn hệ thống</b> (system prompt): vai trò, quy tắc làm việc, quy tắc an toàn.</li><li><b>Hướng dẫn dự án</b>: harness đọc file hướng dẫn trong repo và đưa vào, để model biết cách chạy test của dự án này.<sup class="cite"><a href="#src-14">[14]</a><a href="#src-15">[15]</a></sup></li><li><b>Mô tả tool</b>: danh sách tool kèm mô tả và tham số. Model chỉ biết tool tồn tại nhờ phần mô tả này.<sup class="cite"><a href="#src-5">[5]</a></sup></li><li><b>Yêu cầu</b> của người dùng.</li></ul><div class="callout">Model không "nhìn thấy" repo. Nó chỉ thấy đúng các khối trong khung Context bên dưới.</div>'},
+    {t:'Model trả tool call',n:5,f:4,g:6,h:'<span class="tag p2">Model · lượt 1</span><h3>Bước 3 · Gọi model, nhận về tool call</h3><p>Harness gửi context qua API. Model không chạy gì cả; nó chỉ sinh ra <b>yêu cầu gọi tool</b> có cấu trúc (ở đây là một; một lượt có thể chứa nhiều):</p><pre>tool: run_command\ntham số: { command: "npm test -- login" }</pre><p>Harness <b>đọc output</b> (parse): đây là tool call, không phải câu trả lời cuối, nên vòng lặp tiếp tục.</p><p class="muted">Nếu model viết sai cấu trúc (thiếu tham số, sai tên tool), harness báo lỗi lại cho model thay vì tự đoán.</p>'},
+    {t:'Kiểm quyền & hook',n:5,f:5,g:6,h:'<span class="tag p1">Harness</span><h3>Bước 4 · Kiểm quyền và chạy hook</h3><p>Trước khi chạy, harness đối chiếu tool call với chính sách quyền kiểu cho phép / hỏi / chặn<sup class="cite"><a href="#src-16">[16]</a></sup> (<b>minh họa</b>):</p><div class="table-wrap"><table class="stack"><thead><tr><th>Hành động</th><th>Chính sách</th></tr></thead><tbody><tr><td>read_file trong thư mục dự án</td><td>Tự cho phép</td></tr><tr><td>run_command lệnh chạy test</td><td>Tự cho phép (nằm trong danh sách được phép)</td></tr><tr><td>edit_file</td><td>Hỏi người dùng</td></tr><tr><td>run_command lệnh xóa hoặc gửi dữ liệu ra mạng</td><td>Chặn</td></tr></tbody></table></div><p>Một <b>hook</b> "trước khi chạy tool" cũng được gọi, ví dụ để ghi log hoặc áp luật riêng của team; hook kiểu này có thể chặn cả tool call.<sup class="cite"><a href="#src-17">[17]</a></sup> Kết luận: <b>được phép</b>.</p><div class="callout">Model không biết các luật này trừ khi được mô tả trong context. Nếu bị chặn, harness đưa lý do vào kết quả tool để lượt sau model đổi hướng.</div>'},
+    {t:'Chạy tool',n:6,f:5,g:8,h:'<span class="tag p1">Harness</span><h3>Bước 5 · Chạy tool trong sandbox</h3><p>Harness chạy lệnh trong <b>sandbox</b> (giới hạn thư mục được đụng tới và máy chủ được kết nối)<sup class="cite"><a href="#src-18">[18]</a></sup> và có <b>timeout</b>. Lệnh in ra khoảng 340 dòng log. Đưa hết vào context thì phí và gây nhiễu, nên harness <b>cắt bớt</b>, giữ phần lỗi:<sup class="cite"><a href="#src-4">[4]</a></sup></p><pre>FAIL tests/login.test.js\n  ✕ đăng nhập với token hợp lệ\n    expected status 200, received 401\n    at src/auth.js:42\n… (đã cắt 300 dòng log)</pre><p>Kết quả được thêm vào lịch sử dưới dạng <b>tool result</b>.</p>'},
+    {t:'Lặp: đọc file',n:8,f:6,g:11,h:'<span class="tag p2">Model · lượt 2</span><h3>Bước 6 · Lượt mới: model muốn đọc file</h3><p>Vòng lặp quay lại: harness ghép context <b>gồm toàn bộ khối cũ + kết quả mới</b> rồi gọi model lần 2. Model đọc thấy lỗi ở <code>src/auth.js:42</code> và gọi <code>read_file</code>. Theo chính sách, đọc file được tự cho phép, harness chạy và đưa nội dung file vào lịch sử.</p><div class="callout warn">Mỗi lượt đều gửi lại toàn bộ lịch sử, nên context <b>lớn dần</b> (xem thanh bên dưới). Một số nhà cung cấp có <b>prompt caching</b> để phần đầu lặp lại rẻ và nhanh hơn.<sup class="cite"><a href="#src-8">[8]</a></sup></div>'},
+    {t:'Sửa file: hỏi duyệt',n:10,f:8,g:12,h:'<span class="tag p2">Model · lượt 3</span><h3>Bước 7 · Sửa file cần người dùng duyệt</h3><p>Model nhận ra điều kiện kiểm tra hết hạn bị ngược và gọi <code>edit_file</code>. Chính sách nói "hỏi người dùng", nên harness dừng lại và hiện thay đổi trong giao diện:</p><pre>- if (token.expiresAt &lt; now) return ok\n+ if (token.expiresAt &gt; now) return ok</pre><p>Người dùng bấm <b>Đồng ý</b>, harness ghi file và trả kết quả "đã sửa". Sau đó một hook "sau khi sửa file" có thể tự chạy formatter.</p><p class="muted">Nếu người dùng từ chối, kết quả tool sẽ là "người dùng từ chối", và model phải đề xuất cách khác hoặc hỏi lại.</p>'},
+    {t:'Kiểm chứng & dừng',n:13,f:10,g:13,h:'<span class="tag p3">Lượt 4–5</span><h3>Bước 8 · Kiểm chứng rồi dừng</h3><p><b>Lượt 4:</b> model chạy lại test, kết quả 12/12 pass. <b>Lượt 5:</b> model trả lời bằng văn bản, <b>không kèm tool call</b>. Harness kiểm điều kiện dừng: không còn tool call → vòng lặp kết thúc.</p><p>Các điều kiện dừng khác mà harness tốt luôn có:</p><ul><li>Chạm giới hạn số lượt (chống lặp vô hạn).</li><li>Hết ngân sách token, tiền hoặc thời gian.</li><li>Người dùng bấm dừng.</li><li>Lỗi không phục hồi được (ví dụ API lỗi liên tục sau khi đã retry).</li><li>Model dừng vì lý do khác: output bị cắt do chạm giới hạn độ dài, hoặc model từ chối. Harness phải xử lý riêng, không coi đó là xong.<sup class="cite"><a href="#src-5">[5]</a></sup></li></ul><div class="callout ok"><b>Ai quyết định "xong"?</b> Ở đây model tự quyết, nhưng nhờ lời dặn "kiểm chứng trước khi báo xong" mà nó chạy lại test trước. Trong thử nghiệm của Anthropic, Claude hay đánh dấu tính năng là xong khi chưa kiểm thử đầu-cuối, và việc cho nó công cụ kiểm thử (tự động hóa trình duyệt) giúp cải thiện rõ rệt.<sup class="cite"><a href="#src-2">[2]</a></sup></div>'},
+    {t:'Báo kết quả & trace',n:13,f:13,g:13,h:'<span class="tag p1">Harness</span><h3>Bước 9 · Báo kết quả và lưu trace</h3><p>Giao diện hiển thị câu trả lời cuối của model. Song song, harness đã ghi <b>trace</b> cho từng lượt (<b>minh họa</b>):</p><div class="table-wrap"><table class="stack"><thead><tr><th>Lượt</th><th>Model yêu cầu</th><th>Harness làm</th><th>Token vào</th></tr></thead><tbody><tr><td>Lượt 1</td><td>run_command (test)</td><td>Cho phép, chạy, cắt log</td><td>~6k</td></tr><tr><td>Lượt 2</td><td>read_file</td><td>Cho phép, đọc file</td><td>~8k</td></tr><tr><td>Lượt 3</td><td>edit_file</td><td>Hỏi duyệt → ghi file → hook</td><td>~11k</td></tr><tr><td>Lượt 4</td><td>run_command (test)</td><td>Cho phép, chạy</td><td>~12k</td></tr><tr><td>Lượt 5</td><td>(trả lời cuối)</td><td>Dừng, hiển thị</td><td>~13k</td></tr></tbody></table></div><p class="muted">Trace là thứ đầu tiên cần xem khi agent làm sai (mục 7) và là nguyên liệu để đánh giá harness (mục 8).</p><div class="callout warn"><b>Nếu phiên kéo dài hàng trăm lượt?</b> Context sẽ gần đầy. Harness khi đó làm <b>compaction</b>: gọi model thêm một lần riêng để tóm tắt các lượt cũ (giữ yêu cầu gốc, quyết định quan trọng, lỗi chưa xử lý), rồi chạy tiếp với bản tóm tắt đó. Rủi ro là tóm tắt quá tay làm mất chi tiết mà về sau mới thấy là quan trọng.<sup class="cite"><a href="#src-3">[3]</a></sup></div>'}
+  ];
+  var cur=0, stepsEl=document.getElementById('steps'), bodyEl=document.getElementById('stepBody'), ctxEl=document.getElementById('stepCtx');
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function renderCtx(s){
+    if(!s.n){ctxEl.innerHTML='<h4>Context model sẽ thấy</h4><p class="muted">Chưa có gì: model chưa được gọi.</p>';return}
+    var fresh=s.f<s.n;var html='<h4>Context tính đến bước này'+(fresh?' <span class="muted" style="font-weight:400">(khối viền xanh = mới thêm ở bước này)</span>':'')+'</h4>';
+    html+='<div class="muted">Đã dùng ≈ '+s.g+'k / 100k token = '+s.g+'% context window (minh họa, giả sử cửa sổ 100k token)</div><div class="bar" style="margin-bottom:8px"><span style="width:'+s.g+'%"></span></div>';
+    for(var i=0;i<s.n;i++){var b=CTX[i],k=KIND[b[0]];html+='<div class="chunk'+(fresh&&i>=s.f?' hit':'')+'"><span class="tag '+k[0]+'">'+k[1]+'</span> '+esc(b[1])+'</div>'}
+    ctxEl.innerHTML=html;
+  }
+  STEPS.forEach(function(s,i){var b=document.createElement('button');b.type='button';b.innerHTML='<span class="n">'+(i+1)+'</span>'+esc(s.t);b.addEventListener('click',function(){show(i)});stepsEl.appendChild(b)});
+  function show(i){cur=i;bodyEl.innerHTML=STEPS[i].h;labelTables(bodyEl);renderCtx(STEPS[i]);
+    [].forEach.call(stepsEl.children,function(b,j){b.classList.toggle('on',j===i);b.setAttribute('aria-current',j===i?'step':'false')});
+    document.getElementById('prevStep').disabled=i===0;document.getElementById('nextStep').disabled=i===STEPS.length-1;
+    var ab=stepsEl.children[i];if(stepsEl.scrollWidth>stepsEl.clientWidth){stepsEl.scrollLeft=ab.offsetLeft-stepsEl.offsetLeft-8}}
+  document.getElementById('prevStep').addEventListener('click',function(){if(cur>0)show(cur-1)});
+  document.getElementById('nextStep').addEventListener('click',function(){if(cur<STEPS.length-1)show(cur+1)});
+  show(0);
+
+  // ---------- Glossary ----------
+  var G={base:'Nền tảng',loop:'Vòng lặp',tool:'Tool',ctx:'Context & bộ nhớ',safe:'An toàn & kiểm soát',ops:'Vận hành',eval:'Đánh giá'};
+  // [id, group, name, alias, definition, example, related ids, optional trusted link html]
+  var T=[
+    ['model','base','Model','LLM','Mạng nơ-ron đã huấn luyện: nhận văn bản (token) vào, sinh văn bản ra. Không tự chạy lệnh, không tự đọc file.','Phần được gọi qua API trong mọi agent.',['harness','stateless','context-window']],
+    ['harness','base','Agent harness','scaffold','Toàn bộ phần mềm bao quanh model để biến nó thành agent: lời dặn, tool, vòng lặp, quản lý context, bộ nhớ, quyền, hooks, điều kiện dừng, xử lý lỗi, giao diện, log.','Phần bạn cài đặt khi dùng một coding agent dạng CLI. Danh sách thành phần ở đây là phần tổng hợp của trang.',['agent','agent-loop','model']],
+    ['agent','base','Agent','','Hệ thống tự thực hiện nhiều bước để đạt mục tiêu, gồm model (quyết định) và harness (thực thi, kiểm soát).','Cách nhớ: agent = model + harness.',['harness','agent-loop'],'<a href="../ai-agent/">Trang AI Agent</a>'],
+    ['stateless','base','Stateless','không trạng thái','Với cách dùng API phổ biến, mỗi lần gọi model là độc lập; model không nhớ lần trước. Harness phải gửi lại lịch sử cần thiết.','Lượt 2 phải chứa lại cả yêu cầu và kết quả lượt 1.',['history','context-assembly']],
+    ['token','base','Token','','Đơn vị chữ model xử lý, thường là một từ hoặc một phần của từ. Chi phí và giới hạn context đều tính theo token.','',['context-window','cost']],
+    ['context-window','base','Context window','','Số token tối đa model đọc được trong một lần gọi (gồm input và output).','Phiên dài với nhiều log có thể chạm giới hạn này.',['compaction','truncation']],
+    ['system-prompt','base','System prompt','lời dặn hệ thống','Phần lời dặn cố định harness đặt ở đầu context: vai trò, quy tắc, cách dùng tool.','"Kiểm chứng trước khi báo xong."',['instruction-file','context-assembly']],
+    ['agent-loop','loop','Agent loop','vòng lặp agent','Chu trình ghép context → gọi model → đọc output → (nếu có tool call) kiểm quyền, chạy tool, thêm kết quả → lặp lại.','Ví dụ ở mục 3 chạy 5 lượt.',['turn','tool-call','stop']],
+    ['turn','loop','Lượt','turn / step','Một vòng gồm một lần gọi model và các việc harness làm sau đó. Có công cụ gọi đây là step hay iteration, và dùng "turn" cho cả một yêu cầu của người dùng.','Lượt 3: model gọi edit_file, harness hỏi duyệt.',['agent-loop','budget']],
+    ['parse','loop','Đọc output','output parsing','Harness phân tích output của model để biết đó là câu trả lời cuối hay tool call, và lấy ra tên tool, tham số.','Tham số sai cấu trúc → báo lỗi lại cho model.',['tool-call','error-feedback']],
+    ['stop','loop','Điều kiện dừng','stop condition','Quy tắc kết thúc vòng lặp: không còn tool call, chạm giới hạn lượt, hết ngân sách, người dùng dừng, lỗi không phục hồi.','',['budget','agent-loop']],
+    ['budget','loop','Giới hạn & ngân sách','','Trần số lượt, token, tiền hoặc thời gian cho một phiên. Lưới an toàn khi model lặp hoặc đi lạc.','Tối đa 50 lượt mỗi yêu cầu (minh họa).',['stop','cost']],
+    ['plan','loop','Kế hoạch','plan / todo','Danh sách bước model tự viết và cập nhật trong lúc làm, thường qua một tool riêng, giúp việc dài không bị lạc hướng.','',['agent-loop','memory']],
+    ['tool-call','tool','Tool call','','Yêu cầu có cấu trúc model sinh ra: tên tool + tham số. Bản thân nó chỉ là dữ liệu; harness mới thực thi. Một lượt có thể chứa nhiều tool call.','run_command { command: "npm test" }',['tool-def','tool-result','permission']],
+    ['tool-result','tool','Tool result','kết quả tool','Kết quả harness đưa lại vào lịch sử sau khi chạy tool, kể cả lỗi hoặc "bị chặn".','"12/12 test pass".',['tool-call','truncation','error-feedback']],
+    ['tool-def','tool','Định nghĩa tool','tool definition / schema','Tên, mô tả, danh sách tham số của một tool, được đưa vào context để model biết tool tồn tại và cách gọi.','Mô tả rõ thì model gọi đúng; mơ hồ thì gọi sai.',['tool-call','toolset']],
+    ['toolset','tool','Bộ tool','toolset','Tập tool harness cung cấp. Quá nhiều tool trùng nhau làm model rối và tốn context cho phần mô tả.','',['tool-def','mcp']],
+    ['mcp','tool','MCP','Model Context Protocol','Giao thức mở để kết nối tool và nguồn dữ liệu bên ngoài vào ứng dụng AI theo một chuẩn chung, thay vì mỗi harness tự viết riêng.','Một MCP server cung cấp tool đọc ticket, harness nào hỗ trợ MCP cũng dùng được.',['toolset','tool-def']],
+    ['subagent','tool','Subagent','','Một agent con được agent chính giao việc, chạy với context riêng và chỉ trả về kết quả ngắn gọn.','Giao subagent đọc 30 file rồi tóm tắt.',['context-eng','cost']],
+    ['environment','tool','Môi trường','environment','Nơi tool tác động thật: hệ thống file, shell, trình duyệt, API bên ngoài.','',['sandbox','tool-call']],
+    ['context-eng','ctx','Context engineering','','Việc thiết kế cái gì được đưa vào context, theo thứ tự nào, lúc nào, để model có đúng thông tin cần cho bước hiện tại.','Coi context là tài nguyên hữu hạn: chỉ giữ những token có ích nhất.',['context-assembly','compaction']],
+    ['context-assembly','ctx','Ghép context','context assembly','Bước harness ghép system prompt, mô tả tool, hướng dẫn dự án, lịch sử và yêu cầu thành input cho mỗi lượt.','',['system-prompt','history']],
+    ['history','ctx','Lịch sử hội thoại','transcript','Chuỗi các lượt trước: yêu cầu, tool call, kết quả tool, câu trả lời. Harness lưu và gửi lại.','',['stateless','compaction']],
+    ['truncation','ctx','Cắt bớt','truncation','Rút ngắn output quá dài (log, file lớn) trước khi đưa vào context, giữ phần quan trọng.','Giữ phần lỗi, bỏ 300 dòng log.',['tool-result','context-window']],
+    ['compaction','ctx','Compaction','tóm tắt context','Khi context gần đầy, harness nhờ model tóm tắt các lượt cũ rồi chạy tiếp với bản tóm tắt. Dạng nhẹ nhất là xóa bớt kết quả tool cũ. Đổi lại có thể mất chi tiết.','',['context-window','history']],
+    ['memory','ctx','Bộ nhớ dài hạn','memory','Thông tin được lưu ngoài context (file, cơ sở dữ liệu) để dùng lại ở phiên sau; harness quyết định khi nào nạp vào.','Ghi chú "dự án dùng npm, không dùng yarn".',['instruction-file','history']],
+    ['instruction-file','ctx','File hướng dẫn dự án','','File văn bản trong repo hoặc thư mục người dùng chứa quy ước, lệnh, lưu ý; harness tự nạp vào context.','"Chạy test bằng npm test."',['system-prompt','memory']],
+    ['jit','ctx','Nạp đúng lúc','just-in-time context','Thay vì nạp sẵn mọi dữ liệu, harness chỉ giữ "địa chỉ" (đường dẫn file, truy vấn, link) và để model dùng tool lấy nội dung khi cần.','Giữ đường dẫn src/auth.js, chỉ đọc file khi model gọi read_file.',['context-eng','tool-call']],
+    ['notes','ctx','Ghi chú có cấu trúc','structured note-taking','Agent định kỳ ghi chú ra ngoài context (file, bộ nhớ) rồi nạp lại khi cần, giúp việc dài không mất mạch.','Danh sách việc cần làm, file NOTES.md.',['memory','plan']],
+    ['session','ctx','Phiên','session','Một lần làm việc liên tục với agent: giữ lịch sử, trạng thái, cấu hình quyền từ yêu cầu đầu tới khi kết thúc.','Mở lại phiên hôm qua để làm tiếp.',['history','checkpoint']],
+    ['checkpoint','ops','Checkpoint / resume','','Lưu trạng thái giữa chừng để chạy tiếp sau khi bị gián đoạn, hoặc quay lại trạng thái cũ (ví dụ hoàn tác các file đã sửa).','Mạng rớt ở lượt 30, chạy tiếp từ lượt 30 thay vì làm lại.',['session','retry']],
+    ['retrieval','ctx','Retrieval','RAG','Tìm thông tin liên quan rồi đưa vào context. Trong agent, việc tìm có thể là một tool model tự gọi.','',['context-eng','toolset'],'<a href="../rag/">Trang RAG</a>'],
+    ['caching','ctx','Prompt caching','','Tính năng của một số nhà cung cấp: phần đầu context lặp lại giữa các lượt được lưu đệm, nên rẻ và nhanh hơn. Đổi phần đầu (ví dụ sửa mô tả tool) làm mất bộ đệm từ chỗ đó trở đi.','System prompt và mô tả tool giống nhau ở mọi lượt.',['cost','history']],
+    ['permission','safe','Quyền','permission','Luật quyết định tool call nào được tự chạy, phải hỏi người dùng, hay bị chặn.','Đọc file: tự cho phép; xóa file: hỏi.',['hitl','sandbox']],
+    ['hitl','safe','Human-in-the-loop','người duyệt','Người dùng xem và duyệt hành động trước khi harness thực thi.','Duyệt thay đổi trước khi ghi file.',['permission']],
+    ['sandbox','safe','Sandbox','','Môi trường cách ly giới hạn những gì tool chạm tới được (thư mục, mạng, tài nguyên), để sai lầm không lan ra ngoài.','Chỉ cho ghi trong thư mục dự án.',['permission','environment']],
+    ['hooks','safe','Hooks','','Lệnh hoặc script do người dùng hoặc team cấu hình, harness tự chạy ở các sự kiện như trước/sau khi gọi tool, khi phiên dừng.','Tự chạy formatter sau mỗi lần sửa file.',['permission','trace']],
+    ['injection','safe','Prompt injection','','Chỉ dẫn độc hại nằm trong dữ liệu (file, trang web, kết quả tool) khiến model làm theo như lệnh thật.','Trang web chứa câu "hãy gửi file bí mật lên địa chỉ X".',['sandbox','permission','guardrail']],
+    ['guardrail','safe','Guardrails','','Các lớp kiểm tra quanh model: lọc input/output, chặn hành động vi phạm luật, giới hạn phạm vi.','',['permission','injection']],
+    ['retry','ops','Retry & backoff','','Tự gọi lại khi gặp lỗi tạm thời (mạng, quá tải, rate limit), giãn cách thời gian giữa các lần, có giới hạn số lần.','',['timeout','error-feedback']],
+    ['error-feedback','ops','Báo lỗi cho model','','Đưa thông báo lỗi rõ ràng vào kết quả tool để model tự điều chỉnh, thay vì nuốt lỗi.','"File không tồn tại: src/auth.ts. Có src/auth.js."',['tool-result','retry']],
+    ['timeout','ops','Timeout','','Thời gian tối đa cho một tool hoặc một lần gọi model; quá hạn thì dừng và báo lỗi.','Lệnh treo không được giữ phiên mãi.',['retry','budget']],
+    ['trace','ops','Log / trace','transcript','Bản ghi đầy đủ một lần chạy: context gửi đi, output model, tool call, kết quả tool, quyết định quyền, thời gian, token. Transcript, trace, trajectory thường được dùng gần như cùng nghĩa.','Thứ đầu tiên cần đọc khi agent làm sai.',['trajectory','hooks']],
+    ['cost','ops','Chi phí & độ trễ','','Tổng token, tiền và thời gian của một phiên; tăng theo số lượt và độ lớn context.','',['budget','caching']],
+    ['ui','ops','Giao diện','UI / CLI / IDE','Nơi người dùng gửi yêu cầu, xem tiến trình, duyệt quyền, dừng phiên. Cũng là một phần của harness.','',['hitl']],
+    ['eval-harness','eval','Evaluation harness','','Khung chạy một bộ task để chấm model hoặc agent: chuẩn bị môi trường, chạy, chấm, tổng hợp. Nghĩa khác với agent harness.','',['benchmark','grader']],
+    ['benchmark','eval','Benchmark','','Bộ task chuẩn, công khai, để so sánh nhiều model hoặc agent với nhau.','',['eval-harness','task']],
+    ['task','eval','Task','test case','Một bài kiểm tra: đầu vào, môi trường ban đầu và cách xác định đúng/sai.','"Sửa để test login pass" + chạy test để chấm.',['grader','benchmark']],
+    ['grader','eval','Grader','bộ chấm','Phần quyết định task thành công hay không: test tự động, so đáp án, hoặc LLM chấm.','',['judge','task']],
+    ['trajectory','eval','Trajectory','transcript / trace','Toàn bộ chuỗi bước agent đã đi trong một task: các lượt, tool call, kết quả.','Đọc trajectory để biết vì sao task thất bại.',['trace','grader']],
+    ['pass-k','eval','pass@k','','Khả năng có ít nhất một lần thành công trong k lần thử. Hợp khi chỉ cần thành công một lần.','pass@1 khắt khe hơn pass@5.',['pass-hat-k','trial']],
+    ['pass-hat-k','eval','pass^k','','Xác suất cả k lần thử đều thành công. Đo độ ổn định: càng nhiều lần thử thì càng khó đạt.','75% mỗi lần → cả 3 lần ≈ 42%.',['pass-k','nondet']],
+    ['trial','eval','Trial','lần thử','Một lần cho agent làm một task. Vì output thay đổi giữa các lần chạy, mỗi task thường chạy nhiều trial.','',['pass-k','trajectory']],
+    ['judge','eval','LLM-as-judge','','Dùng một LLM để chấm kết quả. Nhanh nhưng có thiên lệch, nên đối chiếu với chấm tay.','',['grader']],
+    ['nondet','eval','Không tất định','nondeterminism','Cùng input, model có thể cho output khác nhau giữa các lần chạy, nên phải chạy nhiều lần mới kết luận được.','',['pass-k']]
+  ];
+  // Source numbers (see #nguon) backing each definition
+  var CITES={harness:[24,2],jit:[3],notes:[3],'pass-hat-k':[24],trial:[24],agent:[1],stateless:[7],'context-window':[3],'agent-loop':[5,9],stop:[1,5],budget:[1],'tool-call':[5,6],'tool-result':[5],'tool-def':[4,5],toolset:[4],mcp:[13],subagent:[3,12],'context-eng':[3],truncation:[4],compaction:[3],memory:[15],'instruction-file':[14,15],caching:[8],permission:[16],hitl:[18,19],sandbox:[18],hooks:[17],injection:[19],retry:[20],'error-feedback':[4],trace:[24],'eval-harness':[21,22],benchmark:[22],'pass-k':[23],trajectory:[24]};
+  function citeHtml(id){var c=CITES[id];if(!c)return '';return '<sup class="cite">'+c.map(function(n){return '<a href="#src-'+n+'">['+n+']</a>'}).join('')+'</sup>'}
+  var byId={};T.forEach(function(t){byId[t[0]]=t});
+  var grid=document.getElementById('glossGrid'), chips=document.getElementById('glossChips'), search=document.getElementById('glossSearch'), activeG='all';
+  function fold(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d')}
+  function renderGloss(){
+    var q=fold(search.value.trim()); grid.innerHTML='';var n=0;
+    T.forEach(function(t){
+      if(activeG!=='all'&&t[1]!==activeG)return;
+      var hay=fold(t[2]+' '+t[3]+' '+t[4]+' '+t[5]); if(q&&hay.indexOf(q)<0)return; n++;
+      var d=document.createElement('div');d.className='card term';d.id='term-'+t[0];
+      var rel=t[6].filter(function(r){return byId[r]}).map(function(r){return '<a href="#term-'+r+'" data-goto="'+r+'">'+esc(byId[r][2])+'</a>'}).join(', ');
+      if(t[7])rel+=(rel?', ':'')+t[7];
+      d.innerHTML='<span class="tag">'+G[t[1]]+'</span><h4>'+esc(t[2])+(t[3]?' <span class="en">· '+esc(t[3])+'</span>':'')+'</h4><p>'+esc(t[4])+citeHtml(t[0])+'</p>'+(t[5]?'<p class="ex">Ví dụ: '+esc(t[5])+'</p>':'')+(rel?'<div class="rel">Liên quan: '+rel+'</div>':'');
+      grid.appendChild(d);
+    });
+    if(!n)grid.innerHTML='<p class="muted">Không có khái niệm khớp.</p>';
+  }
+  var all=document.createElement('button');all.type='button';all.className='chip on';all.textContent='Tất cả ('+T.length+')';all.dataset.g='all';all.setAttribute('aria-pressed','true');chips.appendChild(all);
+  Object.keys(G).forEach(function(k){var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.g=k;b.setAttribute('aria-pressed','false');b.textContent=G[k];chips.appendChild(b)});
+  chips.addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;activeG=b.dataset.g;[].forEach.call(chips.children,function(c){c.classList.toggle('on',c===b);c.setAttribute('aria-pressed',String(c===b))});renderGloss()});
+  search.addEventListener('input',renderGloss);
+  grid.addEventListener('click',function(e){var a=e.target.closest('a[data-goto]');if(!a)return;e.preventDefault();
+    if(!document.getElementById('term-'+a.dataset.goto)){activeG='all';search.value='';[].forEach.call(chips.children,function(c){c.classList.toggle('on',c.dataset.g==='all');c.setAttribute('aria-pressed',String(c.dataset.g==='all'))});renderGloss()}
+    var t=document.getElementById('term-'+a.dataset.goto);if(!t)return;t.scrollIntoView({behavior:'smooth',block:'center'});t.style.outline='2px solid var(--accent)';setTimeout(function(){t.style.outline=''},1500)});
+  renderGloss();
+
+  // ---------- Checklist persistence ----------
+  [].forEach.call(document.querySelectorAll('input[data-k]'),function(cb){
+    cb.checked=safeGet('harness-'+cb.dataset.k)==='1';
+    cb.addEventListener('change',function(){safeSet('harness-'+cb.dataset.k,cb.checked?'1':'0')});
+  });
+
+  // ---------- Active TOC ----------
+  var links=[].slice.call(document.querySelectorAll('#toc a'));
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(l){var on=l.getAttribute('href')==='#'+e.target.id;l.classList.toggle('active',on);if(on){var nav=l.parentNode;nav.scrollLeft=l.offsetLeft-nav.offsetLeft-(nav.clientWidth-l.offsetWidth)/2}})}})},{rootMargin:'-40% 0px -55% 0px'});
+    document.querySelectorAll('main section').forEach(function(s){io.observe(s)});
+  }
+})();
+</script>
+</body>
+</html>

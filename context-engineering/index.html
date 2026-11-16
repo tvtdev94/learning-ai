@@ -1,0 +1,876 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Context engineering: quản lý thứ LLM nhìn thấy</title>
+<script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+:root{
+  --bg:#f7f6f2; --surface:#ffffff; --surface-2:#f0eee8; --text:#1f2328; --muted:#5b6370;
+  --border:#dcd8cf; --accent:#2f6fde; --accent-soft:#e3ecfc; --ok:#1f8a4c; --ok-soft:#e1f3e8;
+  --warn:#b4610e; --warn-soft:#fbeedd; --bad:#c23b3b; --bad-soft:#fae3e3;
+  --p1:#2f6fde; --p2:#8a4fd1; --p3:#1f8a4c; --p4:#b4610e; --p5:#0f8585; --p6:#c2357a;
+  --code-bg:#f0eee8; --shadow:0 1px 2px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04); --on-accent:#ffffff; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+    --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+    --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+    --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --p5:#4cc7c7; --p6:#ef7fb3; --code-bg:#252930; --shadow:none; --on-accent:#15171a; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+  --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+  --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+  --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --p5:#4cc7c7; --p6:#ef7fb3; --code-bg:#252930; --shadow:none; --on-accent:#15171a; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+a{color:var(--accent)}
+header.top{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
+.top-inner{max-width:1100px;margin:0 auto;padding:10px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.brand{font-weight:700;white-space:nowrap}
+.home{white-space:nowrap;text-decoration:none;color:var(--text);border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:4px 10px;font-size:14px}
+.home:hover{border-color:var(--accent);color:var(--accent)}
+nav.toc{display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin;flex:1}
+nav.toc a{white-space:nowrap;text-decoration:none;color:var(--muted);padding:4px 10px;border-radius:999px;font-size:14px}
+nav.toc a:hover,nav.toc a.active{background:var(--accent-soft);color:var(--accent)}
+button{font:inherit;cursor:pointer}
+button:disabled{opacity:.5;cursor:default}
+.theme-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:4px 10px;font-size:14px}
+main{max-width:1100px;margin:0 auto;padding:16px}
+section{padding:28px 0;border-bottom:1px solid var(--border);scroll-margin-top:64px}
+section:last-child{border-bottom:none}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.2;margin:16px 0 8px}
+h2{font-size:clamp(22px,3.5vw,28px);margin:0 0 12px}
+h3{font-size:18px;margin:20px 0 8px}
+p{margin:8px 0}
+.lead{font-size:18px;color:var(--muted);max-width:760px}
+.muted{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 10px 10px 0;margin:12px 0}
+.callout.ok{border-color:var(--ok);background:var(--ok-soft)}
+.callout.warn{border-color:var(--warn);background:var(--warn-soft)}
+.callout.bad{border-color:var(--bad);background:var(--bad-soft)}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);margin-right:4px}
+.tag.p1{background:var(--accent-soft);color:var(--p1)}
+.tag.p3{background:var(--ok-soft);color:var(--p3)}
+.tag.p4{background:var(--warn-soft);color:var(--p4)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+th{background:var(--surface-2);font-weight:600}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.mono,code{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:14px}
+code{background:var(--code-bg);padding:1px 5px;border-radius:5px}
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-word;margin:8px 0;font-size:14px;line-height:1.55}
+svg text{fill:var(--text);font-family:inherit}
+.diagram{width:100%;height:auto;display:block}
+.svgbox{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;overflow-x:auto}
+.svgbox svg{min-width:640px}
+/* Glossary */
+.gloss-tools{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+.gloss-tools input{flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
+.chip{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:999px;padding:4px 12px;font-size:14px}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.term h4{margin:0 0 4px;font-size:16px}
+.term .en{font-weight:400;color:var(--muted);font-size:14px}
+.term p{margin:4px 0;font-size:15px}
+.term .ex{font-size:14px;color:var(--muted)}
+.term .rel{font-size:13px;margin-top:6px}
+.term .rel a{font-size:13px}
+/* Stepper */
+.stepper{display:grid;grid-template-columns:240px 1fr;gap:12px}
+@media (max-width:720px){.stepper{grid-template-columns:1fr}}
+.stepper>div{min-width:0}
+.steps{display:flex;flex-direction:column;gap:6px}
+@media (max-width:720px){.steps{flex-direction:row;overflow-x:auto}}
+.steps button{text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px;white-space:nowrap}
+.steps button .n{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--surface-2);text-align:center;line-height:22px;font-size:12px;margin-right:6px}
+.steps button.on{border-color:var(--accent);background:var(--accent-soft)}
+.steps button.on .n{background:var(--accent);color:var(--on-accent)}
+.step-nav{display:flex;gap:8px;margin-top:12px}
+.step-nav button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 14px}
+details{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin:8px 0}
+details summary{cursor:pointer;font-weight:600}
+details[open] summary{margin-bottom:6px}
+.check{display:flex;gap:8px;align-items:flex-start;padding:6px 0}
+.check input{margin-top:6px}
+footer{max-width:1100px;margin:0 auto;padding:24px 16px;color:var(--muted);font-size:14px}
+.card>h4:first-child,.card>.tag+h4{margin-top:4px}
+.card h4{margin-bottom:6px}
+.m-only{display:none}
+/* Citations */
+sup.cite{font-size:max(11px,.72em);line-height:0;margin-left:1px;white-space:nowrap}
+sup.cite a{text-decoration:none;font-weight:600;padding:10px 3px;margin:-10px 0}
+sup.cite a:hover{text-decoration:underline}
+sup.cite a+a{margin-left:2px}
+ol.sources{padding-left:1.6em;margin:8px 0}
+ol.sources li{margin:0 0 10px;font-size:15px;overflow-wrap:anywhere;scroll-margin-top:64px}
+ol.sources li:target{background:var(--accent-soft);border-radius:6px}
+ol.sources .acc{color:var(--muted);font-size:14px}
+.vflow .box,.vflow .node,.vflow .ar{display:block}
+.vflow .ph{font-weight:700;font-size:14px;margin:4px 0 8px}
+.vflow .ph1{color:var(--p1)} .vflow .ph2{color:var(--p3)}
+.vflow .node{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px}
+.vflow .node b{display:block}
+.vflow .node span{font-size:13px;color:var(--muted)}
+.vflow .node.r{border:2px solid var(--p1)} .vflow .node.a{border:2px solid var(--p2)} .vflow .node.g{border:2px solid var(--p3)} .vflow .node.db{border:2px solid var(--p2)}
+.vflow .opt{background:var(--warn-soft);border-color:var(--p4)}
+.vflow .ar{text-align:center;color:var(--muted);font-size:13px;line-height:1.3;padding:4px 0}
+.vflow .box{border-radius:12px;padding:10px;margin-bottom:10px}
+.vflow .box1{background:var(--accent-soft)} .vflow .box2{background:var(--ok-soft)}
+.vflow .note{font-size:13px;color:var(--muted);margin-top:6px}
+.vflow .pair{display:flex;flex-direction:column;gap:2px;margin-bottom:8px}
+/* Context budget bar */
+.budget{position:relative;display:flex;height:34px;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--surface)}
+.budget span{display:block;height:100%;flex:none;transition:width .35s ease}
+.budget span+span{box-shadow:inset 1px 0 0 var(--surface)}
+.budget .rsv{background:repeating-linear-gradient(45deg,var(--surface-2) 0 6px,var(--border) 6px 9px)}
+.budget .mk{position:absolute;top:-1px;bottom:-1px;width:0;border-left:2px dashed var(--text);opacity:.7}
+.bscale{position:relative;display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin:3px 0 8px}
+.bscale span:nth-child(2){position:absolute;left:50%;transform:translateX(-50%)}
+table.leg{font-size:14px}
+table.leg td{padding:5px 8px}
+table.leg td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+table.leg tr.tot td{font-weight:700;border-top:2px solid var(--border)}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.sw.rsv{background:repeating-linear-gradient(45deg,var(--surface-2) 0 3px,var(--border) 3px 5px);border:1px solid var(--border)}
+.eq{font-size:13px;color:var(--muted);margin:6px 0 0;overflow-wrap:anywhere}
+.sim{display:grid;grid-template-columns:1fr 320px;gap:12px}
+@media (max-width:860px){.sim{grid-template-columns:1fr}}
+.sim>div{min-width:0}
+.sim-btns{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.sim-btns button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 12px;font-size:14px}
+.sim-btns button.act{border-color:var(--accent)}
+.sim-btns button.fix{border-color:var(--p3);background:var(--ok-soft)}
+.tgl{display:flex;gap:8px;align-items:flex-start;padding:4px 0;font-size:15px}
+.tgl input{margin-top:6px;width:18px;height:18px;flex:none}
+.stat{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:15px}
+.stat b{font-variant-numeric:tabular-nums;white-space:nowrap}
+.simlog{font-size:14px;margin:6px 0 0;padding-left:1.2em}
+.simlog li{margin:3px 0}
+.simmsg{margin:10px 0 0}
+.simmsg:empty{display:none}
+.mini h5{font-size:14px;margin:12px 0 4px;color:var(--muted)}
+/* Desktop SVG diagrams (viewBox 1000 wide) only from 1041px so their 11-unit labels render at ~11px or larger */
+@media (max-width:1040px){.d-only{display:none}.m-only{display:block}.vflow{max-width:560px;margin:0 auto}}
+@media (max-width:600px){
+  .brand{display:none} body{font-size:15px}
+  .theme-btn .lbl,.home .lbl{display:none}
+  main{padding:12px 16px}
+  section{padding:22px 0}
+  .card{padding:14px}
+  table.stack thead{display:none}
+  table.stack,table.stack tbody,table.stack tr,table.stack td{display:block;width:100%}
+  table.stack tr{border-bottom:1px solid var(--border);padding:8px 0}
+  table.stack tr:last-child{border-bottom:none}
+  table.stack td{border:none;padding:3px 12px}
+  table.stack td[data-label]::before{content:attr(data-label);display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  table.stack td:first-child{font-size:16px}
+  table.stack td:first-child::before{display:none}
+  .home,.theme-btn,nav.toc a,.chip,.step-nav button,.steps button,.sim-btns button{min-height:40px}
+  .home,.theme-btn,nav.toc a{display:inline-flex;align-items:center}
+  .tgl{min-height:40px}
+  pre,pre.mono,.term .ex{font-size:15px}
+  .vflow .node span{font-size:14px}
+  .term .rel a{font-size:14px;padding:10px 2px}
+  .eq,.bscale{font-size:13px}
+  table.leg{font-size:14px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <a class="home" href="../" aria-label="Về trang tất cả chủ đề">←<span class="lbl"> Chủ đề</span></a>
+    <span class="brand">Context engineering</span>
+    <nav class="toc" id="toc">
+      <a href="#tong-quan">1. Tổng quan</a>
+      <a href="#flow">2. Flow &amp; chiến lược</a>
+      <a href="#vi-du">3. Ví dụ từng bước</a>
+      <a href="#mo-phong">4. Ngân sách context</a>
+      <a href="#khai-niem">5. Khái niệm</a>
+      <a href="#quan-he">6. Mối quan hệ</a>
+      <a href="#so-sanh">7. So sánh &amp; đánh đổi</a>
+      <a href="#loi">8. Lỗi &amp; chẩn đoán</a>
+      <a href="#danh-gia">9. Đánh giá</a>
+      <a href="#lo-trinh">10. Lộ trình</a>
+      <a href="#nguon">Nguồn</a>
+    </nav>
+    <button class="theme-btn" id="themeBtn" aria-label="Đổi giao diện sáng/tối">◐<span class="lbl"> Giao diện</span></button>
+  </div>
+</header>
+
+<main>
+
+<!-- 1. TỔNG QUAN -->
+<section id="tong-quan">
+  <h1>Context engineering: quản lý thứ LLM nhìn thấy</h1>
+  <p class="lead">LLM chỉ "biết" những gì nằm trong context ở lần gọi đó. <b>Context engineering</b> là việc chọn lọc và duy trì tập token tốt nhất để đưa vào model ở mỗi lần gọi.<sup class="cite"><a href="#src-1">[1]</a></sup> Tập token đó không chỉ có lời dặn, mà còn có tool definitions, lịch sử hội thoại, kết quả tool, tài liệu truy xuất và bộ nhớ.</p>
+  <p class="muted">Anthropic coi context engineering là bước phát triển tự nhiên tiếp theo của prompt engineering. Nguyên tắc họ đưa ra: tìm <b>tập token nhỏ nhất nhưng giàu tín hiệu nhất</b> để tăng tối đa khả năng đạt kết quả mong muốn.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+
+  <h3>Khác prompt engineering thế nào?</h3>
+  <div class="grid g2">
+    <div class="card"><span class="tag p1">Prompt engineering</span><h4>Viết lời dặn cho tốt</h4><p>Các cách viết và sắp xếp lời dặn cho LLM để được kết quả tốt nhất.<sup class="cite"><a href="#src-1">[1]</a></sup> Trọng tâm thường là system prompt và cách đặt câu hỏi.</p><p class="muted">Xem trang <a href="../prompt-engineering/">Prompt engineering</a>.</p></div>
+    <div class="card"><span class="tag p3">Context engineering</span><h4>Quản lý cả "bàn làm việc" của model</h4><p>Viết prompt là một việc làm riêng lẻ. Context engineering thì <b>lặp lại mỗi lần</b> hệ thống quyết định đưa gì cho model.<sup class="cite"><a href="#src-1">[1]</a></sup> Với agent chạy nhiều vòng, câu hỏi chính đổi thành: lượt này nên giữ gì, bỏ gì, lấy thêm gì?</p><p class="muted">Prompt engineering là một phần bên trong context engineering.</p></div>
+  </div>
+
+  <h3>Vì sao cần: context là tài nguyên có hạn</h3>
+  <div class="grid g3">
+    <div class="card"><span class="tag p4">Giới hạn 1</span><h4>Cửa sổ có trần</h4><p>Context window là "bộ nhớ làm việc" của model. Mọi thứ trong request đều tính vào đó: system prompt, tin nhắn, kết quả tool, tài liệu, tool definitions, và cả phần model viết ra.<sup class="cite"><a href="#src-2">[2]</a></sup></p><p class="muted">Nếu riêng phần input đã vượt cửa sổ, API của Claude trả lỗi 400 "prompt is too long".<sup class="cite"><a href="#src-2">[2]</a></sup> Token là gì: xem <a href="../llm-fundamentals/">Cách LLM hoạt động</a>.</p></div>
+    <div class="card"><span class="tag p4">Giới hạn 2</span><h4>Sự chú ý bị loãng</h4><p>Kiến trúc transformer cho mỗi token "nhìn" mọi token khác, tạo ra n² cặp quan hệ với n token. Anthropic gọi đây là "ngân sách chú ý" (attention budget): mỗi token mới đều tiêu một phần ngân sách này.<sup class="cite"><a href="#src-1">[1]</a></sup></p><p class="muted">Thông tin nằm ở <b>giữa</b> một context dài dễ bị bỏ sót hơn so với ở đầu hoặc cuối.<sup class="cite"><a href="#src-4">[4]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Giới hạn 3</span><h4>Context rot</h4><p>Số token càng tăng thì độ chính xác và khả năng nhớ lại thông tin càng giảm. Hiện tượng này gọi là <i>context rot</i>.<sup class="cite"><a href="#src-2">[2]</a></sup></p><p class="muted">Chroma thử 18 LLM và thấy hiệu năng thay đổi đáng kể theo độ dài input, kể cả với việc đơn giản. Trên bộ LongMemEval, prompt tập trung khoảng 300 token cho kết quả tốt hơn prompt đầy đủ khoảng 113.000 token ở mọi model được thử.<sup class="cite"><a href="#src-3">[3]</a></sup></p></div>
+  </div>
+  <div class="callout"><b>Cửa sổ to hơn có giải quyết được không?</b> Không hoàn toàn. Anthropic nhận định rằng trong tương lai gần, cửa sổ ở mọi kích thước đều sẽ gặp vấn đề context bị "ô nhiễm" và thông tin kém liên quan.<sup class="cite"><a href="#src-1">[1]</a></sup> Cửa sổ của các model Claude hiện là 200.000 hoặc 1 triệu token, tùy model.<sup class="cite"><a href="#src-2">[2]</a></sup> Dù lớn, nhét đầy vẫn làm chất lượng giảm và chi phí tăng.</div>
+
+  <h3>Hình dung bằng ví dụ đời thường</h3>
+  <div class="grid g2">
+    <div class="card"><h4>💻 CPU và RAM</h4><p>Karpathy ví LLM như CPU, còn context window như RAM, tức bộ nhớ làm việc của model.<sup class="cite"><a href="#src-5">[5]</a></sup></p><p class="muted">RAM có hạn, nên hệ điều hành phải quyết định nạp gì vào, đẩy gì ra ổ đĩa. Context engineering làm việc tương tự cho LLM.</p></div>
+    <div class="card"><h4>🗂️ Bàn làm việc của chuyên viên</h4><p>Bàn chỉ đủ chỗ cho vài tập hồ sơ. Chuyên viên giỏi không đổ cả tủ hồ sơ lên bàn. Họ lấy đúng tập cần, ghi chú tiến độ vào sổ, cất hồ sơ đã xong, và nhờ đồng nghiệp tra cứu những việc lớn rồi chỉ nhận lại bản tóm tắt.</p><p class="muted">Bốn việc đó tương ứng với bốn chiến lược ở mục 2: chọn lọc, ghi chú ra ngoài, nén và cô lập.</p></div>
+  </div>
+</section>
+
+<!-- 2. FLOW -->
+<section id="flow">
+  <h2>2. Flow: context được ghép thế nào mỗi lượt</h2>
+  <p>Ở mỗi lần gọi model, phần mềm bao quanh LLM (gọi là <a href="../harness/">harness</a>) ghép context từ nhiều nguồn rồi gửi đi. Model trả về câu trả lời hoặc một lời gọi tool. Nếu là lời gọi tool, harness chạy tool và đưa kết quả trở lại context cho lượt sau. Các lượt cũ được giữ nguyên, nên context cứ lớn dần.<sup class="cite"><a href="#src-2">[2]</a></sup> Khi gần đầy, harness áp dụng các chiến lược nén hoặc dọn dẹp.</p>
+
+  <div class="vflow m-only" aria-label="Flow ghép context mỗi lượt (dạng dọc)">
+    <div class="box box1">
+      <div class="ph ph1">CÁC NGUỒN CÓ THỂ ĐƯA VÀO</div>
+      <div class="node"><b>System prompt</b><span>vai trò, quy tắc, ví dụ mẫu</span></div>
+      <div class="node" style="margin-top:6px"><b>Tool definitions</b><span>tên, mô tả, tham số của từng tool</span></div>
+      <div class="node" style="margin-top:6px"><b>Bộ nhớ / ghi chú</b><span>file ghi chú nằm ngoài context</span></div>
+      <div class="node" style="margin-top:6px"><b>Tài liệu truy xuất</b><span>RAG, đọc file</span></div>
+      <div class="node" style="margin-top:6px"><b>Lịch sử hội thoại</b><span>các lượt hỏi và trả lời trước</span></div>
+      <div class="node" style="margin-top:6px"><b>Kết quả tool</b><span>log, kết quả tìm kiếm, dữ liệu</span></div>
+    </div>
+    <div class="ar">↓ chọn lọc và ghép (context engineering)</div>
+    <div class="node a"><b>Context window</b><span>có giới hạn; phần trả lời cũng tính vào đây</span></div>
+    <div class="ar">↓</div>
+    <div class="node g"><b>LLM</b></div>
+    <div class="ar">↓</div>
+    <div class="node"><b>Đầu ra</b><span>câu trả lời, hoặc lời gọi tool</span></div>
+    <div class="ar">↓ nếu là lời gọi tool</div>
+    <div class="node"><b>Harness chạy tool</b><span>kết quả quay lại mục "Kết quả tool" cho lượt sau</span></div>
+    <div class="ar">↓ khi context gần đầy</div>
+    <div class="node opt"><b>Nén và dọn dẹp</b><span>compaction · xóa kết quả tool cũ · ghi chú ra ngoài</span></div>
+  </div>
+  <div class="svgbox d-only">
+  <svg class="diagram" viewBox="0 0 1000 470" role="img" aria-label="Flow ghép context mỗi lượt">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+    </defs>
+    <rect x="10" y="10" width="225" height="410" rx="14" fill="var(--accent-soft)" stroke="var(--p1)" stroke-opacity=".4"/>
+    <text x="24" y="34" font-weight="700" font-size="13" style="fill:var(--p1)">NGUỒN CÓ THỂ ĐƯA VÀO</text>
+    <g font-size="14">
+      <rect x="22" y="48" width="200" height="50" rx="9" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/><text x="122" y="70" text-anchor="middle" font-weight="600">System prompt</text><text x="122" y="88" text-anchor="middle" font-size="12" style="fill:var(--muted)">vai trò, quy tắc, ví dụ</text>
+      <rect x="22" y="110" width="200" height="50" rx="9" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/><text x="122" y="132" text-anchor="middle" font-weight="600">Tool definitions</text><text x="122" y="150" text-anchor="middle" font-size="12" style="fill:var(--muted)">tên, mô tả, tham số</text>
+      <rect x="22" y="172" width="200" height="50" rx="9" fill="var(--surface)" stroke="var(--p3)" stroke-width="2"/><text x="122" y="194" text-anchor="middle" font-weight="600">Bộ nhớ / ghi chú</text><text x="122" y="212" text-anchor="middle" font-size="12" style="fill:var(--muted)">file ngoài context</text>
+      <rect x="22" y="234" width="200" height="50" rx="9" fill="var(--surface)" stroke="var(--p4)" stroke-width="2"/><text x="122" y="256" text-anchor="middle" font-weight="600">Tài liệu truy xuất</text><text x="122" y="274" text-anchor="middle" font-size="12" style="fill:var(--muted)">RAG, đọc file</text>
+      <rect x="22" y="296" width="200" height="50" rx="9" fill="var(--surface)" stroke="var(--p5)" stroke-width="2"/><text x="122" y="318" text-anchor="middle" font-weight="600">Lịch sử hội thoại</text><text x="122" y="336" text-anchor="middle" font-size="12" style="fill:var(--muted)">các lượt trước</text>
+      <rect x="22" y="358" width="200" height="50" rx="9" fill="var(--surface)" stroke="var(--p6)" stroke-width="2"/><text x="122" y="380" text-anchor="middle" font-weight="600">Kết quả tool</text><text x="122" y="398" text-anchor="middle" font-size="12" style="fill:var(--muted)">log, dữ liệu, tìm kiếm</text>
+      <rect x="290" y="168" width="180" height="96" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="380" y="200" text-anchor="middle" font-weight="600">Chọn lọc &amp; ghép</text><text x="380" y="220" text-anchor="middle" font-size="12" style="fill:var(--muted)">đưa gì vào, bỏ gì ra</text><text x="380" y="240" text-anchor="middle" font-size="12" style="fill:var(--muted)">(context engineering)</text>
+      <rect x="530" y="168" width="170" height="96" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/><text x="615" y="200" text-anchor="middle" font-weight="600">Context window</text><text x="615" y="220" text-anchor="middle" font-size="12" style="fill:var(--muted)">có giới hạn; phần trả</text><text x="615" y="238" text-anchor="middle" font-size="12" style="fill:var(--muted)">lời cũng tính vào đây</text>
+      <rect x="750" y="186" width="90" height="60" rx="10" fill="var(--surface)" stroke="var(--p3)" stroke-width="2"/><text x="795" y="221" text-anchor="middle" font-weight="700">LLM</text>
+      <rect x="870" y="176" width="120" height="80" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="930" y="204" text-anchor="middle" font-weight="600">Đầu ra</text><text x="930" y="224" text-anchor="middle" font-size="12" style="fill:var(--muted)">câu trả lời</text><text x="930" y="242" text-anchor="middle" font-size="12" style="fill:var(--muted)">hoặc gọi tool</text>
+      <rect x="600" y="396" width="180" height="56" rx="10" fill="var(--surface)" stroke="var(--p6)" stroke-width="2"/><text x="690" y="420" text-anchor="middle" font-weight="600">Harness chạy tool</text><text x="690" y="440" text-anchor="middle" font-size="12" style="fill:var(--muted)">lấy kết quả</text>
+      <rect x="500" y="30" width="250" height="70" rx="10" fill="var(--warn-soft)" stroke="var(--p4)"/><text x="625" y="56" text-anchor="middle" font-weight="600">Nén và dọn dẹp khi gần đầy</text><text x="625" y="78" text-anchor="middle" font-size="12" style="fill:var(--muted)">compaction · xóa kết quả tool cũ · ghi chú</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="1.6" fill="none" marker-end="url(#arr)">
+      <path d="M222 73 C 255 73, 255 190, 288 196"/>
+      <path d="M222 135 C 250 135, 255 200, 288 206"/>
+      <path d="M222 197 L288 212"/>
+      <path d="M222 259 L288 222"/>
+      <path d="M222 321 C 250 321, 255 236, 288 230"/>
+      <path d="M222 383 C 258 383, 258 246, 288 240"/>
+      <line x1="470" y1="216" x2="528" y2="216" stroke-width="2"/>
+      <line x1="700" y1="216" x2="748" y2="216" stroke-width="2"/>
+      <line x1="840" y1="216" x2="868" y2="216" stroke-width="2"/>
+      <path d="M930 256 L930 424 L782 424" stroke="var(--p6)" stroke-width="2"/>
+      <path d="M600 424 C 420 424, 330 383, 224 383" stroke="var(--p6)" stroke-width="2"/>
+      <path d="M615 166 L615 102" stroke="var(--p4)" stroke-dasharray="5 4"/>
+      <path d="M500 65 C 400 65, 380 110, 380 166" stroke="var(--p4)" stroke-dasharray="5 4"/>
+    </g>
+    <g font-size="12">
+      <text x="922" y="320" text-anchor="end" style="fill:var(--p6)">nếu gọi tool</text>
+      <text x="300" y="448" style="fill:var(--p6)">kết quả quay lại context lượt sau</text>
+      <text x="624" y="140" style="fill:var(--p4)">gần đầy</text>
+      <text x="316" y="118" style="fill:var(--p4)">nén, dọn lại</text>
+    </g>
+  </svg>
+  </div>
+
+  <h3>Sáu thành phần của context</h3>
+  <p>Theo tài liệu Claude, tất cả các phần dưới đây đều chiếm chỗ trong cùng một context window.<sup class="cite"><a href="#src-2">[2]</a></sup></p>
+  <div class="grid g3">
+    <div class="card"><span class="tag" style="color:var(--p1)">System prompt</span><p>Vai trò, quy tắc, ví dụ mẫu. Nên viết "đúng độ cao": đủ cụ thể để dẫn hướng, nhưng đủ linh hoạt để model tự suy luận. Tránh hai cực: viết các nhánh if-else cứng nhắc, hoặc viết quá chung chung.<sup class="cite"><a href="#src-1">[1]</a></sup></p><p class="muted">Ví dụ mẫu: chọn vài ví dụ đa dạng, tiêu biểu thay vì liệt kê mọi trường hợp ngoại lệ.<sup class="cite"><a href="#src-1">[1]</a></sup></p></div>
+    <div class="card"><span class="tag" style="color:var(--p2)">Tool definitions</span><p>Tên, mô tả, tham số của từng tool. Bộ tool quá rộng, chồng chéo chức năng là lỗi hay gặp. Nên giữ một bộ tool tối thiểu đủ dùng.<sup class="cite"><a href="#src-1">[1]</a></sup></p><p class="muted">Một cấu hình gồm 5 MCP server có thể tốn khoảng 55.000 token chỉ cho tool definitions, trước khi làm bất cứ việc gì.<sup class="cite"><a href="#src-9">[9]</a></sup> Xem <a href="../tool-calling-structured-output/">Tool calling</a>.</p></div>
+    <div class="card"><span class="tag" style="color:var(--p3)">Bộ nhớ</span><p>Thông tin lưu bên ngoài context (file, database) và chỉ đọc vào khi cần. Memory tool của Claude lưu các file trong thư mục <code>/memories</code> do ứng dụng của bạn quản lý.<sup class="cite"><a href="#src-8">[8]</a></sup></p><p class="muted">Xem <a href="../agent-memory/">Bộ nhớ của agent</a>.</p></div>
+    <div class="card"><span class="tag p4">Tài liệu truy xuất</span><p>Các đoạn tài liệu được tìm ra và đưa vào, như trong <a href="../rag/">RAG</a>. Cách nạp trước và cách nạp đúng lúc (just-in-time) được so sánh ở mục 7.</p></div>
+    <div class="card"><span class="tag" style="color:var(--p5)">Lịch sử hội thoại</span><p>Mỗi tin nhắn của người dùng và câu trả lời của model được giữ lại nguyên vẹn qua các lượt.<sup class="cite"><a href="#src-2">[2]</a></sup> Đây là phần lớn lên đều đặn nhất.</p></div>
+    <div class="card"><span class="tag" style="color:var(--p6)">Kết quả tool</span><p>Đầu ra của tool: nội dung file, log, kết quả tìm kiếm. Thường là phần phình nhanh nhất, vì agent có thể chạy hàng trăm lượt với các lời gọi tool tốn nhiều token.<sup class="cite"><a href="#src-5">[5]</a></sup></p></div>
+  </div>
+
+  <h3>Năm chiến lược chính</h3>
+  <p>LangChain gom các kỹ thuật thành bốn nhóm: <b>ghi ra</b> (write: lưu ra ngoài context), <b>chọn</b> (select: kéo vào đúng thứ cần), <b>nén</b> (compress: chỉ giữ token cần thiết) và <b>cô lập</b> (isolate: chia nhỏ context).<sup class="cite"><a href="#src-5">[5]</a></sup> Năm chiến lược dưới đây nằm trong bốn nhóm đó.</p>
+  <div class="grid g2">
+    <div class="card"><span class="tag p1">Chọn · select</span><h4>Just-in-time retrieval</h4><p>Agent không nạp hết dữ liệu từ đầu. Nó chỉ giữ các "định danh nhẹ" như đường dẫn file, câu truy vấn đã lưu, đường link, rồi dùng tool để nạp dữ liệu vào lúc cần.<sup class="cite"><a href="#src-1">[1]</a></sup></p><p class="muted">Tool search là cùng ý tưởng áp dụng cho tool definitions: chỉ nạp 3–5 tool cần dùng, thường giảm hơn 85% số token cho tool definitions.<sup class="cite"><a href="#src-9">[9]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Nén · compress</span><h4>Compaction (tóm tắt)</h4><p>Khi hội thoại gần chạm giới hạn, model tóm tắt nội dung cũ rồi bắt đầu một context mới từ bản tóm tắt. Bản tóm tắt nên giữ quyết định quan trọng, lỗi chưa xử lý và chi tiết cần thiết.<sup class="cite"><a href="#src-1">[1]</a></sup></p><p class="muted">Trên API của Claude, compaction thay các lượt cũ bằng một bản tóm tắt, và có thể giữ nguyên văn vài lượt gần nhất.<sup class="cite"><a href="#src-6">[6]</a></sup></p></div>
+    <div class="card"><span class="tag p3">Ghi ra · write</span><h4>Ghi chú có cấu trúc</h4><p>Agent thường xuyên ghi chú ra một nơi lưu trữ bên ngoài context, ví dụ file <code>NOTES.md</code>. Sau khi context bị reset, nó đọc lại ghi chú để làm tiếp.<sup class="cite"><a href="#src-1">[1]</a></sup></p><p class="muted">Manus cho agent ghi và cập nhật file <code>todo.md</code>, để mục tiêu luôn được nhắc lại ở cuối context.<sup class="cite"><a href="#src-13">[13]</a></sup></p></div>
+    <div class="card"><span class="tag" style="color:var(--p2)">Cô lập · isolate</span><h4>Sub-agent</h4><p>Một sub-agent làm một việc hẹp trong context window riêng, sạch sẽ. Nó có thể dùng rất nhiều token để khám phá, nhưng chỉ trả về agent chính một bản tóm tắt ngắn, thường 1.000–2.000 token.<sup class="cite"><a href="#src-1">[1]</a></sup></p><p class="muted">Đổi lại, tổng số token tăng mạnh (mục 7). Xem <a href="../multi-agent-agentic-rag/">Multi-agent</a>.</p></div>
+    <div class="card"><span class="tag p4">Nén · compress</span><h4>Cắt bớt và dọn kết quả tool</h4><p><b>Tại nguồn:</b> tool nên có phân trang, lọc, cắt bớt với giá trị mặc định hợp lý. Claude Code mặc định giới hạn mỗi kết quả tool ở 25.000 token.<sup class="cite"><a href="#src-10">[10]</a></sup></p><p><b>Sau khi dùng:</b> kết quả tool cũ đã được xử lý thì có thể xóa và thay bằng một dòng đánh dấu. Anthropic coi đây là dạng compaction an toàn và nhẹ nhất.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-7">[7]</a></sup></p></div>
+  </div>
+</section>
+
+<!-- 3. VÍ DỤ -->
+<section id="vi-du">
+  <h2>3. Ví dụ đi qua từng bước</h2>
+  <p>Một công ty 2.000 nhân viên dùng một <b>agent hỗ trợ IT nội bộ</b>. Một nhân viên báo: "Đổi mật khẩu xong thì laptop không vào được VPN." Agent làm việc qua nhiều chục lượt. Bấm từng bước để xem context thay đổi thế nào.</p>
+  <p class="muted">Mọi số token dưới đây là <b>minh họa</b>, giả định cửa sổ 200.000 token và dành sẵn 16.000 token cho câu trả lời. Các số được JS cộng lại để luôn khớp tổng.</p>
+  <div class="stepper card">
+    <div class="steps" id="steps"></div>
+    <div>
+      <div id="stepBody"></div>
+      <div class="step-nav"><button id="prevStep">← Trước</button><button id="nextStep">Tiếp →</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. MÔ PHỎNG -->
+<section id="mo-phong">
+  <h2>4. Mô phỏng: ngân sách context</h2>
+  <p>Thanh dưới đây là một context window 200.000 token, chia theo thành phần. Thêm lượt hội thoại hoặc gọi tool để thấy thanh đầy dần. Sau đó thử các chiến lược để thấy thanh giảm.</p>
+  <p class="muted">Kích thước từng phần là <b>minh họa</b>. Phép cộng là thật: JS cộng từng phần và hiển thị phép tính. Vạch đứt ở giữa thanh là mốc 100.000 token, ngưỡng mặc định để tính năng context editing của Claude bắt đầu xóa kết quả tool cũ.<sup class="cite"><a href="#src-7">[7]</a></sup></p>
+  <div class="sim">
+    <div class="card">
+      <div id="simBar"></div>
+      <h4 style="margin-top:14px">Thêm vào context</h4>
+      <div class="sim-btns">
+        <button class="act" data-a="turn">+ 1 lượt hỏi đáp</button>
+        <button class="act" data-a="tool">+ 1 lượt gọi tool</button>
+        <button class="act" data-a="retrieve">+ Truy xuất tài liệu</button>
+      </div>
+      <h4>Chiến lược giảm tải</h4>
+      <div class="sim-btns">
+        <button class="fix" data-a="clear">Xóa kết quả tool cũ</button>
+        <button class="fix" data-a="compact">Compaction</button>
+        <button class="fix" data-a="notes">Ghi chú ra ngoài</button>
+        <button class="fix" data-a="sub">Giao cho sub-agent</button>
+        <button data-a="reset">↺ Làm lại</button>
+      </div>
+      <div id="simMsg" class="simmsg" role="status" aria-live="polite"></div>
+    </div>
+    <div>
+      <div class="card">
+        <h4>Cấu hình</h4>
+        <label class="tgl"><input type="checkbox" id="cfgToolSearch"><span><b>Tool search:</b> chỉ nạp tool cần dùng (tool definitions 18.000 → 3.000)</span></label>
+        <label class="tgl"><input type="checkbox" id="cfgTrunc"><span><b>Cắt bớt kết quả tool:</b> mỗi kết quả 12.000 → 2.000</span></label>
+        <label class="tgl"><input type="checkbox" id="cfgJit"><span><b>Just-in-time:</b> đọc danh mục rồi lấy đúng đoạn cần (20.000 → 3.400, nhưng tốn thêm 1 lần gọi)</span></label>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <h4>Chi phí cộng dồn</h4>
+        <div class="stat"><span>Số lần gọi model</span><b id="stReq">0</b></div>
+        <div class="stat"><span>Input token đã gửi (cộng dồn)</span><b id="stCum">0</b></div>
+        <div class="stat"><span>Token sub-agent dùng trong cửa sổ riêng</span><b id="stSub">0</b></div>
+        <div class="stat"><span>Tổng token đã xử lý</span><b id="stAll">0</b></div>
+        <p class="muted" style="font-size:14px">Mỗi lần gọi, toàn bộ context hiện tại được gửi lại làm input.<sup class="cite"><a href="#src-2">[2]</a></sup> Vì vậy chi phí cộng dồn tăng nhanh hơn nhiều so với kích thước context.</p>
+        <h4 style="margin-top:10px">Nhật ký</h4>
+        <ol class="simlog" id="simLog" reversed></ol>
+      </div>
+    </div>
+  </div>
+  <div class="callout warn"><b>Điều mô phỏng không thể hiện được:</b> chất lượng câu trả lời. Ta biết chất lượng có xu hướng giảm khi context dài và nhiễu,<sup class="cite"><a href="#src-2">[2]</a><a href="#src-3">[3]</a></sup> và compaction có thể làm mất chi tiết quan trọng.<sup class="cite"><a href="#src-1">[1]</a></sup> Mức giảm cụ thể phụ thuộc vào model và tác vụ, nên trang này không vẽ thành con số. Phải đo trên dữ liệu thật (mục 9).</div>
+</section>
+
+<!-- 5. KHÁI NIỆM -->
+<section id="khai-niem">
+  <h2>5. Từ điển khái niệm</h2>
+  <p>Mỗi thẻ có định nghĩa ngắn, ví dụ, và liên kết sang khái niệm liên quan. Lọc theo nhóm hoặc gõ để tìm (gõ không dấu cũng được).</p>
+  <div class="gloss-tools">
+    <input id="glossSearch" type="search" placeholder="Tìm khái niệm… (vd: compaction, nen, cache)">
+  </div>
+  <div class="gloss-tools" id="glossChips"></div>
+  <div class="grid g3" id="glossGrid"></div>
+</section>
+
+<!-- 6. MỐI QUAN HỆ -->
+<section id="quan-he">
+  <h2>6. Bản đồ mối quan hệ</h2>
+  <p>Mỗi chiến lược tác động lên một thành phần cụ thể. Tất cả thành phần cùng đổ vào một context window, và độ "gọn" của context quyết định chất lượng lẫn chi phí.</p>
+  <div class="vflow m-only" aria-label="Bản đồ quan hệ (dạng dọc)">
+    <div class="box box1">
+      <div class="ph ph1">CHIẾN LƯỢC → THÀNH PHẦN NÓ TÁC ĐỘNG</div>
+      <div class="pair"><div class="node"><b>Viết "đúng độ cao"</b></div><div class="ar">↓</div><div class="node r"><b>System prompt</b></div></div>
+      <div class="pair"><div class="node"><b>Bộ tool tối thiểu · tool search</b></div><div class="ar">↓</div><div class="node a"><b>Tool definitions</b></div></div>
+      <div class="pair"><div class="node"><b>Ghi chú ra ngoài</b></div><div class="ar">↓</div><div class="node g"><b>Bộ nhớ / ghi chú</b></div></div>
+      <div class="pair"><div class="node"><b>Just-in-time retrieval</b></div><div class="ar">↓</div><div class="node" style="border:2px solid var(--p4)"><b>Tài liệu truy xuất</b></div></div>
+      <div class="pair"><div class="node"><b>Compaction</b></div><div class="ar">↓</div><div class="node" style="border:2px solid var(--p5)"><b>Lịch sử hội thoại</b></div></div>
+      <div class="pair"><div class="node"><b>Cắt bớt · xóa kết quả cũ · sub-agent</b><span>sub-agent chỉ trả về bản tóm tắt</span></div><div class="ar">↓</div><div class="node" style="border:2px solid var(--p6)"><b>Kết quả tool</b></div></div>
+    </div>
+    <div class="ar">↓ tất cả cùng đổ vào</div>
+    <div class="node a"><b>Context window</b><span>prompt caching giảm giá phần đầu lặp lại, nhưng không giảm chỗ chiếm</span></div>
+    <div class="ar">↓ tùy độ gọn</div>
+    <div class="node" style="border:2px solid var(--ok);background:var(--ok-soft)"><b>Gọn, tín hiệu cao</b><span>đúng hơn, rẻ hơn</span></div>
+    <div class="node" style="margin-top:6px;border:2px solid var(--bad);background:var(--bad-soft)"><b>Đầy, nhiễu</b><span>context rot, dễ sai, tốn tiền</span></div>
+  </div>
+  <div class="svgbox d-only">
+  <svg class="diagram" viewBox="0 0 1000 500" role="img" aria-label="Bản đồ quan hệ giữa chiến lược, thành phần context và kết quả">
+    <defs>
+      <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+    </defs>
+    <g font-size="12" font-weight="700" style="fill:var(--muted)">
+      <text x="20" y="16">CHIẾN LƯỢC</text><text x="330" y="16">THÀNH PHẦN</text>
+    </g>
+    <g font-size="13">
+      <rect x="20" y="26" width="230" height="46" rx="9" fill="var(--warn-soft)" stroke="var(--p4)"/><text x="135" y="54" text-anchor="middle" font-weight="600">Viết "đúng độ cao"</text>
+      <rect x="20" y="92" width="230" height="46" rx="9" fill="var(--warn-soft)" stroke="var(--p4)"/><text x="135" y="120" text-anchor="middle" font-weight="600">Bộ tool tối thiểu · tool search</text>
+      <rect x="20" y="158" width="230" height="46" rx="9" fill="var(--warn-soft)" stroke="var(--p4)"/><text x="135" y="186" text-anchor="middle" font-weight="600">Ghi chú ra ngoài</text>
+      <rect x="20" y="224" width="230" height="46" rx="9" fill="var(--warn-soft)" stroke="var(--p4)"/><text x="135" y="252" text-anchor="middle" font-weight="600">Just-in-time retrieval</text>
+      <rect x="20" y="290" width="230" height="46" rx="9" fill="var(--warn-soft)" stroke="var(--p4)"/><text x="135" y="318" text-anchor="middle" font-weight="600">Compaction (tóm tắt)</text>
+      <rect x="20" y="356" width="230" height="46" rx="9" fill="var(--warn-soft)" stroke="var(--p4)"/><text x="135" y="384" text-anchor="middle" font-weight="600">Cắt bớt · xóa kết quả cũ</text>
+      <rect x="20" y="422" width="230" height="46" rx="9" fill="var(--warn-soft)" stroke="var(--p4)"/><text x="135" y="443" text-anchor="middle" font-weight="600">Sub-agent</text><text x="135" y="460" text-anchor="middle" font-size="11" style="fill:var(--muted)">cửa sổ riêng, trả tóm tắt</text>
+
+      <rect x="330" y="26" width="200" height="46" rx="9" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/><text x="430" y="54" text-anchor="middle" font-weight="600">System prompt</text>
+      <rect x="330" y="104" width="200" height="46" rx="9" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/><text x="430" y="132" text-anchor="middle" font-weight="600">Tool definitions</text>
+      <rect x="330" y="182" width="200" height="46" rx="9" fill="var(--surface)" stroke="var(--p3)" stroke-width="2"/><text x="430" y="210" text-anchor="middle" font-weight="600">Bộ nhớ / ghi chú</text>
+      <rect x="330" y="260" width="200" height="46" rx="9" fill="var(--surface)" stroke="var(--p4)" stroke-width="2"/><text x="430" y="288" text-anchor="middle" font-weight="600">Tài liệu truy xuất</text>
+      <rect x="330" y="338" width="200" height="46" rx="9" fill="var(--surface)" stroke="var(--p5)" stroke-width="2"/><text x="430" y="366" text-anchor="middle" font-weight="600">Lịch sử hội thoại</text>
+      <rect x="330" y="416" width="200" height="46" rx="9" fill="var(--surface)" stroke="var(--p6)" stroke-width="2"/><text x="430" y="444" text-anchor="middle" font-weight="600">Kết quả tool</text>
+
+      <rect x="620" y="190" width="170" height="110" rx="12" fill="var(--surface)" stroke="var(--p2)" stroke-width="2.5"/><text x="705" y="236" text-anchor="middle" font-weight="700">Context window</text><text x="705" y="258" text-anchor="middle" font-size="12" style="fill:var(--muted)">có hạn, mọi phần</text><text x="705" y="276" text-anchor="middle" font-size="12" style="fill:var(--muted)">đều chiếm chỗ</text>
+      <rect x="610" y="40" width="190" height="66" rx="10" fill="var(--surface)" stroke="var(--border)" stroke-dasharray="5 4"/><text x="705" y="66" text-anchor="middle" font-weight="600">Prompt caching</text><text x="705" y="86" text-anchor="middle" font-size="11" style="fill:var(--muted)">phần đầu ổn định: tools → system</text>
+
+      <rect x="840" y="150" width="148" height="70" rx="10" fill="var(--ok-soft)" stroke="var(--ok)" stroke-width="2"/><text x="914" y="180" text-anchor="middle" font-weight="600">Gọn, tín hiệu cao</text><text x="914" y="200" text-anchor="middle" font-size="12" style="fill:var(--muted)">đúng hơn, rẻ hơn</text>
+      <rect x="840" y="270" width="148" height="70" rx="10" fill="var(--bad-soft)" stroke="var(--bad)" stroke-width="2"/><text x="914" y="300" text-anchor="middle" font-weight="600">Đầy, nhiễu</text><text x="914" y="320" text-anchor="middle" font-size="12" style="fill:var(--muted)">context rot, dễ sai</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="1.6" fill="none" marker-end="url(#arr2)">
+      <line x1="250" y1="49" x2="328" y2="49"/>
+      <line x1="250" y1="115" x2="328" y2="127"/>
+      <line x1="250" y1="181" x2="328" y2="205"/>
+      <line x1="250" y1="247" x2="328" y2="283"/>
+      <line x1="250" y1="313" x2="328" y2="361"/>
+      <line x1="250" y1="379" x2="328" y2="434"/>
+      <line x1="250" y1="445" x2="328" y2="445"/>
+      <path d="M530 49 C 580 49, 590 220, 618 222"/>
+      <path d="M530 127 C 575 127, 590 232, 618 234"/>
+      <path d="M530 205 L618 243"/>
+      <path d="M530 283 L618 254"/>
+      <path d="M530 361 C 575 361, 590 268, 618 266"/>
+      <path d="M530 439 C 580 439, 590 280, 618 278"/>
+      <path d="M705 106 L705 188" stroke-dasharray="5 4"/>
+      <path d="M790 228 L838 190"/>
+      <path d="M790 266 L838 300"/>
+    </g>
+    <g font-size="11" style="fill:var(--muted)">
+      <text x="712" y="140">giảm giá phần lặp lại,</text><text x="712" y="155">không giảm chỗ chiếm</text>
+    </g>
+  </svg>
+  </div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h4>Những quan hệ quan trọng nhất</h4>
+      <ul>
+        <li><b>Mọi phần đều cạnh tranh cùng một ngân sách.</b> Thêm 50.000 token tool definitions thì còn ít chỗ hơn cho tài liệu và lịch sử.<sup class="cite"><a href="#src-2">[2]</a><a href="#src-9">[9]</a></sup></li>
+        <li><b>Ghi chú ra ngoài đi cùng compaction.</b> Compaction giữ context nhỏ; bộ nhớ giữ những thông tin phải sống sót qua lần tóm tắt.<sup class="cite"><a href="#src-8">[8]</a></sup></li>
+        <li><b>Sub-agent đổi chi phí lấy độ sạch.</b> Context của agent chính sạch hơn, nhưng tổng số token tăng.<sup class="cite"><a href="#src-11">[11]</a></sup></li>
+        <li><b>Prompt caching không giải phóng chỗ.</b> Phần được cache vẫn chiếm context window; cache chỉ thay đổi số tiền bạn trả cho phần đó.<sup class="cite"><a href="#src-2">[2]</a></sup></li>
+      </ul>
+    </div>
+    <div class="card"><h4>Liên hệ với các chủ đề khác</h4>
+      <ul>
+        <li><a href="../rag/">RAG</a> là một cách "chọn" context: tìm đúng vài đoạn thay vì dán cả kho.</li>
+        <li><a href="../agent-memory/">Bộ nhớ của agent</a> là nơi chiến lược "ghi ra" lưu thông tin.</li>
+        <li><a href="../harness/">Harness</a> là phần mềm thực sự ghép context, chạy tool, compaction.</li>
+        <li><a href="../ai-agent/">AI agent</a> là nơi context engineering quan trọng nhất, vì context lớn dần qua nhiều lượt.</li>
+        <li><a href="../llm-cost-optimization/">Tối ưu chi phí LLM</a>: prompt caching và cắt token là hai đòn bẩy lớn.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 7. SO SÁNH -->
+<section id="so-sanh">
+  <h2>7. So sánh và đánh đổi</h2>
+  <h3>Prompt engineering và context engineering</h3>
+  <div class="table-wrap">
+  <table class="stack">
+    <thead><tr><th>Khía cạnh</th><th>Prompt engineering</th><th>Context engineering</th></tr></thead>
+    <tbody>
+      <tr><td><b>Câu hỏi chính</b></td><td>Viết lời dặn thế nào cho tốt?</td><td>Lượt này model nên thấy những token nào?</td></tr>
+      <tr><td><b>Phạm vi</b></td><td>Lời dặn, system prompt, ví dụ mẫu.</td><td>Mọi thứ trong context: lời dặn, tool, lịch sử, kết quả tool, tài liệu, bộ nhớ.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-2">[2]</a></sup></td></tr>
+      <tr><td><b>Nhịp làm việc</b></td><td>Chủ yếu một lần: viết, thử, sửa prompt.</td><td>Lặp lại mỗi lần quyết định đưa gì cho model.<sup class="cite"><a href="#src-1">[1]</a></sup></td></tr>
+      <tr><td><b>Quan trọng nhất khi</b></td><td>Tác vụ một lượt: phân loại, trích xuất, viết.</td><td>Agent chạy nhiều lượt, gọi nhiều tool, phiên làm việc dài.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Các chiến lược: được gì, mất gì</h3>
+  <div class="table-wrap">
+  <table class="stack">
+    <thead><tr><th>Chiến lược</th><th>Được</th><th>Mất / rủi ro</th><th>Hợp khi</th></tr></thead>
+    <tbody>
+      <tr><td><b>Nạp trước (upfront)</b></td><td>Nhanh: dữ liệu có sẵn ngay.</td><td>Tốn chỗ, dễ đưa vào thứ không cần.</td><td>Dữ liệu nhỏ, lần nào cũng dùng. Claude Code nạp sẵn file <code>CLAUDE.md</code>.<sup class="cite"><a href="#src-1">[1]</a></sup></td></tr>
+      <tr><td><b>Just-in-time retrieval</b></td><td>Context gọn; agent tự khám phá dần.</td><td>Chậm hơn lấy dữ liệu tính sẵn. Agent có thể phí context nếu dùng sai tool hoặc đi vào ngõ cụt.<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>Kho lớn, không biết trước cần gì. Thường kết hợp với nạp trước (cách hybrid).<sup class="cite"><a href="#src-1">[1]</a></sup></td></tr>
+      <tr><td><b>Compaction</b></td><td>Hội thoại chạy tiếp được quá giới hạn cửa sổ.<sup class="cite"><a href="#src-6">[6]</a></sup></td><td>Tóm tắt quá tay có thể mất chi tiết nhỏ mà quan trọng, và chỉ lộ ra sau này.<sup class="cite"><a href="#src-1">[1]</a></sup> Lần tóm tắt cũng tốn một lần gọi model.</td><td>Tác vụ cần trao đổi qua lại nhiều.<sup class="cite"><a href="#src-1">[1]</a></sup></td></tr>
+      <tr><td><b>Ghi chú ra ngoài</b></td><td>Thông tin sống sót qua reset và qua nhiều phiên.<sup class="cite"><a href="#src-8">[8]</a></sup></td><td>Phải thiết kế nơi lưu, kiểm soát dung lượng, chặn truy cập đường dẫn ngoài thư mục cho phép.<sup class="cite"><a href="#src-8">[8]</a></sup></td><td>Phát triển lặp với các mốc rõ ràng.<sup class="cite"><a href="#src-1">[1]</a></sup></td></tr>
+      <tr><td><b>Sub-agent</b></td><td>Context agent chính sạch. Hệ đa agent của Anthropic tốt hơn bản một agent 90,2% trên bộ đánh giá nghiên cứu nội bộ của họ.<sup class="cite"><a href="#src-11">[11]</a></sup></td><td>Tốn token: agent dùng khoảng 4 lần token so với chat, hệ đa agent khoảng 15 lần.<sup class="cite"><a href="#src-11">[11]</a></sup> Thông tin có thể bị méo khi chuyển qua nhiều tầng.</td><td>Nghiên cứu, phân tích phức tạp, có thể khám phá song song.<sup class="cite"><a href="#src-1">[1]</a></sup></td></tr>
+      <tr><td><b>Xóa kết quả tool cũ</b></td><td>Nhẹ nhàng, an toàn: kết quả đã xử lý ít khi cần lại.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-7">[7]</a></sup></td><td>Làm mất hiệu lực prompt cache cho phần bị đổi; nên xóa đủ nhiều mỗi lần cho đáng.<sup class="cite"><a href="#src-7">[7]</a></sup></td><td>Agent gọi tool liên tục: đọc file, tìm kiếm.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Đánh đổi chi phí và chất lượng</h3>
+  <div class="grid g2">
+    <div class="card"><span class="tag p3">Rẻ hơn nhờ cache</span><h4>Giữ phần đầu context ổn định</h4><p>Với prompt caching của Claude, đọc từ cache có giá bằng 0,1 lần giá input thường (một số model rẻ hơn nữa); ghi cache với thời hạn 5 phút có giá bằng 1,25 lần.<sup class="cite"><a href="#src-12">[12]</a></sup> Cache được xếp theo thứ tự tools → system → messages, và thay đổi ở một tầng làm mất cache của tầng đó và mọi tầng sau.<sup class="cite"><a href="#src-12">[12]</a></sup></p><p class="muted">Manus ghi nhận tỷ lệ token input/output trung bình khoảng 100:1, và coi tỷ lệ trúng cache là chỉ số quan trọng nhất của agent khi chạy thật.<sup class="cite"><a href="#src-13">[13]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Xung đột</span><h4>Dọn context và giữ cache kéo về hai phía</h4><p>Xóa kết quả tool hoặc đổi tool definitions giữa chừng sẽ làm mất cache phía sau chỗ bị đổi.<sup class="cite"><a href="#src-7">[7]</a><a href="#src-12">[12]</a></sup> Manus khuyên giữ context theo kiểu chỉ ghi thêm vào cuối (append-only) và nén theo cách "khôi phục được": bỏ nội dung trang web nhưng giữ lại URL.<sup class="cite"><a href="#src-13">[13]</a></sup></p><p class="muted">Không có lựa chọn đúng cho mọi trường hợp. Hãy đo cả chi phí lẫn chất lượng (mục 9).</p></div>
+    <div class="card"><span class="tag p1">Nhiều token hơn có thể tốt hơn</span><h4>Khi nào chi thêm token là đáng?</h4><p>Trong phân tích của Anthropic về hệ agent nghiên cứu, riêng lượng token dùng đã giải thích 80% mức chênh lệch kết quả.<sup class="cite"><a href="#src-11">[11]</a></sup> Nghĩa là với việc khó, chi nhiều token hơn (qua nhiều sub-agent) có thể đáng tiền.</p><p class="muted">Ý chính: đừng tiêu token cho <b>nhiễu</b>. Tiêu token cho việc khám phá có ích thì có thể chấp nhận được.</p></div>
+    <div class="card"><span class="tag" style="color:var(--p6)">Kết quả tool gọn</span><h4>Chỉ trả về thông tin giàu tín hiệu</h4><p>Ví dụ của Anthropic: cùng một kết quả, bản "chi tiết" tốn 206 token, bản "ngắn gọn" tốn 72 token, khoảng 1/3. Họ khuyên bỏ các trường kỹ thuật như <code>uuid</code> hay <code>mime_type</code>, vì agent ít dùng chúng để quyết định bước tiếp theo.<sup class="cite"><a href="#src-10">[10]</a></sup></p></div>
+  </div>
+</section>
+
+<!-- 8. LỖI -->
+<section id="loi">
+  <h2>8. Lỗi thường gặp và cách chẩn đoán</h2>
+  <p>Drew Breunig đặt tên cho bốn kiểu context "hỏng", được LangChain tổng hợp lại:<sup class="cite"><a href="#src-5">[5]</a></p>
+  <div class="grid g2">
+    <div class="card"><span class="tag p4">Poisoning</span><h4>Context bị "đầu độc"</h4><p>Một thông tin bịa (hallucination) lọt vào context, rồi được các lượt sau dùng lại như sự thật.<sup class="cite"><a href="#src-5">[5]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Distraction</span><h4>Context làm xao nhãng</h4><p>Context quá dài lấn át những gì model đã học từ huấn luyện.<sup class="cite"><a href="#src-5">[5]</a></sup> Ví dụ: agent lặp lại hành động cũ trong lịch sử thay vì nghĩ cách mới.</p></div>
+    <div class="card"><span class="tag p4">Confusion</span><h4>Context gây nhầm lẫn</h4><p>Nội dung thừa ảnh hưởng tới câu trả lời.<sup class="cite"><a href="#src-5">[5]</a></sup> Ví dụ: có quá nhiều tool gần giống nhau nên chọn sai tool.<sup class="cite"><a href="#src-9">[9]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Clash</span><h4>Context tự mâu thuẫn</h4><p>Các phần trong context nói ngược nhau.<sup class="cite"><a href="#src-5">[5]</a></sup> Ví dụ: chính sách cũ trong bản tóm tắt và chính sách mới trong tài liệu vừa truy xuất.</p></div>
+  </div>
+  <h3>Bảng triệu chứng</h3>
+  <div class="table-wrap">
+  <table class="stack">
+    <thead><tr><th>Triệu chứng</th><th>Nguyên nhân thường gặp</th><th>Thử sửa</th></tr></thead>
+    <tbody>
+      <tr><td>Agent "quên" yêu cầu ban đầu sau nhiều lượt</td><td>Yêu cầu nằm giữa một context dài;<sup class="cite"><a href="#src-4">[4]</a></sup> hoặc bị mất khi compaction.</td><td>Ghi mục tiêu ra file và nhắc lại ở cuối context (kiểu <code>todo.md</code>);<sup class="cite"><a href="#src-13">[13]</a></sup> sửa prompt tóm tắt cho giữ yêu cầu.<sup class="cite"><a href="#src-6">[6]</a></sup></td></tr>
+      <tr><td>Chọn sai tool, gọi tool không cần</td><td>Quá nhiều tool chồng chéo. Khả năng chọn đúng tool giảm khi vượt khoảng 30–50 tool.<sup class="cite"><a href="#src-9">[9]</a></sup></td><td>Rút gọn bộ tool; dùng tool search.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-9">[9]</a></sup></td></tr>
+      <tr><td>API báo lỗi 400 "prompt is too long"</td><td>Input đã vượt context window.<sup class="cite"><a href="#src-2">[2]</a></sup></td><td>Đếm token trước khi gửi; compaction; xóa kết quả tool cũ.<sup class="cite"><a href="#src-2">[2]</a><a href="#src-7">[7]</a></sup></td></tr>
+      <tr><td>Câu trả lời bị cắt giữa chừng</td><td>Input cộng phần trả lời vượt cửa sổ; model dừng với lý do <code>model_context_window_exceeded</code>.<sup class="cite"><a href="#src-2">[2]</a></sup></td><td>Chừa đủ chỗ cho câu trả lời; giảm input.</td></tr>
+      <tr><td>Một kết quả tool chiếm gần hết context</td><td>Tool trả về cả file log hay cả bảng dữ liệu.</td><td>Phân trang, lọc, cắt bớt với giá trị mặc định hợp lý, kèm lời hướng dẫn cách lấy phần còn lại.<sup class="cite"><a href="#src-10">[10]</a></sup></td></tr>
+      <tr><td>Chi phí tăng vọt dù context không lớn hơn</td><td>Mất cache do đổi phần đầu prompt, ví dụ chèn giờ hiện tại vào system prompt. Chỉ khác một token cũng làm mất cache từ chỗ đó trở đi.<sup class="cite"><a href="#src-13">[13]</a></sup></td><td>Giữ phần đầu ổn định, đưa thông tin thay đổi xuống cuối.<sup class="cite"><a href="#src-12">[12]</a><a href="#src-13">[13]</a></sup></td></tr>
+      <tr><td>Agent lặp lại đúng lỗi đã gặp</td><td>Dấu vết lỗi đã bị xóa khỏi context.</td><td>Giữ lại các bước sai để model rút kinh nghiệm.<sup class="cite"><a href="#src-13">[13]</a></sup></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <h4>Cây chẩn đoán khi agent trả lời sai sau phiên dài</h4>
+    <ol>
+      <li><b>Thông tin cần thiết có nằm trong context ở lượt đó không?</b><br><span class="muted">Không → bị mất do compaction, bị xóa, hoặc chưa từng được truy xuất. Xem log context thật của lượt đó.</span></li>
+      <li><b>Có nhưng bị chôn giữa nhiều nội dung khác?</b><br><span class="muted">Có → giảm nhiễu: cắt kết quả tool, xóa phần cũ, đưa thông tin quan trọng lên đầu hoặc xuống cuối.<sup class="cite"><a href="#src-4">[4]</a></sup></span></li>
+      <li><b>Có thông tin mâu thuẫn hoặc thông tin bịa từ lượt trước?</b><br><span class="muted">Có → clash hoặc poisoning: loại bỏ phần sai, đánh dấu phiên bản tài liệu.<sup class="cite"><a href="#src-5">[5]</a></sup></span></li>
+      <li><b>Context gọn, đúng mà vẫn sai?</b><br><span class="muted">Có → vấn đề nằm ở prompt, tool, hoặc năng lực model, không còn là context.</span></li>
+    </ol>
+  </div>
+</section>
+
+<!-- 9. ĐÁNH GIÁ -->
+<section id="danh-gia">
+  <h2>9. Đánh giá và đo lường</h2>
+  <p>Đổi chiến lược context mà không đo thì không biết nó giúp hay hại. Hãy đo song song hai mặt: <b>chi phí</b> và <b>chất lượng</b>. Xem thêm <a href="../llm-evaluation/">Đánh giá LLM</a> và <a href="../llm-observability/">Observability</a>.</p>
+  <div class="grid g2">
+    <div class="card"><span class="tag p1">Chi phí và dung lượng</span><h4>Đo được trực tiếp</h4>
+      <ul>
+        <li><b>Token mỗi request</b>: mỗi response của Claude báo lượng đã dùng trong trường <code>usage</code>, tách riêng phần đọc cache và ghi cache.<sup class="cite"><a href="#src-2">[2]</a></sup></li>
+        <li><b>Tổng token mỗi tác vụ</b>: cộng dồn mọi lần gọi, kể cả sub-agent.</li>
+        <li><b>% cửa sổ đã dùng</b> ở lượt cao nhất, và số lần phải compaction.</li>
+        <li><b>Tỷ lệ trúng cache</b>: Manus coi đây là chỉ số quan trọng nhất.<sup class="cite"><a href="#src-13">[13]</a></sup></li>
+        <li><b>Token theo thành phần</b>: bao nhiêu cho tool definitions, kết quả tool, lịch sử. Thường chỉ ra ngay chỗ cần cắt.</li>
+      </ul>
+    </div>
+    <div class="card"><span class="tag p3">Chất lượng</span><h4>Phải dựng bài kiểm tra</h4>
+      <ul>
+        <li><b>Tỷ lệ hoàn thành tác vụ</b> trên một bộ tác vụ mẫu, trước và sau khi đổi chiến lược.</li>
+        <li><b>Kiểm tra sau compaction</b>: hỏi lại những chi tiết từ trước lúc tóm tắt. Nếu bản tóm tắt mặc định bỏ sót, viết prompt tóm tắt riêng.<sup class="cite"><a href="#src-6">[6]</a></sup> Anthropic khuyên tối ưu cho "nhớ đủ" trước, rồi mới cắt bớt phần thừa.<sup class="cite"><a href="#src-1">[1]</a></sup></li>
+        <li><b>Thử theo độ dài</b>: cùng câu hỏi, tăng dần độ dài context, xem độ chính xác giảm từ đâu. Đây là cách Chroma đo context rot.<sup class="cite"><a href="#src-3">[3]</a></sup></li>
+        <li><b>Thử theo vị trí</b>: đặt thông tin cần thiết ở đầu, giữa, cuối.<sup class="cite"><a href="#src-4">[4]</a></sup></li>
+        <li><b>So bản tập trung với bản đầy đủ</b>: nếu bản chỉ có context liên quan tốt hơn, hệ thống đang bị nhiễu.<sup class="cite"><a href="#src-3">[3]</a></sup></li>
+      </ul>
+    </div>
+  </div>
+  <div class="callout"><b>Đọc kết quả:</b> chi phí giảm mà chất lượng giữ nguyên thì giữ thay đổi. Chất lượng giảm thì xem lại bước nào đã bỏ mất thông tin. Thay đổi từng chiến lược một rồi đo lại.</div>
+</section>
+
+<!-- 10. LỘ TRÌNH -->
+<section id="lo-trinh">
+  <h2>10. Lộ trình tự học 3 tuần (không cần code)</h2>
+  <p class="muted">Khoảng 4–5 giờ mỗi tuần. Các ô đã đánh dấu được lưu trong trình duyệt của bạn.</p>
+  <div class="grid g3">
+    <div class="card"><span class="tag p1">Tuần 1</span><h4>Context là gì, vì sao có hạn</h4><p>Đọc mục 1, 2. Đọc bài gốc của Anthropic.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+      <label class="check"><input type="checkbox" data-k="w1a"><span>Kể tên sáu thành phần của context và cho mỗi phần một ví dụ trong công ty bạn.</span></label>
+      <label class="check"><input type="checkbox" data-k="w1b"><span>Giải thích context rot cho đồng nghiệp trong 2 phút.</span></label>
+    </div>
+    <div class="card"><span class="tag p1">Tuần 2</span><h4>Chiến lược và mô phỏng</h4><p>Đọc mục 3, 4, 5, 6.</p>
+      <label class="check"><input type="checkbox" data-k="w2a"><span>Trong mô phỏng, làm thanh chạm mốc 100.000 rồi tìm tổ hợp chiến lược đưa nó về dưới 30.000.</span></label>
+      <label class="check"><input type="checkbox" data-k="w2b"><span>Thử với một chatbot: hội thoại dài 30 lượt, rồi hỏi lại chi tiết ở lượt 2. Ghi lại nó có nhớ không.</span></label>
+    </div>
+    <div class="card"><span class="tag p1">Tuần 3</span><h4>Đánh đổi, lỗi, đo lường</h4><p>Đọc mục 7, 8, 9.</p>
+      <label class="check"><input type="checkbox" data-k="w3a"><span>Với một agent bạn định xây, viết ra: phần nào nạp trước, phần nào just-in-time, khi nào compaction.</span></label>
+      <label class="check"><input type="checkbox" data-k="w3b"><span>Lập danh sách 5 chỉ số sẽ đo (chi phí và chất lượng) cho agent đó.</span></label>
+    </div>
+  </div>
+
+  <h3>Tự kiểm tra: trả lời được là đã nắm cốt lõi</h3>
+  <details><summary>1. Context engineering khác prompt engineering ở điểm nào?</summary>
+    <p>Prompt engineering lo viết và tổ chức lời dặn. Context engineering lo toàn bộ những gì vào context (lời dặn, tool, lịch sử, kết quả tool, tài liệu, bộ nhớ), và được làm lại mỗi lần quyết định đưa gì cho model.<sup class="cite"><a href="#src-1">[1]</a></sup></p></details>
+  <details><summary>2. Cửa sổ đã 1 triệu token, sao vẫn phải quản lý context?</summary>
+    <p>Vì độ chính xác và khả năng nhớ lại giảm khi số token tăng (context rot),<sup class="cite"><a href="#src-2">[2]</a></sup> thông tin ở giữa dễ bị bỏ sót,<sup class="cite"><a href="#src-4">[4]</a></sup> và mỗi lần gọi đều gửi lại toàn bộ context nên chi phí tăng theo.</p></details>
+  <details><summary>3. Compaction và xóa kết quả tool cũ khác nhau thế nào?</summary>
+    <p>Compaction viết một bản tóm tắt thay cho các lượt cũ.<sup class="cite"><a href="#src-6">[6]</a></sup> Xóa kết quả tool chỉ thay các kết quả tool cũ bằng một dòng đánh dấu, giữ nguyên phần còn lại; đây là cách nhẹ và an toàn nhất.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-7">[7]</a></sup></p></details>
+  <details><summary>4. Vì sao nên ghi chú ra ngoài trước khi compaction?</summary>
+    <p>Tóm tắt có thể làm mất chi tiết quan trọng.<sup class="cite"><a href="#src-1">[1]</a></sup> Ghi chú ở bộ nhớ ngoài giữ lại thông tin phải sống sót qua lần tóm tắt, và đọc lại được ở phiên sau.<sup class="cite"><a href="#src-8">[8]</a></sup></p></details>
+  <details><summary>5. Sub-agent giúp gì và tốn gì?</summary>
+    <p>Giúp agent chính có context sạch: sub-agent khám phá trong cửa sổ riêng và chỉ trả về bản tóm tắt ngắn.<sup class="cite"><a href="#src-1">[1]</a></sup> Đổi lại tổng token tăng nhiều; Anthropic đo được hệ đa agent dùng khoảng 15 lần token so với chat.<sup class="cite"><a href="#src-11">[11]</a></sup></p></details>
+  <details><summary>6. Vì sao chèn giờ hiện tại vào đầu system prompt có thể làm hóa đơn tăng?</summary>
+    <p>Prompt caching chỉ trúng khi phần đầu giống hệt. Phần đầu đổi mỗi lần gọi thì cache bị mất từ chỗ thay đổi trở đi, nên phải trả giá input đầy đủ.<sup class="cite"><a href="#src-12">[12]</a><a href="#src-13">[13]</a></sup></p></details>
+  <details><summary>7. Agent có 80 tool và hay chọn sai. Bạn làm gì?</summary>
+    <p>Rút gọn, gộp các tool chồng chéo; dùng tool search để chỉ nạp vài tool liên quan. Theo tài liệu Claude, khả năng chọn đúng tool giảm khi vượt khoảng 30–50 tool.<sup class="cite"><a href="#src-9">[9]</a></sup></p></details>
+</section>
+
+<!-- NGUỒN -->
+<section id="nguon">
+  <h2>Nguồn tham khảo</h2>
+  <p class="muted">Các khẳng định kỹ thuật trong trang được đối chiếu với những nguồn dưới đây. Số trong ngoặc vuông ở thân bài trỏ tới mục tương ứng. Tất cả truy cập ngày 2026-11-14.</p>
+  <ol class="sources">
+    <li id="src-1">Rajasekaran, P.; Dixon, E.; Ryan, C.; Hadfield, J. (Anthropic). <i>Effective context engineering for AI agents</i>. 2025. <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank" rel="noopener">anthropic.com/engineering/effective-context-engineering-for-ai-agents</a> <span class="acc">(truy cập 2026-11-14)</span></li>
+    <li id="src-2">Anthropic. <i>Context windows</i> (tài liệu Claude API). <a href="https://platform.claude.com/docs/en/build-with-claude/context-windows" target="_blank" rel="noopener">platform.claude.com/docs/en/build-with-claude/context-windows</a> <span class="acc">(truy cập 2026-11-14)</span></li>
+    <li id="src-3">Hong, K.; Troynikov, A.; Huber, J. (Chroma). <i>Context Rot: How Increasing Input Tokens Impacts LLM Performance</i>. 2025. <a href="https://www.trychroma.com/research/context-rot" target="_blank" rel="noopener">trychroma.com/research/context-rot</a> <span class="acc">(truy cập 2026-11-14)</span></li>
+    <li id="src-4">Liu, N. F. và cộng sự. <i>Lost in the Middle: How Language Models Use Long Contexts</i>. TACL, 2023. <a href="https://arxiv.org/abs/2307.03172" target="_blank" rel="noopener">arxiv.org/abs/2307.03172</a> <span class="acc">(truy cập 2026-11-14)</span></li>
+    <li id="src-5">LangChain. <i>Context Engineering for Agents</i>. 2025. <a href="https://www.langchain.com/blog/context-engineering-for-agents" target="_blank" rel="noopener">langchain.com/blog/context-engineering-for-agents</a> <span class="acc">(truy cập 2026-11-14)</span></li>
+    <li id="src-6">Anthropic. <i>Compaction overview</i> (tài liệu Claude API). <a href="https://platform.claude.com/docs/en/build-with-claude/compaction" target="_blank" rel="noopener">platform.claude.com/docs/en/build-with-claude/compaction</a> <span class="acc">(truy cập 2026-11-14)</span></li>
+    <li id="src-7">Anthropic. <i>Context editing</i> (tài liệu Claude API). <a href="https://platform.claude.com/docs/en/build-with-claude/context-editing" target="_blank" rel="noopener">platform.claude.com/docs/en/build-with-claude/context-editing</a> <span class="acc">(truy cập 2026-11-14)</span></li>
+    <li id="src-8">Anthropic. <i>Memory tool</i> (tài liệu Claude API). <a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool" target="_blank" rel="noopener">platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool</a> <span class="acc">(truy cập 2026-11-14)</span></li>
+    <li id="src-9">Anthropic. <i>Tool search tool</i> (tài liệu Claude API). <a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool" target="_blank" rel="noopener">platform.claude.com/docs/en/agents-and-tools/tool-use/tool-search-tool</a> <span class="acc">(truy cập 2026-11-14)</span></li>
+    <li id="src-10">Aizawa, K. (Anthropic). <i>Writing effective tools for agents — with agents</i>. 2025. <a href="https://www.anthropic.com/engineering/writing-tools-for-agents" target="_blank" rel="noopener">anthropic.com/engineering/writing-tools-for-agents</a> <span class="acc">(truy cập 2026-11-14)</span></li>
+    <li id="src-11">Hadfield, J. và cộng sự (Anthropic). <i>How we built our multi-agent research system</i>. 2025. <a href="https://www.anthropic.com/engineering/multi-agent-research-system" target="_blank" rel="noopener">anthropic.com/engineering/multi-agent-research-system</a> <span class="acc">(truy cập 2026-11-14)</span></li>
+    <li id="src-12">Anthropic. <i>Prompt caching</i> (tài liệu Claude API). <a href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching" target="_blank" rel="noopener">platform.claude.com/docs/en/build-with-claude/prompt-caching</a> <span class="acc">(truy cập 2026-11-14)</span></li>
+    <li id="src-13">Ji, Y. "Peak" (Manus). <i>Context Engineering for AI Agents: Lessons from Building Manus</i>. 2025. <a href="https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus" target="_blank" rel="noopener">manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus</a> <span class="acc">(truy cập 2026-11-14)</span></li>
+  </ol>
+</section>
+</main>
+
+<footer>
+  Tài liệu học context engineering ở mức khái niệm. Các số token trong ví dụ và mô phỏng là minh họa để hiểu cơ chế, không phải số đo từ một hệ thống cụ thể. Các số có trích nguồn lấy từ tài liệu gốc tại thời điểm truy cập.
+</footer>
+
+<script>
+(function(){
+  // ---------- Theme ----------
+  var root=document.documentElement;
+  function safeGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+  function safeSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  var saved=safeGet('rag-theme'); if(saved) root.setAttribute('data-theme',saved);
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme');
+    if(!cur){cur=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+    var next=cur==='dark'?'light':'dark'; root.setAttribute('data-theme',next); safeSet('rag-theme',next);
+  });
+
+  // ---------- Stacked tables on phones: give each cell its column name ----------
+  function labelTables(root){
+    [].forEach.call(root.querySelectorAll('table.stack'),function(t){
+      var heads=[].map.call(t.querySelectorAll('thead th'),function(th){return th.textContent});
+      [].forEach.call(t.querySelectorAll('tbody tr'),function(tr){[].forEach.call(tr.children,function(td,i){if(heads[i])td.setAttribute('data-label',heads[i])})});
+    });
+  }
+  labelTables(document);
+
+  // ---------- Context budget rendering (shared by stepper and simulator) ----------
+  var WINDOW=200000, RESERVE=16000, CLEAR_TRIGGER=100000;
+  var SEG=[
+    {k:'sys',n:'System prompt',c:'var(--p1)'},
+    {k:'tools',n:'Tool definitions',c:'var(--p2)'},
+    {k:'mem',n:'Bộ nhớ / ghi chú',c:'var(--p3)'},
+    {k:'docs',n:'Tài liệu truy xuất',c:'var(--p4)'},
+    {k:'hist',n:'Lịch sử hội thoại',c:'var(--p5)'},
+    {k:'tool',n:'Kết quả tool',c:'var(--p6)'},
+    {k:'sum',n:'Bản tóm tắt (compaction)',c:'var(--muted)'}
+  ];
+  function fmt(n){return Math.round(n).toLocaleString('vi-VN')}
+  function pct(n){return (n/WINDOW*100).toFixed(1).replace('.',',')+'%'}
+  function inputOf(s){return SEG.reduce(function(a,g){return a+(s[g.k]||0)},0)}
+  // Returns HTML for a bar + legend whose numbers always add up to WINDOW.
+  function budgetHTML(s,compact){
+    var input=inputOf(s), out=Math.max(0,Math.min(RESERVE,WINDOW-input)), free=WINDOW-input-out;
+    var bar='<div class="budget" role="img" aria-label="Context đang dùng '+fmt(input)+' trên '+fmt(WINDOW)+' token">';
+    SEG.forEach(function(g){var v=s[g.k]||0;if(v>0)bar+='<span style="width:'+(v/WINDOW*100)+'%;background:'+g.c+'" title="'+g.n+': '+fmt(v)+'"></span>'});
+    if(free>0)bar+='<span style="width:'+(free/WINDOW*100)+'%"></span>';
+    if(out>0)bar+='<span class="rsv" style="width:'+(out/WINDOW*100)+'%" title="Dành cho câu trả lời: '+fmt(out)+'"></span>';
+    bar+='<i class="mk" style="left:'+(CLEAR_TRIGGER/WINDOW*100)+'%"></i></div>';
+    bar+='<div class="bscale"><span>0</span><span>100.000</span><span>200.000</span></div>';
+    var rows='', parts=[];
+    SEG.forEach(function(g){var v=s[g.k]||0;if(v>0||!compact){rows+='<tr><td><span class="sw" style="background:'+g.c+'"></span>'+g.n+'</td><td class="n">'+fmt(v)+'</td><td class="n">'+pct(v)+'</td></tr>'}if(v>0)parts.push(fmt(v))});
+    rows+='<tr class="tot"><td>Tổng input</td><td class="n">'+fmt(input)+'</td><td class="n">'+pct(input)+'</td></tr>';
+    rows+='<tr><td><span class="sw rsv"></span>Dành cho câu trả lời</td><td class="n">'+fmt(out)+'</td><td class="n">'+pct(out)+'</td></tr>';
+    rows+='<tr><td><span class="sw" style="border:1px solid var(--border)"></span>Còn trống</td><td class="n">'+fmt(free)+'</td><td class="n">'+pct(free)+'</td></tr>';
+    var eq='<p class="eq">Kiểm tra: input '+(parts.length?parts.join(' + '):'0')+' = '+fmt(input)+'; cộng '+fmt(out)+' dành cho trả lời và '+fmt(free)+' còn trống = '+fmt(input+out+free)+' token (cả cửa sổ).</p>';
+    var warn='';
+    if(out<RESERVE)warn='<div class="callout bad" style="margin:8px 0 0">Chỉ còn '+fmt(out)+' token cho câu trả lời (cần '+fmt(RESERVE)+'). Câu trả lời có thể bị dừng giữa chừng.</div>';
+    else if(input>=CLEAR_TRIGGER)warn='<div class="callout warn" style="margin:8px 0 0">Input đã qua mốc 100.000 token: ngưỡng mặc định để context editing của Claude bắt đầu xóa kết quả tool cũ.</div>';
+    return bar+'<div class="table-wrap"><table class="leg"><tbody>'+rows+'</tbody></table></div>'+eq+warn;
+  }
+
+  // ---------- Stepper example ----------
+  var STEPS=[
+    {t:'Bắt đầu phiên',s:{sys:2500,tools:18000,hist:300},h:'<h3>Bước 1 · Bắt đầu phiên</h3><p>Nhân viên gửi: "Đổi mật khẩu xong thì laptop không vào được VPN." Harness ghép system prompt (vai trò, quy trình hỗ trợ) và định nghĩa của cả 20 tool: tra cứu ticket, đọc log, tra cơ sở tri thức, reset tài khoản…</p><p class="muted">Chưa làm gì mà tool definitions đã chiếm 18.000 token, gấp 7 lần system prompt. Trên thực tế, 5 MCP server có thể tốn khoảng 55.000 token.<sup class="cite"><a href="#src-9">[9]</a></sup></p>'},
+    {t:'Chỉ nạp tool cần',s:{sys:2500,tools:3000,hist:300},h:'<h3>Bước 2 · Chỉ nạp tool cần dùng</h3><p>Bật tool search: agent chỉ thấy công cụ tìm tool và vài tool hay dùng; tool khác được nạp khi cần.<sup class="cite"><a href="#src-9">[9]</a></sup> Tool definitions giảm từ 18.000 xuống 3.000.</p><p class="muted">Lợi ích kép: ít token hơn, và ít tool gây nhầm lẫn hơn. Lưu ý: đổi tool definitions làm mất prompt cache, nên chọn cấu hình từ đầu phiên.<sup class="cite"><a href="#src-12">[12]</a></sup></p>'},
+    {t:'Just-in-time',s:{sys:2500,tools:3000,docs:3000,hist:600,tool:400},h:'<h3>Bước 3 · Truy xuất just-in-time</h3><p>Thay vì dán cả bộ tài liệu VPN (giả sử 45.000 token), agent tìm trong cơ sở tri thức và nhận về danh sách 10 tiêu đề bài viết (400 token). Rồi nó chỉ mở 2 bài liên quan: "VPN sau khi đổi mật khẩu" và "Chứng chỉ máy trạm" (3.000 token).<sup class="cite"><a href="#src-1">[1]</a></sup></p><p class="muted">Danh sách tiêu đề chính là "định danh nhẹ": rẻ để giữ, khi cần mới mở nội dung.</p>'},
+    {t:'Cắt bớt kết quả tool',s:{sys:2500,tools:3000,docs:3000,hist:1000,tool:2200},h:'<h3>Bước 4 · Cắt bớt kết quả tool tại nguồn</h3><p>Agent đọc log VPN của laptop. File log thô dài khoảng 40.000 token. Tool được thiết kế để lọc: chỉ trả về 25 dòng lỗi gần nhất (1.800 token), kèm gợi ý "dùng tham số <code>page</code> để xem thêm".<sup class="cite"><a href="#src-10">[10]</a></sup></p><pre>[09:14:02] AUTH FAIL user=lan.nt reason=credential_mismatch\n[09:14:02] cached credential age=3d (password changed 2h ago)\n…</pre><p class="muted">Kết quả tool tổng: 400 (danh sách) + 1.800 (log) = 2.200 token.</p>'},
+    {t:'Context phình to',s:{sys:2500,tools:3000,docs:9000,hist:38000,tool:62000},h:'<h3>Bước 5 · Sau 25 lượt, context phình to</h3><p>Sự cố hóa ra ảnh hưởng cả phòng kế toán. Agent tra nhiều log, nhiều máy, đọc thêm tài liệu. Kết quả tool cộng dồn lên 62.000 token, lịch sử lên 38.000.</p><p>Trước khi dọn, agent ghi tiến độ ra file <code>NOTES.md</code> bên ngoài context: nguyên nhân nghi ngờ (máy lưu mật khẩu cũ), các máy đã kiểm tra, việc còn lại.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-8">[8]</a></sup></p><p class="muted">Tổng input đã vượt mốc 100.000.</p>'},
+    {t:'Xóa kết quả tool cũ',s:{sys:2500,tools:3000,docs:9000,hist:38000,tool:7500},h:'<h3>Bước 6 · Xóa kết quả tool cũ</h3><p>Context editing giữ lại 3 kết quả tool gần nhất (6.600 token). Các kết quả cũ hơn đã được xử lý xong, nên được thay bằng dòng đánh dấu ngắn (tổng 900 token).<sup class="cite"><a href="#src-7">[7]</a></sup> Kết quả tool: 62.000 → 6.600 + 900 = 7.500.</p><p class="muted">Đây là cách nén nhẹ và an toàn nhất.<sup class="cite"><a href="#src-1">[1]</a></sup> Cái giá: prompt cache phía sau chỗ bị xóa không còn dùng được.<sup class="cite"><a href="#src-7">[7]</a></sup></p>'},
+    {t:'Giao cho sub-agent',s:{sys:2500,tools:3000,docs:9000,hist:40000,tool:9000},h:'<h3>Bước 7 · Giao việc lớn cho sub-agent</h3><p>Cần kiểm tra cấu hình chứng chỉ trên 300 laptop. Agent chính giao việc này cho một sub-agent. Sub-agent dùng khoảng 70.000 token trong <b>cửa sổ riêng</b>, rồi chỉ trả về bản tóm tắt 1.500 token: "12 máy dùng chứng chỉ cũ, danh sách đính kèm".<sup class="cite"><a href="#src-1">[1]</a></sup></p><p class="muted">Context agent chính chỉ tăng 1.500 (kết quả tool) + 2.000 (lời giao việc và trao đổi). Nhưng tổng token cả hệ tăng thêm khoảng 70.000.<sup class="cite"><a href="#src-11">[11]</a></sup></p>'},
+    {t:'Compaction',before:{sys:2500,tools:3000,docs:15000,hist:95000,tool:30000},s:{sys:2500,tools:3000,mem:800,hist:4000,sum:3000},h:'<h3>Bước 8 · Compaction khi gần đầy</h3><p>Sau nhiều lượt nữa, context lên 145.500 token. Model tóm tắt các lượt cũ thành 3.000 token, giữ nguyên văn các lượt gần nhất (4.000 token), và đọc lại <code>NOTES.md</code> (800 token).<sup class="cite"><a href="#src-1">[1]</a><a href="#src-6">[6]</a></sup></p><p>Bản tóm tắt phải giữ: nguyên nhân đã xác định, 12 máy cần sửa, 4 máy đã sửa xong, yêu cầu của trưởng phòng kế toán.</p><p class="muted">Rủi ro: nếu tóm tắt quá tay mà bỏ mất "4 máy đã sửa xong", agent có thể sửa lại lần nữa.<sup class="cite"><a href="#src-1">[1]</a></sup></p>'},
+    {t:'Phiên hôm sau',s:{sys:2500,tools:3000,mem:800,hist:300},h:'<h3>Bước 9 · Phiên mới hôm sau</h3><p>Context bắt đầu lại từ đầu. Agent đọc <code>NOTES.md</code> trước tiên và biết ngay: còn 8 máy chưa sửa. Không cần khám phá lại từ đầu.<sup class="cite"><a href="#src-8">[8]</a></sup></p><div class="callout ok">Cả phiên dài chỉ dùng tối đa khoảng 3/4 cửa sổ, và mỗi lượt chỉ mang những gì cần cho lượt đó.</div>'}
+  ];
+  var cur=0, stepsEl=document.getElementById('steps'), bodyEl=document.getElementById('stepBody');
+  STEPS.forEach(function(s,i){var b=document.createElement('button');b.innerHTML='<span class="n">'+(i+1)+'</span>'+s.t;b.addEventListener('click',function(){show(i)});stepsEl.appendChild(b)});
+  function show(i){cur=i;var st=STEPS[i];var mini='<div class="mini">';
+    if(st.before)mini+='<h5>Trước compaction (minh họa)</h5>'+budgetHTML(st.before,true)+'<h5>Sau compaction (minh họa)</h5>';
+    else mini+='<h5>Ngân sách context ở bước này (minh họa)</h5>';
+    mini+=budgetHTML(st.s,true)+'</div>';
+    bodyEl.innerHTML=st.h+mini;labelTables(bodyEl);[].forEach.call(stepsEl.children,function(b,j){b.classList.toggle('on',j===i)});
+    document.getElementById('prevStep').disabled=i===0;var ab=stepsEl.children[i];if(stepsEl.scrollWidth>stepsEl.clientWidth){stepsEl.scrollLeft=ab.offsetLeft-stepsEl.offsetLeft-8}document.getElementById('nextStep').disabled=i===STEPS.length-1;}
+  document.getElementById('prevStep').addEventListener('click',function(){if(cur>0)show(cur-1)});
+  document.getElementById('nextStep').addEventListener('click',function(){if(cur<STEPS.length-1)show(cur+1)});
+  show(0);
+
+  // ---------- Context budget simulator ----------
+  // Illustrative sizes. Every model call resends the whole current input, so cumulative input grows faster than the window.
+  var SZ={sys:2500,toolsFull:18000,toolsSearch:3000,turn:800,toolCallMsg:300,toolRaw:12000,toolCut:2000,docsUpfront:20000,jitList:400,jitDocs:3000,notes:1000,placeholder:50,keep:3,summary:3000,keepRecent:2000,subWork:60000,subReturn:1500};
+  var S;
+  function fresh(){return{toolSearch:false,trunc:false,jit:false,sys:SZ.sys,mem:0,docs:0,hist:300,tr:[],sum:0,req:0,cum:0,sub:0,log:[]}}
+  function trSum(s){return s.tr.reduce(function(a,r){return a+r.t},0)}
+  function segsOf(s){return{sys:s.sys,tools:s.toolSearch?SZ.toolsSearch:SZ.toolsFull,mem:s.mem,docs:s.docs,hist:s.hist,tool:trSum(s),sum:s.sum}}
+  function inp(s){return inputOf(segsOf(s))}
+  function call(s){s.req++;s.cum+=inp(s)}
+  var ACT={
+    turn:function(s){s.hist+=SZ.turn;call(s);return '+1 lượt hỏi đáp: lịch sử +'+fmt(SZ.turn)+' (1 lần gọi)'},
+    tool:function(s){s.hist+=SZ.toolCallMsg;call(s);var r=s.trunc?SZ.toolCut:SZ.toolRaw;s.tr.push({t:r});call(s);return '+1 lượt gọi tool: lịch sử +'+fmt(SZ.toolCallMsg)+', kết quả tool +'+fmt(r)+(s.trunc?' (đã cắt bớt)':'')+' (2 lần gọi)'},
+    retrieve:function(s){if(s.jit){s.hist+=200;s.tr.push({t:SZ.jitList});call(s);s.docs+=SZ.jitDocs;call(s);return 'Just-in-time: danh mục +'+fmt(SZ.jitList)+', 2 đoạn liên quan +'+fmt(SZ.jitDocs)+', lịch sử +200 (2 lần gọi)'}s.docs+=SZ.docsUpfront;call(s);return 'Nạp trước cả bộ tài liệu: +'+fmt(SZ.docsUpfront)+' (1 lần gọi)'},
+    clear:function(s){var freed=0;for(var i=0;i<s.tr.length-SZ.keep;i++){if(!s.tr[i].ph){freed+=s.tr[i].t-SZ.placeholder;s.tr[i]={t:SZ.placeholder,ph:true}}}if(freed<=0)return null;return 'Xóa kết quả tool cũ: giữ '+SZ.keep+' kết quả gần nhất, giải phóng '+fmt(freed)+' token (không tốn lần gọi, nhưng mất cache phía sau)'},
+    compact:function(s){var before=inp(s);if(s.hist+s.docs+trSum(s)+s.sum<=SZ.keepRecent+SZ.summary)return null;call(s);var keep=Math.min(s.hist,SZ.keepRecent);s.hist=keep;s.docs=0;s.tr=[];s.sum=SZ.summary;return 'Compaction: '+fmt(before)+' → '+fmt(inp(s))+' token (tóm tắt '+fmt(SZ.summary)+' + giữ nguyên '+fmt(keep)+' lượt gần nhất; 1 lần gọi để tóm tắt)'},
+    notes:function(s){if(s.mem>0)return null;s.hist+=200;s.mem=SZ.notes;call(s);return 'Ghi NOTES.md ra ngoài; bản ghi chú '+fmt(SZ.notes)+' token được đọc lại vào context, sống sót qua compaction (1 lần gọi)'},
+    sub:function(s){s.hist+=SZ.toolCallMsg;call(s);s.sub+=SZ.subWork;s.tr.push({t:SZ.subReturn});call(s);return 'Sub-agent dùng '+fmt(SZ.subWork)+' token trong cửa sổ riêng; agent chính chỉ nhận tóm tắt '+fmt(SZ.subReturn)+' (2 lần gọi ở agent chính)'}
+  };
+  var NOOP={clear:'Không có gì để xóa: chỉ xóa các kết quả tool cũ hơn '+SZ.keep+' kết quả gần nhất.',compact:'Context còn nhỏ, chưa có gì đáng nén.',notes:'Đã có ghi chú rồi. Agent cập nhật file đó thay vì tạo thêm.'};
+  var barEl=document.getElementById('simBar'), msgEl=document.getElementById('simMsg'), logEl=document.getElementById('simLog');
+  var cfgTS=document.getElementById('cfgToolSearch'), cfgTr=document.getElementById('cfgTrunc'), cfgJ=document.getElementById('cfgJit');
+  function clone(s){return JSON.parse(JSON.stringify(s))}
+  function msg(html,cls){msgEl.innerHTML=html?'<div class="callout '+(cls||'')+'" style="margin:0">'+html+'</div>':''}
+  function render(){
+    barEl.innerHTML=budgetHTML(segsOf(S),false);
+    document.getElementById('stReq').textContent=fmt(S.req);
+    document.getElementById('stCum').textContent=fmt(S.cum);
+    document.getElementById('stSub').textContent=fmt(S.sub);
+    document.getElementById('stAll').textContent=fmt(S.cum+S.sub);
+    logEl.innerHTML=S.log.slice(-6).map(function(l){return '<li>'+l+'</li>'}).reverse().join('');
+    logEl.setAttribute('start',S.log.length||1);
+    cfgTS.checked=S.toolSearch;cfgTr.checked=S.trunc;cfgJ.checked=S.jit;
+  }
+  function run(a){
+    if(a==='reset'){S=fresh();msg('');render();return}
+    var next=clone(S), text=ACT[a](next);
+    if(text===null){msg(NOOP[a],'');return}
+    if(inp(next)>WINDOW){msg('<b>Vượt context window.</b> Input sẽ là '+fmt(inp(next))+' token, lớn hơn '+fmt(WINDOW)+'. API của Claude sẽ trả lỗi 400 "prompt is too long". Hãy thử xóa kết quả tool cũ hoặc compaction.','bad');return}
+    S=next;S.log.push(text);msg('');render();
+  }
+  [].forEach.call(document.querySelectorAll('.sim-btns button'),function(b){b.addEventListener('click',function(){run(b.dataset.a)})});
+  function toggle(key,el,label){el.addEventListener('change',function(){var next=clone(S);next[key]=el.checked;if(inp(next)>WINDOW){el.checked=!el.checked;msg('Không thể đổi: input sẽ vượt context window.','bad');return}S=next;S.log.push(label+(el.checked?': bật':': tắt'));msg('');render()})}
+  toggle('toolSearch',cfgTS,'Tool search (tool definitions '+fmt(SZ.toolsFull)+' ↔ '+fmt(SZ.toolsSearch)+'; đổi tool definitions làm mất cache)');
+  toggle('trunc',cfgTr,'Cắt bớt kết quả tool cho các lần gọi sau');
+  toggle('jit',cfgJ,'Just-in-time cho các lần truy xuất sau');
+  S=fresh();render();
+
+  // ---------- Glossary ----------
+  var G={nen:'Nền tảng',tp:'Thành phần context',cl:'Chiến lược',loi:'Lỗi context',cp:'Chi phí & cache'};
+  var T=[
+    ['context-eng','nen','Context engineering','','Việc chọn lọc và duy trì tập token tốt nhất đưa vào LLM ở mỗi lần gọi, lặp lại suốt quá trình agent chạy.','Quyết định lượt này giữ log nào, bỏ log nào, có cần đọc thêm tài liệu không.',['prompt-eng','context-window','high-signal'],[1]],
+    ['prompt-eng','nen','Prompt engineering','','Các cách viết và tổ chức lời dặn cho LLM để có kết quả tốt. Là một phần của context engineering.','Viết lại system prompt cho rõ vai trò và định dạng đầu ra.',['context-eng','system-prompt'],[1]],
+    ['high-signal','nen','Token giàu tín hiệu','high-signal tokens','Nguyên tắc: tìm tập token nhỏ nhất mà vẫn giúp model đạt kết quả mong muốn với khả năng cao nhất.','25 dòng lỗi liên quan thay cho 40.000 token log thô.',['context-eng','truncation'],[1]],
+    ['context-window','nen','Context window','','Toàn bộ văn bản model có thể tham chiếu khi sinh câu trả lời, gồm cả câu trả lời. Là "bộ nhớ làm việc" của model.','Claude: 200.000 hoặc 1 triệu token tùy model.',['token','attention-budget','overflow'],[2]],
+    ['token','nen','Token','','Đơn vị văn bản mà LLM xử lý. Giới hạn cửa sổ và chi phí đều tính theo token.','Xem trang Cách LLM hoạt động để hiểu chi tiết.',['context-window']],
+    ['attention-budget','nen','Attention budget','ngân sách chú ý','Cách Anthropic mô tả việc model có lượng "chú ý" hữu hạn: n token tạo ra n² cặp quan hệ, mỗi token mới tiêu một phần ngân sách.','',['context-rot','lost-middle'],[1]],
+    ['context-rot','nen','Context rot','','Hiện tượng độ chính xác và khả năng nhớ lại giảm khi số token trong context tăng.','Chroma thấy hiệu năng thay đổi theo độ dài input ở cả 18 LLM được thử, kể cả việc đơn giản.',['attention-budget','lost-middle'],[2,3]],
+    ['lost-middle','nen','Lost in the middle','','Model dùng thông tin ở đầu hoặc cuối context tốt hơn thông tin nằm ở giữa context dài.','Đặt yêu cầu quan trọng ở cuối context thay vì chôn giữa lịch sử.',['context-rot','recitation'],[4]],
+    ['overflow','nen','Tràn context','overflow','Input vượt cửa sổ thì API Claude trả lỗi 400; input cộng phần trả lời vượt cửa sổ thì câu trả lời có thể bị dừng giữa chừng.','',['context-window'],[2]],
+    ['system-prompt','tp','System prompt','','Lời dặn nền: vai trò, quy tắc, ví dụ. Nên ở "đúng độ cao": đủ cụ thể để dẫn hướng, đủ linh hoạt để model tự suy luận.','Tránh viết hàng chục nhánh if-else cứng nhắc.',['examples','prompt-eng'],[1]],
+    ['examples','tp','Ví dụ mẫu','few-shot examples','Vài ví dụ đa dạng, tiêu biểu cho hành vi mong muốn. Anthropic khuyên không nhồi danh sách mọi trường hợp ngoại lệ.','3 ticket mẫu với 3 cách xử lý khác nhau.',['system-prompt'],[1]],
+    ['tool-def','tp','Tool definitions','','Tên, mô tả, tham số của mỗi tool. Chiếm chỗ trong context dù tool chưa được gọi.','5 MCP server có thể tốn khoảng 55.000 token định nghĩa.',['tool-search','minimal-tools'],[2,9]],
+    ['history','tp','Lịch sử hội thoại','message history','Các tin nhắn người dùng và câu trả lời trước đó, được giữ nguyên qua các lượt nên lớn dần.','',['compaction'],[2]],
+    ['tool-result','tp','Kết quả tool','tool result','Đầu ra của tool được đưa lại vào context: nội dung file, log, kết quả tìm kiếm. Thường phình nhanh nhất.','',['truncation','clearing'],[5,7]],
+    ['retrieved','tp','Tài liệu truy xuất','retrieved documents','Các đoạn tài liệu được tìm ra và đưa vào context, như trong RAG.','',['jit','identifier']],
+    ['memory','tp','Bộ nhớ ngoài','memory','Thông tin lưu ngoài context (file, database) và chỉ đọc vào khi cần. Memory tool của Claude chạy phía ứng dụng của bạn.','Thư mục /memories chứa ghi chú tiến độ.',['notes','compaction'],[8]],
+    ['jit','cl','Just-in-time retrieval','','Không nạp hết từ đầu; giữ định danh nhẹ và dùng tool để nạp dữ liệu đúng lúc cần. Chậm hơn dữ liệu tính sẵn.','Đọc danh sách tiêu đề trước, chỉ mở 2 bài liên quan.',['identifier','progressive','hybrid-load'],[1]],
+    ['identifier','cl','Định danh nhẹ','lightweight identifiers','Đường dẫn file, câu truy vấn đã lưu, đường link: rẻ để giữ trong context, dùng để nạp nội dung khi cần.','Giữ URL, bỏ nội dung trang web (nén "khôi phục được").',['jit','restorable'],[1,13]],
+    ['progressive','cl','Progressive disclosure','khám phá dần','Agent khám phá context từng bước: mỗi lần đọc lại gợi ý nên đọc gì tiếp.','Tên thư mục, kích thước file gợi ý file nào đáng mở.',['jit'],[1]],
+    ['hybrid-load','cl','Nạp kiểu hybrid','','Nạp sẵn một phần nhỏ cho nhanh, phần còn lại để agent tự khám phá.','Claude Code nạp sẵn CLAUDE.md, còn file khác thì tìm bằng glob và grep.',['jit'],[1]],
+    ['compaction','cl','Compaction','nén bằng tóm tắt','Thay các lượt cũ bằng bản tóm tắt để hội thoại chạy tiếp. Tóm tắt quá tay có thể làm mất chi tiết quan trọng.','Tóm 140.000 token thành 3.000, giữ nguyên vài lượt gần nhất.',['clearing','notes','history'],[1,6]],
+    ['clearing','cl','Xóa kết quả tool cũ','tool result clearing','Thay các kết quả tool đã xử lý bằng dòng đánh dấu ngắn. Mặc định trên Claude: bắt đầu ở 100.000 token input, giữ 3 lượt dùng tool gần nhất.','',['compaction','cache-invalid'],[1,7]],
+    ['notes','cl','Ghi chú có cấu trúc','structured note-taking','Agent thường xuyên ghi chú ra ngoài context, rồi đọc lại sau khi context bị reset.','NOTES.md, todo.md, file tiến độ.',['memory','recitation'],[1,8]],
+    ['recitation','cl','Nhắc lại mục tiêu','recitation','Liên tục viết lại danh sách việc cần làm để mục tiêu luôn nằm ở cuối context, nơi model chú ý tốt.','Manus cập nhật todo.md sau mỗi bước.',['notes','lost-middle'],[13]],
+    ['subagent','cl','Sub-agent','','Agent phụ làm một việc hẹp trong context window riêng, chỉ trả về bản tóm tắt ngắn (thường 1.000–2.000 token).','Kiểm tra 300 laptop rồi báo lại 12 máy lỗi.',['tool-result'],[1,11]],
+    ['tool-search','cl','Tool search','','Chỉ nạp định nghĩa của vài tool liên quan khi cần, thay vì nạp hết từ đầu. Thường giảm hơn 85% token định nghĩa tool.','',['tool-def','minimal-tools','jit'],[9]],
+    ['minimal-tools','cl','Bộ tool tối thiểu','','Giữ bộ tool ít, rõ ràng, không chồng chéo. Nếu người không chọn được tool nào đúng thì agent cũng khó chọn đúng.','',['tool-def','confusion'],[1]],
+    ['truncation','cl','Cắt bớt kết quả tool','truncation','Tool có phân trang, lọc, cắt bớt với giá trị mặc định hợp lý, kèm hướng dẫn cách lấy thêm.','Claude Code mặc định giới hạn mỗi kết quả tool 25.000 token.',['tool-result','response-format'],[10]],
+    ['response-format','cl','Chế độ trả lời gọn','response_format','Cho agent chọn tool trả kết quả "ngắn gọn" hay "chi tiết".','Ví dụ của Anthropic: 72 token so với 206 token.',['truncation'],[10]],
+    ['restorable','cl','Nén khôi phục được','restorable compression','Bỏ nội dung nhưng giữ cách lấy lại được nó.','Bỏ nội dung file, giữ đường dẫn file.',['identifier'],[13]],
+    ['poisoning','loi','Context poisoning','','Một thông tin bịa lọt vào context và bị dùng lại ở các lượt sau.','',['clash','distraction'],[5]],
+    ['distraction','loi','Context distraction','','Context quá dài lấn át những gì model đã học khi huấn luyện.','',['context-rot'],[5]],
+    ['confusion','loi','Context confusion','','Nội dung thừa trong context ảnh hưởng tới câu trả lời.','Quá nhiều tool gần giống nhau.',['minimal-tools'],[5]],
+    ['clash','loi','Context clash','','Các phần trong context mâu thuẫn nhau.','Bản tóm tắt nói chính sách cũ, tài liệu mới nói khác.',['poisoning'],[5]],
+    ['prompt-caching','cp','Prompt caching','','Tái dùng phần đầu prompt giống hệt giữa các lần gọi. Đọc cache có giá 0,1 lần giá input thường (một số model rẻ hơn); ghi cache 5 phút có giá 1,25 lần.','Giữ system prompt và tool definitions ổn định ở đầu.',['cache-invalid','kv-cache'],[12]],
+    ['cache-invalid','cp','Mất hiệu lực cache','cache invalidation','Thay đổi ở một tầng (tools → system → messages) làm mất cache tầng đó và mọi tầng sau.','Chèn giờ hiện tại vào đầu system prompt làm mất cache mỗi lần gọi.',['prompt-caching','clearing'],[12,13]],
+    ['kv-cache','cp','KV-cache hit rate','tỷ lệ trúng cache','Tỷ lệ token input được phục vụ từ cache. Manus coi đây là chỉ số quan trọng nhất của agent khi chạy thật.','',['prompt-caching','io-ratio'],[13]],
+    ['io-ratio','cp','Tỷ lệ input/output','','Agent đọc nhiều hơn viết rất nhiều, vì mỗi lần gọi gửi lại cả context. Manus đo được khoảng 100:1.','',['kv-cache'],[13]],
+    ['usage','cp','Trường usage','','Mỗi response của Claude báo số token đã dùng, tách phần input thường, đọc cache và ghi cache. Đây là nguồn số liệu chính để đo.','',['prompt-caching'],[2]]
+  ];
+  var byId={};T.forEach(function(t){byId[t[0]]=t});
+  var grid=document.getElementById('glossGrid'), chips=document.getElementById('glossChips'), search=document.getElementById('glossSearch'), activeG='all';
+  function fold(s){return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d')}
+  function esc(s){return s.replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function renderGloss(){
+    var q=fold(search.value.trim()); grid.innerHTML='';var n=0;
+    T.forEach(function(t){
+      if(activeG!=='all'&&t[1]!==activeG)return;
+      var hay=fold(t[2]+' '+t[3]+' '+t[4]+' '+t[5]); if(q&&hay.indexOf(q)<0)return; n++;
+      var d=document.createElement('div');d.className='card term';d.id='term-'+t[0];
+      var rel=t[6].filter(function(r){return byId[r]}).map(function(r){return '<a href="#term-'+r+'" data-goto="'+r+'">'+esc(byId[r][2])+'</a>'}).join(', ');
+      // t[7]: optional list of source numbers (integers only), rendered as citation links to #src-N at the end of the card text
+      var cs=(t[7]||[]).filter(function(n){return n===(n|0)&&document.getElementById('src-'+n)}).map(function(n){return '<a href="#src-'+n+'">['+n+']</a>'}).join('');if(cs)cs='<sup class="cite">'+cs+'</sup>';
+      d.innerHTML='<span class="tag">'+G[t[1]]+'</span><h4>'+esc(t[2])+(t[3]?' <span class="en">· '+esc(t[3])+'</span>':'')+'</h4><p>'+esc(t[4])+(t[5]?'':cs)+'</p>'+(t[5]?'<p class="ex">Ví dụ: '+esc(t[5])+cs+'</p>':'')+(rel?'<div class="rel">Liên quan: '+rel+'</div>':'');
+      grid.appendChild(d);
+    });
+    if(!n)grid.innerHTML='<p class="muted">Không có khái niệm khớp.</p>';
+  }
+  var all=document.createElement('button');all.className='chip on';all.textContent='Tất cả ('+T.length+')';all.dataset.g='all';chips.appendChild(all);
+  Object.keys(G).forEach(function(k){var b=document.createElement('button');b.className='chip';b.dataset.g=k;b.textContent=G[k];chips.appendChild(b)});
+  chips.addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;activeG=b.dataset.g;[].forEach.call(chips.children,function(c){c.classList.toggle('on',c===b)});renderGloss()});
+  search.addEventListener('input',renderGloss);
+  grid.addEventListener('click',function(e){var a=e.target.closest('a[data-goto]');if(!a)return;e.preventDefault();
+    if(!document.getElementById('term-'+a.dataset.goto)){activeG='all';search.value='';[].forEach.call(chips.children,function(c){c.classList.toggle('on',c.dataset.g==='all')});renderGloss()}
+    var t=document.getElementById('term-'+a.dataset.goto);t.scrollIntoView({behavior:'smooth',block:'center'});t.style.outline='2px solid var(--accent)';setTimeout(function(){t.style.outline=''},1500)});
+  renderGloss();
+
+  // ---------- Checklist persistence ----------
+  [].forEach.call(document.querySelectorAll('input[data-k]'),function(cb){
+    cb.checked=safeGet('ctx-'+cb.dataset.k)==='1';
+    cb.addEventListener('change',function(){safeSet('ctx-'+cb.dataset.k,cb.checked?'1':'0')});
+  });
+
+  // ---------- Active TOC ----------
+  var links=[].slice.call(document.querySelectorAll('#toc a'));
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(l){var on=l.getAttribute('href')==='#'+e.target.id;l.classList.toggle('active',on);if(on){var nav=l.parentNode;nav.scrollLeft=l.offsetLeft-nav.offsetLeft-(nav.clientWidth-l.offsetWidth)/2}})}})},{rootMargin:'-40% 0px -55% 0px'});
+    document.querySelectorAll('main section').forEach(function(s){io.observe(s)});
+  }
+})();
+</script>
+</body>
+</html>
