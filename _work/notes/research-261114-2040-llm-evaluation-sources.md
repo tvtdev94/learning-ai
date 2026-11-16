@@ -64,3 +64,31 @@ Ngày truy cập tất cả: 2026-11-14. Dạng: khẳng định → URL → câ
 - Kohavi et al. 2009 (PDF không đọc được qua WebFetch) → không trích.
 - BEIR abstract không nói nDCG@10 → không dùng cho khẳng định "nDCG@10 là chuẩn".
 - Harbor, Braintrust, Arize Phoenix: chỉ nêu là "Anthropic liệt kê", chưa mở tài liệu riêng.
+
+## Kiểm lại ngày 2026-11-16 (mở lại toàn bộ 26 nguồn bằng WebFetch, tất cả vẫn khớp)
+- [1] Bài đăng ngày 2026-01-09; ví dụ pass^k → https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents → "If your agent has a 75% per-trial success rate and you run 3 trials, the probability of passing all three is (0.75)³ ≈ 42%."
+- [1] Chấm kết quả, không chấm đường đi → cùng URL → "it's often better to grade what the agent produced, not the path it took."; "agents regularly find valid approaches that eval designers didn't anticipate"
+- [1] Nhiều lượt → cùng URL → "Because model outputs vary between runs, we run multiple trials to produce more consistent results."
+- [1] Điểm yếu grader LLM (không nói "bias") → cùng URL → "Non-deterministic", "More expensive than code", "Requires calibration with human graders for accuracy"
+- [1] Người dùng giả lập → cùng URL → "they often require a second LLM to simulate the user."
+- [1] Grader code kiểm tool call → cùng URL → "Tool calls verification (tools used, parameters)"
+- [1] Langfuse tự host → cùng URL → "a self-hosted open-source alternative for teams with data residency requirements"
+- [2] Suy luận trước khi chấm → https://developers.openai.com/api/docs/guides/evaluation-best-practices → "Add reasoning and chain-of-thought as reasoning before scoring improves eval performance"
+- [2] Kiểm soát độ dài → cùng URL → "Control for response lengths as LLMs bias towards longer responses in general"
+- [2] Mở rộng judge sau khi đồng thuận → cùng URL → "consistently agrees with human annotations, scale up"
+- [3] Cấp 1 trên mọi thay đổi → https://hamel.dev/blog/posts/evals/ → "I often run Level 1 evals on every code change"; bài đăng 2024-03-29
+- [3] Kiểm định kỳ → cùng URL → "you must continue doing periodic exercises to monitor the model and human agreement"
+- [7] Biến thể ID-based → https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/context_precision/ → "comparing the IDs of retrieved contexts with reference context IDs" (điểm = số ID trùng / tổng ID lấy về)
+- [7] Biến thể không cần reference → cùng URL → "can be used without the availability of a reference answer"
+- [9] Mặc định sinh 3 câu hỏi → https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/answer_relevance/ → "Generate a set of artificial questions (default is 3) based on the response."
+- [12] IDCG theo tài liệu liên quan tới vị trí p → https://en.wikipedia.org/wiki/Discounted_cumulative_gain → "represents the list of relevant documents (ordered by their relevance) in the corpus up to position p"
+- [13] MRR bỏ qua đoạn đúng sau → https://en.wikipedia.org/wiki/Mean_reciprocal_rank → "only the rank of the first relevant answer is considered, and possible further relevant answers are ignored."
+- [14] Đổi sang permalink commit 26c7dc3 (2025-05-01) → https://raw.githubusercontent.com/run-llama/llama_index/26c7dc3e9846045864cf93ab92cb13bc80a3394e/llama-index-core/llama_index/core/evaluation/retrieval/metrics.py → "for i in range(1, len(expected_ids) + 1)"; "Currently only supports binary relevance"
+- [16] Bằng chứng trước khi chấm → https://arxiv.org/abs/2305.17926 → "requires the evaluator model to generate multiple evaluation evidence before assigning ratings"
+- [19] Câu gốc về bộ chấm LLM → https://arxiv.org/abs/2404.12272 → "LLM-generated evaluators simply inherit all the problems of the LLMs they evaluate, requiring further human validation"
+- [21] Người dùng do LLM đóng vai → https://arxiv.org/abs/2406.12045 → "a benchmark emulating dynamic conversations between a user (simulated by language models) and a language agent"
+- [22] URL canonical mới, ms.date 2026-09-30 → https://learn.microsoft.com/en-us/azure/foundry/concepts/evaluation-evaluators/agent-evaluators → "Measures whether the agent selected the correct tools without selecting unnecessary ones"; matching modes exact_match / in_order_match / any_order_match
+- [26] BFCL V4, cập nhật 2026-04-12 → https://gorilla.cs.berkeley.edu/leaderboard.html → "evaluates the LLM's ability to call functions (aka tools) accurately"
+- [27] Cohen's kappa (mới) → https://en.wikipedia.org/wiki/Cohen%27s_kappa → "κ incorporates the possibility of the agreement occurring by chance"; κ = (p_o − p_e)/(1 − p_e), p_e từ tỉ lệ từng người chấm theo từng nhãn
+- [28] Khoảng tin cậy xấp xỉ chuẩn (mới) → https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval → p̂ ± z·√(p̂(1−p̂)/n), z = 1,96 cho 95%; "becomes unreliable" khi "the sample size becomes small or the success probability grows close to either 0 or 1"
+- Tự tính (không phải số từ nguồn): κ ≈ 0,61 từ bảng minh họa 27/5/1/7; ±14 điểm phần trăm = 1,96·√(0,8·0,2/30) ≈ 0,143.

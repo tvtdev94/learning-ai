@@ -74,7 +74,9 @@ footer{color:var(--muted);font-size:14px;margin-top:32px}
     {href:'hybrid-search/',icon:'🔎',title:'Hybrid Search',sub:'BM25 + vector + RRF',desc:'BM25 và vector chạy song song rồi trộn bằng RRF: vì sao cần, cách tính, tiếng Việt, mô phỏng tương tác và cách đánh giá.',tags:['BM25','RRF','Có mô phỏng']},
     {href:'harness/',icon:'🧰',title:'Agent Harness',sub:'Phần mềm bao quanh model',desc:'Harness là mọi thứ quanh model: vòng lặp agent, ghép context, tool, quyền, hook, sandbox, log. Đi qua 9 bước một coding agent sửa test.',tags:['Agent loop','Context','Có ví dụ từng bước']},
     {href:'multi-agent-agentic-rag/',icon:'🕸️',title:'Multi-agent & Agentic RAG',sub:'Khi nào cho agent tự quyết',desc:'Khi nào nên cho agent tự quyết cách tìm và chia việc cho nhiều agent: flow, mô phỏng token, CRAG, lỗi MAST, cách đo.',tags:['Multi-agent','Agentic RAG','Đánh đổi']},
-    {href:'context-engineering/',icon:'🗂️',title:'Context Engineering',sub:'Quản lý thứ LLM nhìn thấy',desc:'Chọn, nén, ghi ra và cô lập context để agent chạy dài vẫn gọn, đúng và rẻ: compaction, tool search, sub-agent, prompt caching.',tags:['Context','Agent','Chi phí']}
+    {href:'context-engineering/',icon:'🗂️',title:'Context Engineering',sub:'Quản lý thứ LLM nhìn thấy',desc:'Chọn, nén, ghi ra và cô lập context để agent chạy dài vẫn gọn, đúng và rẻ: compaction, tool search, sub-agent, prompt caching.',tags:['Context','Agent','Chi phí']},
+    {href:'llm-evaluation/',icon:'🧪',title:'LLM Evaluation',sub:'Đo chất lượng RAG và agent',desc:'Xây golden set, chọn metric cho retrieval, câu trả lời và agent, hiệu chỉnh LLM-as-judge, nối eval offline với giám sát production.',tags:['Golden set','Metric RAG','LLM-as-judge']},
+    {href:'query-transformation/',icon:'🔀',title:'Query Transformation',sub:'Viết lại câu hỏi để tìm đúng',desc:'Biến câu hỏi người dùng thành truy vấn dễ tìm: rewrite, multi-query, decomposition, step-back, HyDE, routing, self-query và cái giá độ trễ.',tags:['RAG','Truy vấn','Retrieval']}
   ];
   var grid=document.getElementById('topics');
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}

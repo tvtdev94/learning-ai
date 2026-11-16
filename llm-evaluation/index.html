@@ -4,13 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Đánh giá RAG và agent</title>
+<!-- pwa -->
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15171a" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" sizes="32x32" href="../icons/favicon-32.png">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Học AI">
+<script>if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('../sw.js').catch(function(){})})</script>
 <script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <style>
 :root{
   --bg:#f7f6f2; --surface:#ffffff; --surface-2:#f0eee8; --text:#1f2328; --muted:#5b6370;
-  --border:#dcd8cf; --accent:#2f6fde; --accent-soft:#e3ecfc; --ok:#1f8a4c; --ok-soft:#e1f3e8;
-  --warn:#b4610e; --warn-soft:#fbeedd; --bad:#c23b3b; --bad-soft:#fae3e3;
-  --p1:#2f6fde; --p2:#8a4fd1; --p3:#1f8a4c; --p4:#b4610e;
+  --border:#dcd8cf; --accent:#2559b8; --accent-soft:#e3ecfc; --ok:#16703d; --ok-soft:#e1f3e8;
+  --warn:#8f4c0a; --warn-soft:#fbeedd; --bad:#a82f2f; --bad-soft:#fae3e3;
+  --p1:#2559b8; --p2:#7440b8; --p3:#16703d; --p4:#8f4c0a;
   --code-bg:#f0eee8; --shadow:0 1px 2px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04); --on-accent:#ffffff; color-scheme:light;
 }
 @media (prefers-color-scheme: dark){
@@ -66,7 +76,6 @@ li{margin:4px 0}
 .tag.p2{background:var(--surface-2);color:var(--p2)}
 .tag.p3{background:var(--ok-soft);color:var(--p3)}
 .tag.p4{background:var(--warn-soft);color:var(--p4)}
-.tag.bad{background:var(--bad-soft);color:var(--bad)}
 table{width:100%;border-collapse:collapse;font-size:15px}
 th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
 th{background:var(--surface-2);font-weight:600}
@@ -81,9 +90,10 @@ svg text{fill:var(--text);font-family:inherit}
 .svgbox svg{min-width:640px}
 /* Glossary */
 .gloss-tools{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
-.gloss-tools input{flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
+.gloss-tools input{flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit;font-size:16px}
 .chip{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:999px;padding:4px 12px;font-size:14px}
 .chip.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.chip.on:disabled{opacity:1}
 .term h4{margin:0 0 4px;font-size:16px}
 .term .en{font-weight:400;color:var(--muted);font-size:14px}
 .term p{margin:4px 0;font-size:15px}
@@ -149,7 +159,6 @@ ol.sources .acc{color:var(--muted);font-size:14px}
 .strip{display:flex;gap:3px;flex-wrap:wrap;margin-top:2px}
 .strip span{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:5px;font-size:12px;font-weight:600;background:var(--surface-2);color:var(--muted);border:1px solid var(--border)}
 .strip span.y{background:var(--ok);border-color:var(--ok);color:var(--on-accent)}
-.strip span.cut{opacity:.35}
 .bars{display:grid;gap:10px;margin-top:8px}
 .brow{display:grid;grid-template-columns:150px 1fr 64px;gap:8px;align-items:center;font-size:15px}
 .brow .track{height:16px;background:var(--surface-2);border-radius:8px;overflow:hidden}
@@ -157,8 +166,8 @@ ol.sources .acc{color:var(--muted);font-size:14px}
 .brow .v{font-family:ui-monospace,Consolas,monospace;font-weight:700;text-align:right}
 .legend{display:flex;flex-wrap:wrap;gap:12px;font-size:14px;color:var(--muted);margin-top:6px}
 .legend i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:4px}
-/* Desktop SVG diagrams (viewBox 1000 wide) only from 1041px so 12-unit labels render at ~12px or larger */
-@media (max-width:1040px){.d-only{display:none}.m-only{display:block}.vflow{max-width:560px;margin:0 auto}}
+/* Desktop SVG diagrams (viewBox 1000 wide) only from 1081px so 12-unit labels render at ~12px or larger */
+@media (max-width:1080px){.d-only{display:none}.m-only{display:block}.vflow{max-width:560px;margin:0 auto}}
 @media (max-width:600px){
   .brand{display:none} body{font-size:15px}
   .theme-btn .lbl,.home .lbl{display:none}
@@ -183,6 +192,10 @@ ol.sources .acc{color:var(--muted);font-size:14px}
   .qrow label{font-size:14px}
   .brow{grid-template-columns:110px 1fr 56px;font-size:14px}
   .check{min-height:40px}
+  details summary{padding:8px 0}
+  .home,.theme-btn{min-width:40px;justify-content:center}
+  #calcTable td:nth-child(n+3){display:inline-block;width:33.33%;vertical-align:top}
+  #calcTable td[data-label]::before{text-transform:none;letter-spacing:0}
 }
 </style>
 </head>
@@ -224,7 +237,7 @@ ol.sources .acc{color:var(--muted);font-size:14px}
   <div class="grid g3">
     <div class="card"><span class="tag p4">Vấn đề 1</span><h4>"Có vẻ chạy được" không phải là bằng chứng</h4><p>OpenAI gọi việc đánh giá bằng cảm giác ("it seems like it's working") hay đợi ship xong mới làm eval là anti-pattern.<sup class="cite"><a href="#src-2">[2]</a></sup> Thử vài câu bằng tay chỉ thấy vài câu đó.</p></div>
     <div class="card"><span class="tag p4">Vấn đề 2</span><h4>Sửa chỗ này, hỏng chỗ kia</h4><p>Đổi prompt để sửa một lỗi có thể làm phát sinh lỗi khác. Hamel Husain mô tả hiện tượng này như trò "đập chuột" (whack-a-mole).<sup class="cite"><a href="#src-3">[3]</a></sup> Chỉ một bộ test chạy lại được mới bắt được các lỗi mới phát sinh.</p></div>
-    <div class="card"><span class="tag p4">Vấn đề 3</span><h4>LLM không tất định</h4><p>Cùng một task, mỗi lần chạy có thể ra kết quả khác. Vì vậy Anthropic khuyên chạy nhiều lượt (trial) cho mỗi task rồi mới kết luận.<sup class="cite"><a href="#src-1">[1]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Vấn đề 3</span><h4>LLM không tất định</h4><p>Cùng một task, mỗi lần chạy có thể ra kết quả khác. Vì vậy Anthropic chạy nhiều lượt (trial) cho mỗi task để kết quả ổn định hơn.<sup class="cite"><a href="#src-1">[1]</a></sup></p></div>
   </div>
 
   <h3>Eval-driven development là gì?</h3>
@@ -271,12 +284,13 @@ ol.sources .acc{color:var(--muted);font-size:14px}
   </div>
 
   <div class="svgbox d-only">
-  <svg class="diagram" viewBox="0 0 1000 400" role="img" aria-label="Vòng lặp đánh giá: offline rồi online, lỗi mới quay về golden set">
+  <svg class="diagram" viewBox="0 0 1000 420" role="img" aria-label="Vòng lặp đánh giá: offline rồi online, lỗi mới quay về golden set">
     <defs>
       <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
       <marker id="arrO" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--p4)"/></marker>
+      <marker id="arrG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--p3)"/></marker>
     </defs>
-    <rect x="10" y="10" width="980" height="170" rx="14" fill="var(--accent-soft)" stroke="var(--p1)" stroke-opacity=".4"/>
+    <rect x="10" y="10" width="980" height="190" rx="14" fill="var(--accent-soft)" stroke="var(--p1)" stroke-opacity=".4"/>
     <text x="28" y="38" font-weight="700" font-size="16" style="fill:var(--p1)">OFFLINE · trên golden set, trước khi phát hành</text>
     <g font-size="14">
       <rect x="28" y="62" width="140" height="88" rx="10" fill="var(--surface)" stroke="var(--border)"/>
@@ -287,7 +301,7 @@ ol.sources .acc{color:var(--muted);font-size:14px}
       <text x="260" y="118" text-anchor="middle" font-size="12" style="fill:var(--muted)">task + đáp án chuẩn</text>
       <rect x="352" y="62" width="140" height="88" rx="10" fill="var(--surface)" stroke="var(--border)"/>
       <text x="422" y="96" text-anchor="middle" font-weight="600">3. Chạy</text>
-      <text x="422" y="118" text-anchor="middle" font-size="12" style="fill:var(--muted)">nhiều lượt, lưu transcript</text>
+      <text x="422" y="118" text-anchor="middle" font-size="12" style="fill:var(--muted)">nhiều lượt + transcript</text>
       <rect x="514" y="62" width="140" height="88" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/>
       <text x="584" y="96" text-anchor="middle" font-weight="600">4. Chấm</text>
       <text x="584" y="118" text-anchor="middle" font-size="12" style="fill:var(--muted)">code · judge · người</text>
@@ -301,26 +315,26 @@ ol.sources .acc{color:var(--muted);font-size:14px}
     <g stroke="var(--muted)" stroke-width="2" marker-end="url(#arr)">
       <line x1="168" y1="106" x2="188" y2="106"/><line x1="330" y1="106" x2="350" y2="106"/><line x1="492" y1="106" x2="512" y2="106"/><line x1="654" y1="106" x2="674" y2="106"/><line x1="816" y1="106" x2="836" y2="106"/>
     </g>
-    <path d="M746 150 C 746 172, 422 172, 422 152" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arr)"/>
-    <text x="520" y="174" font-size="12" style="fill:var(--muted)">sửa xong, chạy lại</text>
+    <path d="M746 150 C 746 180, 422 180, 422 152" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arr)"/>
+    <text x="584" y="192" text-anchor="middle" font-size="12" style="fill:var(--muted)">sửa xong, chạy lại</text>
 
-    <rect x="10" y="220" width="980" height="170" rx="14" fill="var(--warn-soft)" stroke="var(--p4)" stroke-opacity=".5"/>
-    <text x="28" y="248" font-weight="700" font-size="16" style="fill:var(--p4)">ONLINE · trên lưu lượng thật, sau khi phát hành</text>
+    <rect x="10" y="240" width="980" height="170" rx="14" fill="var(--warn-soft)" stroke="var(--p4)" stroke-opacity=".5"/>
+    <text x="28" y="268" font-weight="700" font-size="16" style="fill:var(--p4)">ONLINE · trên lưu lượng thật, sau khi phát hành</text>
     <g font-size="14">
-      <rect x="640" y="272" width="334" height="88" rx="10" fill="var(--surface)" stroke="var(--p4)" stroke-width="2"/>
-      <text x="807" y="302" text-anchor="middle" font-weight="600">7. Giám sát production</text>
-      <text x="807" y="324" text-anchor="middle" font-size="12" style="fill:var(--muted)">chấm mẫu trace (không cần đáp án chuẩn)</text>
-      <text x="807" y="344" text-anchor="middle" font-size="12" style="fill:var(--muted)">feedback người dùng · A/B test</text>
-      <rect x="190" y="272" width="300" height="88" rx="10" fill="var(--surface)" stroke="var(--border)"/>
-      <text x="340" y="306" text-anchor="middle" font-weight="600">Trace lỗi → test case mới</text>
-      <text x="340" y="328" text-anchor="middle" font-size="12" style="fill:var(--muted)">lỗi thấy một lần thành test chạy mãi</text>
+      <rect x="640" y="292" width="334" height="88" rx="10" fill="var(--surface)" stroke="var(--p4)" stroke-width="2"/>
+      <text x="807" y="322" text-anchor="middle" font-weight="600">7. Giám sát production</text>
+      <text x="807" y="344" text-anchor="middle" font-size="12" style="fill:var(--muted)">chấm mẫu trace (không cần đáp án chuẩn)</text>
+      <text x="807" y="364" text-anchor="middle" font-size="12" style="fill:var(--muted)">feedback người dùng · A/B test</text>
+      <rect x="190" y="292" width="300" height="88" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="340" y="326" text-anchor="middle" font-weight="600">Trace lỗi → test case mới</text>
+      <text x="340" y="348" text-anchor="middle" font-size="12" style="fill:var(--muted)">lỗi thấy một lần thành test chạy mãi</text>
     </g>
-    <path d="M906 150 L906 270" fill="none" stroke="var(--p3)" stroke-width="2" marker-end="url(#arr)"/>
-    <text x="914" y="205" font-size="12" style="fill:var(--p3)">đạt → phát hành</text>
-    <line x1="640" y1="316" x2="492" y2="316" stroke="var(--p4)" stroke-width="2" marker-end="url(#arrO)"/>
-    <text x="566" y="306" text-anchor="middle" font-size="12" style="fill:var(--p4)">lỗi mới</text>
-    <path d="M260 272 L260 152" fill="none" stroke="var(--p4)" stroke-width="2" marker-end="url(#arrO)"/>
-    <text x="268" y="205" font-size="12" style="fill:var(--p4)">bổ sung golden set</text>
+    <path d="M906 150 L906 290" fill="none" stroke="var(--p3)" stroke-width="2" marker-end="url(#arrG)"/>
+    <text x="898" y="225" text-anchor="end" font-size="12" style="fill:var(--p3)">đạt → phát hành</text>
+    <line x1="640" y1="336" x2="492" y2="336" stroke="var(--p4)" stroke-width="2" marker-end="url(#arrO)"/>
+    <text x="566" y="326" text-anchor="middle" font-size="12" style="fill:var(--p4)">lỗi mới</text>
+    <path d="M260 292 L260 152" fill="none" stroke="var(--p4)" stroke-width="2" marker-end="url(#arrO)"/>
+    <text x="268" y="225" font-size="12" style="fill:var(--p4)">bổ sung golden set</text>
   </svg>
   </div>
   <div class="grid g3" style="margin-top:12px">
@@ -353,7 +367,7 @@ ol.sources .acc{color:var(--muted);font-size:14px}
     <div class="card"><span class="tag p1">Case RAG</span>
       <pre>id: rag-017
 câu hỏi: "Hàng vỡ thì được bồi thường thế nào?"
-đáp án chuẩn: "Tối đa 4 lần cước, báo trong 14 ngày, kèm ảnh."
+đáp án chuẩn: "Tối đa 4 lần cước, báo trong 14 ngày, kèm ảnh, hoàn cả phí COD."
 đoạn nguồn: [chinh-sach-boi-thuong#c3]
 nhãn: single-hop · chính sách · dễ
 nguồn gốc: ticket thật #88412</pre>
@@ -398,10 +412,10 @@ nhãn: hành động · có ghi dữ liệu · trung bình</pre>
 <!-- 5. METRIC -->
 <section id="metric">
   <h2>5. Metric theo từng lớp</h2>
-  <p>Đo riêng từng lớp để biết <b>chỗ nào hỏng</b>. Microsoft gọi hai góc nhìn này là đánh giá hệ thống (kết quả cuối) và đánh giá quá trình (từng bước).<sup class="cite"><a href="#src-22">[22]</a></sup></p>
+  <p>Đo riêng từng lớp để biết <b>chỗ nào hỏng</b>. Microsoft tách đánh giá agent thành hai góc nhìn: đánh giá hệ thống (kết quả cuối) và đánh giá quá trình (từng bước).<sup class="cite"><a href="#src-22">[22]</a></sup> Trang này chia thành ba lớp: retrieval, câu trả lời, agent.</p>
 
   <h3>Lớp 1 · Retrieval: tìm có đúng đoạn không?</h3>
-  <p class="muted">Ký hiệu: k là số đoạn lấy ra; R là số đoạn đúng của câu hỏi (ghi trong golden set). Định nghĩa cơ bản của hit@k và MRR đã có ở <a href="../rag/#danh-gia">trang RAG</a>. Dưới đây là công thức và chỗ khác nhau giữa các metric.</p>
+  <p class="muted">Ký hiệu: k là số đoạn lấy ra; R là số đoạn đúng của câu hỏi (ghi trong golden set); precision@i = số đoạn đúng trong i đoạn đầu / i.<sup class="cite"><a href="#src-7">[7]</a></sup> Định nghĩa cơ bản của hit@k và MRR đã có ở <a href="../rag/#danh-gia">trang RAG</a>. Dưới đây là công thức và chỗ khác nhau giữa các metric.</p>
   <div class="table-wrap"><table class="stack">
     <thead><tr><th>Metric</th><th>Công thức (một câu hỏi)</th><th>Thưởng cho điều gì</th><th>Không thấy được</th></tr></thead>
     <tbody>
@@ -413,7 +427,7 @@ nhãn: hành động · có ghi dữ liệu · trung bình</pre>
       <tr><td><b>Context recall</b> (Ragas)</td><td>Tách đáp án chuẩn thành các ý; tỉ lệ ý được context hỗ trợ. Có biến thể so ID đoạn.<sup class="cite"><a href="#src-8">[8]</a></sup></td><td>Context đủ thông tin để trả lời</td><td>Thứ tự; độ nhiễu</td></tr>
     </tbody>
   </table></div>
-  <div class="callout warn"><b>Cùng tên, khác số.</b> Khi tính IDCG, có thư viện lấy toàn bộ đoạn đúng làm thứ hạng lý tưởng. Ví dụ LlamaIndex lấy toàn bộ danh sách đoạn đúng,<sup class="cite"><a href="#src-14">[14]</a></sup> thay vì chỉ min(R, k) như máy tính ở mục 6. Khi R &gt; k, hai cách cho điểm khác nhau. nDCG còn có biến thể dùng 2<sup>rel</sup>−1 thay cho rel; hai biến thể chỉ trùng nhau khi nhãn là 0/1.<sup class="cite"><a href="#src-12">[12]</a></sup> Vì vậy đừng so điểm giữa hai công cụ khác nhau; mỗi báo cáo nên ghi rõ dùng biến thể nào.</div>
+  <div class="callout warn"><b>Cùng tên, khác số.</b> Khi tính IDCG, LlamaIndex lấy toàn bộ danh sách đoạn đúng làm thứ hạng lý tưởng,<sup class="cite"><a href="#src-14">[14]</a></sup> thay vì chỉ min(R, k) như máy tính ở mục 6. Khi R &gt; k, hai cách cho điểm khác nhau. nDCG còn có biến thể dùng 2<sup>rel</sup>−1 thay cho rel; hai biến thể chỉ trùng nhau khi nhãn là 0/1.<sup class="cite"><a href="#src-12">[12]</a></sup> Vì vậy đừng so điểm giữa hai công cụ khác nhau; mỗi báo cáo nên ghi rõ dùng biến thể nào.</div>
 
   <h3>Lớp 2 · Câu trả lời: viết có đúng và bám nguồn không?</h3>
   <div class="grid g3">
@@ -426,7 +440,7 @@ nhãn: hành động · có ghi dữ liệu · trung bình</pre>
       <p class="muted"><b>Không</b> đo độ đúng: một câu trả lời sai nhưng đúng chủ đề vẫn có thể được điểm cao.<sup class="cite"><a href="#src-9">[9]</a></sup></p></div>
     <div class="card"><span class="tag p3">Correctness</span><h4>Có khớp đáp án chuẩn không?</h4>
       <p>Tách cả câu trả lời lẫn đáp án chuẩn thành các ý rồi so: ý đúng (TP), ý thừa (FP), ý thiếu (FN).<sup class="cite"><a href="#src-10">[10]</a></sup></p>
-      <div class="formula">P = TP/(TP+FP) · R = TP/(TP+FN) · F1 = 2PR/(P+R)</div>
+      <div class="formula">Precision = TP/(TP+FP) · Recall = TP/(TP+FN) · F1 = 2·Precision·Recall/(Precision+Recall)</div>
       <p class="muted">Cần đáp án chuẩn, nên chủ yếu dùng offline.</p></div>
   </div>
 
@@ -434,10 +448,10 @@ nhãn: hành động · có ghi dữ liệu · trung bình</pre>
   <div class="table-wrap"><table class="stack">
     <thead><tr><th>Metric</th><th>Đo thế nào</th><th>Lưu ý</th></tr></thead>
     <tbody>
-      <tr><td><b>Tỉ lệ hoàn thành task</b></td><td>Số task đạt / tổng số task. Tốt nhất là kiểm <b>trạng thái cuối</b>: τ-bench so trạng thái database cuối cuộc hội thoại với trạng thái mục tiêu đã gán nhãn.<sup class="cite"><a href="#src-21">[21]</a></sup></td><td>Agent có thể <i>nói</i> đã xong mà trạng thái không đổi. Transcript là lời agent nói, outcome là trạng thái thật.<sup class="cite"><a href="#src-1">[1]</a></sup></td></tr>
-      <tr><td><b>pass@k và pass^k</b></td><td>pass@k: ít nhất 1 trong k lượt thành công. pass^k: cả k lượt đều thành công.<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>Agent phục vụ khách cần pass^k. Trên τ-bench, các tác giả báo cáo gpt-4o thành công dưới 50% task và pass^8 dưới 25% ở miền bán lẻ.<sup class="cite"><a href="#src-21">[21]</a></sup></td></tr>
+      <tr><td><b>Tỉ lệ hoàn thành task</b></td><td>Số task đạt / tổng số task. Tốt nhất là kiểm <b>trạng thái cuối</b>: τ-bench so trạng thái database cuối cuộc hội thoại với trạng thái mục tiêu đã gán nhãn.<sup class="cite"><a href="#src-21">[21]</a></sup></td><td>Agent có thể <i>nói</i> đã xong mà trạng thái không đổi. Lời agent nói chỉ nằm trong transcript; outcome là trạng thái thật của môi trường.<sup class="cite"><a href="#src-1">[1]</a></sup></td></tr>
+      <tr><td><b>pass@k và pass^k</b></td><td>pass@k: ít nhất 1 trong k lượt thành công. pass^k: cả k lượt đều thành công.<sup class="cite"><a href="#src-1">[1]</a></sup> Ví dụ của Anthropic: mỗi lượt đạt 75% thì xác suất đạt cả 3 lượt chỉ còn 0,75³ ≈ 42%.<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>Agent phục vụ khách cần pass^k. Trên τ-bench (bài báo 2024), các tác giả báo cáo gpt-4o thành công dưới 50% task và pass^8 dưới 25% ở miền bán lẻ.<sup class="cite"><a href="#src-21">[21]</a></sup></td></tr>
       <tr><td><b>Độ chính xác chọn tool</b></td><td>Agent có chọn đúng tool cần thiết và không gọi tool thừa không; tham số có đúng không.<sup class="cite"><a href="#src-22">[22]</a></sup></td><td>Code kiểm được tên tool và tham số trong transcript.<sup class="cite"><a href="#src-1">[1]</a></sup> Có benchmark công khai riêng cho gọi function, ví dụ BFCL.<sup class="cite"><a href="#src-26">[26]</a></sup></td></tr>
-      <tr><td><b>Số bước</b></td><td>Số lượt, số tool call mỗi task.<sup class="cite"><a href="#src-1">[1]</a></sup> Hoặc so chuỗi hành động với chuỗi kỳ vọng: khớp hoàn toàn, khớp đúng thứ tự (cho phép bước thừa), hoặc khớp không cần thứ tự.<sup class="cite"><a href="#src-22">[22]</a></sup></td><td>Nhiều đường đúng có thể cùng tồn tại, nên chấm chuỗi quá cứng sẽ phạt cả cách làm hợp lệ.</td></tr>
+      <tr><td><b>Số bước</b></td><td>Số lượt, số tool call mỗi task.<sup class="cite"><a href="#src-1">[1]</a></sup> Hoặc so chuỗi hành động với chuỗi kỳ vọng: khớp hoàn toàn, khớp đúng thứ tự (cho phép bước thừa), hoặc khớp không cần thứ tự.<sup class="cite"><a href="#src-22">[22]</a></sup></td><td>Agent thường tìm ra cách làm hợp lệ mà người viết eval không lường trước, nên Anthropic khuyên thường nên chấm kết quả agent tạo ra, không chấm đường đi.<sup class="cite"><a href="#src-1">[1]</a></sup> Chỉ chấm chuỗi khi thứ tự là yêu cầu nghiệp vụ.</td></tr>
       <tr><td><b>Chi phí và độ trễ</b></td><td>Token, chi phí mỗi task, độ trễ, tỉ lệ lỗi, đo trên cùng một bộ task cố định.<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>So chi phí <i>trên mỗi task đạt</i>, không chỉ trên mỗi lần gọi.</td></tr>
     </tbody>
   </table></div>
@@ -460,9 +474,9 @@ nhãn: hành động · có ghi dữ liệu · trung bình</pre>
       <thead><tr><th>Câu hỏi</th><th>Top-k (ô xanh = đoạn đúng)</th><th>hit@k</th><th>recall@k</th><th>RR@k</th><th>nDCG@k</th><th>CP@k</th></tr></thead>
       <tbody></tbody>
     </table></div>
-    <p class="muted" style="margin-top:8px">RR@k là reciprocal rank của một câu; MRR@k là trung bình RR@k. CP@k là context precision kiểu Ragas với nhãn 0/1.<sup class="cite"><a href="#src-7">[7]</a></sup></p>
+    <p class="muted" style="margin-top:8px">RR@k là reciprocal rank của một câu; MRR@k là trung bình RR@k. CP@k là context precision kiểu Ragas với nhãn 0/1.<sup class="cite"><a href="#src-7">[7]</a></sup> Ragas còn có biến thể so theo ID (IDBasedContextPrecision): số ID trùng chia tổng số ID lấy về, không xét thứ hạng, nên ra số khác CP@k ở đây.<sup class="cite"><a href="#src-7">[7]</a></sup></p>
   </div>
-  <div class="callout"><b>Thử ngay:</b> chọn "Trước rerank", rồi "Sau rerank". Câu 4 (mã nội bộ COD-HN) vẫn hỏng ở cả hai: reranker chỉ sắp lại các ứng viên đã tìm được, không cứu được đoạn mà retriever bỏ sót. Lỗi kiểu này cần <a href="../hybrid-search/">hybrid search</a> (thêm BM25), không phải <a href="../reranking/">reranking</a>. Tiếp theo, đổi k từ 5 về 1: hit@k tụt mạnh, vì nhiều đoạn đúng nằm ở vị trí 2–3.</div>
+  <div class="callout"><b>Thử ngay:</b> chọn "Trước rerank", rồi "Sau rerank". Câu 4 (mã nội bộ COD-HN) vẫn hỏng ở cả hai: reranker chỉ sắp lại các ứng viên đã tìm được, không cứu được đoạn mà retriever bỏ sót. Lỗi kiểu này cần <a href="../hybrid-search/">hybrid search</a> (thêm BM25), không phải <a href="../reranking/">reranking</a>. Tiếp theo, quay lại "Trước rerank" và đổi k từ 5 về 1: hit@k tụt từ 0,667 xuống 0,333, vì câu 2 và câu 3 có đoạn đúng ở vị trí 3 và 2.</div>
 </section>
 
 <!-- 7. LLM-AS-JUDGE -->
@@ -480,8 +494,7 @@ nhãn: hành động · có ghi dữ liệu · trung bình</pre>
   <ul>
     <li><b>Tiêu chí hẹp, đầu ra đơn giản.</b> OpenAI khuyên dùng pairwise hoặc pass/fail để tin cậy hơn thang điểm nhiều mức.<sup class="cite"><a href="#src-2">[2]</a></sup></li>
     <li><b>Cho lối thoát.</b> Cho phép trả "Unknown" khi không đủ thông tin, để giám khảo không phải bịa ra một điểm.<sup class="cite"><a href="#src-1">[1]</a></sup></li>
-    <li><b>Bắt suy luận trước khi cho điểm.</b> G-Eval cho giám khảo suy luận theo chuỗi (chain-of-thought) rồi điền vào mẫu chấm.<sup class="cite"><a href="#src-18">[18]</a></sup> Wang và cộng sự cũng yêu cầu giám khảo đưa bằng chứng trước khi chấm.<sup class="cite"><a href="#src-16">[16]</a></sup></li>
-    <li>Kỹ thuật viết prompt nói chung xem ở <a href="../prompt-engineering/">Prompt engineering</a>.</li>
+    <li><b>Bắt suy luận trước khi cho điểm.</b> G-Eval cho giám khảo suy luận theo chuỗi (chain-of-thought) rồi điền vào mẫu chấm.<sup class="cite"><a href="#src-18">[18]</a></sup> Wang và cộng sự cũng yêu cầu giám khảo đưa bằng chứng trước khi chấm.<sup class="cite"><a href="#src-16">[16]</a></sup> OpenAI cũng ghi nhận rằng cho suy luận trước khi chấm giúp eval tốt hơn.<sup class="cite"><a href="#src-2">[2]</a></sup></li>
   </ul>
 
   <h3>Ba thiên lệch đã được đo</h3>
@@ -495,7 +508,7 @@ nhãn: hành động · có ghi dữ liệu · trung bình</pre>
   </table></div>
 
   <h3>Hiệu chỉnh với người chấm</h3>
-  <p>LLM giám khảo kế thừa luôn các vấn đề của LLM, nên chính nó cũng cần được người kiểm.<sup class="cite"><a href="#src-19">[19]</a></sup> Quy trình thường gặp:</p>
+  <p>Shankar và cộng sự viết rằng bộ chấm do LLM tạo ra kế thừa mọi vấn đề của chính các LLM mà nó chấm, nên vẫn cần người kiểm lại.<sup class="cite"><a href="#src-19">[19]</a></sup> Quy trình thường gặp:</p>
   <ol>
     <li>Chuyên gia nghiệp vụ chấm tay một mẫu câu trả lời (pass/fail), ghi lý do.</li>
     <li>Cho giám khảo chấm cùng mẫu đó. Đo tỉ lệ đồng ý, và xem riêng các ca hai bên lệch nhau.</li>
@@ -516,10 +529,10 @@ nhãn: hành động · có ghi dữ liệu · trung bình</pre>
 <section id="online">
   <h2>8. Offline, online và regression test cho prompt</h2>
   <h3>Regression test cho prompt</h3>
-  <p>Prompt là code. Mỗi lần sửa prompt, đổi model hay đổi chunking, hãy chạy lại bộ regression rồi mới merge. OpenAI khuyên thiết lập continuous evaluation chạy eval trên mọi thay đổi.<sup class="cite"><a href="#src-2">[2]</a></sup> Hamel Husain chạy các assertion nhanh trên mọi thay đổi code. Ông cũng lưu ý các assertion này không nhất thiết phải đạt 100%.<sup class="cite"><a href="#src-3">[3]</a></sup></p>
+  <p>Prompt là code. Mỗi lần sửa prompt, đổi model hay đổi chunking, hãy chạy lại bộ regression rồi mới merge. OpenAI khuyên thiết lập continuous evaluation chạy eval trên mọi thay đổi.<sup class="cite"><a href="#src-2">[2]</a></sup> Hamel Husain thường chạy các assertion nhanh (eval cấp 1) trên mọi thay đổi code. Ông cũng lưu ý các assertion này không nhất thiết phải đạt 100%.<sup class="cite"><a href="#src-3">[3]</a></sup></p>
   <div class="grid g2">
     <div class="card"><span class="tag p1">Lớp nhanh · mỗi commit</span><h4>Assertion bằng code</h4><ul><li>Có trích nguồn dạng <code>[c3]</code> không?</li><li>JSON đúng schema không?</li><li>Câu ngoài phạm vi có từ chối không?</li><li>Agent có gọi <code>create_refund</code> cho đơn chưa hủy không? (phải là không)</li></ul><p class="muted">Grader bằng code nhanh, rẻ, khách quan, chạy lại cho cùng kết quả. Nhược điểm là dễ chấm sai khi câu trả lời đúng nhưng diễn đạt khác mẫu.<sup class="cite"><a href="#src-1">[1]</a></sup></p></div>
-    <div class="card"><span class="tag p2">Lớp chậm · trước khi phát hành</span><h4>LLM-as-judge và người</h4><ul><li>Faithfulness, correctness trên toàn golden set.</li><li>So pairwise prompt mới với prompt cũ.</li><li>Người đọc mẫu các ca điểm thay đổi nhiều nhất.</li></ul><p class="muted">Công cụ mã nguồn mở như promptfoo có thể chạy eval trong CI/CD.<sup class="cite"><a href="#src-23">[23]</a></sup></p></div>
+    <div class="card"><span class="tag p2">Lớp chậm · trước khi phát hành</span><h4>LLM-as-judge và người</h4><ul><li>Faithfulness, correctness trên toàn golden set.</li><li>So pairwise prompt mới với prompt cũ.</li><li>Người đọc mẫu các ca điểm thay đổi nhiều nhất.</li></ul><p class="muted">Công cụ mã nguồn mở như promptfoo có thể chạy eval trong CI/CD.<sup class="cite"><a href="#src-23">[23]</a></sup> Red teaming và tiêu chí go/no-go trước khi phát hành được bàn trong <a href="../governance/">Quản trị AI</a>.</p></div>
   </div>
 
   <h3>Online eval: đo trên người dùng thật</h3>
@@ -529,7 +542,7 @@ nhãn: hành động · có ghi dữ liệu · trung bình</pre>
     <div class="card"><span class="tag p4">A/B test</span><p>Thí nghiệm ngẫu nhiên với hai biến thể, kết luận bằng kiểm định thống kê.<sup class="cite"><a href="#src-25">[25]</a></sup> Langfuse cho ứng dụng luân phiên ngẫu nhiên giữa hai phiên bản prompt, rồi so độ trễ, chi phí và điểm chất lượng.<sup class="cite"><a href="#src-24">[24]</a></sup></p></div>
   </div>
   <div class="callout warn"><b>A/B test không thay được offline eval.</b> Langfuse xem A/B là bước bổ sung, chạy sau khi đã test kỹ trên dữ liệu test, và hợp với ứng dụng chịu được dao động chất lượng.<sup class="cite"><a href="#src-24">[24]</a></sup> Hamel Husain cũng coi A/B là cấp đánh giá thường chỉ hợp với sản phẩm đã trưởng thành.<sup class="cite"><a href="#src-3">[3]</a></sup> Với trợ lý trả lời về hợp đồng hay tiền bạc, lỗi trên nhóm B là lỗi thật với khách thật.</div>
-  <p>Hạ tầng ghi trace (prompt, phản hồi, token, các bước tool) là điều kiện để làm online eval. Hamel Husain coi việc log trace là điều kiện tiên quyết cho đánh giá bằng người và bằng model.<sup class="cite"><a href="#src-3">[3]</a></sup> Xem thêm chủ đề <a href="../llm-observability/">LLM observability</a> khi có.</p>
+  <p>Hạ tầng ghi trace (prompt, phản hồi, token, các bước tool) là điều kiện để làm online eval. Hamel Husain coi việc log trace là điều kiện tiên quyết cho đánh giá bằng người và bằng model.<sup class="cite"><a href="#src-3">[3]</a></sup></p>
 
   <h3>Framework: dùng cái gì?</h3>
   <div class="table-wrap"><table class="stack">
@@ -639,9 +652,9 @@ nhãn: hành động · có ghi dữ liệu · trung bình</pre>
     <text x="589" y="208" text-anchor="middle" font-size="12" style="fill:var(--muted)">thấp →</text>
     <text x="589" y="350" text-anchor="middle" font-size="12" style="fill:var(--muted)">thấp →</text>
     <g stroke="var(--p2)" stroke-width="1.5" fill="none" stroke-dasharray="5 4" marker-end="url(#arr2p)">
-      <path d="M850 140 C 600 140, 600 140, 542 140"/>
+      <path d="M850 142 L548 170"/>
     </g>
-    <text x="700" y="156" text-anchor="middle" font-size="12" style="fill:var(--p2)">chấm các metric</text>
+    <text x="712" y="140" text-anchor="middle" font-size="12" style="fill:var(--p2)">chấm các metric</text>
     <line x1="915" y1="268" x2="915" y2="184" stroke="var(--muted)" stroke-width="2" marker-end="url(#arr2)"/>
     <text x="922" y="232" font-size="12" style="fill:var(--muted)">hiệu chỉnh</text>
     <path d="M115 340 L115 268" fill="none" stroke="var(--p4)" stroke-width="2" marker-end="url(#arr2o)"/>
@@ -658,7 +671,7 @@ nhãn: hành động · có ghi dữ liệu · trung bình</pre>
     <thead><tr><th>Loại grader</th><th>Mạnh</th><th>Yếu</th><th>Dùng khi</th></tr></thead>
     <tbody>
       <tr><td><b>Code</b></td><td>Nhanh, rẻ, khách quan, chạy lại cho cùng kết quả<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>Dễ chấm sai khi câu đúng nhưng diễn đạt khác mẫu<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>So ID đoạn, schema, tool đã gọi, trạng thái DB</td></tr>
-      <tr><td><b>LLM-as-judge</b></td><td>Hiểu sắc thái, chấm được câu mở<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>Không tất định, có thiên lệch, cần hiệu chỉnh với người<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>Faithfulness, correctness, giọng văn</td></tr>
+      <tr><td><b>LLM-as-judge</b></td><td>Hiểu sắc thái, chấm được câu mở<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>Không tất định, cần hiệu chỉnh với người<sup class="cite"><a href="#src-1">[1]</a></sup>; có thiên lệch về vị trí, độ dài<sup class="cite"><a href="#src-15">[15]</a></sup><sup class="cite"><a href="#src-16">[16]</a></sup></td><td>Faithfulness, correctness, giọng văn</td></tr>
       <tr><td><b>Người</b></td><td>Chuẩn vàng<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>Đắt, chậm<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>Hiệu chỉnh judge, ca khó, quyết định phát hành</td></tr>
     </tbody>
   </table></div>
@@ -695,7 +708,7 @@ nhãn: hành động · có ghi dữ liệu · trung bình</pre>
       <tr><td>Điểm eval cao, người dùng vẫn chê</td><td>Golden set không giống lưu lượng thật<sup class="cite"><a href="#src-2">[2]</a></sup>, hoặc đã bão hòa<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>So phân bố loại câu hỏi trong golden set với log thật. Thêm case từ trace lỗi.</td></tr>
       <tr><td>Answer relevancy cao nhưng câu trả lời sai</td><td>Relevancy không đo độ đúng<sup class="cite"><a href="#src-9">[9]</a></sup></td><td>Thêm correctness (cần đáp án chuẩn) và faithfulness.</td></tr>
       <tr><td>Faithfulness cao nhưng vẫn sai</td><td>Câu trả lời bám đúng context, nhưng retriever lấy nhầm đoạn hoặc tài liệu đã cũ</td><td>Xem metric retrieval của câu đó. Kiểm golden set còn đúng phiên bản tài liệu không.</td></tr>
-      <tr><td>Đổi prompt, điểm lên xuống thất thường</td><td>Chạy mỗi task một lần, nhiễu do LLM không tất định<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>Chạy nhiều lượt mỗi task. Với golden set 30 câu, một câu chiếm khoảng 3,3 điểm phần trăm, nên chênh 1–2 câu chưa nói được gì.</td></tr>
+      <tr><td>Đổi prompt, điểm lên xuống thất thường</td><td>Chạy mỗi task một lần, nhiễu do LLM không tất định<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>Chạy nhiều lượt mỗi task. Với golden set 30 câu, một câu chiếm khoảng 3,3 điểm phần trăm, nên chênh 1–2 câu chưa nói được gì (xem khoảng tin cậy ở mục 13).</td></tr>
       <tr><td>Agent báo "đã hoàn tiền" nhưng khách không nhận được</td><td>Chỉ chấm lời agent nói, không chấm trạng thái<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>Chấm outcome: kiểm DB có đúng một refund không.<sup class="cite"><a href="#src-21">[21]</a></sup></td></tr>
       <tr><td>Judge cho điểm khác hẳn khi đổi thứ tự A/B</td><td>Position bias<sup class="cite"><a href="#src-16">[16]</a></sup></td><td>Chấm cả hai thứ tự, gộp kết quả.<sup class="cite"><a href="#src-16">[16]</a></sup></td></tr>
       <tr><td>Judge ưu tiên câu dài, lan man</td><td>Verbosity bias<sup class="cite"><a href="#src-15">[15]</a></sup></td><td>Kiểm soát độ dài, ghi rõ trong rubric.<sup class="cite"><a href="#src-2">[2]</a></sup></td></tr>
@@ -719,7 +732,7 @@ nhãn: hành động · có ghi dữ liệu · trung bình</pre>
         <tbody><tr><td><b>Judge: pass</b></td><td>27</td><td>5</td></tr><tr><td><b>Judge: fail</b></td><td>1</td><td>7</td></tr></tbody>
       </table></div>
       <p>Đồng ý = (27 + 7) / 40 = <b>85%</b>. Nhưng con số chung che mất chi tiết quan trọng: trong 12 câu người đánh fail, judge cho qua 5 câu. Judge này <b>dễ dãi</b>. Nếu dùng làm cổng chặn lỗi, nó sẽ bỏ lọt lỗi.</p>
-      <p class="muted">Vì vậy luôn xem riêng từng loại bất đồng, không chỉ tỉ lệ đồng ý chung.</p></div>
+      <p>Tính riêng: judge bắt được 7/12 ≈ 58% số câu fail, trong khi đồng ý 27/28 ≈ 96% số câu pass. Ngoài ra, vì phần lớn câu là pass, hai bên đoán bừa cũng đã trùng nhau khá nhiều. <b>Cohen's kappa</b> trừ phần đồng ý do ngẫu nhiên: κ = (p<sub>o</sub> − p<sub>e</sub>) / (1 − p<sub>e</sub>).<sup class="cite"><a href="#src-27">[27]</a></sup></p><div class="formula">p<sub>e</sub> = 0,8 × 0,7 + 0,2 × 0,3 = 0,62<br>κ = (0,85 − 0,62) / (1 − 0,62) ≈ 0,61</div><p class="muted">0,8 và 0,2 là tỉ lệ judge chấm pass/fail (32/40, 8/40); 0,7 và 0,3 là tỉ lệ người chấm pass/fail (28/40, 12/40). Vì vậy luôn xem riêng từng loại bất đồng, không chỉ tỉ lệ đồng ý chung.</p></div>
     <div class="card"><span class="tag p1">Sức khỏe của golden set</span><h4>Những con số nên theo dõi</h4>
       <ul>
         <li><b>Độ phủ:</b> số case theo từng nhãn (loại câu hỏi, chủ đề, case từ chối).</li>
@@ -729,6 +742,7 @@ nhãn: hành động · có ghi dữ liệu · trung bình</pre>
         <li><b>Chi phí và thời gian</b> một lần chạy eval. Chạy quá đắt thì đội sẽ ngại chạy.</li>
       </ul></div>
   </div>
+  <div class="card" style="margin-top:12px"><span class="tag p4">Độ bất định thống kê</span><h4>Golden set nhỏ thì điểm dao động lớn</h4><p>Với 30 câu và tỉ lệ đạt 80%, khoảng tin cậy 95% theo công thức xấp xỉ chuẩn p̂ ± 1,96·√(p̂(1−p̂)/n) rộng khoảng <b>±14 điểm phần trăm</b> (tự tính).<sup class="cite"><a href="#src-28">[28]</a></sup> Công thức này còn kém chính xác khi mẫu nhỏ hoặc tỉ lệ gần 0% hay 100%.<sup class="cite"><a href="#src-28">[28]</a></sup></p><p>Hệ quả thực tế: bản mới đạt 83% so với bản cũ 80% chưa chứng minh được gì. Hãy so hai phiên bản trên <b>cùng bộ câu</b>, xem cụ thể câu nào đổi từ đạt sang hỏng và ngược lại, đọc transcript của các câu đó, và tăng cỡ golden set khi cần quyết định quan trọng.</p></div>
   <div class="callout">Câu hỏi kiểm tra cuối cùng: <b>nếu điểm eval tăng, sản phẩm có thật sự tốt hơn với người dùng không?</b> Nếu không chắc, hãy đối chiếu điểm offline với tín hiệu online (tỉ lệ chuyển sang nhân viên, feedback) qua vài lần phát hành.</div>
 </section>
 
@@ -765,13 +779,13 @@ nhãn: hành động · có ghi dữ liệu · trung bình</pre>
   <details><summary>6. Bài báo nói GPT-4 đồng thuận với người trên 80%. Có thể bỏ người chấm không?</summary>
     <p>Không. Con số đó đo trên bộ dữ liệu của bài báo.<sup class="cite"><a href="#src-15">[15]</a></sup> Giám khảo của bạn, với tiêu chí và dữ liệu của bạn, phải được hiệu chỉnh và kiểm định kỳ với người.<sup class="cite"><a href="#src-2">[2]</a><a href="#src-3">[3]</a></sup></p></details>
   <details><summary>7. pass@3 = 90% và pass^3 = 55% nói gì về agent?</summary>
-    <p>Agent thường làm được (90% task có ít nhất 1 lần đạt trong 3 lần) nhưng không ổn định (chỉ 55% task đạt cả 3 lần). Với agent phục vụ khách, pass^k quan trọng hơn.<sup class="cite"><a href="#src-1">[1]</a></sup></p></details>
+    <p>Agent thường làm được (90% task có ít nhất 1 lượt đạt trong 3 lượt) nhưng không ổn định (chỉ 55% task đạt cả 3 lượt). Với agent phục vụ khách, pass^k quan trọng hơn.<sup class="cite"><a href="#src-1">[1]</a></sup></p></details>
 </section>
 
 <!-- NGUỒN -->
 <section id="nguon">
   <h2>Nguồn tham khảo</h2>
-  <p class="muted">Các khẳng định kỹ thuật trong trang được đối chiếu với những nguồn dưới đây. Số trong ngoặc vuông ở thân bài trỏ tới mục tương ứng. Tất cả truy cập ngày 2026-11-14.</p>
+  <p class="muted">Các khẳng định kỹ thuật trong trang được đối chiếu với những nguồn dưới đây. Số trong ngoặc vuông ở thân bài trỏ tới mục tương ứng. Tất cả truy cập ngày 2026-11-14 và được mở lại để đối chiếu ngày 2026-11-16.</p>
   <ol class="sources">
     <li id="src-1">Anthropic. <i>Demystifying evals for AI agents</i> (Anthropic Engineering). 2026. <a href="https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents" target="_blank" rel="noopener">anthropic.com/engineering/demystifying-evals-for-ai-agents</a> <span class="acc">(truy cập 2026-11-14)</span></li>
     <li id="src-2">OpenAI. <i>Evaluation best practices</i> (tài liệu API). <a href="https://developers.openai.com/api/docs/guides/evaluation-best-practices" target="_blank" rel="noopener">developers.openai.com/api/docs/guides/evaluation-best-practices</a> <span class="acc">(truy cập 2026-11-14)</span></li>
@@ -786,7 +800,7 @@ nhãn: hành động · có ghi dữ liệu · trung bình</pre>
     <li id="src-11">Ragas. <i>Testset Generation for RAG</i> (tài liệu). <a href="https://docs.ragas.io/en/stable/concepts/test_data_generation/rag/" target="_blank" rel="noopener">docs.ragas.io/…/test_data_generation/rag</a> <span class="acc">(truy cập 2026-11-14)</span></li>
     <li id="src-12">Wikipedia. <i>Discounted cumulative gain</i> (dẫn Järvelin, K.; Kekäläinen, J., ACM TOIS, 2002). <a href="https://en.wikipedia.org/wiki/Discounted_cumulative_gain" target="_blank" rel="noopener">en.wikipedia.org/wiki/Discounted_cumulative_gain</a> <span class="acc">(truy cập 2026-11-14)</span></li>
     <li id="src-13">Wikipedia. <i>Mean reciprocal rank</i>. <a href="https://en.wikipedia.org/wiki/Mean_reciprocal_rank" target="_blank" rel="noopener">en.wikipedia.org/wiki/Mean_reciprocal_rank</a> <span class="acc">(truy cập 2026-11-14)</span></li>
-    <li id="src-14">LlamaIndex. <i>Retrieval metrics</i> (mã nguồn <code>metrics.py</code>: HitRate, MRR, Recall, NDCG). <a href="https://raw.githubusercontent.com/run-llama/llama_index/main/llama-index-core/llama_index/core/evaluation/retrieval/metrics.py" target="_blank" rel="noopener">github.com/run-llama/llama_index … /evaluation/retrieval/metrics.py</a> <span class="acc">(truy cập 2026-11-14)</span></li>
+    <li id="src-14">LlamaIndex. <i>Retrieval metrics</i> (mã nguồn <code>metrics.py</code>: HitRate, MRR, Recall, NDCG). commit 26c7dc3 (2025). <a href="https://raw.githubusercontent.com/run-llama/llama_index/26c7dc3e9846045864cf93ab92cb13bc80a3394e/llama-index-core/llama_index/core/evaluation/retrieval/metrics.py" target="_blank" rel="noopener">raw.githubusercontent.com/run-llama/llama_index/26c7dc3…/retrieval/metrics.py</a> <span class="acc">(truy cập 2026-11-14)</span></li>
     <li id="src-15">Zheng, L. và cộng sự. <i>Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena</i>. NeurIPS Datasets and Benchmarks, 2023. <a href="https://arxiv.org/abs/2306.05685" target="_blank" rel="noopener">arxiv.org/abs/2306.05685</a> <span class="acc">(truy cập 2026-11-14)</span></li>
     <li id="src-16">Wang, P. và cộng sự. <i>Large Language Models are not Fair Evaluators</i>. arXiv, 2023. <a href="https://arxiv.org/abs/2305.17926" target="_blank" rel="noopener">arxiv.org/abs/2305.17926</a> <span class="acc">(truy cập 2026-11-14)</span></li>
     <li id="src-17">Panickssery, A.; Bowman, S. R.; Feng, S. <i>LLM Evaluators Recognize and Favor Their Own Generations</i>. arXiv, 2024. <a href="https://arxiv.org/abs/2404.13076" target="_blank" rel="noopener">arxiv.org/abs/2404.13076</a> <span class="acc">(truy cập 2026-11-14)</span></li>
@@ -794,11 +808,13 @@ nhãn: hành động · có ghi dữ liệu · trung bình</pre>
     <li id="src-19">Shankar, S. và cộng sự. <i>Who Validates the Validators? Aligning LLM-Assisted Evaluation of LLM Outputs with Human Preferences</i>. arXiv, 2024. <a href="https://arxiv.org/abs/2404.12272" target="_blank" rel="noopener">arxiv.org/abs/2404.12272</a> <span class="acc">(truy cập 2026-11-14)</span></li>
     <li id="src-20">Saad-Falcon, J.; Khattab, O.; Potts, C.; Zaharia, M. <i>ARES: An Automated Evaluation Framework for Retrieval-Augmented Generation Systems</i>. NAACL, 2024. <a href="https://arxiv.org/abs/2311.09476" target="_blank" rel="noopener">arxiv.org/abs/2311.09476</a> <span class="acc">(truy cập 2026-11-14)</span></li>
     <li id="src-21">Yao, S.; Shinn, N.; Razavi, P.; Narasimhan, K. <i>τ-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains</i>. arXiv, 2024. <a href="https://arxiv.org/abs/2406.12045" target="_blank" rel="noopener">arxiv.org/abs/2406.12045</a> <span class="acc">(truy cập 2026-11-14)</span></li>
-    <li id="src-22">Microsoft. <i>Agent Evaluators for Generative AI</i> (Microsoft Foundry, tài liệu). <a href="https://learn.microsoft.com/en-us/azure/ai-foundry/concepts/evaluation-evaluators/agent-evaluators" target="_blank" rel="noopener">learn.microsoft.com/…/evaluation-evaluators/agent-evaluators</a> <span class="acc">(truy cập 2026-11-14)</span></li>
+    <li id="src-22">Microsoft. <i>Agent Evaluators for Generative AI</i> (Microsoft Foundry, tài liệu, cập nhật 2026). <a href="https://learn.microsoft.com/en-us/azure/foundry/concepts/evaluation-evaluators/agent-evaluators" target="_blank" rel="noopener">learn.microsoft.com/en-us/azure/foundry/…/agent-evaluators</a> <span class="acc">(truy cập 2026-11-14)</span></li>
     <li id="src-23">promptfoo. <i>Intro</i> (tài liệu). <a href="https://www.promptfoo.dev/docs/intro/" target="_blank" rel="noopener">promptfoo.dev/docs/intro</a> <span class="acc">(truy cập 2026-11-14)</span></li>
     <li id="src-24">Langfuse. <i>A/B Testing of LLM Prompts</i> (tài liệu). <a href="https://langfuse.com/docs/prompt-management/features/a-b-testing" target="_blank" rel="noopener">langfuse.com/docs/prompt-management/features/a-b-testing</a> <span class="acc">(truy cập 2026-11-14)</span></li>
     <li id="src-25">Wikipedia. <i>A/B testing</i>. <a href="https://en.wikipedia.org/wiki/A/B_testing" target="_blank" rel="noopener">en.wikipedia.org/wiki/A/B_testing</a> <span class="acc">(truy cập 2026-11-14)</span></li>
-    <li id="src-26">UC Berkeley Gorilla. <i>Berkeley Function Calling Leaderboard</i>. <a href="https://gorilla.cs.berkeley.edu/leaderboard.html" target="_blank" rel="noopener">gorilla.cs.berkeley.edu/leaderboard.html</a> <span class="acc">(truy cập 2026-11-14)</span></li>
+    <li id="src-26">UC Berkeley Gorilla. <i>Berkeley Function Calling Leaderboard (BFCL) V4</i>. Cập nhật 2026. <a href="https://gorilla.cs.berkeley.edu/leaderboard.html" target="_blank" rel="noopener">gorilla.cs.berkeley.edu/leaderboard.html</a> <span class="acc">(truy cập 2026-11-14)</span></li>
+    <li id="src-27">Wikipedia. <i>Cohen's kappa</i>. <a href="https://en.wikipedia.org/wiki/Cohen%27s_kappa" target="_blank" rel="noopener">en.wikipedia.org/wiki/Cohen's_kappa</a> <span class="acc">(truy cập 2026-11-16)</span></li>
+    <li id="src-28">Wikipedia. <i>Binomial proportion confidence interval</i>. <a href="https://en.wikipedia.org/wiki/Binomial_proportion_confidence_interval" target="_blank" rel="noopener">en.wikipedia.org/wiki/Binomial_proportion_confidence_interval</a> <span class="acc">(truy cập 2026-11-16)</span></li>
   </ol>
 </section>
 </main>
@@ -824,7 +840,7 @@ nhãn: hành động · có ghi dữ liệu · trung bình</pre>
   function labelTables(scope){
     [].forEach.call(scope.querySelectorAll('table.stack'),function(t){
       var heads=[].map.call(t.querySelectorAll('thead th'),function(th){return th.textContent});
-      [].forEach.call(t.querySelectorAll('tbody tr'),function(tr){[].forEach.call(tr.children,function(td,i){if(heads[i])td.setAttribute('data-label',heads[i])})});
+      [].forEach.call(t.querySelectorAll('tbody tr'),function(tr){[].forEach.call(tr.children,function(td,i){if(heads[i]&&td.colSpan===1)td.setAttribute('data-label',heads[i])})});
     });
   }
   labelTables(document);
@@ -878,9 +894,9 @@ nhãn: hành động · có ghi dữ liệu · trung bình</pre>
     {t:'Tiêu chí thành công',h:'<span class="tag p1">Bước 1</span><h3>Định nghĩa "đạt" trước khi đo</h3><p>Đội ngồi với trưởng nhóm CSKH và viết ra tiêu chí cụ thể, đo được:</p><ul><li><b>RAG:</b> câu trả lời đúng với chính sách hiện hành, có trích mã đoạn nguồn, và từ chối khi tài liệu không có.</li><li><b>Agent:</b> hoàn tiền đúng số tiền, đúng đơn, chỉ cho đơn đã hủy; gặp ca không rõ thì chuyển nhân viên.</li><li><b>Vận hành:</b> trả lời trong vài giây, chi phí mỗi hội thoại trong ngân sách.</li></ul><p class="muted">Tiêu chí mơ hồ như "trả lời hay" không chấm được. Hãy viết sao cho hai người chấm độc lập ra cùng kết quả.</p>'},
     {t:'Golden set v0',h:'<span class="tag p1">Bước 2</span><h3>Xây golden set đầu tiên</h3><p>Lấy 300 ticket gần nhất, chọn ra 30 câu hỏi RAG và 20 task agent. Chuyên viên CSKH ghi đáp án chuẩn và đoạn nguồn cho từng câu. Nằm trong khoảng 20–50 case mà Anthropic gợi ý để bắt đầu.<sup class="cite"><a href="#src-1">[1]</a></sup></p><div class="table-wrap"><table class="stack"><thead><tr><th>Nhóm</th><th>Số case</th><th>Ví dụ</th></tr></thead><tbody><tr><td>Single-hop</td><td>14</td><td>Phí giao nội thành?</td></tr><tr><td>Multi-hop (cần 2 đoạn)</td><td>8</td><td>Đổi địa chỉ được không, mất phí không?</td></tr><tr><td>Mã nội bộ, viết tắt</td><td>4</td><td>Mã COD-HN là gì?</td></tr><tr><td>Ngoài phạm vi (phải từ chối)</td><td>4</td><td>Tư vấn mua cổ phiếu công ty?</td></tr><tr><td>Task agent</td><td>20</td><td>Hoàn tiền đơn A123 đã hủy; hoàn tiền đơn B77 chưa hủy (phải từ chối)</td></tr></tbody></table></div><p class="muted">Số lượng là minh họa. Cả case "nên làm" và "không nên làm" đều có mặt.</p>'},
     {t:'Đo retrieval',h:'<span class="tag p3">Bước 3</span><h3>Chạy baseline, đo lớp retrieval</h3><p>Lấy 6 câu tiêu biểu (mỗi câu một dòng trong máy tính ở mục 6, chế độ "Trước rerank"). Retriever trả về top-20; vị trí đoạn đúng:</p><div class="chunk hit"><span class="id">Câu 1 · R=1</span><br>đoạn đúng ở vị trí 1</div><div class="chunk hit"><span class="id">Câu 3 · R=2</span><br>vị trí 2 và 7, nên top-5 chỉ có 1/2 đoạn</div><div class="chunk miss"><span class="id">Câu 4 · R=1 · "Mã COD-HN là gì?"</span><br>không có trong top-20</div><p>Với k = 5, trung bình 6 câu: hit@5 = <b>'+f(A5.hit)+'</b>, recall@5 = <b>'+f(A5.recall)+'</b>, MRR@5 = <b>'+f(A5.rr)+'</b>, nDCG@5 = <b>'+f(A5.ndcg)+'</b>.</p><p class="muted">Những con số này được JS tính trực tiếp từ thứ hạng giả định, cùng hàm với máy tính.</p>'},
-    {t:'Đo câu trả lời',h:'<span class="tag p3">Bước 4</span><h3>Chấm câu trả lời: faithfulness và correctness</h3><p>Câu 2, hệ thống trả lời:</p><pre>"Hàng vỡ được bồi thường tối đa 4 lần cước, cần báo trong 7 ngày và gửi kèm ảnh chụp."</pre><p>Đoạn nguồn ghi: tối đa 4 lần cước, báo trong <b>14</b> ngày, kèm ảnh. Tách thành 3 ý:</p><div class="chunk hit">✔ tối đa 4 lần cước (có trong context)</div><div class="chunk miss">✘ báo trong 7 ngày (context nói 14 ngày)</div><div class="chunk hit">✔ kèm ảnh chụp (có trong context)</div><div class="formula">faithfulness = 2 / 3 ≈ 0,67</div><p>So với đáp án chuẩn gồm 4 ý (thêm "hoàn cả phí COD"): TP = 2, FP = 1, FN = 2.</p><div class="formula">P = 2/3 ≈ 0,67 · R = 2/4 = 0,5 · F1 = 4/7 ≈ 0,57</div><p class="muted">Retrieval đã lấy đúng đoạn (câu 2 có hit), nên lỗi này nằm ở <b>lớp generation</b>: sửa prompt, ví dụ yêu cầu trích nguyên văn số liệu.</p>'},
-    {t:'Đo agent',h:'<span class="tag p2">Bước 5</span><h3>Chấm agent bằng trạng thái, chạy 3 lượt</h3><p>Mỗi task trong 20 task được chạy 3 lượt. Grader bằng code kiểm database sau mỗi lượt, không đọc lời agent nói.</p><div class="table-wrap"><table class="stack"><thead><tr><th>Metric</th><th>Kết quả (minh họa)</th></tr></thead><tbody><tr><td>pass@3: ít nhất 1/3 lượt đạt</td><td>18/20 = 90%</td></tr><tr><td>pass^3: cả 3 lượt đạt</td><td>11/20 = 55%</td></tr><tr><td>Chọn đúng tool</td><td>52/60 lượt gọi = 87%</td></tr><tr><td>Số bước trung vị</td><td>5 (đường ngắn nhất: 3)</td></tr><tr><td>Token trung bình mỗi task đạt</td><td>9.800</td></tr></tbody></table></div><p>Đọc transcript các lượt hỏng, đội thấy agent hay gọi <code>get_order</code> hai lần và có một lượt tạo refund cho đơn B77 chưa hủy. Lượt đó vi phạm quy tắc, nên phải chặn ở harness, không chỉ sửa prompt.</p>'},
-    {t:'Phân tích lỗi',h:'<span class="tag p4">Bước 6</span><h3>Gom lỗi theo lớp rồi mới sửa</h3><div class="table-wrap"><table class="stack"><thead><tr><th>Lỗi</th><th>Lớp</th><th>Hướng sửa</th></tr></thead><tbody><tr><td>Câu 3, 5: đoạn đúng ở vị trí 6–7</td><td>Retrieval (thứ tự)</td><td>Thêm <a href="../reranking/">reranker</a></td></tr><tr><td>Câu 4: mã COD-HN không tìm thấy</td><td>Retrieval (bỏ sót)</td><td>Thêm <a href="../hybrid-search/">BM25 / hybrid search</a></td></tr><tr><td>Câu 2: sai số ngày</td><td>Generation</td><td>Sửa prompt, xem <a href="../prompt-engineering/">Prompt engineering</a></td></tr><tr><td>Refund đơn chưa hủy</td><td>Agent / harness</td><td>Kiểm điều kiện trong tool, xem <a href="../harness/">Harness</a></td></tr></tbody></table></div><p class="muted">Không gom lớp thì dễ sửa nhầm chỗ, ví dụ đổi model LLM trong khi lỗi thật nằm ở retriever.</p>'},
+    {t:'Đo câu trả lời',h:'<span class="tag p3">Bước 4</span><h3>Chấm câu trả lời: faithfulness và correctness</h3><p>Câu 2, hệ thống trả lời:</p><pre>"Hàng vỡ được bồi thường tối đa 4 lần cước, cần báo trong 7 ngày và gửi kèm ảnh chụp."</pre><p>Đoạn nguồn ghi: tối đa 4 lần cước, báo trong <b>14</b> ngày, kèm ảnh, và hoàn cả phí COD. Câu trả lời có 3 ý:</p><div class="chunk hit">✔ tối đa 4 lần cước (có trong context)</div><div class="chunk miss">✘ báo trong 7 ngày (context nói 14 ngày)</div><div class="chunk hit">✔ kèm ảnh chụp (có trong context)</div><div class="formula">faithfulness = 2 / 3 ≈ 0,67</div><p>So với đáp án chuẩn gồm 4 ý (cả 4 ý đều có trong đoạn nguồn): TP = 2, FP = 1 ("7 ngày"), FN = 2 ("14 ngày", "hoàn cả phí COD").</p><div class="formula">Precision = 2/3 ≈ 0,67 · Recall = 2/4 = 0,5 · F1 = 4/7 ≈ 0,57</div><p class="muted">Retrieval đã lấy đúng đoạn (câu 2 có hit) và đoạn đó chứa đủ 4 ý, nên cả lỗi sai số ngày lẫn lỗi bỏ sót ý đều nằm ở <b>lớp generation</b>: sửa prompt, ví dụ yêu cầu trích nguyên văn số liệu và nêu đủ các điều kiện.</p>'},
+    {t:'Đo agent',h:'<span class="tag p2">Bước 5</span><h3>Chấm agent bằng trạng thái, chạy 3 lượt</h3><p>Mỗi task trong 20 task được chạy 3 lượt. Grader bằng code kiểm database sau mỗi lượt, không đọc lời agent nói.</p><div class="table-wrap"><table class="stack"><thead><tr><th>Metric</th><th>Kết quả (minh họa)</th></tr></thead><tbody><tr><td>pass@3: ít nhất 1/3 lượt đạt</td><td>18/20 = 90%</td></tr><tr><td>pass^3: cả 3 lượt đạt</td><td>11/20 = 55%</td></tr><tr><td>Chọn đúng tool</td><td>52/60 lượt chạy = 87%</td></tr><tr><td>Số bước trung vị</td><td>5 (đường ngắn nhất: 3)</td></tr><tr><td>Token trung bình mỗi task đạt</td><td>9.800</td></tr></tbody></table></div><p>Đọc transcript các lượt hỏng, đội thấy agent hay gọi <code>get_order</code> hai lần và có một lượt tạo refund cho đơn B77 chưa hủy. Lượt đó vi phạm quy tắc, nên phải chặn ở harness, không chỉ sửa prompt.</p>'},
+    {t:'Phân tích lỗi',h:'<span class="tag p4">Bước 6</span><h3>Gom lỗi theo lớp rồi mới sửa</h3><div class="table-wrap"><table class="stack"><thead><tr><th>Lỗi</th><th>Lớp</th><th>Hướng sửa</th></tr></thead><tbody><tr><td>Câu 3, 5: đoạn đúng nằm ở vị trí 6–7, ngoài top-5</td><td>Retrieval (thứ tự)</td><td>Thêm <a href="../reranking/">reranker</a></td></tr><tr><td>Câu 4: mã COD-HN không tìm thấy</td><td>Retrieval (bỏ sót)</td><td>Thêm <a href="../hybrid-search/">BM25 / hybrid search</a></td></tr><tr><td>Câu 2: sai số ngày</td><td>Generation</td><td>Sửa prompt, ví dụ yêu cầu trích nguyên văn số liệu</td></tr><tr><td>Refund đơn chưa hủy</td><td>Agent / harness</td><td>Kiểm điều kiện trong tool, xem <a href="../harness/">Harness</a></td></tr></tbody></table></div><p class="muted">Không gom lớp thì dễ sửa nhầm chỗ, ví dụ đổi model LLM trong khi lỗi thật nằm ở retriever.</p>'},
     {t:'Sửa và so sánh',h:'<span class="tag p3">Bước 7</span><h3>Thêm reranker, chạy lại cùng golden set</h3><div class="table-wrap"><table class="stack"><thead><tr><th>Metric (k = 5)</th><th>Trước</th><th>Sau rerank</th></tr></thead><tbody><tr><td>hit@5</td><td>'+f(A5.hit)+'</td><td>'+f(B5.hit)+'</td></tr><tr><td>recall@5</td><td>'+f(A5.recall)+'</td><td>'+f(B5.recall)+'</td></tr><tr><td>MRR@5</td><td>'+f(A5.rr)+'</td><td>'+f(B5.rr)+'</td></tr><tr><td>nDCG@5</td><td>'+f(A5.ndcg)+'</td><td>'+f(B5.ndcg)+'</td></tr></tbody></table></div><div class="callout warn" style="margin:8px 0 0">Câu 4 vẫn hỏng: reranker chỉ sắp lại các ứng viên retriever đã tìm được. Đây là lý do cần đo theo từng câu, không chỉ nhìn trung bình.</div><p class="muted">6 câu là quá ít để kết luận. Trên thực tế, chạy toàn bộ golden set và chạy nhiều lượt.</p>'},
     {t:'Cổng regression & online',h:'<span class="tag p4">Bước 8</span><h3>Đưa vào CI, rồi theo dõi production</h3><ul><li><b>Cổng regression:</b> mỗi pull request đổi prompt hoặc retriever phải chạy lại bộ eval. Tỉ lệ đạt của bộ regression không được tụt.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-2">[2]</a></sup></li><li><b>Online:</b> mỗi ngày lấy mẫu hội thoại thật, chấm faithfulness bằng judge đã hiệu chỉnh; theo dõi tỉ lệ khách bấm "chuyển nhân viên".</li><li><b>Vòng lặp:</b> một khách hỏi "phí COD-HCM" và bị trả lời sai. Trace này được thêm vào golden set thành case mới.<sup class="cite"><a href="#src-4">[4]</a></sup></li></ul><div class="callout ok" style="margin:8px 0 0">Vòng lặp khép lại: lỗi thấy một lần trở thành test chạy mãi.</div>'}
   ];
@@ -901,7 +917,7 @@ nhãn: hành động · có ghi dữ liệu · trung bình</pre>
     var d=document.createElement('div');d.className='qrow';
     d.innerHTML='<div class="qt"><b>Câu '+(i+1)+'</b>'+q+'</div>'+
       '<div><label for="r'+i+'">Số đoạn đúng (R)</label><select id="r'+i+'"><option>1</option><option>2</option><option>3</option></select></div>'+
-      '<div><label for="p'+i+'">Vị trí tìm thấy</label><input id="p'+i+'" type="text" inputmode="numeric" autocomplete="off" placeholder="vd: 2, 7"></div>'+
+      '<div><label for="p'+i+'">Vị trí tìm thấy</label><input id="p'+i+'" type="text" autocomplete="off" placeholder="vd: 2, 7"></div>'+
       '<div class="msg" role="alert"></div>';
     rowsEl.appendChild(d);
     var row={sel:d.querySelector('select'),inp:d.querySelector('input'),msg:d.querySelector('.msg')};
@@ -951,7 +967,7 @@ nhãn: hành động · có ghi dữ liệu · trung bình</pre>
     ['regression-eval','base','Regression eval','','Bộ eval hỏi "còn làm được những gì từng làm được không", nên đạt gần 100%. Task đã ổn định có thể chuyển từ capability sang đây.','',['capability-eval','ci-eval'],[1]],
     ['saturation','base','Saturation','bão hòa','Khi bộ eval đạt gần 100%, nó chỉ còn bắt regression, không còn chỉ hướng cải thiện.','Cần thêm case khó hơn.',['capability-eval','golden-set'],[1]],
     ['golden-set','data','Golden set','bộ dữ liệu đánh giá chuẩn','Tập test case có đầu vào và đáp án tham chiếu. Với RAG nên có thêm đoạn nguồn; với agent nên có trạng thái mong muốn.','30 câu hỏi CSKH kèm đáp án và mã đoạn.',['reference','coverage','synthetic'],[4]],
-    ['reference','data','Reference','đáp án chuẩn','Đáp án đúng do người (thường là chuyên gia) ghi. Các metric như correctness, context recall cần nó.','"Tối đa 4 lần cước, báo trong 14 ngày, kèm ảnh."',['correctness','context-recall'],[8,10]],
+    ['reference','data','Reference','đáp án chuẩn','Đáp án đúng do người (thường là chuyên gia) ghi. Các metric như correctness, context recall cần nó.','"Tối đa 4 lần cước, báo trong 14 ngày, kèm ảnh, hoàn cả phí COD."',['correctness','context-recall'],[8,10]],
     ['coverage','data','Độ phủ','coverage','Golden set nên có case điển hình, case biên và case đối kháng; cả case nên làm và không nên làm.','Câu ngoài phạm vi phải bị từ chối.',['golden-set','slice'],[1,2]],
     ['slice','data','Cắt lát theo nhãn','slicing','Gắn nhãn (loại câu hỏi, chủ đề, độ khó) để xem điểm theo từng nhóm, tránh để trung bình che nhóm yếu.','Single-hop 90% nhưng multi-hop 40%.',['coverage']],
     ['synthetic','data','Dữ liệu tổng hợp','synthetic data','Câu hỏi do LLM sinh từ tài liệu. Ragas dựng knowledge graph từ các chunk rồi sinh câu hỏi single-hop và multi-hop.','Cần người duyệt trước khi dùng làm chuẩn.',['golden-set','multi-hop'],[11]],
@@ -970,6 +986,7 @@ nhãn: hành động · có ghi dữ liệu · trung bình</pre>
     ['pass-k','agent','pass@k / pass^k','','pass@k: ít nhất 1 trong k lượt đạt. pass^k: cả k lượt đều đạt. Agent cần ổn định thì nhìn pass^k.','pass@3 = 90% nhưng pass^3 = 55%.',['trial','task-success'],[1,21]],
     ['tool-acc','agent','Độ chính xác chọn tool','tool selection','Agent có chọn đúng tool cần thiết, không gọi thừa, và truyền đúng tham số không.','Gọi get_order hai lần là gọi thừa.',['steps'],[22]],
     ['steps','agent','Số bước / hiệu quả điều hướng','','Số lượt, số tool call; hoặc so chuỗi hành động với chuỗi kỳ vọng (khớp hoàn toàn, khớp đúng thứ tự, khớp không cần thứ tự).','Trung vị 5 bước, đường ngắn nhất 3.',['tool-acc','cost'],[1,22]],
+    ['user-sim','agent','Người dùng giả lập','user simulation','Agent hội thoại nhiều lượt cần một người dùng để trò chuyện khi chạy eval. Thường dùng một LLM thứ hai đóng vai người dùng; τ-bench làm theo cách này.','LLM đóng vai khách đòi hoàn tiền đơn chưa hủy, xem agent có từ chối đúng không.',['task-success','pass-k'],[1,21]],
     ['cost','agent','Chi phí và độ trễ','','Token, chi phí mỗi task, độ trễ, đo trên cùng một bộ task cố định để so được.','So chi phí trên mỗi task đạt.',['steps'],[1]],
     ['judge','judge','LLM-as-judge','giám khảo LLM','Dùng một LLM chấm đầu ra theo tiêu chí: chấm đơn, so cặp, hoặc so với đáp án chuẩn.','',['position-bias','calibration'],[2,15]],
     ['position-bias','judge','Position bias','thiên lệch vị trí','Kết quả so cặp đổi theo thứ tự trình bày hai câu trả lời. Giảm bằng cách chấm cả hai thứ tự rồi gộp.','',['judge','verbosity-bias'],[16]],
@@ -977,12 +994,14 @@ nhãn: hành động · có ghi dữ liệu · trung bình</pre>
     ['self-pref','judge','Self-preference','tự ưu tiên','Giám khảo chấm bài do chính nó viết cao hơn bài của model khác.','',['judge'],[17]],
     ['calibration','judge','Hiệu chỉnh judge','calibration','Cho người và giám khảo chấm cùng mẫu, đo mức đồng ý, xem các ca lệch, sửa prompt chấm, lặp lại; sau đó kiểm định kỳ.','',['human-label','criteria-drift'],[2,3]],
     ['human-label','judge','Nhãn của người','human labels','Điểm do người (thường là chuyên gia) chấm. Là chuẩn vàng nhưng đắt và chậm. ARES dùng vài trăm nhãn người để hiệu chỉnh giám khảo tự động.','',['calibration','grader'],[1,20]],
+    ['kappa','judge','Cohen\'s kappa','κ','Mức đồng thuận giữa hai người chấm (hoặc người và judge) sau khi trừ phần trùng nhau do ngẫu nhiên: κ = (p_o − p_e) / (1 − p_e).','Đồng ý 85% nhưng κ ≈ 0,61 (bảng ở mục 13).',['calibration','human-label'],[27]],
     ['criteria-drift','judge','Criteria drift','','Người chấm cần tiêu chí để chấm, nhưng chính việc chấm output lại giúp họ định nghĩa tiêu chí. Rubric nên được viết lại sau khi đọc output thật.','',['calibration'],[19]],
     ['offline','ops','Offline eval','','Chạy trên golden set trong lúc phát triển để so phiên bản và bắt regression.','',['online','golden-set'],[4]],
     ['online','ops','Online eval','','Chấm trên tương tác thật, không có đáp án chuẩn, dùng bộ chấm không cần reference và lấy mẫu để kiểm soát chi phí.','Chấm faithfulness trên 5% hội thoại mỗi ngày.',['offline','trace','ab-test'],[4]],
     ['ab-test','ops','A/B test','','Thí nghiệm ngẫu nhiên với hai biến thể, kết luận bằng kiểm định thống kê. Với prompt: luân phiên ngẫu nhiên hai phiên bản rồi so metric.','',['online'],[25,24]],
     ['ci-eval','ops','Continuous evaluation','CE','Chạy eval tự động trên mọi thay đổi (prompt, model, retriever), giống CI cho code.','Pull request làm tụt bộ regression thì không được merge.',['regression-eval','edd'],[2,23]],
-    ['trace','ops','Trace','','Bản ghi từng bước của một lượt chạy trên production. Là điều kiện để làm online eval và để biến lỗi thật thành test case.','',['online','transcript'],[3,4]]
+    ['trace','ops','Trace','','Bản ghi từng bước của một lượt chạy trên production. Là điều kiện để làm online eval và để biến lỗi thật thành test case.','',['online','transcript'],[3,4]],
+    ['ci','ops','Khoảng tin cậy','confidence interval','Khoảng giá trị mà tỉ lệ đạt thật có thể nằm trong. Golden set càng nhỏ thì khoảng càng rộng.','30 câu, đạt 80%: khoảng ±14 điểm phần trăm (tự tính).',['golden-set','trial'],[28]]
   ];
   var byId={};T.forEach(function(t){byId[t[0]]=t});
   var grid=document.getElementById('glossGrid'), chips=document.getElementById('glossChips'), search=document.getElementById('glossSearch'), activeG='all';

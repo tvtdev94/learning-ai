@@ -30,3 +30,35 @@ Format: khẳng định → URL → câu trích ngắn (đã mở bằng WebFetc
 - Độ trễ, số lượt gọi trong máy tính là mô hình đơn giản do trang tự đặt; tham số do người đọc chỉnh; ghi rõ "minh họa".
 - "Mỗi kỹ thuật thêm ít nhất một lượt gọi LLM trước khi tìm" suy ra từ mô tả phương pháp ở [2][5][10][13][15][17].
 - Mọi câu hỏi mẫu và câu truy vấn biến đổi trong demo là minh họa do trang viết tay, không phải đầu ra model.
+
+## Kiểm lại ngày 2026-11-16 (mở lại bằng WebFetch)
+Format: khẳng định → URL → câu trích ngắn.
+
+- [1] Pre-retrieval của Advanced RAG gồm rewrite/transformation/expansion; routing được bàn riêng → https://arxiv.org/html/2312.10997 → "Common methods include query rewriting query transformation, query expansion"; "Based on varying queries, routing to distinct RAG pipeline."
+- [2] Rewriter nhỏ huấn luyện bằng RL từ phản hồi LLM đọc; EMNLP 2023 → https://arxiv.org/abs/2305.14283 → "The rewriter is trained using the feedback of the LLM reader by reinforcement learning."
+- [3] CANARD 40.527 câu; viết lại cùng đáp án → https://aclanthology.org/D19-1605/ → "We construct, CANARD, a dataset of 40,527 questions"
+- [4] Không có lịch sử thì chuyển thẳng → https://reference.langchain.com/python/langchain-classic/chains/history_aware_retriever/create_history_aware_retriever → "If there is no `chat_history`, then the `input` is just passed directly to the retriever."
+- [5] Unique union; có thuộc tính include_original (trang không giải thích) → https://reference.langchain.com/python/langchain-classic/retrievers/multi_query/MultiQueryRetriever → "Return the unique union of all retrieved docs."
+- [6] RAG-Fusion = nhiều truy vấn + RRF; lạc đề → https://arxiv.org/abs/2402.03367 → "some answers strayed off topic when the generated queries' relevance to the original query is insufficient"
+- [7] RRF, rank từ 1, k mặc định 60 → https://www.elastic.co/docs/reference/elasticsearch/rest-apis/reciprocal-rank-fusion → "rank( result(q), d ) is d's rank within the result(q) starting from 1"; "Defaults to `60`"
+- [8] Least-to-most → https://arxiv.org/abs/2205.10625 → "break down a complex problem into a series of simpler subproblems and then solve them in sequence"
+- [9] Self-ask → https://arxiv.org/abs/2210.03350 → "the model explicitly asks itself (and answers) follow-up questions before answering the initial question"
+- [10] HyDE trong LlamaIndex; multi-step dùng câu trả lời trước để hỏi tiếp → https://developers.llamaindex.ai/python/framework/optimizing/advanced_retrieval/query_transformations/ → "This hypothetical document is then used for embedding lookup rather than the raw query."; "Given the response (along with prior responses) and the query, follow-up questions may be asked". Ghi chú: ví dụ dùng `include_original=True` nhưng trang không giải thích → đã BỎ khẳng định dựa trên tham số này.
+- [11] Sub-question: trả lời từng câu con rồi tổng hợp; ví dụ bật use_async=True → https://developers.llamaindex.ai/python/examples/query_engine/sub_question_query_engine/ → "then gather all the intermediate reponses and synthesizes a final response"
+- [12] Step-back + RAG: prompt cuối có đoạn từ câu gốc và câu step-back, rồi câu hỏi gốc; ví dụ Estella Leopold; số PaLM-2L → https://arxiv.org/html/2310.06117 → "Using both the retrieval augmentations from the original question and the step-back question, we formulate the final prompt"; "Estella Leopold went to which school between Aug 1954 and Nov 1954?"
+- [13] HyDE: tài liệu giả định có thể sai; lấy mẫu N đoạn và lấy trung bình vector, có thể tính cả câu hỏi → https://arxiv.org/abs/2212.10496 , https://arxiv.org/html/2212.10496 → "may contain false details"; "We estimate Equation 5 by sampling N documents from g"; "We also consider the query as a possible hypothesis"
+- [14] Query2doc ghép pseudo-document vào truy vấn; BM25 +3–15% → https://arxiv.org/abs/2303.07678 → "expands the query with generated pseudo-documents"; "boosts the performance of BM25 by 3% to 15%"
+- [15] Routers: một hoặc nhiều lựa chọn; LLM/Pydantic selector → https://developers.llamaindex.ai/python/framework/module_guides/querying/router/ → "Selecting the right data source among a diverse range of data sources"
+- [16] Adaptive-RAG: classifier nhỏ; tránh overhead cho câu đơn giản → https://arxiv.org/abs/2403.14403 → "a classifier, which is a smaller LM trained to predict the complexity level of incoming queries"
+- [17] SelfQueryRetriever → https://reference.langchain.com/python/langchain-classic/retrievers/self_query/base/SelfQueryRetriever → "Retriever that uses a vector store and an LLM to generate the vector store queries."
+- [18] Elastic self-query: LLM trích filter; cảnh báo metadata kém. KHÔNG nói "vector store phải hỗ trợ lọc" → đã gỡ cite [18] khỏi ý đó → https://www.elastic.co/search-labs/blog/self-querying-retrievers → "the query is parsed by the LLM to extract filters"; "if the metadata is poorly defined, the retriever may produce incorrect or incomplete results"
+- [19] Auto-retrieval: LLM suy ra cùng lúc filter + query string; VectorStoreInfo mô tả các filter kho hỗ trợ; ví dụ trả về rỗng → https://developers.llamaindex.ai/python/examples/vector_stores/elasticsearch_auto_retriever/ → "infer a set of metadata filters as well as the right query string"; "a structured description of the vector store collection and the metadata filters it supports"
+- [20] Query expansion → https://en.wikipedia.org/wiki/Query_expansion → "users do not always formulate search queries using the best terms"; "Fixing spelling errors"
+- [21] Recall → https://en.wikipedia.org/wiki/Evaluation_measures_(information_retrieval) → "Recall is the fraction of the documents that are relevant to the query that are successfully retrieved." (hit@k KHÔNG được định nghĩa ở đây; trang tự định nghĩa, không gắn cite)
+- [22] MRR → https://en.wikipedia.org/wiki/Mean_reciprocal_rank → "If none of the proposed results are correct, the reciprocal rank is 0."
+- [23] Ragas context recall → https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/context_recall/ → "calculating context recall always requires a reference to compare against"
+- [24] MỚI. OWASP LLM08:2025: vector store có kiểm soát quyền, phân vùng dữ liệu giữa nhóm người dùng → https://genai.owasp.org/llmrisk/llm082025-vector-and-embedding-weaknesses/ → "Implement fine-grained access controls and permission-aware vector and embedding stores."; "A permission-aware vector database should be implemented to restrict access."
+
+## Ghi chú suy luận bổ sung (không gắn cite)
+- "Bộ lọc quyền do hệ thống gắn từ danh tính người đăng nhập, không lấy từ LLM" là hệ quả thiết kế suy ra từ [24], trang viết rõ là "hệ quả khi thiết kế".
+- Mô hình độ trễ: decomposition với câu một ý vẫn tốn 1 lượt LLM (phải gọi mới biết không cần tách); routing chọn 2 kho = 2 lượt tìm song song. Số liệu minh họa.

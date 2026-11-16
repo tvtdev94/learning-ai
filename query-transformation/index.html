@@ -4,13 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Biến đổi câu truy vấn (query transformation)</title>
+<!-- pwa -->
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15171a" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" sizes="32x32" href="../icons/favicon-32.png">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Học AI">
+<script>if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('../sw.js').catch(function(){})})</script>
 <script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <style>
 :root{
   --bg:#f7f6f2; --surface:#ffffff; --surface-2:#f0eee8; --text:#1f2328; --muted:#5b6370;
-  --border:#dcd8cf; --accent:#2f6fde; --accent-soft:#e3ecfc; --ok:#1f8a4c; --ok-soft:#e1f3e8;
-  --warn:#b4610e; --warn-soft:#fbeedd; --bad:#c23b3b; --bad-soft:#fae3e3;
-  --p1:#2f6fde; --p2:#8a4fd1; --p3:#1f8a4c; --p4:#b4610e;
+  --border:#dcd8cf; --accent:#2559b8; --accent-soft:#e3ecfc; --ok:#16703d; --ok-soft:#e1f3e8;
+  --warn:#8f4c0a; --warn-soft:#fbeedd; --bad:#a82f2f; --bad-soft:#fae3e3;
+  --p1:#2559b8; --p2:#7440b8; --p3:#16703d; --p4:#8f4c0a;
   --code-bg:#f0eee8; --shadow:0 1px 2px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04); --on-accent:#ffffff; color-scheme:light;
 }
 @media (prefers-color-scheme: dark){
@@ -105,7 +115,8 @@ svg text{fill:var(--text);font-family:inherit}
 .qt-row button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 12px;font-size:14px;text-align:left}
 .qt-row button.on{border-color:var(--accent);background:var(--accent-soft);color:var(--text)}
 .qt-label{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-top:6px}
-.qt-out pre{font-size:15px}
+/* Vietnamese query text renders poorly in many monospace fonts (detached diacritics), so demo/stepper blocks use the body font */
+.qt-out pre,.stepper pre{font-size:15px;font-family:inherit}
 .qt-out .orig{font-size:15px}
 .fit{font-weight:700}
 .fit.good{color:var(--ok)} .fit.none{color:var(--muted)} .fit.risk{color:var(--warn)} .fit.bad{color:var(--bad)}
@@ -124,9 +135,9 @@ svg text{fill:var(--text);font-family:inherit}
 .bars .bv{text-align:right;font-variant-numeric:tabular-nums}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:6px 0}
 .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
-details{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin:8px 0}
-details summary{cursor:pointer;font-weight:600}
-details[open] summary{margin-bottom:6px}
+details{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0 14px;margin:8px 0}
+details summary{cursor:pointer;font-weight:600;padding:10px 0;min-height:40px}
+details[open]{padding-bottom:10px}
 .check{display:flex;gap:8px;align-items:flex-start;padding:6px 0}
 .check input{margin-top:6px}
 footer{max-width:1100px;margin:0 auto;padding:24px 16px;color:var(--muted);font-size:14px}
@@ -157,8 +168,8 @@ ol.sources .acc{color:var(--muted);font-size:14px}
 .vflow .box{border-radius:12px;padding:10px;margin-bottom:10px}
 .vflow .box1{background:var(--accent-soft)} .vflow .box2{background:var(--ok-soft)} .vflow .box4{background:var(--warn-soft)}
 .vflow .note{font-size:13px;color:var(--muted);margin-top:6px}
-/* Desktop SVG diagrams (viewBox 1000 wide) only from 1041px so their small labels render at ~11px or larger */
-@media (max-width:1040px){.d-only{display:none}.m-only{display:block}.vflow{max-width:560px;margin:0 auto}}
+/* Desktop SVG diagrams (viewBox 1000 wide) only from 1081px so their small labels render at ~11px or larger */
+@media (max-width:1080px){.d-only{display:none}.m-only{display:block}.vflow{max-width:560px;margin:0 auto}}
 @media (max-width:600px){
   .brand{display:none} body{font-size:15px}
   .theme-btn .lbl,.home .lbl{display:none}
@@ -213,13 +224,13 @@ ol.sources .acc{color:var(--muted);font-size:14px}
 <section id="tong-quan">
   <h1>Biến đổi câu truy vấn (query transformation)</h1>
   <p class="lead">Trong <a href="../rag/">RAG</a>, câu hỏi của người dùng thường được đem đi tìm nguyên văn. Query transformation chen thêm một bước <b>trước khi tìm</b>: dùng LLM (hoặc luật đơn giản) biến câu hỏi thành một hay nhiều câu truy vấn dễ tìm hơn.</p>
-  <p class="muted">Survey về RAG xếp các kỹ thuật này vào nhóm tối ưu trước bước tìm (pre-retrieval) của "Advanced RAG", phân biệt với "Naive RAG" chỉ tìm thẳng bằng câu hỏi gốc.<sup class="cite"><a href="#src-1">[1]</a></sup> Bài báo Rewrite-Retrieve-Read gọi tên ý tưởng: thay "tìm rồi đọc" bằng "viết lại, tìm, rồi đọc".<sup class="cite"><a href="#src-2">[2]</a></sup></p>
+  <p class="muted">Survey về RAG xếp việc viết lại, biến đổi và mở rộng truy vấn vào nhóm tối ưu trước bước tìm (pre-retrieval) của "Advanced RAG", phân biệt với "Naive RAG" dựa thẳng vào câu hỏi gốc để tìm. Survey cũng bàn riêng việc điều hướng câu hỏi (query routing) tới pipeline phù hợp.<sup class="cite"><a href="#src-1">[1]</a></sup> Bài báo Rewrite-Retrieve-Read gọi tên ý tưởng: thay "tìm rồi đọc" bằng "viết lại, tìm, rồi đọc".<sup class="cite"><a href="#src-2">[2]</a></sup></p>
 
   <h3>Vì sao câu hỏi của người dùng không phải câu truy vấn tốt?</h3>
   <div class="grid g3">
     <div class="card"><span class="tag p4">Vấn đề 1</span><h4>Ngắn và mơ hồ</h4><p>"laptop hư xin cái mới sao ad" — vài chữ, nhiều từ lóng. Retriever không biết người hỏi cần quy trình, mẫu đơn hay điều kiện.</p></div>
     <div class="card"><span class="tag p4">Vấn đề 2</span><h4>Phụ thuộc hội thoại</h4><p>"còn thử việc thì sao?" chỉ hiểu được khi biết câu trước hỏi về nghỉ phép. Đem đi tìm nguyên văn thì mất chủ đề.<sup class="cite"><a href="#src-3">[3]</a></sup></p></div>
-    <div class="card"><span class="tag p4">Vấn đề 3</span><h4>Khác từ vựng với tài liệu</h4><p>Người dùng nói "hư", tài liệu viết "hỏng hóc thiết bị". Người tìm kiếm không phải lúc nào cũng dùng đúng từ mà kho tài liệu dùng.<sup class="cite"><a href="#src-20">[20]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Vấn đề 3</span><h4>Khác từ vựng với tài liệu</h4><p>Người dùng nói "hư", tài liệu viết "thiết bị hỏng". Người tìm kiếm không phải lúc nào cũng dùng đúng từ mà kho tài liệu dùng.<sup class="cite"><a href="#src-20">[20]</a></sup></p></div>
     <div class="card"><span class="tag p4">Vấn đề 4</span><h4>Sai chính tả, thiếu dấu</h4><p>Gõ vội trên điện thoại: "cong tac phi". Sửa chính tả là một kỹ thuật mở rộng truy vấn cổ điển.<sup class="cite"><a href="#src-20">[20]</a></sup></p></div>
     <div class="card"><span class="tag p4">Vấn đề 5</span><h4>Nhiều ý hoặc nhiều bước</h4><p>"Công tác phí 2025 tăng bao nhiêu so với 2024?" cần hai đoạn khác nhau. Hiếm khi một đoạn chứa đủ cả hai.</p></div>
     <div class="card"><span class="tag p4">Vấn đề 6</span><h4>Ẩn điều kiện lọc và nguồn</h4><p>"năm 2024", "phòng IT", "chi nhánh Cần Thơ" là điều kiện lọc chứ không phải nội dung cần tìm theo nghĩa. Câu hỏi cũng không nói nên tìm ở kho nào.</p></div>
@@ -229,17 +240,17 @@ ol.sources .acc{color:var(--muted);font-size:14px}
   <div class="grid g2">
     <div class="card"><span class="tag p1">Sửa câu</span><h4>Viết lại cho rõ</h4><p><b>Query rewriting</b>: biến câu mơ hồ thành câu truy vấn rõ ràng.<sup class="cite"><a href="#src-2">[2]</a></sup> <b>Viết lại theo hội thoại</b> (condense): gộp lịch sử chat vào để được một câu hỏi độc lập.<sup class="cite"><a href="#src-3">[3]</a><a href="#src-4">[4]</a></sup></p></div>
     <div class="card"><span class="tag p3">Nhân câu</span><h4>Tìm bằng nhiều câu</h4><p><b>Multi-query</b>: sinh vài biến thể rồi gộp kết quả.<sup class="cite"><a href="#src-5">[5]</a><a href="#src-6">[6]</a></sup> <b>Decomposition</b>: tách câu nhiều bước thành câu con.<sup class="cite"><a href="#src-8">[8]</a><a href="#src-11">[11]</a></sup> <b>Step-back</b>: hỏi thêm một câu khái quát hơn.<sup class="cite"><a href="#src-12">[12]</a></sup></p></div>
-    <div class="card"><span class="tag" style="color:var(--p2)">Đổi dạng</span><h4>Tìm bằng câu trả lời giả định</h4><p><b>HyDE</b>: cho LLM viết thử một đoạn trả lời (có thể sai), rồi lấy đoạn đó đi tìm các đoạn thật giống nó.<sup class="cite"><a href="#src-13">[13]</a></sup></p></div>
+    <div class="card"><span class="tag" style="color:var(--p2)">Đổi dạng</span><h4>Tìm bằng câu trả lời giả định</h4><p><b>HyDE</b>: cho LLM viết thử một (hoặc vài) đoạn trả lời, có thể sai, rồi lấy vector của đoạn đó đi tìm các đoạn thật gần nó.<sup class="cite"><a href="#src-13">[13]</a></sup> <b>Query2doc</b> thì ghép đoạn giả định vào câu hỏi, nên dùng được cả cho tìm theo từ khóa (BM25).<sup class="cite"><a href="#src-14">[14]</a></sup></p></div>
     <div class="card"><span class="tag p4">Điều hướng</span><h4>Tìm đúng chỗ, đúng phạm vi</h4><p><b>Query routing</b>: chọn kho hoặc index phù hợp.<sup class="cite"><a href="#src-15">[15]</a></sup> <b>Self-query</b>: trích bộ lọc metadata (năm, phòng ban…) ra khỏi câu hỏi.<sup class="cite"><a href="#src-17">[17]</a><a href="#src-18">[18]</a></sup></p></div>
   </div>
-  <div class="callout"><b>Hình dung:</b> người dùng nói với lễ tân "cái máy hôm qua ấy, hỏng rồi". Lễ tân giỏi sẽ hỏi lại cho rõ, đoán ra "máy POS quầy 2 báo lỗi E-203", biết phải gọi bộ phận kỹ thuật chứ không phải kế toán, rồi mới tra sổ. Query transformation là phần "lễ tân" đó, đứng trước bộ tìm kiếm.</div>
+  <div class="callout"><b>Hình dung:</b> người dùng nói với lễ tân "cái máy hôm qua ấy, hỏng rồi". Lễ tân giỏi sẽ đoán ra "máy POS quầy 2 báo lỗi E-203", biết phải gọi bộ phận kỹ thuật chứ không phải kế toán, rồi mới tra sổ. Query transformation là phần "lễ tân" đó, đứng trước bộ tìm kiếm.</div>
   <div class="callout warn"><b>Không miễn phí:</b> mỗi kỹ thuật (trừ luật đơn giản) thêm ít nhất một lượt gọi LLM <i>trước</i> khi tìm, nên tăng độ trễ và chi phí. Nghiên cứu Adaptive-RAG chỉ ra rằng xử lý câu hỏi đơn giản bằng quy trình phức tạp là tốn công vô ích.<sup class="cite"><a href="#src-16">[16]</a></sup> Mục 4 và 7 giúp bạn cân nhắc.</div>
 </section>
 
 <!-- 2. FLOW -->
 <section id="flow">
   <h2>2. Flow: biến đổi nằm ở đâu trong RAG</h2>
-  <p>Bước biến đổi nằm giữa câu hỏi và retriever. Đầu ra có thể là <b>một</b> câu truy vấn tốt hơn, <b>nhiều</b> câu truy vấn (cần gộp kết quả), một <b>lựa chọn kho</b>, hoặc một <b>bộ lọc</b> metadata. Câu hỏi của người dùng vẫn được đưa vào prompt cuối để LLM trả lời đúng điều người dùng hỏi (với câu nối tiếp như "thì sao?", dùng bản đã viết lại theo hội thoại vì câu gốc không tự đủ nghĩa).</p>
+  <p>Bước biến đổi nằm giữa câu hỏi và retriever. Đầu ra có thể là <b>một</b> câu truy vấn tốt hơn, <b>nhiều</b> câu truy vấn (cần gộp kết quả), một <b>lựa chọn kho</b>, hoặc một <b>bộ lọc</b> metadata. Câu hỏi của người dùng vẫn được đưa vào prompt cuối để LLM trả lời đúng điều người dùng hỏi (với câu nối tiếp như "thì sao?", dùng bản đã viết lại theo hội thoại vì câu gốc không tự đủ nghĩa). Riêng decomposition có thể đi xa hơn: trả lời từng câu con rồi tổng hợp.<sup class="cite"><a href="#src-11">[11]</a></sup></p>
 
   <div class="vflow m-only" aria-label="Flow query transformation (dạng dọc)">
     <div class="box box1">
@@ -262,7 +273,7 @@ ol.sources .acc{color:var(--muted);font-size:14px}
       <div class="ar">↓</div>
       <div class="node a"><b>Gộp kết quả</b><span>bỏ trùng (union) hoặc RRF; có thể rerank</span></div>
       <div class="ar">↓</div>
-      <div class="node g"><b>LLM trả lời</b><span>đọc các đoạn + <b>câu hỏi gốc</b></span></div>
+      <div class="node g"><b>LLM trả lời</b><span>đọc các đoạn + <b>câu hỏi của người dùng</b></span></div>
     </div>
   </div>
 
@@ -270,6 +281,8 @@ ol.sources .acc{color:var(--muted);font-size:14px}
   <svg class="diagram" viewBox="0 0 1000 360" role="img" aria-label="Flow query transformation">
     <defs>
       <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+      <marker id="arrP1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--p1)"/></marker>
+      <marker id="arrP3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--p3)"/></marker>
     </defs>
     <rect x="174" y="70" width="172" height="250" rx="14" fill="var(--warn-soft)" stroke="var(--p4)" stroke-opacity=".5"/>
     <text x="260" y="94" text-anchor="middle" font-weight="700" font-size="14" style="fill:var(--p4)">BIẾN ĐỔI</text>
@@ -313,13 +326,13 @@ ol.sources .acc{color:var(--muted);font-size:14px}
       <line x1="670" y1="190" x2="696" y2="190"/>
       <line x1="828" y1="190" x2="854" y2="190"/>
     </g>
-    <path d="M90 150 L90 40 L605 40 L605 148" fill="none" stroke="var(--p1)" stroke-width="1.5" stroke-dasharray="5 5" marker-end="url(#arr)"/>
+    <path d="M90 150 L90 40 L605 40 L605 148" fill="none" stroke="var(--p1)" stroke-width="1.5" stroke-dasharray="5 5" marker-end="url(#arrP1)"/>
     <text x="400" y="30" text-anchor="middle" font-size="12" style="fill:var(--p1)">câu đơn giản: đi thẳng tới retriever, không biến đổi</text>
-    <path d="M90 230 L90 340 L918 340 L918 232" fill="none" stroke="var(--p3)" stroke-width="1.5" stroke-dasharray="5 5" marker-end="url(#arr)"/>
+    <path d="M90 230 L90 340 L918 340 L918 232" fill="none" stroke="var(--p3)" stroke-width="1.5" stroke-dasharray="5 5" marker-end="url(#arrP3)"/>
     <text x="640" y="332" text-anchor="middle" font-size="12" style="fill:var(--p3)">câu hỏi của người dùng vẫn được đưa vào prompt cuối</text>
   </svg>
   </div>
-  <div class="callout ok"><b>Điều cần nhớ:</b> câu truy vấn sau biến đổi chỉ dùng để <b>tìm</b>. Nó không thay câu hỏi của người dùng ở bước trả lời. Bài step-back còn đưa vào prompt cuối cả đoạn tìm bằng câu gốc lẫn đoạn tìm bằng câu step-back.<sup class="cite"><a href="#src-12">[12]</a></sup> Ví dụ HyDE trong tài liệu LlamaIndex cũng bật tùy chọn <code>include_original=True</code>.<sup class="cite"><a href="#src-10">[10]</a></sup></div>
+  <div class="callout ok"><b>Điều cần nhớ:</b> với rewrite, multi-query, step-back và HyDE, câu truy vấn sau biến đổi chỉ dùng để <b>tìm</b>. Nó không thay câu hỏi của người dùng ở bước trả lời. Bài step-back đưa vào prompt cuối cả đoạn tìm bằng câu gốc lẫn đoạn tìm bằng câu step-back, rồi mới đến câu hỏi gốc.<sup class="cite"><a href="#src-12">[12]</a></sup> Ngoại lệ là decomposition: SubQuestionQueryEngine của LlamaIndex trả lời từng câu con, gom các câu trả lời trung gian rồi tổng hợp câu trả lời cuối.<sup class="cite"><a href="#src-11">[11]</a></sup></div>
 </section>
 
 <!-- 3. VÍ DỤ -->
@@ -428,20 +441,20 @@ ol.sources .acc{color:var(--muted);font-size:14px}
       </g>
       <text x="490" y="58" text-anchor="middle" font-weight="600">Query rewriting</text>
       <text x="490" y="116" text-anchor="middle" font-weight="600">Viết lại theo hội thoại</text>
-      <text x="490" y="166" text-anchor="middle" font-weight="600">Multi-query</text>
-      <text x="490" y="212" text-anchor="middle" font-weight="600">HyDE</text>
+      <text x="490" y="166" text-anchor="middle" font-weight="600">HyDE</text>
+      <text x="490" y="212" text-anchor="middle" font-weight="600">Multi-query</text>
       <text x="490" y="260" text-anchor="middle" font-weight="600">Decomposition</text>
       <text x="490" y="318" text-anchor="middle" font-weight="600">Step-back</text>
       <text x="490" y="376" text-anchor="middle" font-weight="600">Query routing</text>
       <text x="490" y="434" text-anchor="middle" font-weight="600">Self-query</text>
       <!-- outputs -->
       <g fill="var(--ok-soft)" stroke="var(--p3)" stroke-opacity=".6">
-        <rect x="720" y="62" width="260" height="40" rx="8"/><rect x="720" y="188" width="260" height="38" rx="8"/>
+        <rect x="720" y="62" width="260" height="40" rx="8"/><rect x="720" y="126" width="260" height="38" rx="8"/>
         <rect x="720" y="262" width="260" height="44" rx="8"/><rect x="720" y="352" width="260" height="38" rx="8"/>
         <rect x="720" y="410" width="260" height="38" rx="8"/>
       </g>
       <text x="850" y="87" text-anchor="middle">1 câu truy vấn rõ hơn</text>
-      <text x="850" y="212" text-anchor="middle">Vector của đoạn giả định</text>
+      <text x="850" y="150" text-anchor="middle">Vector của đoạn giả định</text>
       <text x="850" y="281" text-anchor="middle">Nhiều câu truy vấn</text>
       <text x="850" y="298" text-anchor="middle" font-size="12" style="fill:var(--muted)">→ cần gộp: union / RRF</text>
       <text x="850" y="376" text-anchor="middle">Kho / index được chọn</text>
@@ -458,8 +471,8 @@ ol.sources .acc{color:var(--muted);font-size:14px}
       <line x1="260" y1="429" x2="378" y2="429"/>
       <line x1="600" y1="53" x2="718" y2="78"/>
       <line x1="600" y1="111" x2="718" y2="88"/>
-      <line x1="600" y1="207" x2="718" y2="207"/>
-      <line x1="600" y1="161" x2="718" y2="272"/>
+      <line x1="600" y1="161" x2="718" y2="145"/>
+      <line x1="600" y1="207" x2="718" y2="272"/>
       <line x1="600" y1="255" x2="718" y2="282"/>
       <line x1="600" y1="313" x2="718" y2="294"/>
       <line x1="600" y1="371" x2="718" y2="371"/>
@@ -467,7 +480,7 @@ ol.sources .acc{color:var(--muted);font-size:14px}
     </g>
   </svg>
   </div>
-  <p class="muted">Các kỹ thuật kết hợp được với nhau. Thứ tự hay gặp: viết lại theo hội thoại trước (để có câu độc lập), rồi routing hoặc self-query, rồi mới nhân câu. Sau bước tìm, <a href="../hybrid-search/">hybrid search</a> và <a href="../reranking/">reranking</a> tiếp tục cải thiện danh sách đoạn.</p>
+  <p class="muted">Các kỹ thuật kết hợp được với nhau. Thứ tự hay gặp: viết lại theo hội thoại trước (để có câu độc lập), rồi routing hoặc self-query, rồi mới nhân câu. Sau bước tìm, <a href="../hybrid-search/">hybrid search</a> và <a href="../reranking/">reranking</a> tiếp tục cải thiện danh sách đoạn. Khi để một agent tự quyết định viết lại câu và tìm lặp nhiều vòng, bạn đã bước sang <a href="../multi-agent-agentic-rag/">agentic RAG</a>.</p>
 </section>
 
 <!-- 7. SO SÁNH -->
@@ -484,7 +497,7 @@ ol.sources .acc{color:var(--muted);font-size:14px}
       <tr><td><b>Step-back</b><sup class="cite"><a href="#src-12">[12]</a></sup></td><td>Câu quá chi tiết cần nguyên tắc nền</td><td>1</td><td>2 (câu gốc + câu khái quát)</td><td>Thêm đoạn chung chung chiếm chỗ trong context</td><td>Tra cứu một con số, một điều khoản cụ thể</td></tr>
       <tr><td><b>HyDE</b><sup class="cite"><a href="#src-13">[13]</a><a href="#src-10">[10]</a></sup></td><td>Câu hỏi ngắn khác dạng tài liệu; chưa có dữ liệu huấn luyện retriever</td><td>1 (sinh đoạn văn, dài hơn)</td><td>1</td><td>Đoạn giả định bịa sai hướng khi LLM không biết miền tri thức</td><td>Mã nội bộ, thuật ngữ riêng của công ty; cần độ trễ thấp</td></tr>
       <tr><td><b>Query routing</b><sup class="cite"><a href="#src-15">[15]</a><a href="#src-16">[16]</a></sup></td><td>Nhiều kho, nhiều loại câu hỏi</td><td>1 (hoặc classifier nhỏ)</td><td>1 (hoặc nhiều nếu chọn nhiều kho)</td><td>Chọn sai kho thì không tìm thấy gì đúng</td><td>Chỉ có một kho; mô tả các kho chồng chéo</td></tr>
-      <tr><td><b>Self-query</b><sup class="cite"><a href="#src-17">[17]</a><a href="#src-18">[18]</a><a href="#src-19">[19]</a></sup></td><td>Điều kiện lọc ẩn trong câu</td><td>1</td><td>1 (có lọc)</td><td>Bịa bộ lọc hoặc lọc quá chặt → rỗng kết quả</td><td>Kho thiếu metadata sạch, hoặc vector DB không hỗ trợ lọc</td></tr>
+      <tr><td><b>Self-query</b><sup class="cite"><a href="#src-17">[17]</a><a href="#src-18">[18]</a><a href="#src-19">[19]</a></sup></td><td>Điều kiện lọc ẩn trong câu</td><td>1</td><td>1 (có lọc)</td><td>Bịa bộ lọc hoặc lọc quá chặt → kết quả rỗng</td><td>Kho thiếu metadata sạch, hoặc vector DB không hỗ trợ lọc</td></tr>
     </tbody>
   </table></div>
 
@@ -493,8 +506,9 @@ ol.sources .acc{color:var(--muted);font-size:14px}
     <div class="card"><span class="tag bad">Bỏ qua</span><h4>Câu hỏi đã rõ, retrieval đã tốt</h4><p>Nếu bộ eval cho thấy đoạn đúng đã nằm trong top-k, biến đổi chỉ thêm độ trễ. Adaptive-RAG chọn chiến lược theo độ phức tạp của câu: câu đơn giản đi đường ngắn, câu phức tạp mới dùng nhiều bước.<sup class="cite"><a href="#src-16">[16]</a></sup></p></div>
     <div class="card"><span class="tag bad">Cẩn thận</span><h4>Câu chứa mã, số hiệu, tên riêng</h4><p>LLM viết lại có thể làm rơi hoặc sửa nhầm "E-203". HyDE thì LLM không biết mã nội bộ nên dễ đoán sai nghĩa. Giữ câu gốc trong danh sách truy vấn và dùng <a href="../hybrid-search/">hybrid search</a> để khớp chữ chính xác.</p></div>
     <div class="card"><span class="tag p4">Ngân sách</span><h4>Yêu cầu độ trễ chặt</h4><p>Chat thoại, gợi ý khi gõ… cần phản hồi rất nhanh. Một lượt gọi LLM trước khi tìm có thể lớn hơn chính bước tìm nhiều lần (thử ở mục 4). Có thể dùng model nhỏ để viết lại; bài Rewrite-Retrieve-Read huấn luyện một model nhỏ làm rewriter.<sup class="cite"><a href="#src-2">[2]</a></sup></p></div>
-    <div class="card"><span class="tag p4">Dữ liệu</span><h4>Kho thiếu metadata</h4><p>Self-query chỉ lọc được trên trường mà kho thực sự có, và vector store phải hỗ trợ lọc trên trường đó.<sup class="cite"><a href="#src-18">[18]</a></sup> Không có trường "năm" thì không lọc theo năm được.</p></div>
+    <div class="card"><span class="tag p4">Dữ liệu</span><h4>Kho thiếu metadata</h4><p>Self-query chỉ lọc được trên trường mà kho thực sự có. LlamaIndex bắt bạn khai báo trước cho LLM mô tả kho và các trường metadata mà nó hỗ trợ lọc.<sup class="cite"><a href="#src-19">[19]</a></sup> Bài của Elastic cũng cảnh báo: metadata định nghĩa kém thì kết quả sai hoặc thiếu.<sup class="cite"><a href="#src-18">[18]</a></sup> Không có trường "năm" thì không lọc theo năm được. Cách thiết kế metadata cho kho: xem trang <a href="../knowledge-base/">Knowledge base</a>.</p></div>
   </div>
+  <div class="callout bad"><b>Bộ lọc phân quyền không được lấy từ LLM.</b> Bộ lọc self-query chỉ là tiện ích tìm kiếm: LLM đoán sai thì kết quả kém đi. Quyền truy cập thì khác. OWASP khuyến nghị dùng vector store có kiểm soát quyền (permission-aware) và phân vùng dữ liệu chặt giữa các nhóm người dùng, để tài liệu của nhóm này không lọt vào câu trả lời cho nhóm khác.<sup class="cite"><a href="#src-24">[24]</a></sup> Hệ quả khi thiết kế: bộ lọc quyền (phòng ban, chi nhánh, mức mật) do hệ thống gắn từ danh tính người đăng nhập và áp cho <b>mọi</b> câu truy vấn, kể cả các câu do LLM sinh ra. LLM không được tự thêm hay bỏ bộ lọc này. Xem thêm <a href="../governance/">AI Governance</a>.</div>
 </section>
 
 <!-- 8. LỖI -->
@@ -532,7 +546,7 @@ ol.sources .acc{color:var(--muted);font-size:14px}
 <!-- 9. ĐÁNH GIÁ -->
 <section id="danh-gia">
   <h2>9. Đánh giá và đo lường</h2>
-  <p>Cách đo đúng là <b>so sánh A/B trên cùng một bộ câu hỏi</b>: chạy retrieval có và không có biến đổi, giữ nguyên mọi thứ khác. Chỉ giữ kỹ thuật nào cải thiện được trên dữ liệu của bạn đủ để bù độ trễ và chi phí. Xem thêm trang <a href="../rag/">RAG</a> (mục đánh giá).</p>
+  <p>Cách đo đúng là <b>so sánh A/B trên cùng một bộ câu hỏi</b>: chạy retrieval có và không có biến đổi, giữ nguyên mọi thứ khác. Chỉ giữ kỹ thuật nào cải thiện được trên dữ liệu của bạn đủ để bù độ trễ và chi phí. Xem thêm <a href="../rag/#danh-gia">mục đánh giá trong trang RAG</a>.</p>
   <div class="grid g2">
     <div class="card"><span class="tag p1">Lớp tìm kiếm</span><h4>Chỉ số chính</h4>
       <p><b>recall@k</b>: tỷ lệ đoạn liên quan được tìm thấy trong top-k.<sup class="cite"><a href="#src-21">[21]</a></sup> <b>hit@k</b>: tỷ lệ câu hỏi có ít nhất một đoạn đúng trong top-k. <b>MRR</b>: trung bình của 1/(hạng của đoạn đúng đầu tiên), không tìm thấy thì tính 0.<sup class="cite"><a href="#src-22">[22]</a></sup></p>
@@ -545,7 +559,7 @@ ol.sources .acc{color:var(--muted);font-size:14px}
   <div class="callout"><b>Bộ eval nên có đủ loại câu:</b> câu nối tiếp trong hội thoại, câu có lỗi chính tả, câu dùng từ khác tài liệu, câu nhiều bước, câu có mã số. Nếu chỉ toàn câu "sạch" thì sẽ đánh giá thấp lợi ích của biến đổi, và không thấy chỗ nó làm hỏng câu có mã số.</div>
 
   <h3>Tính thử: có và không có biến đổi</h3>
-  <p>Tám câu eval, ghi hạng của đoạn đúng đầu tiên trong top-5 ("–" là không tìm thấy). <span class="muted">Hạng là <b>minh họa</b>; hit@3 và MRR do JS tính từ bảng.</span></p>
+  <p>Tám câu eval, ghi hạng của đoạn đúng đầu tiên trong top-5 ("–" là không tìm thấy). <span class="muted">Hạng là <b>minh họa</b>; hit@3 và MRR do JS tính từ bảng.</span> Để ý E8: câu có mã lỗi <b>tụt khỏi top-5</b> khi bật biến đổi (câu viết lại làm rơi mã "E-203"). Con số trung bình tăng có thể che mất loại câu bị hại, nên hãy xem từng dòng.</p>
   <div class="table-wrap"><table class="stack" id="evalTable">
     <thead><tr><th>Câu eval</th><th>Loại câu</th><th>Hạng · không biến đổi</th><th>Hạng · có biến đổi</th></tr></thead>
     <tbody></tbody>
@@ -582,7 +596,7 @@ ol.sources .acc{color:var(--muted);font-size:14px}
   <details><summary>4. Khi nào các câu con phải chạy tuần tự?</summary>
     <p>Khi câu sau cần đáp án của câu trước, ví dụ "trưởng phòng của người phụ trách dự án X": phải biết người phụ trách là ai trước. Self-ask và multi-step decomposition của LlamaIndex đều sinh câu hỏi tiếp theo dựa trên câu trả lời trước.<sup class="cite"><a href="#src-9">[9]</a><a href="#src-10">[10]</a></sup></p></details>
   <details><summary>5. Self-query lọc "năm 2024" nhưng kết quả rỗng. Kiểm tra gì?</summary>
-    <p>Kho có trường "năm" không, giá trị lưu đúng định dạng không, vector store có hỗ trợ lọc trường đó không,<sup class="cite"><a href="#src-18">[18]</a></sup> và LLM có thêm bộ lọc thừa (ví dụ chi nhánh) không.</p></details>
+    <p>Kho có trường "năm" không, giá trị lưu đúng định dạng không, trường đó có nằm trong danh sách metadata khai báo cho LLM không,<sup class="cite"><a href="#src-19">[19]</a></sup> và LLM có thêm bộ lọc thừa (ví dụ chi nhánh) không.</p></details>
   <details><summary>6. Làm sao biết có nên giữ một kỹ thuật biến đổi?</summary>
     <p>Chạy A/B trên cùng bộ eval: so recall@k / hit@k / MRR có và không có biến đổi, kèm độ trễ p95 và chi phí. Chỉ giữ khi cải thiện đủ lớn so với cái giá, và xem riêng từng loại câu vì có loại được lợi, có loại bị hại.</p></details>
 </section>
@@ -590,7 +604,7 @@ ol.sources .acc{color:var(--muted);font-size:14px}
 <!-- NGUỒN -->
 <section id="nguon">
   <h2>Nguồn tham khảo</h2>
-  <p class="muted">Các khẳng định kỹ thuật trong trang được đối chiếu với những nguồn dưới đây. Số trong ngoặc vuông ở thân bài trỏ tới mục tương ứng. Tất cả truy cập ngày 2026-11-14.</p>
+  <p class="muted">Các khẳng định kỹ thuật trong trang được đối chiếu với những nguồn dưới đây. Số trong ngoặc vuông ở thân bài trỏ tới mục tương ứng. Nguồn 1–23 truy cập ngày 2026-11-14 và được mở lại để kiểm ngày 2026-11-16; nguồn 24 truy cập ngày 2026-11-16.</p>
   <ol class="sources">
     <li id="src-1">Gao, Y. và cộng sự. <i>Retrieval-Augmented Generation for Large Language Models: A Survey</i>. arXiv, 2023. <a href="https://arxiv.org/abs/2312.10997" target="_blank" rel="noopener">arxiv.org/abs/2312.10997</a> <span class="acc">(truy cập 2026-11-14)</span></li>
     <li id="src-2">Ma, X. và cộng sự. <i>Query Rewriting for Retrieval-Augmented Large Language Models</i>. EMNLP, 2023. <a href="https://arxiv.org/abs/2305.14283" target="_blank" rel="noopener">arxiv.org/abs/2305.14283</a> <span class="acc">(truy cập 2026-11-14)</span></li>
@@ -615,6 +629,7 @@ ol.sources .acc{color:var(--muted);font-size:14px}
     <li id="src-21">Wikipedia. <i>Evaluation measures (information retrieval)</i>. <a href="https://en.wikipedia.org/wiki/Evaluation_measures_(information_retrieval)" target="_blank" rel="noopener">en.wikipedia.org/wiki/Evaluation_measures_(information_retrieval)</a> <span class="acc">(truy cập 2026-11-14)</span></li>
     <li id="src-22">Wikipedia. <i>Mean reciprocal rank</i>. <a href="https://en.wikipedia.org/wiki/Mean_reciprocal_rank" target="_blank" rel="noopener">en.wikipedia.org/wiki/Mean_reciprocal_rank</a> <span class="acc">(truy cập 2026-11-14)</span></li>
     <li id="src-23">Ragas. <i>Context Recall</i> (tài liệu metric). <a href="https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/context_recall/" target="_blank" rel="noopener">docs.ragas.io … /context_recall</a> <span class="acc">(truy cập 2026-11-14)</span></li>
+    <li id="src-24">OWASP. <i>LLM08:2025 Vector and Embedding Weaknesses</i> (OWASP Top 10 for LLM Applications 2025). 2025. <a href="https://genai.owasp.org/llmrisk/llm082025-vector-and-embedding-weaknesses/" target="_blank" rel="noopener">genai.owasp.org/llmrisk/llm082025-vector-and-embedding-weaknesses</a> <span class="acc">(truy cập 2026-11-16)</span></li>
   </ol>
 </section>
 </main>
@@ -654,9 +669,12 @@ ol.sources .acc{color:var(--muted);font-size:14px}
   }
   var RRF_LISTS=[['d12','d07','d31'],['d07','d12','d44'],['d07','d19','d12']];
   var fused=rrf(RRF_LISTS,60);
+  // Equal scores share a rank (d31 and d44 tie); their relative order is implementation-dependent.
+  var prevRank=0;
   var rrfRows=fused.map(function(r,i){
+    var tie=i>0&&Math.abs(r.s-fused[i-1].s)<1e-12, rank=tie?prevRank:i+1; prevRank=rank;
     var parts=RRF_LISTS.map(function(l){var p=l.indexOf(r.d);return p<0?null:'1/'+(60+p+1)}).filter(Boolean).join(' + ');
-    return '<tr><td>'+(i+1)+'. <b>'+r.d+'</b></td><td>'+parts+'</td><td class="mono">'+r.s.toFixed(4).replace('.',',')+'</td></tr>';
+    return '<tr><td>'+rank+'. <b>'+r.d+'</b>'+(tie||(fused[i+1]&&Math.abs(fused[i+1].s-r.s)<1e-12)?' <span class="muted">(đồng hạng)</span>':'')+'</td><td>'+parts+'</td><td class="mono">'+r.s.toFixed(4).replace('.',',')+'</td></tr>';
   }).join('');
 
   // ---------- Stepper example ----------
@@ -677,7 +695,8 @@ ol.sources .acc{color:var(--muted);font-size:14px}
       '<p class="muted">Mô tả kho viết càng rõ, router càng ít chọn nhầm. Bản "multi-selection" cho phép chọn nhiều kho rồi gộp kết quả.'+cite(15)+'</p>'},
     {t:'Self-query: trích bộ lọc',h:'<span class="tag p4">Điều hướng</span><h3>Bước 4 · Tách phần lọc khỏi phần tìm theo nghĩa</h3><p>"năm 2024" là điều kiện lọc, không phải nội dung. LLM tách câu thành truy vấn + bộ lọc metadata.'+cite(17,18,19)+'</p>'+
       '<pre>{\n  "query":  "mức công tác phí một ngày Đà Nẵng; người duyệt công tác phí",\n  "filter": { "loai": "cong-tac-phi", "nam": 2024 }\n}</pre>'+
-      '<div class="callout warn" style="margin:8px 0">Chỉ lọc được nếu mỗi đoạn trong kho có trường <code>loai</code> và <code>nam</code>. Nếu LLM bịa thêm trường không tồn tại, kết quả có thể rỗng.</div>'},
+      '<div class="callout warn" style="margin:8px 0">Chỉ lọc được nếu mỗi đoạn trong kho có trường <code>loai</code> và <code>nam</code>. Nếu LLM bịa thêm trường không tồn tại, kết quả có thể rỗng.</div>'+
+      '<p class="muted">Bộ lọc này chỉ để thu hẹp phạm vi tìm. Bộ lọc quyền truy cập do hệ thống gắn riêng theo người đăng nhập, không lấy từ LLM (xem mục 7).'+cite(24)+'</p>'},
     {t:'Decomposition',h:'<span class="tag p3">Nhân câu</span><h3>Bước 5 · Tách hai ý thành hai câu con</h3><p>Mức tiền và người duyệt thường nằm ở hai điều khoản khác nhau.'+cite(8,11)+'</p>'+
       '<pre>Câu con A: Mức công tác phí một ngày khi đi Đà Nẵng năm 2024?\nCâu con B: Ai duyệt đề nghị công tác phí năm 2024?</pre>'+
       '<p>Hai câu <b>độc lập</b> (B không cần đáp án của A) nên chạy song song. Nếu câu sau cần đáp án câu trước thì phải chạy tuần tự, xem câu mẫu "Kho Bình Dương" ở mục 4.</p>'},
@@ -686,11 +705,11 @@ ol.sources .acc{color:var(--muted);font-size:14px}
       '<p>Mỗi câu trả về top-3 (mã đoạn minh họa):</p><pre>Q0 → d12, d07, d31\nQ1 → d07, d12, d44\nQ2 → d07, d19, d12</pre>'},
     {t:'Gộp bằng RRF',h:'<span class="tag" style="color:var(--p2)">Gộp</span><h3>Bước 7 · Gộp ba danh sách bằng Reciprocal Rank Fusion</h3><p>Mỗi đoạn được cộng 1/(k + hạng) ở mỗi danh sách có nó, với k = 60 (giá trị mặc định của Elasticsearch).'+cite(7)+' RAG-Fusion dùng đúng cách gộp này cho multi-query.'+cite(6)+'</p>'+
       '<div class="table-wrap"><table class="stack"><thead><tr><th>Thứ hạng sau gộp</th><th>Cách tính</th><th>Điểm RRF</th></tr></thead><tbody>'+rrfRows+'</tbody></table></div>'+
-      '<p class="muted">d07 đứng đầu vì có mặt ở cả ba danh sách và hai lần đứng hạng 1. Cách gộp đơn giản hơn là "unique union": chỉ bỏ trùng, không xếp hạng lại.'+cite(5)+'</p>'},
-    {t:'Trả lời và ghi log',h:'<span class="tag p3">Trả lời</span><h3>Bước 8 · LLM trả lời câu hỏi gốc</h3><p>Prompt cuối gồm: các đoạn tìm được cho câu con A và B, cùng <b>câu hỏi đã viết lại</b> (vì câu gốc "thế năm ngoái thì sao" không tự đủ nghĩa).</p>'+
+      '<p class="muted">d07 và d12 đều có mặt ở cả ba danh sách; d07 xếp trên vì hai lần đứng hạng 1. d19, d31, d44 chỉ xuất hiện một lần nên tụt xuống dưới, dù d31 từng đứng trong top-3 của Q0. Cách gộp đơn giản hơn là "unique union": chỉ bỏ trùng, không xếp hạng lại.'+cite(5)+'</p>'},
+    {t:'Trả lời và ghi log',h:'<span class="tag p3">Trả lời</span><h3>Bước 8 · LLM trả lời câu hỏi của người dùng</h3><p>Cách đơn giản nhất: prompt cuối gồm các đoạn tìm được cho câu con A và B, cùng <b>câu hỏi đã viết lại</b> (vì câu gốc "thế năm ngoái thì sao" không tự đủ nghĩa). Cách khác: trả lời riêng từng câu con rồi tổng hợp, như SubQuestionQueryEngine của LlamaIndex.'+cite(11)+'</p>'+
       '<pre>Năm 2024, mức phụ cấp lưu trú khi công tác tại Đà Nẵng là … [d07].\nĐề nghị công tác phí do trưởng bộ phận duyệt, sau đó kế toán kiểm tra [d22].</pre>'+
       '<p>Ghi log đầy đủ để chẩn đoán sau này (mục 8):</p><pre>câu gốc · câu đã viết lại · kho được chọn · bộ lọc · các câu con · biến thể · top-k của từng câu · danh sách sau gộp</pre>'+
-      '<p class="muted">Cả quy trình này tốn khoảng 4 lượt gọi LLM trước khi trả lời. Với câu hỏi đơn giản như lượt 1, nhiều hệ thống bỏ qua phần lớn các bước.'+cite(16)+'</p>'}
+      '<p class="muted">Nếu mỗi bước 2–6 là một lượt gọi riêng, quy trình này tốn 5 lượt gọi LLM trước khi trả lời. Có thể gộp vài bước vào một lượt: auto-retrieval của LlamaIndex cho LLM suy ra cùng lúc câu truy vấn và bộ lọc metadata.'+cite(19)+' Với câu hỏi đơn giản như lượt 1, theo ý tưởng của Adaptive-RAG, có thể bỏ qua phần lớn các bước.'+cite(16)+'</p>'}
   ];
   var cur=0, stepsEl=document.getElementById('steps'), bodyEl=document.getElementById('stepBody');
   STEPS.forEach(function(s,i){var b=document.createElement('button');b.innerHTML='<span class="n">'+(i+1)+'</span>'+s.t;b.addEventListener('click',function(){show(i)});stepsEl.appendChild(b)});
@@ -707,7 +726,7 @@ ol.sources .acc{color:var(--muted);font-size:14px}
     {id:'hyde',n:'HyDE'},{id:'route',n:'Query routing'},{id:'self',n:'Self-query'}
   ];
   var FIT={good:'Phù hợp',none:'Không cần',risk:'Có rủi ro',bad:'Kém'};
-  // Each question: q, optional history, sub = number of sub-questions, dep = sub-questions depend on each other.
+  // Each question: q, optional history, sub = number of sub-questions, dep = sub-questions depend on each other, stores = stores picked by the router (default 1).
   // out[tech] = [fit, transformed query text, note]
   var QS=[
     {id:'chat',lbl:'Câu nối tiếp trong hội thoại',q:'còn thử việc thì sao?',hist:'Trước đó: "Nhân viên chính thức được nghỉ phép năm bao nhiêu ngày?" → "12 ngày/năm."',sub:1,dep:false,out:{
@@ -728,7 +747,7 @@ ol.sources .acc{color:var(--muted);font-size:14px}
       decomp:['none','(không tách)','Một nhu cầu duy nhất.'],
       stepback:['good','Chính sách cấp phát và thay thế thiết bị IT cho nhân viên','Hữu ích nếu quy trình laptop nằm trong một chính sách thiết bị chung.'],
       hyde:['good','Đoạn giả định: "Khi laptop do công ty cấp bị hỏng, nhân viên tạo yêu cầu trên cổng IT Helpdesk, mô tả lỗi và ghi mã tài sản. Nếu không sửa được, bộ phận IT cấp máy thay thế…"','Đoạn này giống văn phong tài liệu quy trình nên dễ tìm ra đoạn thật. Chi tiết như tên cổng là bịa, không được hiển thị cho người dùng.'],
-      route:['good','→ Kho: Hướng dẫn IT – thiết bị',''],
+      route:['good','→ Kho: Hướng dẫn IT – thiết bị','Câu nói về laptop và cấp phát thiết bị, khớp mô tả của kho IT.'],
       self:['good','{ "query": "cấp laptop thay thế khi hỏng", "filter": { "phong_ban": "IT" } }','Chỉ đúng nếu kho có trường phong_ban.']}},
     {id:'compare',lbl:'Câu so sánh hai năm',q:'Công tác phí Đà Nẵng năm 2025 tăng bao nhiêu so với 2024?',sub:2,dep:false,out:{
       none:['risk','Công tác phí Đà Nẵng năm 2025 tăng bao nhiêu so với 2024?','Hiếm có đoạn nào chứa cả hai năm. Top-k dễ toàn đoạn của một năm.'],
@@ -738,7 +757,7 @@ ol.sources .acc{color:var(--muted);font-size:14px}
       decomp:['good','Câu con 1: Mức công tác phí một ngày đi Đà Nẵng năm 2024?\nCâu con 2: Mức công tác phí một ngày đi Đà Nẵng năm 2025?\n→ Độc lập, tìm song song; LLM tự tính chênh lệch.','Mỗi câu con tìm đúng một đoạn, đảm bảo cả hai năm đều vào context.'],
       stepback:['risk','Quy chế công tác phí quy định những khoản nào, theo vùng ra sao?','Cho bối cảnh chung nhưng không thay được hai con số cụ thể.'],
       hyde:['risk','Đoạn giả định: "Theo quy chế 2025, phụ cấp lưu trú tại Đà Nẵng là 450.000 đồng/ngày, tăng so với 350.000 đồng/ngày năm 2024…"','Con số là bịa. Chỉ dùng để tìm; không bao giờ đưa vào câu trả lời.'],
-      route:['good','→ Kho: Quy chế nhân sự – tài chính',''],
+      route:['good','→ Kho: Quy chế nhân sự – tài chính','Công tác phí nằm trong mô tả của kho quy chế, nên không cần tìm ở kho IT hay dự án.'],
       self:['good','{ "query": "công tác phí một ngày Đà Nẵng", "filter": { "loai": "cong-tac-phi", "nam": { "in": [2024, 2025] } } }','Bộ lọc loại bỏ quy chế của các năm khác.']}},
     {id:'code',lbl:'Câu có mã lỗi',q:'máy POS báo lỗi E-203 ở chi nhánh Cần Thơ xử lý sao',sub:1,dep:false,out:{
       none:['risk','máy POS báo lỗi E-203 ở chi nhánh Cần Thơ xử lý sao','Vector search có thể bỏ lỡ chuỗi "E-203". Ghép thêm tìm theo từ khóa (hybrid search) thường hiệu quả hơn biến đổi câu.'],
@@ -748,9 +767,9 @@ ol.sources .acc{color:var(--muted);font-size:14px}
       decomp:['none','(không tách)','Một ý.'],
       stepback:['good','Danh sách mã lỗi máy POS và cách xử lý chung','Bảng mã lỗi tổng thường chứa luôn E-203.'],
       hyde:['bad','Đoạn giả định: "Lỗi E-203 xảy ra khi máy POS mất kết nối tới máy chủ thanh toán. Hãy khởi động lại router…"','LLM không biết mã nội bộ nên đoán nghĩa. Nếu đoán sai, vector sẽ dẫn tới nhóm lỗi khác. Nên dùng câu gốc + hybrid search.'],
-      route:['good','→ Kho: Hướng dẫn IT – thiết bị',''],
-      self:['risk','{ "query": "xử lý lỗi E-203 máy POS", "filter": { "thiet_bi": "POS", "chi_nhanh": "Can Tho" } }','"Cần Thơ" bị biến thành bộ lọc. Hướng dẫn kỹ thuật thường dùng chung toàn chuỗi, không gắn chi nhánh → có thể rỗng kết quả.']}},
-    {id:'hop',lbl:'Câu nhiều bước phụ thuộc',q:'Trưởng phòng của người phụ trách dự án Kho Bình Dương là ai?',sub:2,dep:true,out:{
+      route:['good','→ Kho: Hướng dẫn IT – thiết bị','Mã lỗi máy POS thuộc mô tả của kho IT.'],
+      self:['risk','{ "query": "xử lý lỗi E-203 máy POS", "filter": { "thiet_bi": "POS", "chi_nhanh": "Can Tho" } }','"Cần Thơ" bị biến thành bộ lọc. Hướng dẫn kỹ thuật thường dùng chung toàn chuỗi, không gắn chi nhánh → kết quả có thể rỗng.']}},
+    {id:'hop',lbl:'Câu nhiều bước phụ thuộc',q:'Trưởng phòng của người phụ trách dự án Kho Bình Dương là ai?',sub:2,dep:true,stores:2,out:{
       none:['bad','Trưởng phòng của người phụ trách dự án Kho Bình Dương là ai?','Hai sự kiện nằm ở hai tài liệu khác nhau (hồ sơ dự án và sơ đồ tổ chức). Không đoạn nào chứa đủ.'],
       rewrite:['bad','Trưởng phòng của người phụ trách dự án Kho Bình Dương','Viết lại không giải quyết được việc phải tìm hai lần.'],
       condense:['none','(giữ nguyên câu hỏi)','Chưa có lịch sử.'],
@@ -781,12 +800,12 @@ ol.sources .acc{color:var(--muted);font-size:14px}
       case 'condense':return q.hist?{ms:L+R,llm:1,ret:1,f:'L + R'}:{ms:R,llm:0,ret:1,f:'R (không có lịch sử nên không gọi LLM)'};
       case 'multi':return{ms:L+R,llm:1,ret:N+1,f:'L + R (N+1 lượt tìm song song, gồm câu gốc)'};
       case 'decomp':
-        if(q.sub<2)return{ms:R,llm:0,ret:1,f:'R (một ý, không tách)'};
+        if(q.sub<2)return{ms:L+R,llm:1,ret:1,f:'L + R (gọi LLM rồi mới biết không cần tách)'};
         if(!q.dep)return{ms:L+R,llm:1,ret:q.sub,f:'L + R ('+q.sub+' câu con song song)'};
         return{ms:L+q.sub*R+(q.sub-1)*L,llm:1+(q.sub-1),ret:q.sub,f:'L + '+q.sub+'·R + '+(q.sub-1)+'·L (tuần tự)'};
       case 'stepback':return{ms:L+R,llm:1,ret:2,f:'L + R (2 lượt tìm song song)'};
       case 'hyde':return{ms:HYDE_FACTOR*L+R,llm:1,ret:1,f:HYDE_FACTOR+'·L + R (sinh đoạn văn dài hơn)'};
-      case 'route':return{ms:L+R,llm:1,ret:1,f:'L + R'};
+      case 'route':var st=q.stores||1;return{ms:L+R,llm:1,ret:st,f:st>1?'L + R ('+st+' kho tìm song song)':'L + R'};
       case 'self':return{ms:L+R,llm:1,ret:1,f:'L + R'};
     }
   }
@@ -806,7 +825,7 @@ ol.sources .acc{color:var(--muted);font-size:14px}
     rows.forEach(function(r){var sel=r.t.id===curT?' sel':'';
       bars.insertAdjacentHTML('beforeend','<div class="bl'+sel+'">'+esc(r.t.n)+'</div><div class="bt'+sel+'"><span style="width:'+(r.c.ms/max*100).toFixed(1)+'%"></span></div><div class="bv'+sel+'">'+fmt(r.c.ms)+'</div>')});
     var base=R, c2=cost(curT,q,L,R,N);
-    document.getElementById('barsNote').textContent='Câu đang chọn: "'+q.lbl+'". '+tn+' chậm gấp '+(c2.ms/base).toFixed(1).replace('.',',')+' lần so với tìm thẳng ('+fmt(c2.ms)+' so với '+fmt(base)+'). Chưa tính chi phí token của các lượt gọi LLM.';
+    document.getElementById('barsNote').textContent='Câu đang chọn: "'+q.lbl+'". '+(c2.ms===base?tn+' tốn đúng một lượt tìm ('+fmt(base)+'), bằng tìm thẳng.':tn+' chậm gấp '+(c2.ms/base).toFixed(1).replace('.',',')+' lần so với tìm thẳng ('+fmt(c2.ms)+' so với '+fmt(base)+').')+' Chưa tính chi phí token của các lượt gọi LLM.';
   }
   renderDemo();
 
@@ -815,7 +834,7 @@ ol.sources .acc{color:var(--muted);font-size:14px}
   // [id, group, name, alias, definition, example, related ids, source numbers]
   var T=[
     ['qt','tech','Query transformation','biến đổi câu truy vấn','Bước chen trước retrieval, biến câu hỏi thành một hoặc nhiều câu truy vấn, lựa chọn kho, hoặc bộ lọc dễ tìm hơn.','',['rewrite','multi','hyde','route'],[1,10]],
-    ['vocab','why','Vocabulary mismatch','lệch từ vựng','Người hỏi và tài liệu dùng từ khác nhau cho cùng một ý, nên tìm theo chữ (và đôi khi cả theo nghĩa) bỏ lỡ đoạn đúng.','"laptop hư" và "thiết bị hỏng hóc".',['expansion','multi','hyde'],[20]],
+    ['vocab','why','Vocabulary mismatch','lệch từ vựng','Người hỏi và tài liệu dùng từ khác nhau cho cùng một ý, nên tìm theo chữ (và đôi khi cả theo nghĩa) bỏ lỡ đoạn đúng.','"laptop hư" và "thiết bị hỏng".',['expansion','multi','hyde'],[20]],
     ['ctxdep','why','Câu hỏi phụ thuộc ngữ cảnh','question-in-context','Câu chỉ hiểu được khi biết các lượt hội thoại trước.','"còn thử việc thì sao?"',['condense'],[3]],
     ['multihop','why','Câu hỏi nhiều bước','multi-hop','Câu cần ghép thông tin từ nhiều đoạn, có khi phải biết đáp án bước trước mới hỏi được bước sau.','"Trưởng phòng của người phụ trách dự án X là ai?"',['decomp','selfask'],[9]],
     ['rewrite','tech','Query rewriting','viết lại truy vấn','Dùng LLM (hoặc model nhỏ được huấn luyện) viết lại câu hỏi thành câu truy vấn hợp với bộ tìm kiếm. Bài Rewrite-Retrieve-Read huấn luyện rewriter nhỏ bằng phản hồi của LLM đọc.','"laptop hư xin cái mới sao ad" → "Quy trình cấp laptop thay thế khi bị hỏng".',['condense','expansion'],[2]],
@@ -827,19 +846,20 @@ ol.sources .acc{color:var(--muted);font-size:14px}
     ['l2m','tech','Least-to-most prompting','','Kỹ thuật prompt tách bài toán thành chuỗi bài con, giải lần lượt, đáp án trước giúp bài sau.','',['decomp'],[8]],
     ['selfask','tech','Self-ask','','Model tự đặt và trả lời câu hỏi phụ trước khi trả lời câu chính; câu hỏi phụ có thể được trả lời bằng công cụ tìm kiếm.','',['decomp','multihop'],[9]],
     ['stepback','tech','Step-back prompting','lùi một bước','Hỏi thêm một câu khái quát hơn (khái niệm, nguyên tắc), tìm cho cả câu gốc và câu khái quát.','"Estella Leopold học trường nào giai đoạn 8–11/1954?" → "Quá trình học tập của Estella Leopold".',['decomp','multi'],[12]],
-    ['hyde','tech','HyDE','Hypothetical Document Embeddings','LLM viết một đoạn trả lời giả định; embed đoạn đó và tìm các đoạn thật gần nó. Không cần dữ liệu gắn nhãn, nhưng đoạn giả định có thể chứa chi tiết sai.','',['query2doc','vocab'],[13,10]],
+    ['hyde','tech','HyDE','Hypothetical Document Embeddings','LLM viết một hoặc vài đoạn trả lời giả định; embed các đoạn đó (bài gốc lấy trung bình vector, có thể cộng cả vector câu hỏi) rồi tìm các đoạn thật gần nó. Không cần dữ liệu gắn nhãn, nhưng đoạn giả định có thể chứa chi tiết sai.','',['query2doc','vocab'],[13,10]],
     ['query2doc','tech','Query2doc','','Sinh đoạn văn giả bằng LLM rồi ghép vào câu truy vấn; cải thiện cả BM25 và dense retrieval trong thí nghiệm của tác giả.','',['hyde','expansion'],[14]],
     ['route','flow','Query routing','định tuyến','LLM (hoặc classifier) chọn kho, index hoặc chiến lược phù hợp cho câu hỏi; có thể chọn một hoặc nhiều.','LlamaIndex: LLM selector hoặc Pydantic selector (function calling).',['adaptive','selfq'],[15]],
     ['adaptive','flow','Adaptive retrieval','chọn chiến lược theo độ khó','Phân loại độ phức tạp của câu để chọn: không tìm, tìm một bước, hay nhiều bước. Câu đơn giản không phải trả chi phí của quy trình phức tạp.','Adaptive-RAG dùng một model nhỏ làm classifier.',['route'],[16]],
-    ['selfq','flow','Self-query','trích bộ lọc metadata','LLM tách câu hỏi thành phần tìm theo nghĩa và bộ lọc metadata, rồi chạy cả hai trên vector store.','"phim khoa học viễn tưởng sau 2000, điểm trên 8" → lọc năm và điểm.',['route','metafilter'],[17,18,19]],
-    ['metafilter','flow','Metadata filter','bộ lọc metadata','Điều kiện trên các trường gắn với đoạn tài liệu (năm, phòng ban, loại tài liệu…). Chỉ lọc được trường mà kho có và vector store hỗ trợ.','',['selfq'],[18]],
+    ['selfq','flow','Self-query','trích bộ lọc metadata','LLM tách câu hỏi thành phần tìm theo nghĩa và bộ lọc metadata, rồi chạy cả hai trên vector store.','"phim khoa học viễn tưởng sau 2000, điểm trên 8" → lọc năm và điểm.',['route','metafilter','aclfilter'],[17,18,19]],
+    ['metafilter','flow','Metadata filter','bộ lọc metadata','Điều kiện trên các trường gắn với đoạn tài liệu (năm, phòng ban, loại tài liệu…). Chỉ lọc được trường mà kho thực sự có và đã khai báo cho LLM.','',['selfq','aclfilter'],[19]],
+    ['aclfilter','flow','Bộ lọc phân quyền','access-control filter','Bộ lọc theo quyền của người hỏi (phòng ban, chi nhánh, mức mật). Do hệ thống gắn từ danh tính người đăng nhập và áp cho mọi câu truy vấn; không để LLM sinh hay sửa.','Nhân viên chi nhánh Cần Thơ không được thấy hồ sơ lương của chi nhánh khác, dù câu viết lại có nhắc tới.',['metafilter','selfq'],[24]],
     ['union','flow','Unique union','hợp không trùng','Gộp kết quả của nhiều câu truy vấn bằng cách bỏ đoạn trùng, không xếp hạng lại.','',['multi','rrf'],[5]],
     ['rrf','flow','Reciprocal Rank Fusion','RRF','Gộp nhiều danh sách: mỗi đoạn được cộng 1/(k + hạng) ở mỗi danh sách. Elasticsearch đặt k mặc định = 60.','Xem bước 7 ở mục 3.',['union','multi'],[7]],
     ['recall','eval','recall@k','','Tỷ lệ đoạn liên quan được tìm thấy trong top-k.','',['hitk','mrr','ctxrecall'],[21]],
     ['hitk','eval','hit@k','','Tỷ lệ câu hỏi có ít nhất một đoạn đúng trong top-k.','Mục 9 tính hit@3 từ bảng.',['recall','mrr'],[]],
     ['mrr','eval','MRR','Mean Reciprocal Rank','Trung bình 1/(hạng của kết quả đúng đầu tiên); không tìm thấy thì tính 0.','Hạng 1 → 1; hạng 4 → 0,25.',['hitk'],[22]],
     ['ctxrecall','eval','Context recall','Ragas','Đo bao nhiêu thông tin cần thiết đã được tìm ra; luôn cần đáp án hoặc đoạn tham chiếu.','',['recall'],[23]],
-    ['fidelity','eval','Độ trung thành của câu viết lại','rewrite fidelity','Câu sau biến đổi còn giữ đúng ý và đủ thực thể (mã số, tên, thời gian) không. Thường đo bằng chấm tay trên mẫu.','"E-203" bị rơi mất là lỗi trung thành.',['rewrite'],[]]
+    ['fidelity','eval','Độ trung thành của câu viết lại','rewrite fidelity','Câu sau biến đổi còn giữ đúng ý và đủ thực thể (mã số, tên, thời gian) không. Thường đo bằng chấm tay trên mẫu.','"E-203" bị rơi mất là lỗi mất thực thể.',['rewrite'],[]]
   ];
   var byId={};T.forEach(function(t){byId[t[0]]=t});
   var grid=document.getElementById('glossGrid'), chips=document.getElementById('glossChips'), search=document.getElementById('glossSearch'), activeG='all';
@@ -869,7 +889,7 @@ ol.sources .acc{color:var(--muted);font-size:14px}
   // ---------- Eval worked example (illustrative ranks; null = not in top-5) ----------
   var EV=[
     ['E1','Câu rõ ràng',1,1],['E2','Câu nối tiếp hội thoại',null,2],['E3','Từ lóng',4,2],['E4','Lỗi chính tả',2,1],
-    ['E5','So sánh hai năm',null,4],['E6','Câu rõ ràng',1,1],['E7','Khác từ vựng',3,2],['E8','Câu có mã lỗi',null,null]
+    ['E5','So sánh hai năm',null,4],['E6','Câu rõ ràng',1,1],['E7','Khác từ vựng',3,2],['E8','Câu có mã lỗi',2,null]
   ];
   var tb=document.querySelector('#evalTable tbody');
   EV.forEach(function(r){tb.insertAdjacentHTML('beforeend','<tr><td>'+r[0]+'</td><td>'+esc(r[1])+'</td><td>'+(r[2]||'–')+'</td><td>'+(r[3]||'–')+'</td></tr>')});

@@ -4,6 +4,4 @@
 # when a topic is finished, remove it from this list and add its card to index.html.
 exclude:
   - PROGRESS.md
-  - llm-evaluation/
   - llm-fundamentals/
-  - query-transformation/

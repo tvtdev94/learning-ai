@@ -39,7 +39,7 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 
 ## Trạng thái các chủ đề
 
-### Đã publish (10)
+### Đã publish (12)
 
 | Slug | Nguồn | Ghi chú |
 |---|---|---|
@@ -52,15 +52,15 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 | `hybrid-search` | 21 | |
 | `harness` | 24 | Publish 2026-11-16 |
 | `multi-agent-agentic-rag` | 16 | Publish 2026-11-16. Đã áp dụng review kongming (kết quả ở cuối file review). Có link tới `context-engineering`, `llm-evaluation`, `query-transformation`: **404 tới khi các trang đó publish** |
-| `context-engineering` | 14 | Publish 2026-11-16. Review kongming: `_work/notes/kongming-261116-context-engineering-review.md`. Link tới `llm-fundamentals`, `llm-evaluation`: **404 tới khi các trang đó publish** |
+| `context-engineering` | 14 | Publish 2026-11-16. Review kongming: `_work/notes/kongming-261116-context-engineering-review.md`. Link tới `llm-fundamentals`: **404 tới khi trang đó publish** |
+| `llm-evaluation` | 28 | Publish 2026-11-16. Review: `_work/notes/kongming-261116-llm-evaluation-review.md` |
+| `query-transformation` | 24 | Publish 2026-11-16. Review: `_work/notes/kongming-261116-query-transformation-review.md` |
 
 ### Bản nháp trong repo, chưa publish (nằm trong `exclude`)
 
 | Slug | Tình trạng khi dừng | Việc còn lại |
 |---|---|---|
-| `llm-evaluation` | Có bản nháp | Chưa review và chưa test |
 | `llm-fundamentals` | Có bản nháp | Chưa review và chưa test |
-| `query-transformation` | Có bản nháp | Chưa review và chưa test |
 
 ### Mới có ghi chú nguồn, chưa có trang
 
@@ -70,13 +70,27 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 
 `fine-tuning-vs-rag`.
 
+### Chia đợt cho các chủ đề còn lại (thống nhất 2026-11-16)
+
+Mỗi đợt 2 chủ đề, mỗi chủ đề một phiên theo brief. **Chỉ mở đợt mới khi người dùng nói "bắt đầu".** Không tự chạy đợt kế tiếp sau khi xong một đợt.
+
+| Đợt | Chủ đề | Ghi chú |
+|---|---|---|
+| 1 | `llm-fundamentals` | Đã có bản nháp; chỉ cần review, test, publish |
+| 2 | `prompt-engineering`, `tool-calling-structured-output` | Nền cho agent |
+| 3 | `model-context-protocol`, `agent-memory` | |
+| 4 | `prompt-injection-guardrails`, `llm-observability` | |
+| 5 | `llm-cost-optimization`, `graphrag` | Trang cũ từng link tới `llm-cost-optimization` |
+| 6 | `fine-tuning-vs-rag` | Chưa có ghi chú nguồn |
+
 Bảng port (8781–8794) và phạm vi nội dung của từng chủ đề nằm trong `_work/topic-session-brief.md`, cùng mục "Bảng chủ đề đợt 2".
 
 ## Việc chung còn tồn đọng
 
 1. **Màu chế độ sáng toàn site: đã xong (2026-11-16).** `reranking`, `governance`, `knowledge-base`, `hybrid-search` và trang chủ `index.html` đã dùng token màu của `rag/index.html`; `ai-agent` và `embedding-performance` đã đậm sẵn. Đo bằng Orca ở 390px, cả sáng và tối: 0 chữ dưới 4.5:1 trên cả 7 trang. Trang mới phải chép token màu từ `rag/index.html`.
 2. **Link nội bộ trỏ tới trang chưa publish**, ví dụ `../harness/` và `../llm-cost-optimization/`. Chúng sẽ hết 404 khi các trang đó được publish. Có thể quét bằng: `rg -o 'href="\.\./[a-z-]+/' */index.html`.
-3. Key localStorage cho theme là `rag-theme`, **dùng chung toàn site**. Đừng đổi tên key này.
+3. **Vùng bấm số trích dẫn `[N]` dưới 40px trên mọi trang.** Các agent đã để nguyên cho đồng nhất; chờ người dùng quyết có sửa toàn site không.
+4. Key localStorage cho theme là `rag-theme`, **dùng chung toàn site**. Đừng đổi tên key này.
 
 ## Thiết lập trên máy mới
 
@@ -89,5 +103,5 @@ Bảng port (8781–8794) và phạm vi nội dung của từng chủ đề nằ
    - `gh` đã đăng nhập tài khoản `tvtdev94` để push.
    Nếu thiếu công cụ nào thì báo người dùng, không tự thay bằng công cụ khác.
 4. Ghi chú, report và file ở `_work/notes/` từ giờ ghi thẳng vào repo, không còn ghi vào `D:\WORKSPACES\reseacher\plans\reports\` như trên máy cũ.
-5. Thứ tự gợi ý khi làm tiếp: lần lượt từng bản nháp (ưu tiên `llm-evaluation`, `query-transformation`, `llm-fundamentals` vì các trang đã publish đang link tới), rồi đến các chủ đề mới. Mỗi lần 1–2 chủ đề.
+5. Thứ tự gợi ý khi làm tiếp: lần lượt từng bản nháp (theo bảng chia đợt bên trên), rồi đến các chủ đề mới. Mỗi lần 1–2 chủ đề.
 6. Máy hiện tại (2026-11-16) đã có đủ `kongming`, `orca`, `mcgram`, `gh` (tài khoản `tvtdev94`). Mẹo Orca: `orca viewport --width 1280 --height 900` không kèm `--mobile` thì bị bỏ qua (cửa sổ vẫn 512px); thêm `--mobile` mới ra đúng 1280px.
