@@ -70,18 +70,17 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 
 `fine-tuning-vs-rag`.
 
-### Chia đợt cho các chủ đề còn lại (thống nhất 2026-11-16)
+### Chia đợt cho các chủ đề còn lại (cập nhật 2026-11-17)
 
-Mỗi đợt 2 chủ đề, mỗi chủ đề một phiên theo brief. **Chỉ mở đợt mới khi người dùng nói "bắt đầu".** Không tự chạy đợt kế tiếp sau khi xong một đợt.
+Mỗi đợt 2 chủ đề chạy song song, mỗi chủ đề một phiên theo brief. Nhịp: **tối đa 2 bài mỗi giờ**, đợt sau chỉ bắt đầu khi đợt trước đã publish xong. Người dùng đã nói bắt đầu ngày 2026-11-17; nếu dừng giữa chừng thì chờ người dùng nói "bắt đầu" lại.
 
-| Đợt | Chủ đề | Ghi chú |
-|---|---|---|
-| 1 | `llm-fundamentals` | Đã có bản nháp; chỉ cần review, test, publish |
-| 2 | `prompt-engineering`, `tool-calling-structured-output` | Nền cho agent |
-| 3 | `model-context-protocol`, `agent-memory` | |
-| 4 | `prompt-injection-guardrails`, `llm-observability` | |
-| 5 | `llm-cost-optimization`, `graphrag` | Trang cũ từng link tới `llm-cost-optimization` |
-| 6 | `fine-tuning-vs-rag` | Chưa có ghi chú nguồn |
+| Đợt | Chủ đề | Port | Trạng thái |
+|---|---|---|---|
+| 1 | `llm-fundamentals` (đã có bản nháp), `prompt-engineering` | 8781, 8782 | Đang làm |
+| 2 | `tool-calling-structured-output`, `model-context-protocol` | 8783, 8787 | Chờ |
+| 3 | `agent-memory`, `prompt-injection-guardrails` | 8788, 8791 | Chờ |
+| 4 | `llm-observability`, `llm-cost-optimization` | 8792, 8793 | Chờ |
+| 5 | `graphrag`, `fine-tuning-vs-rag` (chưa có ghi chú nguồn) | 8790, 8794 | Chờ |
 
 Bảng port (8781–8794) và phạm vi nội dung của từng chủ đề nằm trong `_work/topic-session-brief.md`, cùng mục "Bảng chủ đề đợt 2".
 
