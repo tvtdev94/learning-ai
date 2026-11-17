@@ -109,3 +109,47 @@
 ## Khẳng định không tìm được nguồn đã mở → viết thận trọng hoặc bỏ
 - OpenAI ChatGPT Memory FAQ và trang "Memory and new controls" trả 403 → không trích dẫn.
 - OWASP mitigations chi tiết (provenance, segmentation, expiry) chỉ thấy qua kết quả tìm kiếm, không mở được văn bản gốc ASI06 → trong trang, biện pháp giảm thiểu được trình bày như thực hành kỹ thuật chung, trích [8] (sensitive info, expiry, path traversal) và [18] ("treat memory as attack surface"), không gán cho OWASP.
+
+## Kiểm lại ngày 2026-11-17 (mọi URL ở trên đã mở lại bằng WebFetch)
+- [1] Vẫn khớp cả 3 câu trích. Thêm: Conversations API "persist conversation state as a long-running object with its own durable identifier" → cùng URL.
+- [2] Khớp. Ngày đăng Sep 29, 2025. Ví dụ Claude chơi Pokémon: "for the last 1,234 steps I've been training my Pokémon in Route 1" ; "the agent reads its own notes" sau khi reset context.
+- [3] Khớp (0.995, 1–10, cosine, min-max, α=1, ngưỡng 150). Thêm: "In practice, our agents reflected roughly two or three times a day."
+- [4] Khớp. Thêm: flush "e.g. 100% of the context window"; evict "e.g. 50% of the context window"; FIFO queue chứa recursive summary ở ô đầu.
+- [5] Khớp. Thêm lý do rủi ro procedural: "it can easily introduce bugs or allow an agent to subvert its designers' intentions".
+- [6] Khớp. Tác giả: Zeyu Zhang, Xiaohe Bo, Chen Ma, ... Ji-Rong Wen; arXiv 2404.13501, 2024. Reflection: "reflecting to generate higher-level memories"; merging: "merging similar information to reduce redundancy"; "How to effectively evaluate the memory module remains an open problem."
+- [7] Khớp. Thêm: "episodic memories are often implemented through few-shot example prompting".
+- [8] Khớp. Metadata trang hiện ghi status: stable. Thêm: "The `/memories` path is a prefix that your handler maps onto real storage, such as a per-user directory or keys in a database."; "Track memory file sizes and cap how large a file can grow."; API tự thêm vào system prompt "ASSUME INTERRUPTION: Your context window might be reset at any moment".
+- [9] Khớp. Tác giả Shinn, Cassano, Berman, Gopinath, Narasimhan, Yao; 2023.
+- [10] Khớp. m = 10, s = 10. Bảng 2 LOCOMO: Full-context J 72.90%, p50 9.870 s, p95 17.117 s, 26031 token; Mem0 J 66.88%, p50 0.708 s, p95 1.440 s, 1764 token; Mem0g J 68.44%, p95 2.590 s, 3616 token. Mục 4.5: Mem0 "occupies only 7k tokens per conversation on an average", hội thoại gốc "roughly 26k tokens".
+- [11] Khớp. Tác giả Rasmussen, Paliychuk, Beauvais, Ryan, Chalef (Zep AI), 2025-01-20.
+- [12] Khớp. Thêm: "session decomposition for value granularity, fact-augmented key expansion for indexing". ICLR 2025.
+- [13] Khớp. Thêm: "challenges in understanding lengthy conversations". 2024, Maharana và cộng sự.
+- [14] Khớp. Chen, Xiang, Xiao, Song, Li; 2024.
+- [15] Khớp. Dong và cộng sự; 2025 (v5 2026-02-12). Abstract không có con số tỷ lệ thành công → không nêu số.
+- [16] Khớp. ACL 2025 Main. Wang, He, Zeng, Xiang, Xing, Tang, He.
+- [17] Khớp. Tác giả bài: John Sotiropoulos (cùng Keren Katz, Ron F. Del Rosario), 2025-12-09. ASI06 – Memory & Context Poisoning (ví dụ Gemini Memory Attack).
+- [18] Khớp. Idan Habler (Cisco), 2026-05-13. Thêm: "Claude Code v2.1.50 removed user memories from the system prompt" sau khi Cisco báo; retained context "deserves the same scrutiny we already apply to execution paths, credentials". Bài KHÔNG có danh sách biện pháp (provenance, segmentation…) → không gán cho OWASP.
+- [19] Khớp câu đầu Điều 17(1).
+
+## Nguồn mới (2026-11-17)
+## [20] Hu và cộng sự, Memory in the Age of AI Agents: A Survey (2025-12-15, v2 2026-01-13)
+- Phân loại dài/ngắn hạn không còn đủ → https://arxiv.org/abs/2512.13564 → "Traditional taxonomies such as long/short-term memory have proven insufficient"
+- Phân biệt với LLM memory, RAG, context engineering → cùng URL → "distinguishing it from related concepts such as LLM memory, retrieval augmented generation (RAG), and context engineering"
+- Ba dạng → cùng URL → "token-level, parametric, and latent memory"
+- Ba chức năng → cùng URL → "distinguishes factual, experiential, and working memory"
+- Động lực → cùng URL → "how memory is formed, evolved, and retrieved over time"
+
+## [21] Letta, Context hierarchy (tài liệu, không ghi năm)
+- Memory block luôn nằm trong context, khuyến nghị <50k ký tự mỗi block, <20 block mỗi agent → https://docs.letta.com/guides/core-concepts/memory/context-hierarchy/ → "Recommended <50k characters"; "Recommended <20 blocks per agent"
+- Archival memory không nằm trong context, mỗi mục 300 token, số lượng không giới hạn; tool archival_memory_insert / archival_memory_search → cùng URL
+- Chọn chỗ lưu theo quy mô và độ quan trọng → cùng URL → "depends on the scale of data and how important it is for the agent"; memory block cho "very important memories formed by the agent that always need to be remembered"; archival cho "less important memories formed by the agent that do not always need to be recalled"; external RAG cho "millions of documents you have scraped"
+
+## [22] Bộ Công an, Luật Bảo vệ dữ liệu cá nhân (Luật số 91/2025/QH15) có hiệu lực (2026-01-01)
+- Hiệu lực → https://bocongan.gov.vn/chinh-sach-phap-luat/bai-viet/luat-bao-ve-du-lieu-ca-nhan-chinh-thuc-co-hieu-luc-thi-hanh-tu-ngay-01-01-2026-1767186124 → "Ngày 01/01/2026, Luật Bảo vệ dữ liệu cá nhân (Luật số 91/2025/QH15) chính thức có hiệu lực thi hành."
+- Quyền xóa (khoản 1 Điều 4) → cùng URL → "Yêu cầu cung cấp, xóa, hạn chế xử lý dữ liệu cá nhân"
+- Bên kiểm soát phải thực hiện kịp thời → cùng URL → "phải kịp thời thực hiện trong thời hạn theo quy định của pháp luật."
+
+## Ghi chú cách viết
+- "Memory khác knowledge base/RAG" trong trang là cách trình bày của trang, dựa trên [20] (phân biệt memory với RAG) và [21] (archival memory khác external RAG).
+- Biện pháp chống memory poisoning (đánh dấu nguồn, cách ly nội dung ngoài, duyệt memory nhạy cảm) là đề xuất kỹ thuật của trang, không gán cho OWASP.
+- Số liệu Mem0 do chính tác giả Mem0 đo trên LOCOMO; trang ghi rõ điều này.

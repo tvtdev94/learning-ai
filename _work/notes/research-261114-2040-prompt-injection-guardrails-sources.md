@@ -46,3 +46,55 @@ Tất cả mở bằng WebFetch ngày 2026-11-14. Dạng: khẳng định → UR
 
 ## Đã mở nhưng không dùng
 - NIST AI 100-2 E2025 (https://csrc.nist.gov/pubs/ai/100/2/e2025/final): trang tóm tắt không nói về prompt injection, nên không trích.
+
+## Mở lại và bổ sung ngày 2026-11-17 (phiên dựng trang)
+
+Mọi URL ở trên đã mở lại bằng WebFetch ngày 2026-11-17, trừ [3]→LLM03, [28]→LLM04, [30]→LLM09 (không dùng trong trang nên không mở lại). Số trong ngoặc dưới đây là **số nguồn trong trang** `prompt-injection-guardrails/index.html` (đánh lại từ đầu, khác số ở các mục trên).
+
+### Khớp lại (đánh số theo trang)
+- [1] OWASP LLM01 → còn đúng: "do not need to be human-visible/readable"; "unclear if there are fool-proof methods"; 7 biện pháp, gồm "Segregate and identify external content"; 9 kịch bản: Direct, Indirect, Unintentional, Intentional Model Influence, Code Injection, Payload Splitting, Multimodal, Adversarial Suffix, Multilingual/Obfuscated; RAG/fine-tuning "do not fully mitigate"
+- [2] OWASP Top 10 2025 → danh sách LLM01..LLM10 khớp
+- [3] OWASP LLM02 → "could be bypassed via prompt injection or other methods"; "Limit access to sensitive data based on the principle of least privilege"
+- [4] OWASP LLM05 → "Treat the model as any other user, adopting a zero-trust approach"; "Encode model output back to users to mitigate undesired code execution by JavaScript or Markdown"; "Employ strict Content Security Policies (CSP)"; "Use parameterized queries"
+- [5] OWASP LLM06 → 3 gốc rễ (functionality, permissions, autonomy); "Implement authorization in downstream systems rather than relying on an LLM"; "require a human to approve high-impact actions"; "executed on downstream systems in the context of that specific user"; logging/rate limit "will not prevent ... but can limit the level of damage"
+- [6] OWASP LLM07 → "should not be considered a secret, nor should it be used as a security control"; "guardrails outside of the LLM itself"; "Critical controls ... must not be delegated to the LLM"; "credentials, connection strings, etc. should not be contained within the system prompt"
+- [7] OWASP LLM08 → CV "white text on a white background"; "permission-aware vector database"; "text extraction tools that ignore formatting and detect hidden content"; rò rỉ giữa các nhóm dùng chung vector store
+- [9] Greshake 2023 → "blur the line between data and instructions"; "injecting prompts into data likely to be retrieved"; "data theft, worming, information ecosystem contamination"
+- [10] Perez & Ribeiro 2022 (NeurIPS ML Safety Workshop) → "goal hijacking and prompt leaking"
+- [11] Willison 2024 → jailbreak "subvert safety filters built into the LLMs themselves"; mục "Don't buy a jailbreaking prevention system to protect against prompt injection"; hai loại có chồng lấn
+- [12] Willison 2025 lethal trifecta → ba yếu tố; "95% is very much a failing grade"; kênh rò rỉ: API, "load an image", "providing a link for a user to click"; "avoid that lethal trifecta combination entirely"
+- [13] Willison 2023 Dual LLM → Quarantined LLM "does not have access to tools"; Controller "is regular software"; biến $VAR1; "this isn't a 100% reliable solution"; cập nhật 2025: CaMeL chỉ ra một lỗ hổng tiềm ẩn của Dual LLM
+- [14] Willison 2025 tóm tắt 6 pattern → mô tả từng pattern; "impossible for that input to trigger any consequential actions"; "constrain the actions of agents to explicitly prevent them from solving arbitrary tasks"
+- [15] Beurer-Kellner 2025 (14 tác giả) → "provable resistance to prompt injection"; "trade-offs in terms of utility and security"
+- [16] Debenedetti 2025 CaMeL → "untrusted data retrieved by the LLM can never impact the program flow"; capability "to prevent the exfiltration of private data"; "77% of tasks with provable security (compared to 84%...)"
+- [17] Hines 2024 Spotlighting → "reduces the attack success rate from greater than 50% to below 2%" với GPT-family; delimiting "could be easily subverted"; "we recommend that at least datamarking be used"; encoding chỉ dùng với model mạnh nhất
+- [18] Wallace 2024 instruction hierarchy → "same priority as text from untrusted users and third parties"; "selectively ignore lower-privileged instructions"; tăng robustness "even for attack types not seen during training"; "minimal degradations"
+- [20] MSRC (Andrew Paverd, 29/7/2025) → "inherent risk"; "does not rely on our ability to block all prompt injections"; "defense-in-depth approach spanning prevention, detection, and impact mitigation"; ảnh markdown: "the user's browser makes a request to the attacker's server and thus unintentionally exfiltrates the data"; chặn "generation of certain untrusted links"; "explicit consent of the user"; sensitivity labels/Purview; TaskTracker, FIDES
+- [22] Anthropic docs "Mitigate jailbreaks and prompt injections" → hai threat model; "Put untrusted content only in tool results"; "Tell Claude what the content is and where it came from"; "JSON-encode untrusted content"; "Don't put your own instructions in tool results"; least privilege; "Screen tool outputs before Claude acts on them"; "Red-team your own agent"; "Continuous monitoring"; throttle/ban repeat offenders
+- [23] OpenAI "Safety in building agents" → "injecting untrusted input directly into developer messages gives attackers the highest degree of control"; "eliminate freeform channels"; "always enable tool approvals ... including reads and writes"; guardrails "an effective first wave of protection"; "greatly reduce, but don't fully remove, this risk"; model có thể gửi nhiều dữ liệu cho MCP hơn người dùng muốn
+- [25] NeMo Guardrails → "open-source Python package for adding programmable guardrails"; "Input, retrieval, dialog, execution, and output rails run at different stages"; execution rails "validate tool inputs and outputs before and after invocation"
+- [26] Llama Guard (Inan 2023) → "LLM-based input-output safeguard model"; phân loại cả prompt và response
+- [28] Nasr 2025 (14 tác giả) → đánh giá bằng "static set of harmful attack strings" là sai cách; "bypass 12 recent defenses ... above 90% for most"; "majority of defenses originally reported near-zero attack success rates"
+- [29] AgentDojo 2024 → "97 realistic tasks"; "629 security test cases"; "not a static test suite"; "state-of-the-art LLMs fail at many tasks (even in the absence of attacks)"
+- [31] Perez 2022 red teaming → "human annotation is expensive, limiting the number and diversity of test cases"; sinh ca test bằng LM khác
+- [32] PyRIT → "Open-source AI red teaming toolkit from Microsoft"; MIT
+- [33] garak → "checks if an LLM-backed application can be made to fail in a way we don't want"; probe "prompt injection ... jailbreaks"; Apache-2.0
+- [34] OWASP LLM10 → "rate limiting and user quotas"
+
+### Nguồn mới
+- [8] OWASP LLM Prompt Injection Prevention Cheat Sheet → https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html → "do not treat text labels or prompt wording as an enforcement boundary"; "Treat model output as untrusted at every downstream use"; "The execution component must verify approval for the exact action"; "text a reader cannot see still reaches the model"; "Render each page and flag extracted text that does not appear on it"; input screening "is not a security boundary"; "A guardrail LLM is itself an LLM and is itself susceptible to prompt injection"; rate limiting "does not establish model robustness"
+- [19] StruQ (Chen, Piet, Sitawarin, Wagner; USENIX Security 2025) → https://arxiv.org/abs/2402.06363 → "Structured queries separate prompts and data into two channels"; model fine-tune "will only follow instructions in the prompt portion"; "little or no impact on utility"
+- [21] Microsoft Learn: Prompt Shields → https://learn.microsoft.com/en-us/azure/ai-services/content-safety/concepts/jailbreak-detection → hai loại: User prompt attacks, Document attacks; "doesn't independently verify the submitted content's provenance"; không kiểm nội dung có hại/đúng sự thật; "primarily trained and evaluated on English content. Performance can vary for non-English content"; false positives: chuyển block → annotate; Spotlighting dùng base-64, tăng token
+- [24] NCSC (Dave Chismon, 8/12/2025) "Prompt injection is not SQL injection (it may be worse)" → https://www.ncsc.gov.uk/blog-post/prompt-injection-is-not-sql-injection → "simply do not enforce a security boundary between instructions and data inside a prompt"; "may never be totally mitigated in the way that SQL injection attacks can be"; "inherently confusable deputy"; "deterministic (non-LLM) safeguards that constrain the actions of the system"; "the privileges it has drops to that of the party"; log "full input and output of the LLM"; "Beware any that claim they can 'stop' prompt injection"
+- [27] LlamaFirewall (Chennabasappa 2025) → https://arxiv.org/abs/2505.03574 → "a final layer of defense"; PromptGuard 2 "universal jailbreak detector"; Agent Alignment Checks "chain-of-thought auditor ... for prompt injection and goal misalignment" (thử nghiệm); CodeShield static analysis
+- [30] Shi 2025 "Lessons from Defending Gemini Against Indirect Prompt Injections" → https://arxiv.org/abs/2505.14534 → "a suite of adaptive attack techniques to run continuously against past, current, and future versions of Gemini"
+
+### Không dùng
+- LLM03 Supply Chain, LLM04 Poisoning, LLM09 Misinformation: ngoài phạm vi trang, không trích.
+- Tìm thấy qua WebSearch nhưng không mở: securityboulevard, infosecurity-magazine (bài thuật lại NCSC); dùng bản gốc NCSC.
+
+### Bổ sung sau review kongming (2026-11-17, đọc bản gốc bằng curl)
+- [9] Greshake 2023, toàn văn PDF → persistence: "achieving attacks' persistence across sessions by copying the injection into memory"; Figure 8 "A compromised LLM stores the injection in a long-term memory ... In a new session ... the injection is retrieved"; worming: "designed as computer worms to spread the injection to other users ... LLMs-augmented email clients that can read emails (delivering malicious prompts) and send emails (spreading prompts)"; taxonomy có "Wrong summary"
+- [13] Willison Dual LLM → "The social engineering aspects also mean that this isn't a 100% reliable solution. A personal AI assistant that can still be co-opted into trying to trick us into copying and pasting out our obfuscated private data"
+- [14] Willison design patterns → Context-Minimization: "the agent first translates the user's request into a database query ... before returning the results to the customer, the user's prompt is removed from the context"
+- [23] OpenAI agent safety → "Pass untrusted inputs through user messages to limit their influence."; "Structured outputs and isolation greatly reduce, but don't fully remove, this risk."

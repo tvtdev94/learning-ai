@@ -39,7 +39,7 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 
 ## Trạng thái các chủ đề
 
-### Đã publish (16)
+### Đã publish (18)
 
 | Slug | Nguồn | Ghi chú |
 |---|---|---|
@@ -59,6 +59,8 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 | `prompt-engineering` | 24 | Publish 2026-11-17. Review: `_work/notes/kongming-261117-prompt-engineering-review.md` |
 | `tool-calling-structured-output` | 21 | Publish 2026-11-17. Review: `_work/notes/kongming-261117-tool-calling-structured-output-review.md` |
 | `model-context-protocol` | 29 | Publish 2026-11-17. Theo spec MCP 2026-07-28. Review: `_work/notes/kongming-261117-model-context-protocol-review.md` |
+| `agent-memory` | 22 | Publish 2026-11-17. Review: `_work/notes/kongming-261117-agent-memory-review.md` |
+| `prompt-injection-guardrails` | 34 | Publish 2026-11-17. Chỉ mô tả tấn công ở mức ý tưởng, không có payload. Review: `_work/notes/kongming-261117-prompt-injection-guardrails-review.md` |
 
 ### Bản nháp trong repo, chưa publish (nằm trong `exclude`)
 
@@ -80,7 +82,7 @@ Mỗi đợt 2 chủ đề chạy song song, mỗi chủ đề một phiên theo
 |---|---|---|---|
 | 1 | `llm-fundamentals` (đã có bản nháp), `prompt-engineering` | 8781, 8782 | Xong (2026-11-17) |
 | 2 | `tool-calling-structured-output`, `model-context-protocol` | 8783, 8787 | Xong (2026-11-17) |
-| 3 | `agent-memory`, `prompt-injection-guardrails` | 8788, 8791 | Đang làm (bắt đầu 2026-11-17 12:40) |
+| 3 | `agent-memory`, `prompt-injection-guardrails` | 8788, 8791 | Xong (2026-11-17) |
 | 4 | `llm-observability`, `llm-cost-optimization` | 8792, 8793 | Chờ |
 | 5 | `graphrag`, `fine-tuning-vs-rag` (chưa có ghi chú nguồn) | 8790, 8794 | Chờ |
 
