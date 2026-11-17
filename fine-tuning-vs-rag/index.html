@@ -1,0 +1,973 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fine-tuning hay RAG: chọn đúng cách dạy LLM cho doanh nghiệp</title>
+<!-- pwa -->
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15171a" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" sizes="32x32" href="../icons/favicon-32.png">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Học AI">
+<script>if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('../sw.js').catch(function(){})})</script>
+<meta name="description" content="Học cách chọn giữa prompt, RAG và fine-tuning: lỗi thiếu kiến thức hay lỗi hành vi, SFT, DPO, RFT, LoRA, distillation, chi phí hòa vốn, rủi ro và cách đo.">
+<script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+:root{
+  --bg:#f7f6f2; --surface:#ffffff; --surface-2:#f0eee8; --text:#1f2328; --muted:#5b6370;
+  --border:#dcd8cf; --accent:#2559b8; --accent-soft:#e3ecfc; --ok:#16703d; --ok-soft:#e1f3e8;
+  --warn:#8f4c0a; --warn-soft:#fbeedd; --bad:#a82f2f; --bad-soft:#fae3e3;
+  --p1:#2559b8; --p2:#7440b8; --p3:#16703d; --p4:#8f4c0a; --p2-soft:#efe6fa;
+  --code-bg:#f0eee8; --shadow:0 1px 2px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04); --on-accent:#ffffff; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+    --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+    --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+    --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --p2-soft:#2c2340; --code-bg:#252930; --shadow:none; --on-accent:#15171a; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+  --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+  --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+  --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --p2-soft:#2c2340; --code-bg:#252930; --shadow:none; --on-accent:#15171a; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+a{color:var(--accent)}
+header.top{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
+.top-inner{max-width:1100px;margin:0 auto;padding:10px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.brand{font-weight:700;white-space:nowrap}
+.home{white-space:nowrap;text-decoration:none;color:var(--text);border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:4px 10px;font-size:14px}
+.home:hover{border-color:var(--accent);color:var(--accent)}
+nav.toc{display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin;flex:1}
+nav.toc a{white-space:nowrap;text-decoration:none;color:var(--muted);padding:4px 10px;border-radius:999px;font-size:14px}
+nav.toc a:hover,nav.toc a.active{background:var(--accent-soft);color:var(--accent)}
+button{font:inherit;cursor:pointer}
+button:disabled{opacity:.45;cursor:default}
+.theme-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:4px 10px;font-size:14px}
+main{max-width:1100px;margin:0 auto;padding:16px}
+section{padding:28px 0;border-bottom:1px solid var(--border);scroll-margin-top:64px}
+section:last-child{border-bottom:none}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.2;margin:16px 0 8px}
+h2{font-size:clamp(22px,3.5vw,28px);margin:0 0 12px}
+h3{font-size:18px;margin:20px 0 8px}
+p{margin:8px 0}
+.lead{font-size:18px;color:var(--muted);max-width:760px}
+.muted{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 10px 10px 0;margin:12px 0}
+.callout.ok{border-color:var(--ok);background:var(--ok-soft)}
+.callout.warn{border-color:var(--warn);background:var(--warn-soft)}
+.callout.bad{border-color:var(--bad);background:var(--bad-soft)}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);margin-right:4px}
+.tag.p1{background:var(--accent-soft);color:var(--p1)}
+.tag.p2{background:var(--p2-soft);color:var(--p2)}
+.tag.p3{background:var(--ok-soft);color:var(--p3)}
+.tag.p4{background:var(--warn-soft);color:var(--p4)}
+.tag.bad{background:var(--bad-soft);color:var(--bad)}
+.tag.warn{background:var(--warn-soft);color:var(--warn)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+th{background:var(--surface-2);font-weight:600}
+td.num,th.num{text-align:right;white-space:nowrap}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.mono,code{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:14px}
+code{background:var(--code-bg);padding:1px 5px;border-radius:5px;overflow-wrap:anywhere}
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-word;margin:8px 0;font-size:14px;line-height:1.55}
+/* Vietnamese text renders poorly in many monospace fonts (detached diacritics), so blocks with Vietnamese use the body font */
+pre.pt{font-family:inherit;font-size:15px}
+svg text{fill:var(--text);font-family:inherit}
+.diagram{width:100%;height:auto;display:block}
+.svgbox{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;overflow-x:auto}
+.svgbox svg{min-width:640px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:6px 0}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px;border:2px solid}
+/* Glossary */
+.gloss-tools{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+.gloss-tools input{flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
+.chip{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:999px;padding:4px 12px;font-size:14px}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.term h4{margin:0 0 4px;font-size:16px}
+.term .en{font-weight:400;color:var(--muted);font-size:14px}
+.term p{margin:4px 0;font-size:15px}
+.term .ex{font-size:14px;color:var(--muted)}
+.term .rel{font-size:13px;margin-top:6px}
+.term .rel a{font-size:13px}
+/* Stepper */
+.stepper{display:grid;grid-template-columns:250px 1fr;gap:12px}
+.stepper>div{min-width:0}
+@media (max-width:720px){.stepper{grid-template-columns:1fr}}
+.steps{display:flex;flex-direction:column;gap:6px}
+@media (max-width:720px){.steps{flex-direction:row;overflow-x:auto}}
+.steps button{text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px;white-space:nowrap}
+.steps button .n{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--surface-2);text-align:center;line-height:22px;font-size:12px;margin-right:6px}
+.steps button.on{border-color:var(--accent);background:var(--accent-soft)}
+.steps button.on .n{background:var(--accent);color:var(--on-accent)}
+.step-nav{display:flex;gap:8px;margin-top:12px}
+.step-nav button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 14px}
+.msg{border:1px solid var(--border);border-left:5px solid var(--border);border-radius:10px;padding:8px 12px;margin:8px 0;background:var(--surface)}
+.msg.a{border-left-color:var(--p1)} .msg.b{border-left-color:var(--p3)} .msg.c{border-left-color:var(--p4)} .msg.d{border-left-color:var(--bad)}
+.msg pre{margin:6px 0 2px}
+/* Calculator */
+.qt-row{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+.qt-row button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 12px;font-size:14px;text-align:left}
+.qt-row button.on{border-color:var(--accent);background:var(--accent-soft);color:var(--text)}
+.qt-label{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-top:10px}
+.sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:4px 24px}
+.sl{display:grid;grid-template-columns:1fr auto;gap:0 10px;align-items:baseline;margin:6px 0}
+.sl label{font-size:15px}
+.sl output{font-weight:700;white-space:nowrap}
+.sl input[type=range]{grid-column:1/-1;width:100%;height:40px;margin:0;accent-color:var(--accent)}
+.sl .hint{grid-column:1/-1;font-size:13px;color:var(--muted);margin-top:-6px}
+.sbar-row{margin:10px 0}
+.sbar-row .lbl{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:15px}
+.sbar-wrap{background:var(--surface-2);border-radius:6px;height:24px;margin-top:4px}
+.sbar{display:flex;height:24px;border-radius:6px;overflow:hidden;min-width:2px;transition:width .25s}
+.sbar i{display:block;height:100%}
+.bar{height:14px;border-radius:7px;background:var(--surface-2);overflow:hidden;margin:6px 0 2px}
+.bar i{display:block;height:100%;background:var(--accent)}
+details{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0 14px;margin:8px 0}
+details summary{cursor:pointer;font-weight:600;padding:10px 0;min-height:40px}
+details[open]{padding-bottom:10px}
+.check{display:flex;gap:8px;align-items:flex-start;padding:6px 0}
+.check input{margin-top:6px;width:20px;height:20px;flex:none}
+footer{max-width:1100px;margin:0 auto;padding:24px 16px;color:var(--muted);font-size:14px}
+.kpi{display:flex;gap:10px;flex-wrap:wrap}
+.kpi .card{flex:1;min-width:160px}
+.kpi b{display:block;font-size:20px}
+.card>h4:first-child,.card>.tag+h4{margin-top:4px}
+.card h4{margin-bottom:6px}
+.ok-t{color:var(--ok);font-weight:700} .bad-t{color:var(--bad);font-weight:700} .warn-t{color:var(--warn);font-weight:700}
+.m-only{display:none}
+/* Citations */
+sup.cite{font-size:max(11px,.72em);line-height:0;margin-left:1px;white-space:nowrap}
+sup.cite a{text-decoration:none;font-weight:600;padding:10px 3px;margin:-10px 0}
+sup.cite a:hover{text-decoration:underline}
+sup.cite a+a{margin-left:2px}
+ol.sources{padding-left:1.6em;margin:8px 0}
+ol.sources li{margin:0 0 10px;font-size:15px;overflow-wrap:anywhere;scroll-margin-top:64px}
+ol.sources li:target{background:var(--accent-soft);border-radius:6px}
+ol.sources .acc{color:var(--muted);font-size:14px}
+.vflow .box,.vflow .node,.vflow .ar{display:block}
+.vflow .ph{font-weight:700;font-size:14px;margin:4px 0 8px}
+.vflow .ph1{color:var(--p1)} .vflow .ph2{color:var(--p3)} .vflow .ph3{color:var(--p2)} .vflow .ph4{color:var(--p4)} .vflow .ph5{color:var(--bad)}
+.vflow .node{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px}
+.vflow .node b{display:block}
+.vflow .node span{font-size:13px;color:var(--muted)}
+.vflow .node.r{border:2px solid var(--p1)} .vflow .node.a{border:2px solid var(--p2)} .vflow .node.g{border:2px solid var(--p3)} .vflow .node.o{border:2px solid var(--p4)} .vflow .node.x{border:2px solid var(--bad)}
+.vflow .ar{text-align:center;color:var(--muted);font-size:13px;line-height:1.3;padding:4px 0}
+.vflow .ar.up{color:var(--bad);font-weight:600}
+.vflow .box{border-radius:12px;padding:10px;margin-bottom:10px}
+.vflow .box1{background:var(--accent-soft)} .vflow .box2{background:var(--ok-soft)} .vflow .box3{background:var(--p2-soft)} .vflow .box4{background:var(--warn-soft)} .vflow .box5{background:var(--bad-soft)}
+.vflow .note{font-size:13px;color:var(--muted);margin-top:6px}
+/* Desktop SVG diagrams (viewBox 1000 wide) only from 1081px so their small labels render at ~11px or larger */
+@media (max-width:1080px){.d-only{display:none}.m-only{display:block}.vflow{max-width:560px;margin:0 auto}}
+@media (max-width:600px){
+  .brand{display:none} body{font-size:15px}
+  .theme-btn .lbl,.home .lbl{display:none}
+  main{padding:12px 16px}
+  section{padding:22px 0}
+  .card{padding:14px}
+  table.stack thead{display:none}
+  table.stack,table.stack tbody,table.stack tr,table.stack td{display:block;width:100%}
+  table.stack tr{border-bottom:1px solid var(--border);padding:8px 0}
+  table.stack tr:last-child{border-bottom:none}
+  table.stack td{border:none;padding:3px 12px}
+  table.stack td.num{text-align:left}
+  table.stack td[data-label]::before{content:attr(data-label);display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  table.stack td:first-child{font-size:16px}
+  table.stack td:first-child::before{display:none}
+  .home,.theme-btn,nav.toc a,.chip,.step-nav button,.steps button,.qt-row button{min-height:40px}
+  .home,.theme-btn,nav.toc a{display:inline-flex;align-items:center}
+  .home,.theme-btn{flex:none;min-width:40px;justify-content:center}
+  pre,pre.pt,.term .ex{font-size:15px}
+  .vflow .node span{font-size:15px}
+  .vflow .ar,.vflow .note{font-size:14px}
+  .term .rel a{font-size:14px;padding:11px 2px}
+  .legend,.sl .hint{font-size:14px}
+    .sliders{grid-template-columns:1fr}
+}
+/* Diagnosis quiz */
+.quiz{display:grid;gap:12px}
+.qcase h4{margin:0 0 6px;font-size:16px}
+.qcase p{margin:4px 0}
+.qopts{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px}
+.qopts button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 12px;font-size:14px}
+.qopts button.right{border-color:var(--ok);background:var(--ok-soft);color:var(--text);font-weight:600}
+.qopts button.wrong{border-color:var(--bad);background:var(--bad-soft);color:var(--text)}
+.qfb{font-size:15px;border-radius:8px;padding:8px 10px;margin-top:6px;background:var(--surface-2)}
+.qscore{font-weight:700}
+.res{margin:8px 0}
+.res .lbl{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:15px}
+.seg-know{background:var(--p1)} .seg-beh{background:var(--p4)} .seg-fix{background:var(--p3)} .seg-ft{background:var(--p4)} .seg-host{background:var(--p2)} .seg-a{background:var(--p1)}
+/* Touch-sized controls up to tablet / landscape-phone widths */
+@media (max-width:1080px){.home,.theme-btn,nav.toc a,.chip,.step-nav button,.steps button,.qopts button{min-height:40px}.home,.theme-btn,nav.toc a{display:inline-flex;align-items:center}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <a class="home" href="../" aria-label="Về trang tất cả chủ đề">←<span class="lbl"> Chủ đề</span></a>
+    <span class="brand">Fine-tuning hay RAG</span>
+    <nav class="toc" id="toc">
+      <a href="#tong-quan">1. Tổng quan</a>
+      <a href="#flow">2. Flow</a>
+      <a href="#vi-du">3. Ví dụ từng bước</a>
+      <a href="#thuc-hanh">4. Chẩn đoán &amp; hòa vốn</a>
+      <a href="#khai-niem">5. Khái niệm</a>
+      <a href="#quan-he">6. Mối quan hệ</a>
+      <a href="#so-sanh">7. So sánh</a>
+      <a href="#loi">8. Lỗi &amp; chẩn đoán</a>
+      <a href="#danh-gia">9. Đánh giá</a>
+      <a href="#lo-trinh">10. Lộ trình</a>
+      <a href="#nguon">Nguồn</a>
+    </nav>
+    <button class="theme-btn" id="themeBtn" aria-label="Đổi giao diện sáng/tối">◐<span class="lbl"> Giao diện</span></button>
+  </div>
+</header>
+
+<main>
+
+<!-- 1. TỔNG QUAN -->
+<section id="tong-quan">
+  <h1>Fine-tuning hay RAG?</h1>
+  <p class="lead">Khi LLM trả lời chưa tốt, có ba cách chính để sửa: viết <b>prompt</b> tốt hơn, đưa tài liệu vào lúc hỏi bằng <b>RAG</b>, hoặc huấn luyện thêm model bằng <b>fine-tuning</b>. Câu hỏi đúng không phải "cách nào mạnh hơn", mà là: <b>model đang sai vì thiếu kiến thức, hay vì làm sai cách?</b></p>
+  <p class="muted">Nên đọc sau <a href="../llm-fundamentals/">Cách LLM hoạt động</a>, <a href="../prompt-engineering/">Prompt engineering</a> và <a href="../rag/">RAG</a>. Trang này dựa nhiều vào <a href="../llm-evaluation/">Đánh giá LLM</a>, vì không có bộ test thì không biết cách nào giúp được.</p>
+
+  <h3>Hai loại lỗi, hai loại công cụ</h3>
+  <p>Hướng dẫn tối ưu độ chính xác của OpenAI chia việc tối ưu theo hai trục.<sup class="cite"><a href="#src-4">[4]</a></sup> Bài tổng quan về RAG của Gao và cộng sự cũng so sánh theo hai chiều gần giống: mức cần kiến thức bên ngoài, và mức cần điều chỉnh model.<sup class="cite"><a href="#src-9">[9]</a></sup></p>
+  <div class="grid g2">
+    <div class="card"><span class="tag p1">Thiếu kiến thức</span><h4>Model không biết → đưa kiến thức vào context (RAG)</h4><p>Model chưa từng thấy thông tin đó khi huấn luyện, hoặc thông tin đã cũ, hoặc là dữ liệu riêng của công ty. Sửa bằng cách đưa đúng tài liệu vào prompt lúc hỏi. Trục này tối đa hóa <b>độ chính xác của câu trả lời</b>.<sup class="cite"><a href="#src-4">[4]</a></sup></p><p class="muted">Ví dụ: chính sách bồi thường mới ban hành tuần trước.</p></div>
+    <div class="card"><span class="tag p4">Làm sai cách</span><h4>Model không làm ổn định → dạy hành vi (fine-tuning)</h4><p>Model có đủ thông tin nhưng kết quả không nhất quán: sai định dạng, sai giọng văn, làm một việc hẹp chưa đều tay. Sửa bằng cách cho model học từ nhiều ví dụ. Trục này tối đa hóa <b>tính nhất quán của hành vi</b>.<sup class="cite"><a href="#src-4">[4]</a></sup></p><p class="muted">Ví dụ: phân loại ticket vào 12 nhóm, hay nhầm hai nhóm gần nhau.</p></div>
+  </div>
+  <div class="callout"><b>Ẩn dụ đi thi.</b> OpenAI so sánh hai trường hợp. RAG giống được <b>mang sách vào phòng thi</b>: cần gì thì tra. Fine-tuning giống <b>đi học sáu tháng</b>, xem lặp lại nhiều ví dụ cho tới khi quen cách làm.<sup class="cite"><a href="#src-4">[4]</a></sup> Mang sách không giúp bạn viết bài đúng thể thức. Đi học nhiều cũng không giúp bạn biết luật mới ban hành hôm qua.</div>
+
+  <h3>Thứ tự nên thử</h3>
+  <p class="muted">Số ①–⑤ khớp với sơ đồ ở mục 2.</p>
+  <div class="grid g3">
+    <div class="card"><span class="tag p3">①</span><h4>Eval trước</h4><p>OpenAI khuyên chỉ đầu tư vào fine-tuning sau khi đã có eval.<sup class="cite"><a href="#src-2">[2]</a></sup> Eval là bộ câu hỏi cố định có đáp án, chạy lại sau mỗi thay đổi.</p></div>
+    <div class="card"><span class="tag p2">②</span><h4>Prompt</h4><p>Google khuyên bắt đầu bằng prompt, rồi mới fine-tune nếu cần.<sup class="cite"><a href="#src-6">[6]</a></sup> OpenAI viết rằng chỉ riêng prompt có thể là tất cả những gì bạn cần.<sup class="cite"><a href="#src-1">[1]</a></sup></p></div>
+    <div class="card"><span class="tag">③</span><h4>Chẩn đoán từng câu sai</h4><p>Xem từng câu sai: model thiếu thông tin, hay có thông tin mà làm sai cách? Câu trả lời quyết định đi hướng ④a hay ④b.<sup class="cite"><a href="#src-4">[4]</a></sup></p></div>
+    <div class="card"><span class="tag p1">④a</span><h4>RAG cho lỗi kiến thức</h4><p>Kho tài liệu nhỏ thì có thể đưa cả vào prompt. Năm 2024, Anthropic viết rằng kho dưới khoảng 200.000 token (khoảng 500 trang) có thể làm vậy, không cần RAG.<sup class="cite"><a href="#src-22">[22]</a></sup> Kho lớn hơn thì dùng RAG.</p></div>
+    <div class="card"><span class="tag p4">④b</span><h4>Fine-tuning cho lỗi hành vi</h4><p>Hợp với định dạng cố định, giọng văn, phân loại, trích xuất, hoặc khi muốn model nhỏ và rẻ làm tốt một việc hẹp.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-6">[6]</a></sup></p></div>
+    <div class="card"><span class="tag p3">④a + ④b</span><h4>Kết hợp khi cần cả hai</h4><p>Hai cách <b>có thể cộng dồn, không loại trừ nhau</b>.<sup class="cite"><a href="#src-4">[4]</a><a href="#src-9">[9]</a></sup> Một nghiên cứu trong nông nghiệp thấy fine-tuning tăng hơn 6 điểm % độ chính xác, RAG tăng thêm 5 điểm % nữa.<sup class="cite"><a href="#src-13">[13]</a></sup></p></div>
+    <div class="card"><span class="tag p3">⑤</span><h4>Đo lại, lặp lại</h4><p>OpenAI mô tả eval, prompt và fine-tuning như một vòng quay: kết quả eval giúp viết prompt tốt hơn và gom dữ liệu huấn luyện tốt hơn.<sup class="cite"><a href="#src-1">[1]</a></sup></p></div>
+  </div>
+
+  <div class="callout warn"><b>Tình trạng dịch vụ fine-tuning (theo trang chính thức, truy cập 2026-11-17).</b> OpenAI đang thu hẹp nền tảng fine-tuning: tổ chức chưa từng fine-tune không tạo job được từ 2026-05-07, và từ 2027-01-06 không khách hàng nào tạo được job mới. Model fine-tune trên gpt-4.1 và gpt-4.1-mini dừng chạy ngày 2027-01-14, cùng base model của chúng.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-2">[2]</a><a href="#src-3">[3]</a></sup> Microsoft Foundry, Google Cloud (Gemini Enterprise Agent Platform) và Amazon Bedrock vẫn có trang hướng dẫn fine-tuning với danh sách model được hỗ trợ.<sup class="cite"><a href="#src-5">[5]</a><a href="#src-6">[6]</a><a href="#src-8">[8]</a></sup> Danh sách này đổi thường xuyên, hãy mở lại trang của nhà cung cấp trước khi lên kế hoạch. Mục 7 có bảng chi tiết.</div>
+</section>
+
+<!-- 2. FLOW -->
+<section id="flow">
+  <h2>2. Flow: quyết định dùng gì</h2>
+  <p>Đây là quy trình gộp từ hướng dẫn của OpenAI và Google.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-4">[4]</a><a href="#src-6">[6]</a></sup> Điểm mấu chốt là bước ③: xem <b>từng câu sai</b> và hỏi model sai vì đâu, thay vì chọn công cụ theo cảm giác.</p>
+  <div class="legend"><span><i style="border-color:var(--p3);background:var(--ok-soft)"></i>Đo lường</span><span><i style="border-color:var(--p2);background:var(--p2-soft)"></i>Prompt</span><span><i style="border-color:var(--p1);background:var(--accent-soft)"></i>Thêm kiến thức (RAG)</span><span><i style="border-color:var(--p4);background:var(--warn-soft)"></i>Dạy hành vi (fine-tuning)</span></div>
+
+  <div class="vflow m-only" role="group" aria-label="Flow quyết định (dạng dọc)">
+    <div class="node g" style="background:var(--ok-soft)"><b>① Eval và baseline</b><span>bộ test cố định có đáp án; đo kết quả hiện tại trước khi đổi gì</span></div>
+    <div class="ar">↓</div>
+    <div class="node a" style="background:var(--p2-soft)"><b>② Prompt tốt nhất có thể</b><span>chỉ dẫn rõ, vài ví dụ mẫu (few-shot), yêu cầu đúng định dạng</span></div>
+    <div class="ar">↓ chạy eval, còn câu sai</div>
+    <div class="node"><b>③ Chẩn đoán từng câu sai</b><span>model thiếu thông tin, hay có thông tin mà làm sai cách?</span></div>
+    <div class="ar">↓ tách làm hai nhóm</div>
+    <div class="box box1">
+      <div class="ph ph1">④a THIẾU KIẾN THỨC</div>
+      <div class="node r"><b>RAG</b><span>tìm đúng tài liệu và đưa vào prompt lúc hỏi. Kho nhỏ: đưa cả vào prompt.</span></div>
+    </div>
+    <div class="box box4">
+      <div class="ph ph4">④b HÀNH VI, ĐỊNH DẠNG, CHI PHÍ</div>
+      <div class="node o"><b>Fine-tuning</b><span>SFT, DPO, RFT (các kiểu fine-tuning, xem mục 7); hoặc distillation sang model nhỏ để rẻ và nhanh hơn</span></div>
+    </div>
+    <div class="ar">cả hai loại lỗi? dùng cả hai, hiệu quả có thể cộng dồn</div>
+    <div class="ar">↓</div>
+    <div class="node g" style="background:var(--ok-soft)"><b>⑤ Chạy lại eval, so với baseline</b><span>đạt mục tiêu thì dừng</span></div>
+    <div class="ar up">↺ còn lỗi: quay lại bước ③</div>
+  </div>
+
+  <div class="svgbox d-only">
+  <svg class="diagram" viewBox="0 0 1000 390" role="img" aria-label="Flow: eval và baseline, prompt tốt nhất, chẩn đoán từng lỗi; thiếu kiến thức thì RAG, hành vi sai thì fine-tuning; chạy lại eval; còn lỗi thì quay lại chẩn đoán">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+      <marker id="arrBad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--bad)"/></marker>
+    </defs>
+    <g font-size="15">
+      <rect x="4" y="130" width="140" height="100" rx="10" fill="var(--ok-soft)" stroke="var(--p3)" stroke-width="2"/>
+      <text x="74" y="160" text-anchor="middle" font-weight="600">① Eval và</text>
+      <text x="74" y="180" text-anchor="middle" font-weight="600">baseline</text>
+      <text x="74" y="203" text-anchor="middle" font-size="13" style="fill:var(--muted)">bộ test cố định,</text>
+      <text x="74" y="220" text-anchor="middle" font-size="13" style="fill:var(--muted)">đo trước khi đổi</text>
+
+      <rect x="170" y="130" width="140" height="100" rx="10" fill="var(--p2-soft)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="240" y="160" text-anchor="middle" font-weight="600">② Prompt</text>
+      <text x="240" y="180" text-anchor="middle" font-weight="600">tốt nhất</text>
+      <text x="240" y="203" text-anchor="middle" font-size="13" style="fill:var(--muted)">chỉ dẫn rõ,</text>
+      <text x="240" y="220" text-anchor="middle" font-size="13" style="fill:var(--muted)">few-shot, định dạng</text>
+
+      <rect x="336" y="120" width="170" height="120" rx="10" fill="var(--surface)" stroke="var(--text)" stroke-width="2"/>
+      <text x="421" y="152" text-anchor="middle" font-weight="600">③ Chẩn đoán</text>
+      <text x="421" y="172" text-anchor="middle" font-weight="600">từng câu sai</text>
+      <text x="421" y="198" text-anchor="middle" font-size="13" style="fill:var(--muted)">thiếu thông tin,</text>
+      <text x="421" y="216" text-anchor="middle" font-size="13" style="fill:var(--muted)">hay làm sai cách?</text>
+
+      <rect x="560" y="20" width="210" height="110" rx="10" fill="var(--accent-soft)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="665" y="48" text-anchor="middle" font-weight="600">④a Thiếu kiến thức</text>
+      <text x="665" y="72" text-anchor="middle" font-weight="700" style="fill:var(--p1)">→ RAG</text>
+      <text x="665" y="96" text-anchor="middle" font-size="13" style="fill:var(--muted)">kho nhỏ: đưa cả</text>
+      <text x="665" y="114" text-anchor="middle" font-size="13" style="fill:var(--muted)">tài liệu vào prompt</text>
+
+      <rect x="560" y="230" width="210" height="110" rx="10" fill="var(--warn-soft)" stroke="var(--p4)" stroke-width="2"/>
+      <text x="665" y="256" text-anchor="middle" font-weight="600">④b Hành vi, định dạng,</text>
+      <text x="665" y="276" text-anchor="middle" font-weight="600">chi phí</text>
+      <text x="665" y="300" text-anchor="middle" font-weight="700" style="fill:var(--p4)">→ Fine-tuning</text>
+      <text x="665" y="324" text-anchor="middle" font-size="13" style="fill:var(--muted)">SFT, DPO, RFT, distillation</text>
+
+      <rect x="820" y="130" width="170" height="100" rx="10" fill="var(--ok-soft)" stroke="var(--p3)" stroke-width="2"/>
+      <text x="905" y="160" text-anchor="middle" font-weight="600">⑤ Chạy lại eval</text>
+      <text x="905" y="186" text-anchor="middle" font-size="13" style="fill:var(--muted)">so với baseline;</text>
+      <text x="905" y="204" text-anchor="middle" font-size="13" style="fill:var(--muted)">đạt mục tiêu thì dừng</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="2" fill="none" marker-end="url(#arr)">
+      <path d="M144 180 L168 180"/><path d="M310 180 L334 180"/>
+      <path d="M506 160 L530 160 L530 75 L558 75"/>
+      <path d="M506 200 L530 200 L530 285 L558 285"/>
+      <path d="M770 75 L795 75 L795 165 L818 165"/>
+      <path d="M770 285 L795 285 L795 195 L818 195"/>
+    </g>
+    <text x="322" y="114" text-anchor="middle" font-size="13" style="fill:var(--muted)">còn sai</text>
+    <text x="420" y="108" text-anchor="middle" font-size="13" font-weight="600" style="fill:var(--p1)">thiếu kiến thức ↗</text>
+    <text x="404" y="262" text-anchor="middle" font-size="13" font-weight="600" style="fill:var(--p4)">làm sai cách ↘</text>
+    <g stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 4"><path d="M665 132 L665 166"/><path d="M665 200 L665 228"/></g>
+    <text x="665" y="188" text-anchor="middle" font-size="13" style="fill:var(--muted)">cả hai loại lỗi: dùng cả hai</text>
+    <path d="M905 232 L905 372 L486 372 L486 244" stroke="var(--bad)" stroke-width="2" fill="none" stroke-dasharray="6 4" marker-end="url(#arrBad)"/>
+    <text x="840" y="364" text-anchor="end" font-size="13" font-weight="600" style="fill:var(--bad)">còn lỗi: chẩn đoán lại</text>
+  </svg>
+  </div>
+
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h4>Kiến thức nằm ở đâu?</h4><p>Bài báo RAG gốc (2020) gọi kiến thức trong trọng số model là <b>bộ nhớ tham số</b> (parametric memory), còn chỉ mục tài liệu bên ngoài là <b>bộ nhớ ngoài tham số</b> (non-parametric memory).<sup class="cite"><a href="#src-11">[11]</a></sup> Fine-tuning sửa bộ nhớ tham số.<sup class="cite"><a href="#src-5">[5]</a></sup> RAG để nguyên model và sửa phần tài liệu đưa vào.</p></div>
+    <div class="card"><h4>Vì sao không fine-tune để "nạp kiến thức"?</h4><p>Hai nghiên cứu cho thấy cách này kém. Ovadia và cộng sự thấy RAG luôn tốt hơn fine-tuning không giám sát, cả với kiến thức model đã gặp lẫn kiến thức mới.<sup class="cite"><a href="#src-10">[10]</a></sup> Gekhman và cộng sự thấy model học kiến thức mới chậm, và càng học được nhiều ví dụ kiến thức mới thì càng dễ bịa.<sup class="cite"><a href="#src-12">[12]</a></sup> Microsoft cũng ghi rõ: fine-tuning không thay được retrieval cho thông tin hiện tại.<sup class="cite"><a href="#src-5">[5]</a></sup></p></div>
+  </div>
+</section>
+
+<!-- 3. VÍ DỤ -->
+<section id="vi-du">
+  <h2>3. Ví dụ đi qua từng bước</h2>
+  <p><b>Tình huống:</b> một công ty giao nhận (logistics) có trợ lý AI nội bộ cho nhân viên chăm sóc khách hàng. Trợ lý làm hai việc: <b>(A)</b> trả lời câu hỏi về chính sách bồi thường và phụ phí, vốn thay đổi hằng tháng; <b>(B)</b> phân loại ticket vào 12 nhóm và trích thông tin ra JSON để đẩy vào hệ thống.</p>
+  <p class="muted">Mọi con số kết quả trong ví dụ là <b>minh họa</b>. Phần trăm và biểu đồ do JavaScript tính từ các số đó.</p>
+  <div class="stepper">
+    <div class="steps" id="steps" role="group" aria-label="Các bước ví dụ"></div>
+    <div>
+      <div class="card" id="stepBody" aria-live="polite"></div>
+      <div class="step-nav"><button id="prevStep">← Trước</button><button id="nextStep">Tiếp →</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. THỰC HÀNH -->
+<section id="thuc-hanh">
+  <h2>4. Thực hành: chẩn đoán lỗi và tính hòa vốn</h2>
+  <h3>Bài tập chẩn đoán: 8 tình huống</h3>
+  <p>Với mỗi tình huống, chọn cách bạn sẽ thử <b>trước tiên</b>. Bấm để xem đáp án và lý do. "Prompt" gồm cả việc đưa thẳng tài liệu nhỏ vào prompt.</p>
+  <p class="qscore" id="qScore" aria-live="polite"></p>
+  <div class="quiz" id="quiz"></div>
+
+  <h3>Máy tính hòa vốn: model lớn với prompt dài, hay model nhỏ đã fine-tune?</h3>
+  <p>Một lý do hay gặp để fine-tune là chi phí: model nhỏ đã fine-tune cần prompt ngắn hơn, nên rẻ và nhanh hơn mỗi request.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-5">[5]</a></sup> Nhưng fine-tuning có chi phí cố định: chuẩn bị dữ liệu, chạy huấn luyện, eval, phí host, và huấn luyện lại định kỳ.<sup class="cite"><a href="#src-5">[5]</a><a href="#src-7">[7]</a></sup> Máy tính này cho thấy cần bao nhiêu request mỗi tháng thì phần tiết kiệm mới bù được chi phí cố định.</p>
+  <div class="callout warn">Mọi giá trong máy tính là <b>minh họa</b>, không phải giá của nhà cung cấp nào. Model lớn mặc định 2 USD mỗi triệu token vào và 8 USD mỗi triệu token ra. Giá model nhỏ đã fine-tune là một tỷ lệ của giá đó, do bạn chọn. Giá thật thay đổi theo nhà cung cấp; Amazon Bedrock tính phí huấn luyện theo số token huấn luyện × số epoch, cộng phí lưu model hằng tháng.<sup class="cite"><a href="#src-7">[7]</a></sup> Máy tính giả định hai phương án <b>có chất lượng như nhau</b>; điều đó chỉ đúng khi eval xác nhận.</div>
+  <div class="card">
+    <div class="qt-label">Lưu lượng và kích thước request</div>
+    <div class="sliders">
+      <div class="sl"><label for="cReq">Số request mỗi tháng</label><output id="oReq"></output><input type="range" id="cReq" min="5000" max="1000000" step="5000" value="100000"></div>
+      <div class="sl"><label for="cOut">Token ra mỗi request (cả hai phương án)</label><output id="oOut"></output><input type="range" id="cOut" min="50" max="1000" step="50" value="200"></div>
+      <div class="sl"><label for="cInA">Token vào, phương án A: model lớn</label><output id="oInA"></output><input type="range" id="cInA" min="500" max="10000" step="100" value="3000"><span class="hint">chỉ dẫn dài + nhiều ví dụ mẫu trong prompt</span></div>
+      <div class="sl"><label for="cInB">Token vào, phương án B: model nhỏ đã fine-tune</label><output id="oInB"></output><input type="range" id="cInB" min="100" max="3000" step="50" value="500"><span class="hint">prompt ngắn, không cần ví dụ mẫu</span></div>
+    </div>
+    <div class="qt-label">Chi phí riêng của fine-tuning (minh họa)</div>
+    <div class="sliders">
+      <div class="sl"><label for="cRatio">Giá model nhỏ fine-tune so với model lớn</label><output id="oRatio"></output><input type="range" id="cRatio" min="5" max="100" step="5" value="20"></div>
+      <div class="sl"><label for="cHost">Phí host cố định mỗi tháng (USD)</label><output id="oHost"></output><input type="range" id="cHost" min="0" max="2000" step="50" value="200"><span class="hint">có nơi tính phí host, có nơi chỉ tính theo token</span></div>
+      <div class="sl"><label for="cTrain">Chi phí một lần huấn luyện (USD)</label><output id="oTrain"></output><input type="range" id="cTrain" min="0" max="20000" step="250" value="3000"><span class="hint">công gán nhãn và duyệt dữ liệu + chạy job + eval</span></div>
+      <div class="sl"><label for="cRetrain">Huấn luyện lại sau mỗi</label><output id="oRetrain"></output><input type="range" id="cRetrain" min="1" max="12" step="1" value="3"><span class="hint">khi nhãn đổi, dữ liệu mới, hoặc base model sắp khai tử</span></div>
+    </div>
+    <div class="kpi" id="beKpi" style="margin-top:12px"></div>
+    <div class="legend" style="margin-top:12px"><span><i style="border-color:var(--p1);background:var(--p1)"></i>Token (phương án A)</span><span><i style="border-color:var(--p3);background:var(--p3)"></i>Token (phương án B)</span><span><i style="border-color:var(--p2);background:var(--p2)"></i>Phí host</span><span><i style="border-color:var(--p4);background:var(--p4)"></i>Huấn luyện, chia đều theo tháng</span></div>
+    <div id="beBars"></div>
+    <p id="beNote" class="muted" style="font-size:15px"></p>
+    <details><summary>Máy tính giả định những gì?</summary>
+      <ul>
+        <li>Chi phí tháng A = số request × (token vào A × giá vào + token ra × giá ra).</li>
+        <li>Chi phí tháng B = số request × (token vào B × giá vào B + token ra × giá ra B) + phí host + chi phí huấn luyện ÷ số tháng giữa hai lần huấn luyện.</li>
+        <li>Điểm hòa vốn = (phí host + chi phí huấn luyện mỗi tháng) ÷ (chi phí một request A − chi phí một request B).</li>
+        <li>Không tính prompt caching. Caching làm phần prompt lặp lại của A rẻ hơn nhiều, nên điểm hòa vốn thật có thể cao hơn. Xem <a href="../llm-cost-optimization/">Tối ưu chi phí LLM</a>.</li>
+        <li>Không tính chi phí khi model trả lời sai, và không tính độ trễ. Model nhỏ thường nhanh hơn, đó có thể là lý do chính để fine-tune.<sup class="cite"><a href="#src-1">[1]</a></sup></li>
+      </ul>
+    </details>
+  </div>
+</section>
+
+<!-- 5. KHÁI NIỆM -->
+<section id="khai-niem">
+  <h2>5. Từ điển khái niệm</h2>
+  <p>Mỗi thẻ có định nghĩa ngắn và liên kết sang khái niệm liên quan. Lọc theo nhóm hoặc gõ để tìm (gõ không dấu cũng được).</p>
+  <div class="gloss-tools">
+    <input id="glossSearch" type="search" placeholder="Tìm… (vd: lora, quen, an toan)" aria-label="Tìm khái niệm">
+  </div>
+  <div class="gloss-tools" id="glossChips"></div>
+  <div class="grid g3" id="glossGrid"></div>
+</section>
+
+<!-- 6. MỐI QUAN HỆ -->
+<section id="quan-he">
+  <h2>6. Bản đồ mối quan hệ</h2>
+  <p>Gao và cộng sự đặt các cách làm lên hai trục: <b>mức cần kiến thức bên ngoài</b> (trục dọc) và <b>mức cần điều chỉnh model</b> (trục ngang). Prompt engineering nằm ở góc thấp cả hai trục.<sup class="cite"><a href="#src-9">[9]</a></sup> Mũi tên cho biết đi tiếp hướng nào khi gặp loại lỗi nào. Eval là thước đo chung cho mọi ô.</p>
+  <div class="legend"><span><i style="border-color:var(--p2);background:var(--p2-soft)"></i>Prompt</span><span><i style="border-color:var(--p1);background:var(--accent-soft)"></i>Thêm kiến thức</span><span><i style="border-color:var(--p4);background:var(--warn-soft)"></i>Đổi hành vi</span><span><i style="border-color:var(--p3);background:var(--ok-soft)"></i>Kết hợp</span></div>
+
+  <div class="vflow m-only" role="group" aria-label="Bản đồ mối quan hệ (dạng dọc)">
+    <div class="box box3">
+      <div class="ph ph3">ĐIỂM XUẤT PHÁT · CẦN ÍT CẢ HAI</div>
+      <div class="node a"><b>Prompt engineering</b><span>chỉ dẫn rõ · few-shot · structured output · đưa tài liệu nhỏ vào prompt</span></div>
+    </div>
+    <div class="ar">từ Prompt, tách theo loại lỗi:</div>
+    <div class="ar">↓ thiếu kiến thức</div>
+    <div class="box box1">
+      <div class="ph ph1">CẦN NHIỀU KIẾN THỨC NGOÀI</div>
+      <div class="node r"><b>RAG</b><span>hybrid search · rerank · lọc theo quyền · trích dẫn nguồn · cập nhật chỉ mục thay vì huấn luyện lại</span></div>
+    </div>
+    <div class="ar">↓ hành vi chưa ổn (cũng đi thẳng từ Prompt, không qua RAG)</div>
+    <div class="box box4">
+      <div class="ph ph4">CẦN ĐIỀU CHỈNH MODEL NHIỀU</div>
+      <div class="node o"><b>Fine-tuning</b><span>SFT · DPO · RFT · distillation · full fine-tuning hoặc LoRA, QLoRA</span></div>
+    </div>
+    <div class="ar">↓ cần cả kiến thức lẫn hành vi</div>
+    <div class="box box2">
+      <div class="ph ph2">CẦN CẢ HAI</div>
+      <div class="node g"><b>Kết hợp</b><span>fine-tune với ví dụ có tài liệu RAG · RAFT: học bỏ qua tài liệu nhiễu</span></div>
+    </div>
+    <div class="note">Eval đo mọi ô: chất lượng, chi phí, độ trễ, an toàn.</div>
+  </div>
+
+  <div class="svgbox d-only">
+  <svg class="diagram" viewBox="0 0 1000 500" role="img" aria-label="Bản đồ hai trục: trục dọc là mức cần kiến thức bên ngoài, trục ngang là mức cần điều chỉnh model. Prompt engineering ở góc dưới trái, RAG ở trên trái, fine-tuning ở dưới phải, kết hợp ở trên phải">
+    <defs>
+      <marker id="arrM" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+    </defs>
+    <g stroke="var(--text)" stroke-width="2" fill="none" marker-end="url(#arrM)">
+      <path d="M70 452 L70 16"/><path d="M70 452 L990 452"/>
+    </g>
+    <text x="0" y="0" transform="translate(40 236) rotate(-90)" text-anchor="middle" font-size="14" font-weight="600">Mức cần kiến thức bên ngoài →</text>
+    <text x="530" y="484" text-anchor="middle" font-size="14" font-weight="600">Mức cần điều chỉnh model →</text>
+    <g font-size="15">
+      <rect x="100" y="30" width="370" height="170" rx="12" fill="var(--accent-soft)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="285" y="62" text-anchor="middle" font-weight="700" font-size="17">RAG</text>
+      <text x="285" y="88" text-anchor="middle" font-size="14" style="fill:var(--muted)">kiến thức riêng, mới, hay thay đổi</text>
+      <text x="285" y="122" text-anchor="middle" font-size="14">hybrid search · rerank · lọc theo quyền</text>
+      <text x="285" y="146" text-anchor="middle" font-size="14">trích dẫn nguồn</text>
+      <text x="285" y="178" text-anchor="middle" font-size="13" style="fill:var(--muted)">cập nhật chỉ mục, không huấn luyện lại</text>
+
+      <rect x="590" y="30" width="370" height="170" rx="12" fill="var(--ok-soft)" stroke="var(--p3)" stroke-width="2"/>
+      <text x="775" y="62" text-anchor="middle" font-weight="700" font-size="17">Kết hợp</text>
+      <text x="775" y="88" text-anchor="middle" font-size="14" style="fill:var(--muted)">cần cả kiến thức lẫn hành vi</text>
+      <text x="775" y="122" text-anchor="middle" font-size="14">fine-tune với ví dụ có tài liệu RAG</text>
+      <text x="775" y="146" text-anchor="middle" font-size="14">RAFT: học bỏ qua tài liệu nhiễu</text>
+      <text x="775" y="178" text-anchor="middle" font-size="13" style="fill:var(--muted)">có thể cộng dồn, cần eval kỹ</text>
+
+      <rect x="100" y="262" width="370" height="170" rx="12" fill="var(--p2-soft)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="285" y="294" text-anchor="middle" font-weight="700" font-size="17">Prompt engineering</text>
+      <text x="285" y="320" text-anchor="middle" font-size="14" style="fill:var(--muted)">điểm xuất phát, rẻ và nhanh nhất</text>
+      <text x="285" y="354" text-anchor="middle" font-size="14">chỉ dẫn rõ · few-shot · structured output</text>
+      <text x="285" y="378" text-anchor="middle" font-size="14">tài liệu nhỏ: đưa cả vào prompt</text>
+      <text x="285" y="410" text-anchor="middle" font-size="13" style="fill:var(--muted)">sửa trong vài phút</text>
+
+      <rect x="590" y="262" width="370" height="170" rx="12" fill="var(--warn-soft)" stroke="var(--p4)" stroke-width="2"/>
+      <text x="775" y="294" text-anchor="middle" font-weight="700" font-size="17">Fine-tuning</text>
+      <text x="775" y="320" text-anchor="middle" font-size="14" style="fill:var(--muted)">định dạng, giọng văn, việc hẹp, chi phí</text>
+      <text x="775" y="354" text-anchor="middle" font-size="14">SFT · DPO · RFT · distillation</text>
+      <text x="775" y="378" text-anchor="middle" font-size="14">full fine-tuning hoặc LoRA, QLoRA</text>
+      <text x="775" y="410" text-anchor="middle" font-size="13" style="fill:var(--muted)">huấn luyện lại khi dữ liệu đổi</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="2" fill="none" marker-end="url(#arrM)">
+      <path d="M285 260 L285 204"/>
+      <path d="M472 347 L586 347"/>
+      <path d="M472 115 L586 115"/>
+      <path d="M775 260 L775 204"/>
+    </g>
+    <text x="293" y="237" font-size="13" font-weight="600" style="fill:var(--p1)">thiếu kiến thức</text>
+    <text x="529" y="337" text-anchor="middle" font-size="13" font-weight="600" style="fill:var(--p4)">hành vi</text>
+    <text x="529" y="370" text-anchor="middle" font-size="13" font-weight="600" style="fill:var(--p4)">chưa ổn</text>
+    <text x="529" y="105" text-anchor="middle" font-size="13" style="fill:var(--muted)">thêm</text>
+    <text x="529" y="138" text-anchor="middle" font-size="13" style="fill:var(--muted)">hành vi</text>
+    <text x="783" y="237" font-size="13" style="fill:var(--muted)">thêm kiến thức</text>
+  </svg>
+  </div>
+  <p class="muted">Về chất lượng truy xuất, xem <a href="../hybrid-search/">Hybrid search</a> và <a href="../reranking/">Reranking</a>. Về chọn đúng phần tài liệu đưa vào context, xem <a href="../context-engineering/">Context engineering</a>. Về định dạng đầu ra, xem <a href="../tool-calling-structured-output/">Tool calling và structured output</a>.</p>
+  <p>"Fine-tuning trong RAG" còn có một nghĩa khác: tinh chỉnh <b>embedding model</b> của bước truy xuất, thay vì model sinh câu trả lời. Tài liệu Sentence Transformers giải thích vì sao việc này thường giúp nhiều: mỗi việc cần một khái niệm "giống nhau" khác nhau.<sup class="cite"><a href="#src-25">[25]</a></sup> Xem thêm <a href="../embedding-performance/">Hiệu năng embedding</a>.</p>
+</section>
+
+<!-- 7. SO SÁNH -->
+<section id="so-sanh">
+  <h2>7. So sánh và đánh đổi</h2>
+  <h3>Prompt, RAG và fine-tuning</h3>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Tiêu chí</th><th>Prompt</th><th>RAG</th><th>Fine-tuning</th></tr></thead>
+    <tbody>
+      <tr><td><b>Sửa được loại lỗi nào</b></td><td>Chỉ dẫn chưa rõ, thiếu ví dụ</td><td>Thiếu kiến thức: dữ liệu riêng, mới, đã cũ<sup class="cite"><a href="#src-4">[4]</a></sup></td><td>Hành vi không ổn định: định dạng, giọng văn, việc hẹp<sup class="cite"><a href="#src-1">[1]</a><a href="#src-4">[4]</a></sup></td></tr>
+      <tr><td><b>Cập nhật kiến thức</b></td><td>Sửa prompt</td><td>Cập nhật chỉ mục tài liệu, có hiệu lực ngay<sup class="cite"><a href="#src-9">[9]</a></sup></td><td>Phải huấn luyện lại<sup class="cite"><a href="#src-9">[9]</a></sup></td></tr>
+      <tr><td><b>Chỉ ra nguồn</b></td><td>Không có sẵn</td><td>Chỉ ra được đoạn tài liệu đã dùng</td><td>Không chỉ ra được kiến thức trong trọng số đến từ đâu; đây là bài toán mở với bộ nhớ tham số<sup class="cite"><a href="#src-11">[11]</a></sup></td></tr>
+      <tr><td><b>Phân quyền theo người dùng</b></td><td>Không áp dụng</td><td>Lọc tài liệu theo quyền ngay lúc truy xuất</td><td>Ai dùng model cũng chạm được thứ model đã học. Dữ liệu huấn luyện có thể bị trích xuất nguyên văn<sup class="cite"><a href="#src-20">[20]</a></sup></td></tr>
+      <tr><td><b>Dữ liệu cần</b></td><td>Vài ví dụ</td><td>Tài liệu, không cần gán nhãn</td><td>Ví dụ đầu vào và đầu ra chất lượng cao. OpenAI: tối thiểu 10, nên bắt đầu với 50.<sup class="cite"><a href="#src-2">[2]</a></sup> Google: khoảng từ 100 ví dụ.<sup class="cite"><a href="#src-6">[6]</a></sup></td></tr>
+      <tr><td><b>Chi phí khởi đầu</b></td><td>Thấp</td><td>Pipeline indexing, vector DB, đánh giá truy xuất</td><td>Chuẩn bị dữ liệu, chạy huấn luyện, eval, có thể có phí host<sup class="cite"><a href="#src-5">[5]</a><a href="#src-7">[7]</a></sup></td></tr>
+      <tr><td><b>Chi phí và độ trễ mỗi request</b></td><td>Tăng theo độ dài prompt</td><td>Thêm bước truy xuất và token tài liệu; độ trễ cao hơn<sup class="cite"><a href="#src-9">[9]</a></sup></td><td>Prompt ngắn hơn, có thể dùng model nhỏ, nên rẻ và nhanh hơn<sup class="cite"><a href="#src-1">[1]</a></sup></td></tr>
+      <tr><td><b>Bảo trì</b></td><td>Chạy lại eval khi đổi model</td><td>Giữ chỉ mục đồng bộ với tài liệu gốc</td><td>Huấn luyện lại khi dữ liệu đổi hoặc base model sắp khai tử<sup class="cite"><a href="#src-3">[3]</a><a href="#src-5">[5]</a></sup></td></tr>
+      <tr><td><b>Rủi ro chính</b></td><td>Prompt dài, khó bảo trì</td><td>Truy xuất sai đoạn; tài liệu chứa lệnh độc (<a href="../prompt-injection-guardrails/">prompt injection</a>)</td><td>Quên năng lực cũ, giảm an toàn, bịa nhiều hơn khi học kiến thức mới<sup class="cite"><a href="#src-12">[12]</a><a href="#src-18">[18]</a><a href="#src-19">[19]</a></sup></td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="callout"><b>Còn một lựa chọn thứ tư: tool.</b> Dữ liệu có cấu trúc và đổi liên tục, như giá, tồn kho, trạng thái đơn hàng, không hợp với cả RAG lẫn fine-tuning. Cho model gọi tool để tra thẳng hệ thống lúc trả lời. Xem <a href="../tool-calling-structured-output/">Tool calling</a> và <a href="../ai-agent/">AI agent</a>. Tương tự, lỗi sai định dạng JSON nên thử <b>structured output</b> trước: nó ràng buộc output (không phải lời từ chối) theo JSON schema bạn đưa.<sup class="cite"><a href="#src-24">[24]</a></sup></div>
+
+  <h3>Các phương pháp fine-tuning</h3>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Phương pháp</th><th>Học từ tín hiệu gì</th><th>Hợp khi</th><th>Lưu ý</th></tr></thead>
+    <tbody>
+      <tr><td><b>SFT</b> (supervised fine-tuning)</td><td>Cặp prompt và câu trả lời mong muốn<sup class="cite"><a href="#src-5">[5]</a></sup></td><td>Phân loại, trích xuất thực thể, định dạng cố định, sửa lỗi làm theo chỉ dẫn<sup class="cite"><a href="#src-1">[1]</a><a href="#src-6">[6]</a></sup></td><td>Cách phổ biến nhất; chất lượng ví dụ quan trọng hơn số lượng<sup class="cite"><a href="#src-6">[6]</a></sup></td></tr>
+      <tr><td><b>DPO</b> (direct preference optimization)</td><td>Cặp câu trả lời được ưa và bị chê cho cùng một đầu vào<sup class="cite"><a href="#src-5">[5]</a></sup></td><td>Chất lượng phụ thuộc sở thích: giọng văn, độ đầy đủ, tóm tắt tập trung đúng chỗ<sup class="cite"><a href="#src-1">[1]</a><a href="#src-5">[5]</a></sup></td><td>Dùng một hàm mất mát phân loại đơn giản, không cần lấy mẫu từ model khi huấn luyện<sup class="cite"><a href="#src-21">[21]</a></sup></td></tr>
+      <tr><td><b>RFT</b> (reinforcement fine-tuning)</td><td>Prompt và một grader (hàm chấm điểm) chấm câu trả lời model sinh ra<sup class="cite"><a href="#src-5">[5]</a><a href="#src-7">[7]</a></sup></td><td>Có nhiều lời giải đúng và chấm được tự động: suy luận nhiều bước, sinh code hoặc SQL<sup class="cite"><a href="#src-5">[5]</a><a href="#src-6">[6]</a></sup></td><td>Điểm thưởng tăng chưa chắc là làm tốt hơn, vì model có thể lách grader<sup class="cite"><a href="#src-5">[5]</a></sup></td></tr>
+      <tr><td><b>Distillation</b></td><td>Câu trả lời của model lớn (teacher) dùng làm dữ liệu huấn luyện model nhỏ (student)<sup class="cite"><a href="#src-2">[2]</a><a href="#src-7">[7]</a></sup></td><td>Muốn chất lượng gần model lớn với chi phí và độ trễ của model nhỏ<sup class="cite"><a href="#src-7">[7]</a></sup></td><td>Nên có người duyệt mẫu; lỗi của teacher sẽ được student học theo</td></tr>
+      <tr><td><b>Huấn luyện tiếp trên văn bản</b> (continued pretraining, fine-tuning không giám sát)</td><td>Văn bản thô của một miền, không có cặp hỏi–đáp<sup class="cite"><a href="#src-10">[10]</a><a href="#src-17">[17]</a></sup></td><td>Thích nghi với ngôn ngữ của một miền</td><td>Để nạp kiến thức thì kém RAG trong nghiên cứu của Ovadia và cộng sự<sup class="cite"><a href="#src-10">[10]</a></sup></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Full fine-tuning, LoRA hay QLoRA?</h3>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Cách</th><th>Cập nhật gì</th><th>Ưu điểm</th><th>Đánh đổi</th></tr></thead>
+    <tbody>
+      <tr><td><b>Full fine-tuning</b></td><td>Mọi tham số của model<sup class="cite"><a href="#src-6">[6]</a></sup></td><td>Học được nhiều nhất</td><td>Tốn bộ nhớ và lưu trữ nhất; dễ quên năng lực ngoài miền hơn LoRA<sup class="cite"><a href="#src-17">[17]</a></sup></td></tr>
+      <tr><td><b>LoRA</b></td><td>Đóng băng trọng số gốc, chỉ học thêm các ma trận hạng thấp (low-rank) nhỏ<sup class="cite"><a href="#src-15">[15]</a></sup></td><td>Với GPT-3 175B: số tham số cần huấn luyện giảm 10.000 lần, bộ nhớ GPU giảm 3 lần; không thêm độ trễ khi chạy<sup class="cite"><a href="#src-15">[15]</a></sup></td><td>Ở code và toán, LoRA học kém full fine-tuning rõ rệt, nhưng quên ít hơn<sup class="cite"><a href="#src-17">[17]</a></sup></td></tr>
+      <tr><td><b>QLoRA</b></td><td>LoRA trên model gốc đã lượng tử hóa 4-bit<sup class="cite"><a href="#src-16">[16]</a></sup></td><td>Fine-tune được model 65B trên một GPU 48GB, giữ hiệu năng như fine-tune 16-bit<sup class="cite"><a href="#src-16">[16]</a></sup></td><td>Chỉ áp dụng khi bạn tự huấn luyện model mở trọng số</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted">LoRA là một kiểu PEFT (parameter-efficient fine-tuning): chỉ huấn luyện một phần nhỏ tham số, giảm mạnh chi phí tính toán và lưu trữ.<sup class="cite"><a href="#src-23">[23]</a></sup> Tài liệu tuning Gemini của Google gọi kiểu này là adapter tuning.<sup class="cite"><a href="#src-6">[6]</a></sup> Adapter gắn với đúng base model đã dùng để huấn luyện, không dùng chéo sang model khác dù tên gần giống.<sup class="cite"><a href="#src-5">[5]</a></sup></p>
+
+  <h3>Fine-tuning ở các nhà cung cấp lớn</h3>
+  <p class="muted">Chỉ ghi những gì trang chính thức nói, truy cập 2026-11-17. Danh sách model đổi thường xuyên.</p>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Nhà cung cấp</th><th>Tình trạng</th><th>Phương pháp</th><th>Ví dụ model hỗ trợ</th></tr></thead>
+    <tbody>
+      <tr><td><b>OpenAI</b></td><td>Đang thu hẹp. Không nhận người dùng mới. Khách hàng cũ đủ điều kiện tạo job tới 2027-01-06. Model đã fine-tune vẫn chạy tới khi base model khai tử.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-2">[2]</a><a href="#src-3">[3]</a></sup></td><td>SFT, DPO, fine-tuning ảnh (vision)<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>SFT trên gpt-4.1, gpt-4.1-mini, gpt-4.1-nano. Bản nano và các bản fine-tune của nó đã dừng ngày 2026-10-23; bản full và mini dừng ngày 2027-01-14.<sup class="cite"><a href="#src-2">[2]</a></sup></td></tr>
+      <tr><td><b>Microsoft Foundry</b></td><td>Có Managed Training; Programmed Training đang preview, cần đăng ký.<sup class="cite"><a href="#src-5">[5]</a></sup></td><td>SFT, DPO, RFT; distillation qua dữ liệu do model lớn sinh<sup class="cite"><a href="#src-5">[5]</a></sup></td><td>gpt-4.1 (SFT, DPO), o4-mini (RFT), gpt-5 (RFT, cần lời mời), Llama-3.3-70B-Instruct, Qwen3-32B, gpt-oss-20b (SFT)<sup class="cite"><a href="#src-5">[5]</a></sup></td></tr>
+      <tr><td><b>Google Cloud</b> (Gemini Enterprise Agent Platform; URL tài liệu vẫn nằm dưới /vertex-ai/)</td><td>Có, kèm checkpoint và huấn luyện nối tiếp.<sup class="cite"><a href="#src-6">[6]</a></sup></td><td>SFT, preference tuning, RL fine-tuning; dạng adapter (parameter-efficient). Trang không nêu full fine-tuning cho Gemini.<sup class="cite"><a href="#src-6">[6]</a></sup></td><td>SFT: Gemini 3.5 Flash, 3.5 Flash-Lite, 2.5 Pro…; RL: Gemini 3.5 Flash, 3.1 Flash-Lite<sup class="cite"><a href="#src-6">[6]</a></sup></td></tr>
+      <tr><td><b>Amazon Bedrock</b></td><td>Có.<sup class="cite"><a href="#src-7">[7]</a></sup></td><td>SFT, reinforcement fine-tuning, distillation<sup class="cite"><a href="#src-7">[7]</a></sup></td><td>Amazon Nova, Llama 3.x; model Anthropic duy nhất trong bảng là Claude 3 Haiku, chỉ ở vùng us-west-2<sup class="cite"><a href="#src-8">[8]</a></sup></td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout warn"><b>Bài học từ việc OpenAI thu hẹp nền tảng.</b> Model fine-tune phụ thuộc vào base model và vào dịch vụ của nhà cung cấp. Khi base model khai tử, model fine-tune trên nó cũng dừng theo cùng lịch.<sup class="cite"><a href="#src-3">[3]</a></sup> Hãy giữ lại bộ dữ liệu huấn luyện và bộ eval của bạn. Đó mới là tài sản dùng lại được khi phải huấn luyện lại trên model khác. RAG ít bị khóa hơn: đổi model sinh câu trả lời thì chỉ mục tài liệu vẫn dùng lại được, trừ khi bạn đổi cả embedding model (khi đó phải embed lại cả kho). Một lựa chọn khác là tự huấn luyện model mở trọng số bằng LoRA hoặc QLoRA<sup class="cite"><a href="#src-15">[15]</a><a href="#src-16">[16]</a><a href="#src-23">[23]</a></sup>: không phụ thuộc lịch khai tử của nhà cung cấp, đổi lại bạn tự lo GPU, triển khai và vận hành.</div>
+</section>
+
+<!-- 8. LỖI -->
+<section id="loi">
+  <h2>8. Lỗi thường gặp và cách chẩn đoán</h2>
+  <p>Mỗi thẻ có triệu chứng, nguyên nhân hay gặp, và cách kiểm.</p>
+  <div class="grid g2">
+    <div class="card"><span class="tag bad">Triệu chứng</span><h4>Fine-tune bằng tài liệu nội bộ mà model vẫn trả lời sai, thậm chí bịa nhiều hơn</h4>
+      <p><b>Nguyên nhân:</b> dùng fine-tuning để nạp kiến thức. LLM khó học thông tin mới qua fine-tuning không giám sát.<sup class="cite"><a href="#src-10">[10]</a></sup> Khi model dần học được các ví dụ kiến thức mới, xu hướng bịa tăng theo.<sup class="cite"><a href="#src-12">[12]</a></sup></p>
+      <p><b>Cách kiểm:</b> phân loại câu sai. Nếu phần lớn là "không biết thông tin", chuyển sang RAG. Xem <a href="../rag/">RAG</a>.</p></div>
+    <div class="card"><span class="tag bad">Triệu chứng</span><h4>Sau fine-tune, model làm tốt việc mới nhưng kém đi ở việc khác</h4>
+      <p><b>Nguyên nhân:</b> quên thảm khốc (catastrophic forgetting). Luo và cộng sự thấy hiện tượng này ở model từ 1B đến 7B tham số khi fine-tune nối tiếp qua nhiều tác vụ.<sup class="cite"><a href="#src-18">[18]</a></sup> LoRA quên ít hơn full fine-tuning.<sup class="cite"><a href="#src-17">[17]</a></sup></p>
+      <p><b>Cách kiểm:</b> ngoài bộ eval của việc mới, giữ một bộ eval cho các việc cũ model vẫn phải làm được. Chạy cả hai sau mỗi lần huấn luyện.</p></div>
+    <div class="card"><span class="tag bad">Triệu chứng</span><h4>Điểm eval rất cao, chạy thật thì kém</h4>
+      <p><b>Nguyên nhân:</b> overfitting, hoặc dữ liệu test lọt vào dữ liệu huấn luyện. Microsoft khuyên tách riêng tập huấn luyện, tập validation và tập test cuối, và so checkpoint trên dữ liệu chưa thấy, không chỉ nhìn training loss.<sup class="cite"><a href="#src-5">[5]</a></sup></p>
+      <p><b>Cách kiểm:</b> tập holdout phải đa dạng giống dữ liệu huấn luyện.<sup class="cite"><a href="#src-2">[2]</a></sup> Lấy thêm mẫu từ log thật, gần ngày chạy, để kiểm.</p></div>
+    <div class="card"><span class="tag bad">Triệu chứng</span><h4>Model fine-tune bớt từ chối các yêu cầu nguy hiểm</h4>
+      <p><b>Nguyên nhân:</b> fine-tuning làm yếu lớp an toàn. Qi và cộng sự phá được lớp chặn an toàn (guardrail) của GPT-3.5 Turbo chỉ với 10 ví dụ độc hại được thiết kế có chủ đích, tốn dưới 0,20 USD. Dữ liệu lành tính cũng làm giảm an toàn, ở mức nhẹ hơn.<sup class="cite"><a href="#src-19">[19]</a></sup></p>
+      <p><b>Cách kiểm:</b> chạy bộ test an toàn trước và sau huấn luyện. Giữ các chốt an toàn ở tầng ứng dụng.<sup class="cite"><a href="#src-5">[5]</a></sup> Xem <a href="../prompt-injection-guardrails/">Prompt injection và guardrails</a>.</p></div>
+    <div class="card"><span class="tag bad">Triệu chứng</span><h4>Model nhắc lại dữ liệu khách hàng có trong tập huấn luyện</h4>
+      <p><b>Nguyên nhân:</b> model nhớ nguyên văn một phần dữ liệu huấn luyện. Carlini và cộng sự trích xuất được hàng trăm chuỗi nguyên văn từ GPT-2, gồm tên, số điện thoại, email, kể cả chuỗi chỉ xuất hiện trong một tài liệu.<sup class="cite"><a href="#src-20">[20]</a></sup> Thí nghiệm này làm trên dữ liệu pre-training của GPT-2; rủi ro tương tự cần tính tới với dữ liệu fine-tune.</p>
+      <p><b>Cách kiểm:</b> rà và xóa thông tin nhạy cảm trước khi tải dữ liệu lên.<sup class="cite"><a href="#src-5">[5]</a></sup> Dữ liệu cần phân quyền theo người dùng thì để ở RAG, nơi lọc được theo quyền. Xem <a href="../governance/">AI governance</a>.</p></div>
+    <div class="card"><span class="tag bad">Triệu chứng</span><h4>Thêm RAG vào model đã fine-tune, kết quả lại tệ hơn</h4>
+      <p><b>Nguyên nhân:</b> bài toán là bài toán hành vi, model đã học xong việc qua fine-tuning, nên tài liệu thêm vào chỉ thành nhiễu. Trong một ca sửa lỗi câu tiếng Iceland, OpenAI thấy thêm RAG vào GPT-4 đã fine-tune làm điểm BLEU (điểm đo độ giống với câu tham chiếu) giảm từ 87 xuống 83.<sup class="cite"><a href="#src-4">[4]</a></sup></p>
+      <p><b>Cách kiểm:</b> nếu dùng cả hai, fine-tune với ví dụ đã có tài liệu RAG.<sup class="cite"><a href="#src-4">[4]</a></sup> RAFT huấn luyện model bỏ qua tài liệu nhiễu và trích đúng đoạn cần.<sup class="cite"><a href="#src-14">[14]</a></sup></p></div>
+    <div class="card"><span class="tag warn">Triệu chứng</span><h4>RAG trả lời sai, nhóm định fine-tune để sửa</h4>
+      <p><b>Nguyên nhân hay gặp:</b> lỗi nằm ở bước truy xuất (không lấy được đoạn đúng), không nằm ở model. Fine-tune không sửa được việc thiếu tài liệu trong context.<sup class="cite"><a href="#src-4">[4]</a></sup></p>
+      <p><b>Cách kiểm:</b> với từng câu sai, xem đoạn đúng có nằm trong context không. Không có: sửa truy xuất (<a href="../hybrid-search/">hybrid search</a>, <a href="../reranking/">rerank</a>, <a href="../knowledge-base/">chất lượng kho tài liệu</a>). Có mà vẫn sai: mới tới lượt prompt hoặc fine-tuning.</p></div>
+    <div class="card"><span class="tag warn">Triệu chứng</span><h4>Model fine-tune bỗng ngừng chạy, hoặc không tạo được job mới</h4>
+      <p><b>Nguyên nhân:</b> base model khai tử, hoặc nhà cung cấp đổi chính sách. Ví dụ OpenAI tắt bản fine-tune của o4-mini ngày 2026-10-23, theo lịch của base model.<sup class="cite"><a href="#src-3">[3]</a></sup></p>
+      <p><b>Cách kiểm:</b> theo dõi trang deprecations của nhà cung cấp. Lên kế hoạch huấn luyện lại trước khi base model khai tử.<sup class="cite"><a href="#src-5">[5]</a></sup> Lưu giữ dữ liệu huấn luyện và bộ eval.</p></div>
+  </div>
+</section>
+
+<!-- 9. ĐÁNH GIÁ -->
+<section id="danh-gia">
+  <h2>9. Đánh giá và đo lường</h2>
+  <p>Mọi quyết định ở trang này đều dựa vào eval. Cách so đúng là: cùng một bộ test, chạy với baseline (prompt tốt nhất) và với phương án mới, so cả chất lượng, chi phí, độ trễ. Xem thêm <a href="../llm-evaluation/">Đánh giá LLM</a>.</p>
+  <h3>Chỉ số nên theo dõi</h3>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Chỉ số</th><th>Dùng để làm gì</th><th>Áp dụng cho</th></tr></thead>
+    <tbody>
+      <tr><td><b>Tỷ lệ lỗi theo loại</b></td><td>Đếm câu sai do thiếu kiến thức và câu sai do hành vi. Quyết định đi hướng RAG hay fine-tuning.<sup class="cite"><a href="#src-4">[4]</a></sup></td><td>Mọi phương án</td></tr>
+      <tr><td><b>Độ chính xác trên tập holdout</b></td><td>So model fine-tune với baseline trên dữ liệu model chưa thấy.<sup class="cite"><a href="#src-2">[2]</a><a href="#src-5">[5]</a></sup></td><td>Fine-tuning</td></tr>
+      <tr><td><b>Tỷ lệ đúng định dạng</b></td><td>Phần trăm câu trả lời đúng schema, đúng nhãn hợp lệ</td><td>Fine-tuning, prompt</td></tr>
+      <tr><td><b>Recall truy xuất</b></td><td>Đoạn tài liệu đúng có nằm trong context không</td><td>RAG</td></tr>
+      <tr><td><b>Độ trung thành với nguồn</b> (faithfulness)</td><td>Câu trả lời có bám vào tài liệu đã lấy, hay thêm ý ngoài</td><td>RAG, kết hợp</td></tr>
+      <tr><td><b>Hồi quy việc cũ và an toàn</b></td><td>Năng lực ngoài miền và mức từ chối yêu cầu nguy hiểm có giảm không<sup class="cite"><a href="#src-17">[17]</a><a href="#src-19">[19]</a></sup></td><td>Fine-tuning</td></tr>
+      <tr><td><b>Chi phí mỗi việc thành công, độ trễ p95</b></td><td>Gộp chi phí API, host, huấn luyện chia theo tháng; p95 là mức mà 95% request nhanh hơn</td><td>Mọi phương án</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="callout warn"><b>Bộ eval nhỏ thì kết quả dao động.</b> Với bộ 60 câu, mỗi câu là khoảng 1,7 điểm %. Chênh 2–3 câu (3–5 điểm %) giữa hai phương án có thể chỉ là ngẫu nhiên. Chỉ kết luận khi chênh lệch lớn, hoặc tăng số câu test.</div>
+
+  <h3>Mức chính xác bao nhiêu là đủ?</h3>
+  <p>OpenAI nói LLM khó đạt độ chính xác 99,999% bằng các cách có sẵn, nên hãy lấy mục tiêu độ chính xác làm đích, và gán chi phí cho từng kết quả.<sup class="cite"><a href="#src-4">[4]</a></sup> Trong ví dụ của họ, mỗi lần AI giải quyết được việc lợi 20 USD, mỗi lần chuyển cho người khi không cần thiết mất 40 USD, mỗi khách bỏ đi mất 1.000 USD, kèm giả định về tỷ lệ của từng trường hợp. Từ đó họ tính được mức chính xác hòa vốn là 81,5%.<sup class="cite"><a href="#src-4">[4]</a></sup> Với lỗi rất đắt, như gian lận, họ để con người dẫn dắt và AI hỗ trợ.<sup class="cite"><a href="#src-4">[4]</a></sup></p>
+
+  <h3>Quy trình so sánh một lần fine-tune</h3>
+  <div class="grid g3">
+    <div class="card"><span class="tag p3">1</span><h4>Chốt dữ liệu</h4><p>Tách tập holdout từ cùng nguồn dữ liệu, độ đa dạng tương đương tập huấn luyện. Holdout là nhóm đối chứng khi chạy eval.<sup class="cite"><a href="#src-2">[2]</a></sup></p></div>
+    <div class="card"><span class="tag p3">2</span><h4>Thử nhỏ trước</h4><p>Bắt đầu với khoảng 50 ví dụ tốt. Nếu 50 ví dụ không tạo khác biệt, xem lại bài toán hoặc prompt trước khi thêm dữ liệu.<sup class="cite"><a href="#src-2">[2]</a></sup></p></div>
+    <div class="card"><span class="tag p3">3</span><h4>So nhiều mặt</h4><p>So với baseline trên holdout, việc cũ, an toàn, chi phí. Dừng thí nghiệm nào không cải thiện chỉ số mục tiêu.<sup class="cite"><a href="#src-5">[5]</a></sup></p></div>
+  </div>
+</section>
+
+<!-- 10. LỘ TRÌNH -->
+<section id="lo-trinh">
+  <h2>10. Lộ trình tự học 2 tuần (không cần code)</h2>
+  <p class="muted">Khoảng 3–4 giờ mỗi tuần. Bạn có thể làm trên bảng tính với log thật của hệ thống. Các ô đã đánh dấu được lưu trong trình duyệt của bạn.</p>
+  <div class="grid g3">
+    <div class="card"><span class="tag p1">Tuần 1</span><h4>Chẩn đoán</h4><p>Đọc mục 1–4.</p>
+      <label class="check"><input type="checkbox" data-k="w1a"><span>Chọn một việc thật của trợ lý. Viết 30–50 câu test có đáp án và tiêu chí đạt.</span></label>
+      <label class="check"><input type="checkbox" data-k="w1b"><span>Chạy với prompt tốt nhất bạn viết được. Gán nhãn từng câu sai: thiếu kiến thức hay làm sai cách.</span></label>
+      <label class="check"><input type="checkbox" data-k="w1c"><span>Làm bài tập 8 tình huống ở mục 4 và giải thích lại bằng lời của bạn vì sao chọn như vậy.</span></label>
+    </div>
+    <div class="card"><span class="tag p1">Tuần 2</span><h4>Lập phương án</h4><p>Đọc mục 5–9.</p>
+      <label class="check"><input type="checkbox" data-k="w2a"><span>Với nhóm lỗi kiến thức: liệt kê tài liệu cần, ước số token, quyết định đưa thẳng vào prompt hay dựng RAG.</span></label>
+      <label class="check"><input type="checkbox" data-k="w2b"><span>Với nhóm lỗi hành vi: ước số ví dụ có sẵn, ai duyệt, chọn SFT, DPO hay RFT. Nhập số vào máy tính hòa vốn.</span></label>
+      <label class="check"><input type="checkbox" data-k="w2c"><span>Kiểm nhà cung cấp bạn dùng: có fine-tuning cho model nào, đến khi nào, base model khai tử khi nào.</span></label>
+    </div>
+    <div class="card"><span class="tag p1">Mở rộng</span><h4>Đọc tài liệu gốc</h4><p>Đọc phần tóm tắt và kết luận.</p>
+      <label class="check"><input type="checkbox" data-k="w3a"><span>Hướng dẫn tối ưu độ chính xác của OpenAI<sup class="cite"><a href="#src-4">[4]</a></sup>: hai trục và ẩn dụ "mang sách vào phòng thi".</span></label>
+      <label class="check"><input type="checkbox" data-k="w3b"><span>Ovadia và cộng sự<sup class="cite"><a href="#src-10">[10]</a></sup>, Gekhman và cộng sự<sup class="cite"><a href="#src-12">[12]</a></sup>: vì sao fine-tuning không hợp để nạp kiến thức.</span></label>
+      <label class="check"><input type="checkbox" data-k="w3c"><span>LoRA<sup class="cite"><a href="#src-15">[15]</a></sup> và RAFT<sup class="cite"><a href="#src-14">[14]</a></sup>: cách fine-tune rẻ, và cách kết hợp với RAG.</span></label>
+    </div>
+  </div>
+
+  <h3>Câu hỏi tự kiểm tra</h3>
+  <details><summary>1. Chính sách công ty đổi mỗi tháng. Vì sao không nên fine-tune để model "thuộc" chính sách?</summary><p>Fine-tuning cần huấn luyện lại mỗi lần cập nhật, còn RAG chỉ cần cập nhật chỉ mục.<sup class="cite"><a href="#src-9">[9]</a></sup> Model cũng khó học kiến thức mới qua fine-tuning, và dễ bịa hơn khi học được.<sup class="cite"><a href="#src-10">[10]</a><a href="#src-12">[12]</a></sup> RAG còn chỉ ra được đoạn nguồn và lọc được theo quyền người dùng.</p></details>
+  <details><summary>2. Model trả lời đúng ý nhưng giọng văn không đúng thương hiệu, dù đã viết hướng dẫn dài. Thử gì?</summary><p>Đây là lỗi hành vi, không phải lỗi kiến thức. Nếu có sẵn nhiều câu trả lời mẫu đã duyệt, fine-tuning hợp. DPO hợp khi chất lượng phụ thuộc sở thích như giọng văn.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-5">[5]</a></sup></p></details>
+  <details><summary>3. RAG và fine-tuning có loại trừ nhau không?</summary><p>Không. OpenAI gọi hai cách này là cộng dồn.<sup class="cite"><a href="#src-4">[4]</a></sup> Nghiên cứu nông nghiệp thấy fine-tuning tăng hơn 6 điểm %, thêm RAG tăng tiếp 5 điểm %.<sup class="cite"><a href="#src-13">[13]</a></sup> Nhưng nên fine-tune với ví dụ có tài liệu RAG, nếu không tài liệu có thể thành nhiễu.<sup class="cite"><a href="#src-4">[4]</a></sup></p></details>
+  <details><summary>4. LoRA khác full fine-tuning ở đâu?</summary><p>LoRA giữ nguyên trọng số gốc và chỉ học thêm các ma trận hạng thấp nhỏ, nên rẻ hơn nhiều và không thêm độ trễ khi chạy.<sup class="cite"><a href="#src-15">[15]</a></sup> Đổi lại, ở các việc khó như code và toán, LoRA học kém hơn, nhưng quên năng lực cũ ít hơn.<sup class="cite"><a href="#src-17">[17]</a></sup></p></details>
+  <details><summary>5. Cần bao nhiêu ví dụ để bắt đầu fine-tune?</summary><p>OpenAI: tối thiểu 10, thường thấy cải thiện từ 50–100, nên bắt đầu với 50 ví dụ tốt.<sup class="cite"><a href="#src-2">[2]</a></sup> Google: khoảng từ 100 ví dụ trở lên, và chất lượng quan trọng hơn số lượng.<sup class="cite"><a href="#src-6">[6]</a></sup></p></details>
+  <details><summary>6. Vì sao nên giữ bộ dữ liệu huấn luyện và bộ eval kể cả sau khi đã có model fine-tune?</summary><p>Model fine-tune dừng theo lịch khai tử của base model, và nhà cung cấp có thể đổi chính sách, như OpenAI đang thu hẹp nền tảng.<sup class="cite"><a href="#src-3">[3]</a></sup> Khi đó bạn phải huấn luyện lại trên model khác.<sup class="cite"><a href="#src-5">[5]</a></sup> Dữ liệu và eval là phần dùng lại được.</p></details>
+</section>
+
+<!-- NGUỒN -->
+<section id="nguon">
+  <h2>Nguồn tham khảo</h2>
+  <p class="muted">Các khẳng định trong trang được đối chiếu với các nguồn dưới đây. Số trong ngoặc vuông ở thân bài trỏ tới mục tương ứng. Mọi nguồn được mở và kiểm lại nội dung ngày 2026-11-17. Tài liệu của nhà cung cấp cập nhật thường xuyên, nên tình trạng dịch vụ và danh sách model có thể đã đổi.</p>
+  <ol class="sources">
+    <li id="src-1">OpenAI. <i>Model optimization</i>. OpenAI API Docs. Không ghi năm. <a href="https://developers.openai.com/api/docs/guides/model-optimization" target="_blank" rel="noopener">developers.openai.com/api/docs/guides/model-optimization</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-2">OpenAI. <i>Supervised fine-tuning</i>. OpenAI API Docs. Không ghi năm. <a href="https://developers.openai.com/api/docs/guides/supervised-fine-tuning" target="_blank" rel="noopener">developers.openai.com/api/docs/guides/supervised-fine-tuning</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-3">OpenAI. <i>Deprecations</i>. OpenAI API Docs. Mục fine-tuning thông báo ngày 2026-05-07. <a href="https://developers.openai.com/api/docs/deprecations" target="_blank" rel="noopener">developers.openai.com/api/docs/deprecations</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-4">OpenAI. <i>Optimizing LLM accuracy</i>. OpenAI API Docs. Không ghi năm. <a href="https://developers.openai.com/api/docs/guides/optimizing-llm-accuracy" target="_blank" rel="noopener">developers.openai.com/api/docs/guides/optimizing-llm-accuracy</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-5">Microsoft. <i>Fine-tuning in Microsoft Foundry</i>. Microsoft Learn, cập nhật 2026-10-29. <a href="https://learn.microsoft.com/en-us/azure/foundry/fine-tuning/overview" target="_blank" rel="noopener">learn.microsoft.com/en-us/azure/foundry/fine-tuning/overview</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-6">Google Cloud. <i>Introduction to tuning</i>. Tài liệu Gemini Enterprise Agent Platform (URL dưới /vertex-ai/). Không ghi năm. <a href="https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/tune-models" target="_blank" rel="noopener">docs.cloud.google.com/vertex-ai/generative-ai/docs/models/tune-models</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-7">Amazon Web Services. <i>Customize your model to improve its performance for your use case</i>. Amazon Bedrock User Guide. Không ghi năm. <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/custom-models.html" target="_blank" rel="noopener">docs.aws.amazon.com/bedrock/latest/userguide/custom-models.html</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-8">Amazon Web Services. <i>Customize a model with fine-tuning in Amazon Bedrock</i> (bảng model và vùng hỗ trợ). Amazon Bedrock User Guide. Không ghi năm. <a href="https://docs.aws.amazon.com/bedrock/latest/userguide/custom-model-supported.html" target="_blank" rel="noopener">docs.aws.amazon.com/bedrock/latest/userguide/custom-model-supported.html</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-9">Yunfan Gao và cộng sự. <i>Retrieval-Augmented Generation for Large Language Models: A Survey</i>. arXiv:2312.10997, 2023 (bản v5, 2024), mục II-D "RAG vs Fine-tuning". <a href="https://arxiv.org/abs/2312.10997" target="_blank" rel="noopener">arxiv.org/abs/2312.10997</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-10">Oded Ovadia, Menachem Brief, Moshik Mishaeli, Oren Elisha. <i>Fine-Tuning or Retrieval? Comparing Knowledge Injection in LLMs</i>. arXiv:2312.05934, 2023. <a href="https://arxiv.org/abs/2312.05934" target="_blank" rel="noopener">arxiv.org/abs/2312.05934</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-11">Patrick Lewis và cộng sự. <i>Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks</i>. NeurIPS 2020. arXiv:2005.11401. <a href="https://arxiv.org/abs/2005.11401" target="_blank" rel="noopener">arxiv.org/abs/2005.11401</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-12">Zorik Gekhman và cộng sự. <i>Does Fine-Tuning LLMs on New Knowledge Encourage Hallucinations?</i> EMNLP 2024. arXiv:2405.05904. <a href="https://arxiv.org/abs/2405.05904" target="_blank" rel="noopener">arxiv.org/abs/2405.05904</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-13">Angels Balaguer và cộng sự. <i>RAG vs Fine-tuning: Pipelines, Tradeoffs, and a Case Study on Agriculture</i>. arXiv:2401.08406, 2024. <a href="https://arxiv.org/abs/2401.08406" target="_blank" rel="noopener">arxiv.org/abs/2401.08406</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-14">Tianjun Zhang và cộng sự. <i>RAFT: Adapting Language Model to Domain Specific RAG</i>. arXiv:2403.10131, 2024. <a href="https://arxiv.org/abs/2403.10131" target="_blank" rel="noopener">arxiv.org/abs/2403.10131</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-15">Edward J. Hu và cộng sự. <i>LoRA: Low-Rank Adaptation of Large Language Models</i>. arXiv:2106.09685, 2021. <a href="https://arxiv.org/abs/2106.09685" target="_blank" rel="noopener">arxiv.org/abs/2106.09685</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-16">Tim Dettmers, Artidoro Pagnoni, Ari Holtzman, Luke Zettlemoyer. <i>QLoRA: Efficient Finetuning of Quantized LLMs</i>. arXiv:2305.14314, 2023. <a href="https://arxiv.org/abs/2305.14314" target="_blank" rel="noopener">arxiv.org/abs/2305.14314</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-17">Dan Biderman và cộng sự. <i>LoRA Learns Less and Forgets Less</i>. TMLR 2024. arXiv:2405.09673. <a href="https://arxiv.org/abs/2405.09673" target="_blank" rel="noopener">arxiv.org/abs/2405.09673</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-18">Yun Luo và cộng sự. <i>An Empirical Study of Catastrophic Forgetting in Large Language Models During Continual Fine-tuning</i>. arXiv:2308.08747, 2023. <a href="https://arxiv.org/abs/2308.08747" target="_blank" rel="noopener">arxiv.org/abs/2308.08747</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-19">Xiangyu Qi và cộng sự. <i>Fine-tuning Aligned Language Models Compromises Safety, Even When Users Do Not Intend To!</i> arXiv:2310.03693, 2023. <a href="https://arxiv.org/abs/2310.03693" target="_blank" rel="noopener">arxiv.org/abs/2310.03693</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-20">Nicholas Carlini và cộng sự. <i>Extracting Training Data from Large Language Models</i>. arXiv:2012.07805, 2020. <a href="https://arxiv.org/abs/2012.07805" target="_blank" rel="noopener">arxiv.org/abs/2012.07805</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-21">Rafael Rafailov và cộng sự. <i>Direct Preference Optimization: Your Language Model is Secretly a Reward Model</i>. arXiv:2305.18290, 2023. <a href="https://arxiv.org/abs/2305.18290" target="_blank" rel="noopener">arxiv.org/abs/2305.18290</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-22">Anthropic. <i>Introducing Contextual Retrieval</i>. 2024-09-19. <a href="https://www.anthropic.com/engineering/contextual-retrieval" target="_blank" rel="noopener">anthropic.com/engineering/contextual-retrieval</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-23">Hugging Face. <i>PEFT</i> (tài liệu thư viện). Không ghi năm. <a href="https://huggingface.co/docs/peft/index" target="_blank" rel="noopener">huggingface.co/docs/peft/index</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-24">OpenAI. <i>Structured model outputs</i>. OpenAI API Docs. Không ghi năm. <a href="https://developers.openai.com/api/docs/guides/structured-outputs" target="_blank" rel="noopener">developers.openai.com/api/docs/guides/structured-outputs</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-25">Sentence Transformers (Hugging Face). <i>Training Overview</i>, mục "Why Finetune?". Không ghi năm. <a href="https://sbert.net/docs/sentence_transformer/training_overview.html" target="_blank" rel="noopener">sbert.net/docs/sentence_transformer/training_overview.html</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+  </ol>
+</section>
+
+</main>
+<footer>Trang học về cách chọn giữa prompt, RAG và fine-tuning cho ứng dụng LLM doanh nghiệp. Tình trạng dịch vụ theo trang chính thức, truy cập 2026-11-17; số liệu trong ví dụ và máy tính là minh họa. <a href="../">Về danh sách chủ đề</a>.</footer>
+
+<script>
+(function(){
+  // ---------- Theme ----------
+  var root=document.documentElement;
+  function safeGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+  function safeSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  var saved=safeGet('rag-theme'); if(saved) root.setAttribute('data-theme',saved);
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme');
+    if(!cur){cur=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+    var next=cur==='dark'?'light':'dark'; root.setAttribute('data-theme',next); safeSet('rag-theme',next);
+  });
+
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function cite(){return '<sup class="cite">'+[].map.call(arguments,function(n){return '<a href="#src-'+n+'">['+n+']</a>'}).join('')+'</sup>'}
+  function num(x,d){return x.toLocaleString('vi-VN',{maximumFractionDigits:d===undefined?1:d,minimumFractionDigits:d===undefined?0:d})}
+  function int(x){return Math.round(x).toLocaleString('vi-VN')}
+  function usd(x,d){return num(x,d===undefined?0:d)+' USD'}
+
+  // ---------- Stacked tables on phones: give each cell its column name ----------
+  function labelTables(root){
+    [].forEach.call(root.querySelectorAll('table.stack'),function(t){
+      var heads=[].map.call(t.querySelectorAll('thead th'),function(th){return th.textContent});
+      [].forEach.call(t.querySelectorAll('tbody tr'),function(tr){[].forEach.call(tr.children,function(td,i){if(heads[i])td.setAttribute('data-label',heads[i])})});
+    });
+  }
+
+  // ---------- Stepper example (all counts illustrative) ----------
+  var POL=60, TIC=300; // policy questions, held-out tickets
+  // Result bar: ok answers out of total
+  function RES(label,ok,total){
+    var p=ok/total*100;
+    return '<div class="res"><div class="lbl"><span>'+label+'</span><b>'+ok+'/'+total+' đúng · '+num(p,0)+'%</b></div><div class="bar"><i style="width:'+p+'%"></i></div></div>';
+  }
+  // Error split: knowledge vs behaviour
+  function SPLIT(label,know,beh){
+    var t=know+beh;
+    return '<div class="res"><div class="lbl"><span>'+label+': '+t+' câu sai</span><span><b style="color:var(--p1)">'+know+' thiếu kiến thức</b> · <b style="color:var(--p4)">'+beh+' làm sai cách</b></span></div><div class="sbar-wrap"><div class="sbar" style="width:100%"><i class="seg-know" style="width:'+(know/t*100)+'%"></i><i class="seg-beh" style="width:'+(beh/t*100)+'%"></i></div></div></div>';
+  }
+  function M(cls,label,body){return '<div class="msg '+cls+'"><b>'+label+'</b>'+body+'</div>'}
+  function UL(items){return '<ul style="margin:4px 0;padding-left:1.2em">'+items.map(function(x){return '<li>'+x+'</li>'}).join('')+'</ul>'}
+  var P0=21, T0=231;            // baseline, simple prompt
+  var P1=22, T1=246;            // best prompt + few-shot
+  var PK=35, PB=3, TK=6, TB=48; // error split after step 2 (60-22=38, 300-246=54)
+  var P2=53;                    // policy with RAG
+  var T3=279;                   // tickets with fine-tuned small model
+  var STEPS=[
+    {t:'Đặt thước đo',h:'<h4 style="margin-top:0">Bước 1. Đặt thước đo trước khi chọn công cụ</h4>'+
+      UL(['<b>Bộ A</b>: '+POL+' câu hỏi chính sách, đáp án do phòng pháp chế duyệt.',
+          '<b>Bộ B</b>: '+TIC+' ticket đã gán nhãn, để riêng làm tập holdout (không dùng để huấn luyện).'+cite(2),
+          'Tiêu chí đạt (minh họa): bộ A ≥ 85%, bộ B ≥ 90%.'])+
+      RES('Bộ A, prompt đơn giản',P0,POL)+RES('Bộ B, prompt đơn giản',T0,TIC)+
+      '<p class="muted">OpenAI khuyên chỉ đầu tư vào fine-tuning sau khi có eval.'+cite(2)+'</p>'},
+    {t:'Prompt tốt nhất',h:'<h4 style="margin-top:0">Bước 2. Thử prompt tốt nhất trước</h4>'+
+      '<p>Nhóm viết lại chỉ dẫn, thêm 8 ví dụ phân loại mẫu (few-shot), và bật structured output để ràng buộc JSON theo một schema cố định.'+cite(24)+' Google khuyên đi theo thứ tự này: prompt trước, fine-tune sau nếu cần.'+cite(6)+'</p>'+
+      RES('Bộ A',P1,POL)+RES('Bộ B',T1,TIC)+
+      '<p>Bộ B tăng rõ. Bộ A gần như đứng yên: prompt hay đến mấy cũng không giúp model biết chính sách nội bộ.</p>'},
+    {t:'Chẩn đoán lỗi',h:'<h4 style="margin-top:0">Bước 3. Chẩn đoán từng câu sai</h4>'+
+      '<p>Với mỗi câu sai, hỏi: model sai vì <b>không có thông tin</b>, hay <b>có thông tin mà làm sai cách</b>? OpenAI gọi đây là vấn đề "in-context memory" và "learned memory".'+cite(4)+'</p>'+
+      SPLIT('Bộ A',PK,PB)+SPLIT('Bộ B',TK,TB)+
+      UL(['Bộ A sai chủ yếu vì model không biết chính sách của công ty → hướng RAG.',
+          'Bộ B sai chủ yếu vì nhầm hai nhóm gần nhau → lỗi hành vi. Lỗi thiếu trường JSON đã được structured output xử lý ở bước 2.'+cite(24)+' '+TK+' câu sai vì mã dịch vụ mới model chưa biết → đưa danh mục mã vào prompt.'])},
+    {t:'RAG cho chính sách',h:'<h4 style="margin-top:0">Bước 4. Lỗi kiến thức → RAG</h4>'+
+      UL(['Kho chính sách khoảng 3.000 trang, lớn hơn nhiều so với mức khoảng 500 trang mà Anthropic gợi ý có thể đưa cả vào prompt.'+cite(22)+' Nên dùng RAG.',
+          'Chính sách mới ban hành: cập nhật chỉ mục, có hiệu lực ngay, không phải huấn luyện lại.'+cite(9),
+          'Mỗi câu trả lời kèm trích dẫn điều khoản. Tài liệu được lọc theo phòng ban của người hỏi.'])+
+      RES('Bộ A, có RAG',P2,POL)+
+      '<p class="muted">Đạt mục tiêu 85%. Các câu còn sai: xem đoạn đúng có nằm trong context không, rồi sửa truy xuất. Xem <a href="../rag/">RAG</a>.</p>'},
+    {t:'Cám dỗ cần tránh',h:'<h4 style="margin-top:0">Bước 5. Cám dỗ: "fine-tune cho model thuộc chính sách"</h4>'+
+      '<p>Một thành viên đề xuất fine-tune model trên toàn bộ văn bản chính sách để "khỏi phải truy xuất". Nhóm từ chối, vì:</p>'+
+      UL(['Ovadia và cộng sự thấy RAG luôn tốt hơn fine-tuning không giám sát để nạp kiến thức.'+cite(10),
+          'Gekhman và cộng sự thấy khi model học được các ví dụ kiến thức mới, xu hướng bịa tăng theo.'+cite(12),
+          'Chính sách đổi hằng tháng nên phải huấn luyện lại hằng tháng.'+cite(9),
+          'Mất trích dẫn nguồn và mất lọc theo quyền: ai dùng model cũng chạm được mọi thứ model đã học.'+cite(11,20)])+
+      M('c','Ghi chú','<p>Microsoft cũng viết thẳng: fine-tuning không thay được retrieval cho thông tin hiện tại.'+cite(5)+'</p>')},
+    {t:'Fine-tune việc hẹp',h:'<h4 style="margin-top:0">Bước 6. Lỗi hành vi → fine-tune một model nhỏ cho phân loại</h4>'+
+      UL(['Gom 1.200 ticket đã gán nhãn, nhân viên lâu năm duyệt lại. Tập holdout '+TIC+' ticket giữ nguyên.'+cite(2),
+          'Chạy thử với 50 ví dụ trước. Nếu 50 ví dụ không tạo khác biệt thì xem lại bài toán trước khi thêm dữ liệu.'+cite(2),
+          'Phương pháp: SFT, vì đây là phân loại có một đáp án đúng.'+cite(1,6),
+          'Thiếu nhãn ở nhóm hiếm: dùng model lớn sinh nhãn rồi người duyệt (distillation).'+cite(2,7)])+
+      RES('Bộ B, model lớn + prompt tốt nhất',T1,TIC)+RES('Bộ B, model nhỏ đã fine-tune',T3,TIC)+
+      '<p>Model nhỏ đạt mục tiêu 90%, prompt ngắn hơn, rẻ và nhanh hơn mỗi request.'+cite(1)+' Mục 4 có máy tính hòa vốn cho quyết định này.</p>'},
+    {t:'Kết hợp khi cần',h:'<h4 style="margin-top:0">Bước 7. Kết hợp ở nơi cần cả hai</h4>'+
+      '<p>Ở bộ A, vài câu sai vì model bị một đoạn tài liệu gần giống nhưng sai điều khoản dắt đi. Nếu nhóm lỗi này lớn dần, có thể fine-tune với ví dụ <b>có sẵn tài liệu RAG</b>.'+cite(4)+'</p>'+
+      M('a','RAFT','<p>Huấn luyện model bỏ qua tài liệu nhiễu và trích nguyên văn đoạn đúng, kèm lập luận từng bước. Cách này cải thiện kết quả trên PubMed, HotpotQA và Gorilla.'+cite(14)+'</p>')+
+      M('d','Cẩn thận','<p>Trong một ca sửa lỗi câu tiếng Iceland của OpenAI, thêm RAG vào model đã fine-tune lại làm kết quả giảm (BLEU 87 → 83): model đã học xong việc, tài liệu thêm vào chỉ thành nhiễu.'+cite(4)+' Chỉ kết hợp khi eval cho thấy có lợi.</p>')},
+    {t:'Vận hành',h:'<h4 style="margin-top:0">Bước 8. Vận hành model fine-tune</h4>'+
+      UL(['Chạy bộ test an toàn trước và sau huấn luyện: fine-tuning, kể cả với dữ liệu lành tính, có thể làm yếu lớp an toàn.'+cite(19),
+          'Giữ bộ eval cho việc cũ để phát hiện quên thảm khốc.'+cite(18),
+          'Theo dõi lịch khai tử base model: model fine-tune dừng cùng lúc với base model.'+cite(3),
+          'Adapter không dùng chéo giữa các base model, kể cả khi tên gần giống. Đổi base model là phải huấn luyện lại.'+cite(5),
+          'Khi có base model thế hệ mới, chạy lại eval với prompt tốt nhất trên model mới trước khi huấn luyện lại. Microsoft khuyên đánh giá lại chất lượng khi base model sắp khai tử.'+cite(5),
+          'Lưu giữ dữ liệu huấn luyện và bộ eval: đó là phần dùng lại được khi đổi nhà cung cấp.'])}
+  ];
+  var stepsEl=document.getElementById('steps'), bodyEl=document.getElementById('stepBody'), cur=0;
+  STEPS.forEach(function(s,i){var b=document.createElement('button');b.innerHTML='<span class="n">'+(i+1)+'</span>'+s.t;b.addEventListener('click',function(){show(i)});stepsEl.appendChild(b)});
+  function keepTop(){var t=bodyEl.getBoundingClientRect().top;if(t<70)window.scrollBy(0,t-80)}
+  function show(i){cur=i;bodyEl.innerHTML=STEPS[i].h;
+    [].forEach.call(stepsEl.children,function(b,j){b.classList.toggle('on',j===i);b.setAttribute('aria-current',j===i?'step':'false')});
+    var on=stepsEl.children[i]; if(stepsEl.scrollWidth>stepsEl.clientWidth){stepsEl.scrollLeft=on.offsetLeft-stepsEl.offsetLeft-(stepsEl.clientWidth-on.offsetWidth)/2}
+    document.getElementById('prevStep').disabled=i===0;document.getElementById('nextStep').disabled=i===STEPS.length-1}
+  document.getElementById('prevStep').addEventListener('click',function(){if(cur>0){show(cur-1);keepTop()}});
+  document.getElementById('nextStep').addEventListener('click',function(){if(cur<STEPS.length-1){show(cur+1);keepTop()}});
+  show(0);
+
+  // ---------- Diagnosis quiz ----------
+  var OPTS=['Prompt','RAG','Fine-tuning','Kết hợp'];
+  // [situation, correct option index, explanation]
+  var Q=[
+    ['Trợ lý vẫn trả lời theo chính sách đổi trả cũ. Chính sách mới ban hành tuần trước, kho chính sách khoảng 3.000 trang.',1,'Thiếu kiến thức mới. RAG cập nhật bằng cách cập nhật chỉ mục, không phải huấn luyện lại.'+cite(9)],
+    ['Câu trả lời phải trích dẫn điều khoản, và nhân viên chỉ được xem tài liệu của phòng mình.',1,'RAG chỉ ra được đoạn nguồn; kiến thức trong trọng số thì khó chỉ ra nguồn.'+cite(11)+' RAG cũng lọc được tài liệu theo quyền ngay lúc truy xuất (xem <a href="../governance/">AI governance</a>).'],
+    ['Giọng văn không đúng thương hiệu dù đã viết hướng dẫn dài. Có sẵn 500 câu trả lời mẫu đã được duyệt.',2,'Lỗi hành vi, và đã thử prompt. Fine-tuning hợp để giữ giọng văn ổn định; DPO hợp khi chất lượng phụ thuộc sở thích như giọng văn.'+cite(1,5)],
+    ['Phân loại ticket: model lớn làm đúng nhưng đắt và chậm, lưu lượng 1 triệu ticket mỗi tháng.',2,'Distillation: dùng câu trả lời của model lớn để fine-tune model nhỏ, rẻ và nhanh hơn.'+cite(2,7)+' Kiểm điểm hòa vốn bằng máy tính bên dưới.'],
+    ['Dự án mới: chỉ có 20 câu hỏi mẫu, chưa có bộ eval, chưa thử prompt nào.',0,'Bắt đầu bằng prompt và dựng eval. Fine-tuning cần eval trước và cần dữ liệu; Google gợi ý khoảng từ 100 ví dụ.'+cite(2,6)],
+    ['RAG đã lấy đúng đoạn tài liệu, nhưng model vẫn hay bị một đoạn gần giống mà sai dắt đi. Đã chỉnh prompt và rerank mà chưa hết.',3,'Lỗi hành vi khi dùng context. Fine-tune với ví dụ có tài liệu RAG, như RAFT, dạy model bỏ qua tài liệu nhiễu.'+cite(4,14)],
+    ['Sổ tay sản phẩm 80 trang, ít thay đổi, chỉ vài chục người dùng.',0,'Kho nhỏ có thể đưa cả vào prompt, không cần dựng RAG. Anthropic nêu mốc khoảng 500 trang; ngưỡng thật phụ thuộc context window của model bạn dùng.'+cite(22)],
+    ['Muốn model "nhớ" danh mục 5.000 mã sản phẩm, giá đổi hằng tuần.',1,'Kiến thức mới và hay đổi. Fine-tuning khó nạp kiến thức mới và có thể làm model bịa nhiều hơn.'+cite(10,12)+' Dữ liệu có cấu trúc như giá còn có thể tra trực tiếp qua tool.']
+  ];
+  var quizEl=document.getElementById('quiz'), scoreEl=document.getElementById('qScore'), answered={}, right=0;
+  function renderScore(){var n=Object.keys(answered).length;scoreEl.textContent=n?('Đã làm '+n+'/'+Q.length+' · đúng '+right):'Chưa làm câu nào.'}
+  Q.forEach(function(q,i){
+    var d=document.createElement('div');d.className='card qcase';
+    d.innerHTML='<h4>Tình huống '+(i+1)+'</h4><p>'+esc(q[0])+'</p><div class="qopts" role="group" aria-label="Chọn cách thử trước, tình huống '+(i+1)+'">'+OPTS.map(function(o,j){return '<button type="button" data-q="'+i+'" data-o="'+j+'">'+o+'</button>'}).join('')+'</div><div class="qfb" hidden></div>';
+    quizEl.appendChild(d);
+  });
+  quizEl.addEventListener('click',function(e){
+    var b=e.target.closest('button[data-q]');if(!b)return;
+    var i=+b.dataset.q, o=+b.dataset.o, q=Q[i], card=b.closest('.qcase');
+    if(i in answered)return; // first choice counts and stays shown
+    answered[i]=o;if(o===q[1])right++;
+    [].forEach.call(card.querySelectorAll('button'),function(x){var j=+x.dataset.o;x.classList.toggle('right',j===q[1]);x.classList.toggle('wrong',j===o&&o!==q[1]);x.setAttribute('aria-pressed',j===o)});
+    var fb=card.querySelector('.qfb');fb.hidden=false;
+    fb.innerHTML=(o===q[1]?'<span class="ok-t">Đúng.</span> ':'<span class="bad-t">Chưa đúng.</span> Đáp án: <b>'+OPTS[q[1]]+'</b>. ')+q[2];
+    renderScore();
+  });
+  renderScore();
+
+  // ---------- Break-even calculator (illustrative prices) ----------
+  var PA_IN=2, PA_OUT=8; // illustrative USD per million tokens for the large model
+  var ids=['Req','Out','InA','InB','Ratio','Host','Train','Retrain'];
+  var inp={};ids.forEach(function(k){inp[k]=document.getElementById('c'+k);inp[k].addEventListener('input',renderBE)});
+  function v(k){return +inp[k].value}
+  function bar(label,parts,total,base){
+    var w=base>0?total/base*100:0;
+    var segs=parts.map(function(p){return total>0&&p[0]>0?'<i class="'+p[1]+'" style="width:'+(p[0]/total*100)+'%"></i>':''}).join('');
+    return '<div class="sbar-row"><div class="lbl"><span>'+label+'</span><b>'+usd(total)+' / tháng</b></div><div class="sbar-wrap"><div class="sbar" style="width:'+Math.max(w,0.5)+'%">'+segs+'</div></div></div>';
+  }
+  function renderBE(){
+    var req=v('Req'), out=v('Out'), inA=v('InA'), inB=v('InB'), r=v('Ratio')/100, host=v('Host'), train=v('Train'), every=v('Retrain');
+    document.getElementById('oReq').textContent=int(req);
+    document.getElementById('oOut').textContent=int(out);
+    document.getElementById('oInA').textContent=int(inA);
+    document.getElementById('oInB').textContent=int(inB);
+    document.getElementById('oRatio').textContent=num(r*100,0)+'%';
+    document.getElementById('oHost').textContent=usd(host);
+    document.getElementById('oTrain').textContent=usd(train);
+    document.getElementById('oRetrain').textContent=every+' tháng';
+    var perA=(inA*PA_IN+out*PA_OUT)/1e6;
+    var perB=(inB*PA_IN*r+out*PA_OUT*r)/1e6;
+    var trainM=train/every, fixed=host+trainM;
+    var tokA=req*perA, tokB=req*perB, mA=tokA, mB=tokB+fixed;
+    var base=Math.max(mA,mB);
+    var diff=perA-perB, be=diff>0?fixed/diff:Infinity;
+    var cheaper=mB<mA;
+    document.getElementById('beKpi').innerHTML=
+      '<div class="card"><span class="muted">A: model lớn, prompt dài</span><b>'+usd(mA)+'</b><span class="muted">'+num(perA*1000,2)+' USD mỗi 1.000 request</span></div>'+
+      '<div class="card"><span class="muted">B: model nhỏ đã fine-tune</span><b>'+usd(mB)+'</b><span class="muted">'+num(perB*1000,2)+' USD mỗi 1.000 request + '+usd(fixed)+' cố định</span></div>'+
+      '<div class="card"><span class="muted">Hòa vốn khi đạt</span><b class="'+(cheaper?'ok-t':'warn-t')+'">'+(isFinite(be)?int(be)+' request/tháng':'không bao giờ')+'</b><span class="muted">'+(isFinite(be)?(cheaper?'B đang rẻ hơn '+usd(mA-mB)+' mỗi tháng':'B đang đắt hơn '+usd(mB-mA)+' mỗi tháng'):'mỗi request của B không rẻ hơn A')+'</span></div>';
+    document.getElementById('beBars').innerHTML=
+      bar('A: model lớn, prompt dài',[[tokA,'seg-a']],mA,base)+
+      bar('B: model nhỏ đã fine-tune',[[tokB,'seg-fix'],[host,'seg-host'],[trainM,'seg-ft']],mB,base);
+    var notes=[];
+    notes.push('Mỗi request, B tốn '+num(perA>0?perB/perA*100:0,0)+'% so với A. Phần cố định của B là '+usd(host)+' phí host + '+usd(trainM)+' huấn luyện mỗi tháng ('+usd(train)+' chia cho '+every+' tháng).');
+    if(!isFinite(be))notes.push('<span class="warn-t">Với các số này, fine-tune không bao giờ rẻ hơn. Nếu vẫn muốn fine-tune, lý do phải là chất lượng hoặc độ trễ, không phải chi phí.</span>');
+    else if(!cheaper)notes.push('Cần thêm khoảng '+int(be-req)+' request mỗi tháng nữa thì B mới rẻ hơn A.');
+    else if(be===0)notes.push('Không có chi phí cố định, nên B rẻ hơn ngay từ request đầu tiên.');
+    else if(req/be<1.1)notes.push('Lưu lượng hiện tại vừa qua điểm hòa vốn, chỉ cao hơn '+num((req/be-1)*100,0)+'%.');
+    else notes.push('Lưu lượng hiện tại cao hơn điểm hòa vốn '+num(req/be,1)+' lần.');
+    document.getElementById('beNote').innerHTML=notes.join(' ');
+  }
+  renderBE();
+
+  // ---------- Glossary ----------
+  var G={way:'Cách tiếp cận',ft:'Phương pháp fine-tuning',data:'Dữ liệu & huấn luyện',risk:'Rủi ro',rag:'RAG & kết hợp'};
+  // [id, group, name, english, definition, example, related ids, source numbers]
+  var T=[
+    ['prompt','way','Prompt engineering','','Viết chỉ dẫn, ví dụ và định dạng trong prompt để model làm đúng việc. Không đổi model.','Google và OpenAI đều khuyên thử prompt trước khi fine-tune.',['fewshot','longctx','ft'],[1,6]],
+    ['fewshot','way','Few-shot','','Đưa vài ví dụ đầu vào và đầu ra mẫu vào prompt để model bắt chước.','Fine-tuning cho phép dạy nhiều ví dụ hơn mức prompt chứa được, và bỏ được ví dụ khỏi prompt.',['prompt','sft'],[1,6]],
+    ['longctx','way','Đưa cả tài liệu vào prompt','long context','Khi kho tài liệu đủ nhỏ, đưa toàn bộ vào prompt thay vì dựng RAG.','Anthropic (2024): kho dưới khoảng 200.000 token, tức khoảng 500 trang.',['rag','prompt'],[22]],
+    ['rag','way','RAG','retrieval-augmented generation','Tìm đoạn tài liệu liên quan rồi đưa vào prompt lúc hỏi. Model không đổi; kiến thức nằm ở chỉ mục bên ngoài.','Chính sách mới: cập nhật chỉ mục là xong.',['nonparam','retrieval','combo'],[9,11]],
+    ['ft','way','Fine-tuning','','Huấn luyện thêm một model đã có trên dữ liệu của bạn, làm thay đổi trọng số thay vì thêm ví dụ vào prompt.','Dạy model phân loại ticket vào đúng 12 nhóm.',['sft','dpo','rft','param'],[5]],
+    ['param','way','Bộ nhớ tham số','parametric memory','Kiến thức nằm trong trọng số model, có từ lúc huấn luyện. Khó cập nhật, khó chỉ ra nguồn.','',['nonparam','ft'],[11]],
+    ['nonparam','way','Bộ nhớ ngoài tham số','non-parametric memory','Kiến thức nằm ngoài model, ví dụ một chỉ mục vector tài liệu, được truy xuất khi cần.','Bài báo RAG gốc dùng chỉ mục vector của Wikipedia.',['param','rag'],[11]],
+    ['twoaxes','way','Lỗi kiến thức và lỗi hành vi','in-context vs learned memory','Cách chia lỗi của OpenAI: thiếu thông tin trong context (sửa bằng RAG) hay chưa học được cách làm (sửa bằng fine-tuning).','Mang sách vào phòng thi, so với đi học sáu tháng.',['rag','ft'],[4]],
+    ['sft','ft','SFT','supervised fine-tuning','Fine-tuning có giám sát: học từ cặp prompt và câu trả lời mong muốn.','Phân loại, trích xuất thực thể, định dạng cố định.',['dpo','jsonl'],[1,5,6]],
+    ['dpo','ft','DPO','direct preference optimization','Học từ cặp câu trả lời được ưa và bị chê. Dùng hàm mất mát phân loại đơn giản, không cần lấy mẫu từ model khi huấn luyện.','Dạy giọng văn, độ đầy đủ của câu trả lời.',['sft','pref'],[5,21]],
+    ['pref','ft','Preference tuning','','Tên chung cho cách huấn luyện theo sở thích con người giữa các câu trả lời. Tài liệu tuning Gemini của Google dùng tên này.','',['dpo'],[6]],
+    ['rft','ft','RFT','reinforcement fine-tuning','Model tự sinh câu trả lời, một grader chấm điểm, model học để được điểm cao hơn.','Sinh code hoặc SQL, nơi chấm đúng sai tự động được.',['grader','rewardhack'],[5,6,7]],
+    ['grader','ft','Grader, hàm thưởng','grader / reward function','Bộ chấm điểm câu trả lời trong RFT. Trên Bedrock có thể viết bằng AWS Lambda.','',['rft','rewardhack'],[5,7]],
+    ['distill','ft','Distillation','','Dùng câu trả lời của model lớn (teacher) làm dữ liệu huấn luyện model nhỏ (student).','Muốn chất lượng gần model lớn với chi phí của model nhỏ.',['sft'],[2,7]],
+    ['cpt','ft','Huấn luyện tiếp trên văn bản','continued pretraining','Huấn luyện tiếp trên văn bản thô của một miền, không có cặp hỏi–đáp.','Để nạp kiến thức, cách này kém RAG trong nghiên cứu của Ovadia và cộng sự.',['newknow','rag'],[10,17]],
+    ['full','ft','Full fine-tuning','','Cập nhật mọi tham số của model.','Học nhiều nhất, nhưng quên năng lực ngoài miền nhiều hơn LoRA.',['lora','forget'],[6,17]],
+    ['peft','ft','PEFT','parameter-efficient fine-tuning','Họ phương pháp chỉ huấn luyện một phần nhỏ tham số, giảm mạnh chi phí tính toán và lưu trữ.','',['lora','qlora','adapter'],[23]],
+    ['lora','ft','LoRA','low-rank adaptation','Đóng băng trọng số gốc, chỉ học thêm các ma trận hạng thấp nhỏ. Không thêm độ trễ khi chạy.','Với GPT-3 175B: tham số cần huấn luyện giảm 10.000 lần, bộ nhớ GPU giảm 3 lần.',['qlora','peft','full'],[15]],
+    ['qlora','ft','QLoRA','','LoRA trên model gốc đã lượng tử hóa 4-bit, để tiết kiệm bộ nhớ.','Fine-tune model 65B trên một GPU 48GB.',['lora'],[16]],
+    ['adapter','ft','Adapter','','Phần trọng số nhỏ học thêm, gắn vào base model. Chỉ dùng được với đúng base model đã dùng để huấn luyện.','',['lora','basemodel'],[5,6]],
+    ['jsonl','data','Dữ liệu huấn luyện dạng chat','JSONL','Mỗi dòng là một ví dụ hội thoại hoàn chỉnh. OpenAI yêu cầu tối thiểu 10 dòng.','',['sft','holdout'],[2]],
+    ['holdout','data','Tập holdout','','Phần dữ liệu để riêng, không dùng huấn luyện, làm nhóm đối chứng khi chạy eval.','Phải đa dạng giống tập huấn luyện.',['overfit','leak'],[2]],
+    ['epoch','data','Epoch','','Một lượt model đi qua toàn bộ dữ liệu huấn luyện. Phí huấn luyện trên Bedrock tính theo số token × số epoch.','',['checkpoint'],[7]],
+    ['checkpoint','data','Checkpoint','','Bản lưu model giữa chừng huấn luyện. Dùng để so và chọn bản tốt nhất, phát hiện overfitting.','OpenAI chỉ giữ checkpoint của ba epoch cuối.',['epoch','overfit'],[2]],
+    ['quality','data','Chất lượng hơn số lượng','','Dữ liệu chính xác, nhất quán, đại diện cho việc thật quan trọng hơn nhiều dữ liệu.','OpenAI: nên bắt đầu với 50 ví dụ tốt; Google: khoảng từ 100.',['jsonl','holdout'],[2,5,6]],
+    ['overfit','risk','Overfitting','','Model học thuộc dữ liệu huấn luyện, điểm trên đó cao nhưng kém trên dữ liệu mới.','Chỉ nhìn training loss sẽ không thấy.',['holdout','leak'],[5]],
+    ['leak','risk','Rò rỉ eval','evaluation leakage','Câu test lọt vào dữ liệu huấn luyện, làm điểm eval đẹp giả.','',['holdout','overfit'],[5]],
+    ['forget','risk','Quên thảm khốc','catastrophic forgetting','Sau khi fine-tune, model kém đi ở các việc nó từng làm tốt.','Thấy ở model 1B–7B khi fine-tune nối tiếp qua nhiều tác vụ.',['lora','full'],[17,18]],
+    ['newknow','risk','Bịa do học kiến thức mới','','Fine-tune trên kiến thức model chưa biết làm model học chậm và dễ bịa hơn khi học được.','',['rag','cpt'],[12]],
+    ['safety','risk','Suy giảm an toàn','','Fine-tuning có thể làm yếu khả năng từ chối yêu cầu nguy hiểm, kể cả với dữ liệu lành tính (ở mức nhẹ hơn).','10 ví dụ độc hại, dưới 0,20 USD, đủ phá guardrail của GPT-3.5 Turbo.',['ft'],[19]],
+    ['extract','risk','Trích xuất dữ liệu huấn luyện','training data extraction','Kẻ tấn công hỏi model để lấy lại nguyên văn dữ liệu huấn luyện, kể cả thông tin cá nhân.','',['ft','rag'],[20]],
+    ['rewardhack','risk','Lách grader','reward hacking','Trong RFT, điểm thưởng tăng vì model khai thác kẽ hở của grader, không phải vì làm tốt hơn.','Thử grader với câu đúng, câu sai và câu cố tình lách.',['rft','grader'],[5]],
+    ['basemodel','risk','Khai tử base model','deprecation','Model fine-tune dừng theo cùng lịch với base model của nó.','OpenAI tắt bản fine-tune của o4-mini ngày 2026-10-23.',['adapter'],[3]],
+    ['retrieval','rag','Truy xuất','retrieval','Bước tìm đoạn tài liệu liên quan cho câu hỏi. Khi RAG trả lời sai, nhiều khi lỗi nằm ở bước này chứ không ở model.','',['rag','distractor'],[11]],
+    ['distractor','rag','Tài liệu nhiễu','distractor documents','Đoạn tài liệu được lấy về nhưng không giúp trả lời, có thể dắt model sai.','',['raft','retrieval'],[14]],
+    ['raft','rag','RAFT','retrieval augmented fine-tuning','Fine-tune để model dùng tốt tài liệu RAG: bỏ qua tài liệu nhiễu, trích nguyên văn đoạn đúng, lập luận từng bước.','',['distractor','combo'],[14]],
+    ['embft','rag','Fine-tune embedding model','','Tinh chỉnh model embedding của bước truy xuất bằng cặp câu hỏi và đoạn đúng trong miền của bạn, để tìm đúng đoạn hơn.','Mỗi việc cần một khái niệm "giống nhau" khác nhau: phân loại theo chủ đề khác tìm kiếm câu hỏi–tài liệu.',['retrieval','rag'],[25]],
+    ['combo','rag','Kết hợp RAG và fine-tuning','','Dùng cả hai, hiệu quả có thể cộng dồn. Nên fine-tune với ví dụ có tài liệu RAG.','Nông nghiệp: fine-tune +6 điểm %, RAG thêm +5 điểm %.',['raft','rag','ft'],[4,13]]
+  ];
+  var byId={};T.forEach(function(t){byId[t[0]]=t});
+  var grid=document.getElementById('glossGrid'), chips=document.getElementById('glossChips'), search=document.getElementById('glossSearch'), activeG='all';
+  function fold(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d')}
+  function renderGloss(){
+    var q=fold(search.value.trim()); grid.innerHTML='';var n=0;
+    T.forEach(function(t){
+      if(activeG!=='all'&&t[1]!==activeG)return;
+      var hay=fold(t[2]+' '+t[3]+' '+t[4]+' '+t[5]+' '+G[t[1]]); if(q&&hay.indexOf(q)<0)return; n++;
+      var d=document.createElement('div');d.className='card term';d.id='term-'+t[0];
+      var rel=t[6].filter(function(r){return byId[r]}).map(function(r){return '<a href="#term-'+r+'" data-goto="'+r+'">'+esc(byId[r][2])+'</a>'}).join(', ');
+      var cs=(t[7]||[]).filter(function(n){return document.getElementById('src-'+n)}).map(function(n){return '<a href="#src-'+n+'">['+n+']</a>'}).join('');if(cs)cs='<sup class="cite">'+cs+'</sup>';
+      d.innerHTML='<span class="tag">'+G[t[1]]+'</span><h4>'+esc(t[2])+(t[3]?' <span class="en">· '+esc(t[3])+'</span>':'')+'</h4><p>'+esc(t[4])+(t[5]?'':cs)+'</p>'+(t[5]?'<p class="ex">Ví dụ: '+esc(t[5])+cs+'</p>':'')+(rel?'<div class="rel">Liên quan: '+rel+'</div>':'');
+      grid.appendChild(d);
+    });
+    if(!n)grid.innerHTML='<p class="muted">Không có khái niệm khớp.</p>';
+  }
+  var all=document.createElement('button');all.className='chip';all.textContent='Tất cả ('+T.length+')';all.dataset.g='all';chips.appendChild(all);
+  Object.keys(G).forEach(function(k){var b=document.createElement('button');b.className='chip';b.dataset.g=k;b.textContent=G[k];chips.appendChild(b)});
+  function setChip(g){activeG=g;[].forEach.call(chips.children,function(c){var on=c.dataset.g===g;c.classList.toggle('on',on);c.setAttribute('aria-pressed',on)})}
+  setChip('all');
+  chips.addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;setChip(b.dataset.g);renderGloss()});
+  search.addEventListener('input',renderGloss);
+  grid.addEventListener('click',function(e){var a=e.target.closest('a[data-goto]');if(!a)return;e.preventDefault();
+    if(!document.getElementById('term-'+a.dataset.goto)){setChip('all');search.value='';renderGloss()}
+    var t=document.getElementById('term-'+a.dataset.goto);t.scrollIntoView({behavior:'smooth',block:'center'});t.style.outline='2px solid var(--accent)';setTimeout(function(){t.style.outline=''},1500)});
+  renderGloss();
+  labelTables(document);
+
+  // ---------- Checklist persistence (topic-specific prefix) ----------
+  [].forEach.call(document.querySelectorAll('input[data-k]'),function(cb){
+    cb.checked=safeGet('ftr-'+cb.dataset.k)==='1';
+    cb.addEventListener('change',function(){safeSet('ftr-'+cb.dataset.k,cb.checked?'1':'0')});
+  });
+
+  // ---------- Active TOC ----------
+  var links=[].slice.call(document.querySelectorAll('#toc a'));
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(l){var on=l.getAttribute('href')==='#'+e.target.id;l.classList.toggle('active',on);if(on){var nav=l.parentNode;nav.scrollLeft=l.offsetLeft-nav.offsetLeft-(nav.clientWidth-l.offsetWidth)/2}})}})},{rootMargin:'-40% 0px -55% 0px'});
+    document.querySelectorAll('main section').forEach(function(s){io.observe(s)});
+  }
+})();
+</script>
+</body>
+</html>

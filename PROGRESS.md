@@ -39,7 +39,7 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 
 ## Trạng thái các chủ đề
 
-### Đã publish (20)
+### Đã publish (21)
 
 | Slug | Nguồn | Ghi chú |
 |---|---|---|
@@ -63,6 +63,7 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 | `prompt-injection-guardrails` | 34 | Publish 2026-11-17. Chỉ mô tả tấn công ở mức ý tưởng, không có payload. Review: `_work/notes/kongming-261117-prompt-injection-guardrails-review.md` |
 | `llm-observability` | 34 | Publish 2026-11-17. Review: `_work/notes/kongming-261117-llm-observability-review.md` |
 | `llm-cost-optimization` | 25 | Publish 2026-11-17. Giá lấy từ trang giá chính thức ngày 2026-11-17; giá đổi thì cập nhật. Review: `_work/notes/kongming-261117-llm-cost-optimization-review.md` |
+| `fine-tuning-vs-rag` | 25 | Publish 2026-11-17. Tình trạng fine-tuning của nhà cung cấp lấy từ trang chính thức ngày 2026-11-17 (OpenAI đang thu hẹp). Review: `_work/notes/kongming-261117-fine-tuning-vs-rag-review.md` |
 
 ### Bản nháp trong repo, chưa publish (nằm trong `exclude`)
 
