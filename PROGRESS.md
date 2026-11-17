@@ -86,7 +86,7 @@ Mỗi đợt 2 chủ đề chạy song song, mỗi chủ đề một phiên theo
 | 2 | `tool-calling-structured-output`, `model-context-protocol` | 8783, 8787 | Xong (2026-11-17) |
 | 3 | `agent-memory`, `prompt-injection-guardrails` | 8788, 8791 | Xong (2026-11-17) |
 | 4 | `llm-observability`, `llm-cost-optimization` | 8792, 8793 | Xong (2026-11-17) |
-| 5 | `graphrag`, `fine-tuning-vs-rag` (chưa có ghi chú nguồn) | 8790, 8794 | Chờ |
+| 5 | `graphrag`, `fine-tuning-vs-rag` (chưa có ghi chú nguồn) | 8790, 8794 | Đang làm (bắt đầu 2026-11-17 15:11) |
 
 Bảng port (8781–8794) và phạm vi nội dung của từng chủ đề nằm trong `_work/topic-session-brief.md`, cùng mục "Bảng chủ đề đợt 2".
 
