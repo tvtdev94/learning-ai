@@ -83,7 +83,7 @@ Mỗi đợt 2 chủ đề chạy song song, mỗi chủ đề một phiên theo
 | 1 | `llm-fundamentals` (đã có bản nháp), `prompt-engineering` | 8781, 8782 | Xong (2026-11-17) |
 | 2 | `tool-calling-structured-output`, `model-context-protocol` | 8783, 8787 | Xong (2026-11-17) |
 | 3 | `agent-memory`, `prompt-injection-guardrails` | 8788, 8791 | Xong (2026-11-17) |
-| 4 | `llm-observability`, `llm-cost-optimization` | 8792, 8793 | Chờ |
+| 4 | `llm-observability`, `llm-cost-optimization` | 8792, 8793 | Đang làm (bắt đầu 2026-11-17 13:40) |
 | 5 | `graphrag`, `fine-tuning-vs-rag` (chưa có ghi chú nguồn) | 8790, 8794 | Chờ |
 
 Bảng port (8781–8794) và phạm vi nội dung của từng chủ đề nằm trong `_work/topic-session-brief.md`, cùng mục "Bảng chủ đề đợt 2".
