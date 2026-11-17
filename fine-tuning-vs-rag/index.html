@@ -213,6 +213,10 @@ ol.sources .acc{color:var(--muted);font-size:14px}
 .seg-know{background:var(--p1)} .seg-beh{background:var(--p4)} .seg-fix{background:var(--p3)} .seg-ft{background:var(--p4)} .seg-host{background:var(--p2)} .seg-a{background:var(--p1)}
 /* Touch-sized controls up to tablet / landscape-phone widths */
 @media (max-width:1080px){.home,.theme-btn,nav.toc a,.chip,.step-nav button,.steps button,.qopts button{min-height:40px}.home,.theme-btn,nav.toc a{display:inline-flex;align-items:center}}
+/* cite-tap */
+/* Same tap area for citation links on every page: at least 40px high and 24px wide.
+   Negative vertical margins keep line spacing unchanged. */
+sup.cite a{display:inline-block;box-sizing:border-box;min-width:24px;line-height:1;padding:15px 3px;margin-top:-15px;margin-bottom:-15px;text-align:center}
 </style>
 </head>
 <body>

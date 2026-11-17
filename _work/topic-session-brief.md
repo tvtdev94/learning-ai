@@ -19,6 +19,7 @@ Tạo MỘT trang HTML học một chủ đề AI cho site https://tvtdev94.gith
 - Các lớp `.card .grid .callout .tag .table-wrap table.stack .vflow .m-only .d-only .svgbox`.
 - Quy tắc mobile `@media (max-width:600px)` và hàm `labelTables`.
 - Bọc mọi truy cập localStorage trong try/catch.
+- Chép nguyên khối CSS `/* cite-tap */` ở cuối `<style>` của `rag/index.html`: số trích dẫn `[N]` có vùng bấm cao ≥ 40px, rộng ≥ 24px.
 
 Một file tự chứa, không dùng CDN hay thư viện ngoài.
 
