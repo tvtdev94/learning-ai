@@ -39,7 +39,7 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 
 ## Trạng thái các chủ đề
 
-### Đã publish (21)
+### Đã publish (22)
 
 | Slug | Nguồn | Ghi chú |
 |---|---|---|
@@ -64,6 +64,7 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 | `llm-observability` | 34 | Publish 2026-11-17. Review: `_work/notes/kongming-261117-llm-observability-review.md` |
 | `llm-cost-optimization` | 25 | Publish 2026-11-17. Giá lấy từ trang giá chính thức ngày 2026-11-17; giá đổi thì cập nhật. Review: `_work/notes/kongming-261117-llm-cost-optimization-review.md` |
 | `fine-tuning-vs-rag` | 25 | Publish 2026-11-17. Tình trạng fine-tuning của nhà cung cấp lấy từ trang chính thức ngày 2026-11-17 (OpenAI đang thu hẹp). Review: `_work/notes/kongming-261117-fine-tuning-vs-rag-review.md` |
+| `graphrag` | 25 | Publish 2026-11-17. README Microsoft GraphRAG ghi dự án "largely in maintenance mode"; trang đã cảnh báo. Review: `_work/notes/kongming-261117-graphrag-review.md` |
 
 ### Bản nháp trong repo, chưa publish (nằm trong `exclude`)
 
@@ -87,7 +88,7 @@ Mỗi đợt 2 chủ đề chạy song song, mỗi chủ đề một phiên theo
 | 2 | `tool-calling-structured-output`, `model-context-protocol` | 8783, 8787 | Xong (2026-11-17) |
 | 3 | `agent-memory`, `prompt-injection-guardrails` | 8788, 8791 | Xong (2026-11-17) |
 | 4 | `llm-observability`, `llm-cost-optimization` | 8792, 8793 | Xong (2026-11-17) |
-| 5 | `graphrag`, `fine-tuning-vs-rag` (chưa có ghi chú nguồn) | 8790, 8794 | Đang làm (bắt đầu 2026-11-17 15:11) |
+| 5 | `graphrag`, `fine-tuning-vs-rag` (chưa có ghi chú nguồn) | 8790, 8794 | Xong (2026-11-17) |
 
 Bảng port (8781–8794) và phạm vi nội dung của từng chủ đề nằm trong `_work/topic-session-brief.md`, cùng mục "Bảng chủ đề đợt 2".
 

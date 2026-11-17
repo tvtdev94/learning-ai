@@ -98,3 +98,47 @@ Ngày truy cập tất cả: 2026-11-14. Mỗi dòng: khẳng định → URL �
 
 ## [21] Neo4j. Vector indexes (Cypher manual)
 - Embedding lưu thành thuộc tính của nút/quan hệ; có thể kết hợp MATCH với tìm vector trong một truy vấn; vector search có thể ghép hybrid → https://neo4j.com/docs/cypher-manual/current/indexes/semantic-indexes/vector-indexes/ → "Vector embeddings are stored as … properties on a node or relationship"
+
+---
+
+## Kiểm lại ngày 2026-11-17 (mở lại mọi URL bằng WebFetch)
+
+Số [N] dưới đây là số dùng trong trang `graphrag/index.html` (đánh lại so với phần trên). Mọi dòng mở ngày 2026-11-17.
+
+- [1] Edge và cộng sự → https://arxiv.org/html/2404.16130v2 → khớp các trích dẫn cũ. Bổ sung:
+  - Bốn tiêu chí: "Comprehensiveness … Diversity … Empowerment … Directness"; directness là "control criterion".
+  - Đánh giá head-to-head bằng LLM judge: "head-to-head comparison approach using an LLM evaluator"; lặp 5 lần.
+  - Adaptive benchmarking: persona → task → câu hỏi, K=N=M=5 → 125 câu/dataset.
+  - Sáu điều kiện: C0–C3, TS (map-reduce trên văn bản gốc), SS (vector RAG).
+  - C3 cần ít hơn 26–33% token; C0 "over 97% fewer tokens" so với TS.
+  - Model index: "gpt-4-turbo (2M TPM, 10k RPM)"; podcast 281 phút.
+  - Tóm tắt cộng đồng lá: xếp cạnh theo "combined source and target node degree"; cấp cao thay bằng tóm tắt cộng đồng con khi không vừa.
+  - Leiden qua thư viện graspologic, đệ quy tới cộng đồng lá.
+  - Gleaning dùng "logit bias of 100" để ép yes/no; cho phép chunk lớn hơn mà không giảm chất lượng.
+  - Claims: "important factual statements about entities, such as dates, events, and interactions".
+- [2] Docs trang chủ → https://microsoft.github.io/graphrag/ → khớp: định nghĩa, "struggles to connect the dots", 4 chế độ, pipeline 4 bước, "We strongly recommend to fine-tune your prompts".
+- [3] Default dataflow → khớp: 1200 token; gộp entity cùng title + type, gộp relationship cùng source + target; claim tắt mặc định vì "generally requires prompt tuning"; 6 pha: Compose TextUnits, Document Processing, Graph Extraction, Graph Augmentation, Community Summarization, Text Embedding.
+- [4] Indexing methods → khớp: Fast dùng noun phrase NLTK/spaCy, quan hệ = đồng xuất hiện, "primarily suitable for English", ~75% chi phí, "quite a bit noisier"; gợi ý chunk nhỏ 50–100 token cho Fast.
+- [5] Global search → khớp: map chia report thành chunk, mỗi điểm có "numerical rating"; reduce gom "most important points"; cấp thấp chi tiết hơn nhưng tốn hơn.
+- [6] Local search → khớp: entity "access points", lấy entity kề, relationship, covariate, community report, text chunk; "prioritized and filtered to fit within a single context window".
+- [7] DRIFT → khớp: "Dynamic Reasoning and Inference with Flexible Traversal"; Primer (top K community report → trả lời rộng + câu hỏi phụ), Follow-Up (local search), Output Hierarchy. Không có số liệu.
+- [8] Get started → khớp: "GraphRAG can consume a lot of LLM resources!"; "consider experimenting with fast/inexpensive models first".
+- [9] Outputs → khớp: type mặc định organization/person/geo/event; relationship weight, combined_degree; community level/parent/children; report summary/rank/findings (5–10 ý); covariates status TRUE/FALSE/SUSPECTED.
+- [10] Auto prompt tuning → khớp: domain suy ra từ dữ liệu; ngôn ngữ tự phát hiện; "highly encouraged"; cờ --discover-entity-types.
+- [11] CLI → khớp: update "Update an existing knowledge graph index."; --method local|global|drift|basic, mặc định global.
+- [12] LazyGraphRAG blog (25/11/2024, Edge, Trinh, Larson) → khớp. SỬA: bộ đánh giá là "100 synthetic queries (50 local and 50 global)" (không phải "100 câu hỏi tổng hợp"). Index: "NLP noun phrase extraction … concepts and their co-occurrences".
+- [13] Leiden → khớp: Louvain "up to 25% … badly connected and up to 16% … disconnected"; Leiden "guaranteed to be connected"; nhanh hơn.
+- [14] HotpotQA → khớp: "finding and reasoning over multiple supporting documents"; 113k cặp hỏi đáp.
+- [15] Han và cộng sự → https://arxiv.org/html/2502.11371 → khớp; venue nay là KDD '26. 65,8% (HotPotQA), 65,5% (NQ). 13,6%/11,6% trên MultiHop-RAG với Llama 3.1-8B. Selection phân loại fact-based/reasoning-based. Community-GraphRAG (Global) "often struggles on QA": F1 NQ 54,48 vs RAG 64,78. Bảng 4: xây index RAG 135 s, KG-GraphRAG 7702 s, Community-GraphRAG 5560 s.
+- [16] LightRAG → khớp (arXiv, chưa ghi venue).
+- [17] HippoRAG → khớp: KG + Personalized PageRank; "up to 20%"; "10-30 times cheaper and 6-13 times faster" so với IRCoT; NeurIPS 2024.
+- [18] Peng survey → https://arxiv.org/html/2408.08921 → khớp 3 giai đoạn. Bổ sung: độ chi tiết truy xuất "nodes, triplets, paths, and subgraphs"; nguồn graph "Open Knowledge Graphs and Self-Constructed Graph Data"; số subgraph ứng viên "grows exponentially" theo kích thước graph.
+- [19] RDF 1.1 Primer (W3C Note 2014) → khớp.
+- [20] Neo4j concepts → khớp: nút là entity, quan hệ có hướng và đúng một type, property key-value, label nhóm nút.
+- [21] Neo4j vector indexes → khớp: embedding lưu thành property; ví dụ MATCH + SEARCH trong một câu; ghép hybrid với full-text.
+- [22] MỚI. Xiang và cộng sự. When to use Graphs in RAG (GraphRAG-Bench), arXiv 2506.05690 → https://arxiv.org/abs/2506.05690 → "GraphRAG frequently underperforms vanilla RAG on many real-world tasks"; 4 loại nhiệm vụ "fact retrieval, complex reasoning, contextual summarization, and creative generation". Bản HTML https://arxiv.org/html/2506.05690v3 → "basic RAG is comparable to or outperforms GraphRAG in simple fact retrieval tasks"; "GraphRAG models show a clear advantage in complex reasoning, Contextual Summarize, and creative generation"; "GraphRAG significantly increases prompt length"; "MS-GraphRAG(global)'s prompt size expands from 7,800 to 40,000 tokens".
+- [23] MỚI. microsoft/graphrag README → https://github.com/microsoft/graphrag → "MIT license"; "GraphRAG indexing can be an expensive operation … start small"; "not an officially supported Microsoft offering"; "This project is largely in maintenance mode, and won't be accepting new PRs or implementing new features."
+- [24] MỚI. RAI_TRANSPARENCY.md → https://github.com/microsoft/graphrag/blob/main/RAI_TRANSPARENCY.md → "depends on well-constructed indexing prompts"; "Indexing is a relatively expensive operation"; tạo bộ test nhỏ; hợp nhất với văn bản "rich in identifiable entities"; đánh giá gồm "resilience to prompt and data corpus injection attacks", "low hallucination rates"; "a domain expert should analyze its answers".
+- [25] MỚI. Neo4j GraphRAG Python user guide → https://neo4j.com/docs/neo4j-graphrag-python/current/user_guide_rag.html → VectorCypherRetriever: "retrieval query … executed after the index search", "fetch more context around the matched node"; Text2Cypher: "The LLM-generated query is not guaranteed to be syntactically correct."
+- Bỏ: arXiv 2501.09136 (Agentic RAG survey) — phần tóm tắt không nói về GraphRAG.
+- Ghi chú (không dùng làm nguồn trong trang): issue #2540 của microsoft/graphrag nói update gộp entity theo title; chỉ là issue, không trích.
