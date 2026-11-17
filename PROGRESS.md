@@ -72,11 +72,7 @@ Không còn bản nháp nào.
 
 ### Mới có ghi chú nguồn, chưa có trang
 
-`prompt-engineering`, `tool-calling-structured-output`, `model-context-protocol`, `agent-memory`, `prompt-injection-guardrails`, `llm-observability`, `llm-cost-optimization`, `graphrag`. Ghi chú nguồn nằm trong `_work/notes/research-261114-2040-<slug>-sources.md`. Nên mở lại các URL để kiểm chứng trước khi dùng.
-
-### Chưa bắt đầu
-
-`fine-tuning-vs-rag`.
+Không còn. Cả 22 chủ đề trong kế hoạch đã publish (2026-11-17).
 
 ### Chia đợt cho các chủ đề còn lại (cập nhật 2026-11-17)
 
