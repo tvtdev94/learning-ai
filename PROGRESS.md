@@ -92,7 +92,7 @@ Bảng port (8781–8794) và phạm vi nội dung của từng chủ đề nằ
 
 1. **Màu chế độ sáng toàn site: đã xong (2026-11-16).** `reranking`, `governance`, `knowledge-base`, `hybrid-search` và trang chủ `index.html` đã dùng token màu của `rag/index.html`; `ai-agent` và `embedding-performance` đã đậm sẵn. Đo bằng Orca ở 390px, cả sáng và tối: 0 chữ dưới 4.5:1 trên cả 7 trang. Trang mới phải chép token màu từ `rag/index.html`.
 2. **Link nội bộ trỏ tới trang chưa publish**, ví dụ `../harness/` và `../llm-cost-optimization/`. Chúng sẽ hết 404 khi các trang đó được publish. Có thể quét bằng: `rg -o 'href="\.\./[a-z-]+/' */index.html`.
-3. **Vùng bấm số trích dẫn `[N]` dưới 40px trên mọi trang.** Các agent đã để nguyên cho đồng nhất; chờ người dùng quyết có sửa toàn site không.
+3. **Vùng bấm số trích dẫn `[N]` dưới 40px trên mọi trang.** Người dùng đã quyết (2026-11-17): sửa cho **toàn site**, làm **sau cùng**, tức là sau khi đợt 5 đã publish. Sửa một lần cho mọi trang để giữ đồng nhất, rồi đo lại bằng Orca ở 390px.
 4. Key localStorage cho theme là `rag-theme`, **dùng chung toàn site**. Đừng đổi tên key này.
 
 ## Thiết lập trên máy mới
