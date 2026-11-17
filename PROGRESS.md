@@ -77,7 +77,7 @@ Mỗi đợt 2 chủ đề chạy song song, mỗi chủ đề một phiên theo
 | Đợt | Chủ đề | Port | Trạng thái |
 |---|---|---|---|
 | 1 | `llm-fundamentals` (đã có bản nháp), `prompt-engineering` | 8781, 8782 | Xong (2026-11-17) |
-| 2 | `tool-calling-structured-output`, `model-context-protocol` | 8783, 8787 | Chờ |
+| 2 | `tool-calling-structured-output`, `model-context-protocol` | 8783, 8787 | Đang làm (bắt đầu 2026-11-17 11:40) |
 | 3 | `agent-memory`, `prompt-injection-guardrails` | 8788, 8791 | Chờ |
 | 4 | `llm-observability`, `llm-cost-optimization` | 8792, 8793 | Chờ |
 | 5 | `graphrag`, `fine-tuning-vs-rag` (chưa có ghi chú nguồn) | 8790, 8794 | Chờ |
