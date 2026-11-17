@@ -116,3 +116,55 @@ Ngày truy cập tất cả: 2026-11-14. Mỗi dòng: khẳng định → URL �
 ## [18] Patil, S. G. và cộng sự. Berkeley Function Calling Leaderboard (BFCL), ICML 2025 — https://gorilla.cs.berkeley.edu/leaderboard.html
 - Mục đích → [18] → "evaluates the LLM's ability to call functions (aka tools) accurately."
 - Phiên bản → [18] → v1 "introducing AST as an evaluation metric"; v3 "introducing multi-turn interactions"; v4 "holistic agentic evaluation"
+
+## Kiểm lại ngày 2026-11-17 (phiên chủ đề)
+Đã mở lại bằng WebFetch cả 18 URL ở trên; câu trích khớp, trừ các ghi chú dưới đây.
+- [2] Câu "We recommend always using Structured Outputs instead of JSON mode" không còn nguyên văn; câu hiện có: "We recommend you use Structured Outputs if it is supported for your use case." và "Structured Outputs reliably matches the model's output to the schema you specify". Trang dùng câu mới.
+- [2] Từ khóa schema chưa hỗ trợ → "`allOf`, `not`, `dependentRequired`, `dependentSchemas`, `if`, `then`, `else`"; dùng schema không hỗ trợ ở strict → "you will receive an error."
+- [3] Hướng tool bằng system prompt → "a light instruction such as "Use the tools to investigate before responding." increases tool use"; MCP connector → "To connect to Model Context Protocol (MCP) servers, see the MCP connector".
+- [4] Ép gọi không phải model nào cũng nhận → bảng "Claude Fable 5.2, … Claude Opus 5.5, Claude Sonnet 5.5, … `any` and `tool` return a 400 error"; thay bằng "`auto` with strict tool use … or structured outputs".
+- [4] Ép gọi bỏ qua thinking → "Forcing a tool also skips thinking on every model that accepts forced tool use"
+- [4] input_examples → "(Optional) An array of example input objects that show Claude how to use the tool." / "Each example must be valid according to the tool's `input_schema`."
+- [4] Lý do thay vì suy luận → "Ask for an explanation, not reasoning." (cùng ý `reasoning_extraction` như [8])
+- [5] tool_result phải đứng đầu → "the `tool_result` blocks must come FIRST in the content array. Any text must come AFTER all tool results." / "Tool result blocks must immediately follow their corresponding tool use blocks"
+- [5] Giữ nội dung không tin cậy trong tool_result → "Keep untrusted content inside `tool_result` blocks rather than `system` prompts or plain user `text` blocks"
+- [6] Tắt song song với auto → "setting `disable_parallel_tool_use: true` means Claude calls at most one tool in each response."
+- [7] Ví dụ kiểu → "Without strict mode, Claude might provide `passengers: "two"` or `passengers: "2"`. With `strict: true`, the response always contains `passengers: 2`."
+- [8] Giới hạn độ phức tạp → "Strict tools per request | 20"; "Optional parameters | 24"; "Parameters with union types | 16"
+- [8] Chữ hoa enum → "Compare enum values case-insensitively, and avoid enum values that differ only in capitalization."
+- [8] Grammar chỉ áp cho đầu ra trực tiếp → "Grammars apply only to Claude's direct output, not to tool use calls, tool results, or thinking tags"
+- [9] Bổ sung → "Naming: Use descriptive names without spaces or special characters." / "Error Handling: Implement robust error handling." / "Security: Use appropriate authentication for external APIs."
+- [10] Định dạng trả về → "whether tools return 'concise' or 'detailed' responses" / Slack: "~⅓ of the tokens" / "pagination, range selection, filtering, and/or truncation with sensible default parameter values"
+- [12] Ba nguyên nhân → "excessive functionality; excessive permissions; excessive autonomy."
+- [13] Client SHOULD "Show tool inputs to the user before calling the server"; outputSchema → "Servers MUST provide structured results that conform to this schema." / "Clients SHOULD validate structured results against this schema."
+- [15] Tác giả Brandon T. Willard, Rémi Louf; triển khai trong thư viện Outlines.
+- [16] Tác giả Zhi Rui Tam và cộng sự; arXiv preprint 2024, trang không ghi hội nghị.
+- [17] arXiv 2023, trang không ghi hội nghị.
+- [18] Tên bài: "The Berkeley Function Calling Leaderboard (BFCL): From Tool Use to Agentic Evaluation of Large Language Models", ICML 2025; "Last Updated: 2026-04-12".
+
+## [19] Erik S.; Barry Zhang (Anthropic). Building effective agents, 2024-12-19 — https://www.anthropic.com/engineering/building-effective-agents
+- Augmented LLM → [19] → "an LLM enhanced with augmentations such as retrieval, tools, and memory."
+- Agent là vòng lặp → [19] → "LLMs using tools based on environmental feedback in a loop."
+- Điều kiện dừng → [19] → "it's also common to include stopping conditions (such as a maximum number of iterations) to maintain control"
+- Ground truth từng bước → [19] → "it's crucial for the agents to gain "ground truth" from the environment at each step"
+- ACI → [19] → "invest just as much effort in creating good agent-computer interfaces (ACI)"
+- Poka-yoke → [19] → "Poka-yoke your tools. Change the arguments so that it is harder to make mistakes." / ví dụ "always require absolute filepaths"
+- Tối ưu tool hơn prompt → [19] → "we actually spent more time optimizing our tools than the overall prompt."
+- Định dạng → [19] → "Keep the format close to what the model has seen naturally occurring in text on the internet." / tránh "string-escaping any code it writes"
+
+## [20] Yan, F. và cộng sự. Berkeley Function Calling Leaderboard (blog), cập nhật 2024-08-19 — https://gorilla.cs.berkeley.edu/blogs/8_berkeley_function_calling_leaderboard.html
+- Các nhóm ca → [20] → Simple: "one and only one function call will be invoked"; Multiple: "only invokes one function call out of 2 to 4 JSON function documentations"; Parallel: "Invoking multiple function calls in parallel with one user query"
+- Relevance detection → [20] → "none of the provided functions are relevant and supposed to be invoked" / "We expect the model's output to be no function call."
+- AST vs chạy thật → [20] → "starts by parsing the function call using the AST tree" / "We execute the generated API call to check for response correctness."
+
+## [21] Stripe. Idempotent requests (API reference) — https://docs.stripe.com/api/idempotent_requests
+- Idempotency → [21] → "safely retrying requests without accidentally performing the same operation twice" / "if a connection error occurs, you can safely repeat the request without risk of creating a second object"
+- Khóa do client tạo → [21] → "A client generates an idempotency key, which is a unique key that the server uses to recognize subsequent retries of the same request."
+
+## Bổ sung sau kongming review (2026-11-17)
+- [9] Ép một tool cụ thể → ví dụ REST: `"tool_choice": {"allowed_tools": {"mode": "any", "tools": ["get_current_temperature"]}}` trong `generation_config`. Phần trang đã đọc không có tham số tắt gọi song song (trang ghi "Tài liệu Gemini không nêu tham số này").
+- [19] Sandbox → "We recommend extensive testing in sandboxed environments, along with the appropriate guardrails."
+- [3] Tool search → "Tool search tool: Work with thousands of tools by discovering and loading them on demand."; [4] → "especially important when using tool search"; thuộc tính `defer_loading` có trong danh sách tool definition properties.
+- [3] Token của vòng lặp → "The additional tokens from tool use come from: The `tools` parameter … `tool_use` content blocks in API requests and responses · `tool_result` content blocks in API requests"
+- [8] Citations không dùng chung với JSON outputs → "The API returns a 400 error if citations are enabled with `output_config.format`. To extract structured data with a citation for each value, see Get structured data with citations."
+- [1] Mặc định → "By default the model will determine when and how many tools to use." (không ghi riêng "parallel mặc định bật"; trang viết lại cho khớp).

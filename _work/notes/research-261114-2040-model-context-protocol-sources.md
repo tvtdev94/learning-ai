@@ -95,3 +95,83 @@ Mọi URL dưới đây đã mở bằng WebFetch ngày 2026-11-14. Mỗi dòng:
 - Không nêu số liệu "bao nhiêu host đã lên 2026-07-28": không có nguồn.
 - Mô hình N×M → N+M là đơn giản hóa của trang (minh họa); nguồn [20] chỉ nói "mỗi nguồn cần tích hợp riêng".
 - Số token mỗi tool definition trong máy tính là giả định minh họa.
+
+## Kiểm lại ngày 2026-11-17 (phiên làm trang)
+Đã mở lại bằng WebFetch ngày 2026-11-17 toàn bộ URL [1]–[26] ở trên; nội dung khớp các dòng đã ghi. Trang Versioning hôm nay vẫn ghi bản hiện hành là **2026-07-28** ("The **current** protocol version is **2026-07-28**"); trang `specification/latest` dẫn tới schema `schema/2026-07-28/schema.ts`. Không thấy bản mới hơn được đánh dấu Current.
+
+Đính chính so với ghi chú 2026-11-14:
+- Mã lỗi `UnsupportedProtocolVersion` là **-32022** (bảng mã lỗi ở /specification/2026-07-28/basic: "-32020 HeaderMismatch, -32021 MissingRequiredClientCapability, -32022 UnsupportedProtocolVersion"); changelog ghi đã đánh số lại từ -32001/-32003/-32004.
+- Thiếu trường bắt buộc trong `_meta` → lỗi `-32602`, trên HTTP là 400 → /basic → "A request missing any required field is malformed; the server MUST reject it with JSON-RPC error code `-32602`".
+
+Bằng chứng mới:
+- [2] Thay GET endpoint và resources/subscribe bằng `subscriptions/listen` → /specification/2026-07-28/changelog → "Replace the HTTP GET endpoint and `resources/subscribe`/`resources/unsubscribe` with `subscriptions/listen`"
+- [2] Tasks chuyển thành extension chính thức → cùng URL → "Move experimental tasks out of the core protocol and into an official extension (`io.modelcontextprotocol/tasks`)"
+- [2] Mọi result có `resultType` → cùng URL → "All results now carry a required `resultType` field: `\"complete\"` ... `\"input_required\"`"
+- [2] Bỏ resumability SSE → cùng URL → "A broken response stream loses the in-flight request; clients MUST re-issue it as a new request"
+- [2] ttlMs/cacheScope trên kết quả list → cùng URL → "Require `ttlMs` and `cacheScope` fields on results returned by `tools/list` ..."
+- [1] Extensions: Tasks, Skills over MCP, MCP Apps; luôn opt-in → https://modelcontextprotocol.io/specification/latest → "Extensions are always opt-in and require explicit support from both client and server"
+- [1] Server features: Resources, Prompts, Tools; client feature: Elicitation → cùng URL
+- [4] Thiết kế: server dễ viết, ghép được; host giữ toàn bộ hội thoại → /specification/2026-07-28/architecture → "Full conversation history stays with the host"
+- [4] Client gắn version + capability vào mọi request → cùng URL → "Attaches protocol version and capabilities to every request"
+- [5] Trạng thái nhiều request phải qua identifier tường minh → /specification/2026-07-28/basic → "State that needs to span multiple requests ... MUST be referenced by an explicit identifier the client passes on each request"
+- [5] Kết nối stdio không phải là session → cùng URL → "an open connection, such as a STDIO process, is not a conversation or session"
+- [6] tools/list không được khác nhau theo kết nối, được khác theo quyền → /specification/2026-07-28/server/tools → "The set MAY vary by the authorization presented on the request"
+- [6] Client nên cho người dùng xem input trước khi gọi → cùng URL → "Show tool inputs to the user before calling the server, to avoid malicious or accidental data exfiltration"
+- [6] Server phải validate input, kiểm quyền, rate limit, làm sạch output → cùng URL → "Validate all tool inputs ... Rate limit tool invocations ... Sanitize tool outputs"
+- [6] Lỗi thực thi để model tự sửa → cùng URL → "Tool Execution Errors contain actionable feedback that language models can use to self-correct"
+- [6] Handle trạng thái: ví dụ basket_id, kiểm quyền trên handle mỗi lần gọi → cùng URL → "a handle is a name, not a capability"
+- [7] Resource: ứng dụng chọn qua UI, tìm kiếm, hoặc tự động → /server/resources → "Expose resources through UI elements for explicit selection"
+- [7] Chống directory traversal → cùng URL → "Servers MUST sanitize file paths to prevent directory traversal attacks"
+- [8] Prompt: "ai quyết định dùng", nội dung do server định nghĩa → /server/prompts → "This refers to who decides when the prompt is used, not who authors its content"
+- [9] Elicitation url mode cho thông tin nhạy cảm; client phải hiện server nào đang hỏi → /client/elicitation → "Servers MUST use URL mode for interactions involving such sensitive information"
+- [10] MRTR chỉ áp dụng cho prompts/get, resources/read, tools/call → /basic/patterns/mrtr → bảng "Supported Requests"
+- [11] Server không khởi tạo JSON-RPC request → /basic/transports → "servers do not initiate JSON-RPC requests and clients do not send JSON-RPC responses"
+- [12] stdio: server chết thì client khởi động lại; request đang chạy bị mất → /basic/transports/stdio → "Because the protocol is stateless, any in-flight requests are simply lost"
+- [13] Streamable HTTP: mỗi message một POST; đóng SSE = hủy → /basic/transports/streamable-http → "Closing the SSE response stream MUST be treated by the server as cancellation"
+- [13] Header giúp load balancer/gateway định tuyến không cần đọc body → cùng URL → "so that intermediaries (load balancers, gateways, observability tooling) can route and inspect requests"
+- [14] DiscoverResult có `instructions` cho LLM → /server/discover → "Optional natural-language guidance for LLMs on how to use this server effectively"
+- [16] Client phải gửi tham số `resource` (RFC 8707) → /basic/authorization → "MCP clients MUST implement Resource Indicators for OAuth 2.0"
+- [16] MCP server phải có Protected Resource Metadata (RFC 9728) → cùng URL → "MCP servers MUST implement OAuth 2.0 Protected Resource Metadata"
+- [16] Ba cách đăng ký client: CIMD, pre-registration, DCR → cùng URL → "Client ID Metadata Documents, pre-registration, or Dynamic Client Registration"
+- [17] Scope tối thiểu, xin thêm dần → /docs/2026-07-28/tutorials/security/security_best_practices → "Minimal initial scope set ... Incremental elevation"
+- [17] Handle không phải xác thực → cùng URL → "MCP servers MUST NOT treat possession of a state handle as authentication"
+- [17] SSRF: chặn dải IP nội bộ, 169.254.169.254 → cùng URL
+- [19] Tool response gồm mảng content: text, image, audio, resource_link, resource → /docs/2026-07-28/learn/architecture
+- [19] Notification không có id, best effort → cùng URL → "There are no guarantees that every notification will be sent or received"
+- [19] MCP Inspector là công cụ phát triển → cùng URL → "Tools for developing MCP servers and clients, including the MCP Inspector"
+- [20] Ra mắt 2024-11-25, kèm server dựng sẵn Google Drive, Slack, GitHub, Git, Postgres, Puppeteer → https://www.anthropic.com/news/model-context-protocol
+- [21] AAIF đồng sáng lập bởi Anthropic, Block, OpenAI; maintainer vẫn quyết định qua SEP → https://blog.modelcontextprotocol.io/posts/2025-12-09-mcp-joins-agentic-ai-foundation/
+- [22] Registry: preview; namespace kiểu reverse DNS xác minh qua GitHub/DNS; host không nên đọc trực tiếp registry chính thức → https://modelcontextprotocol.io/registry/about → "The MCP Registry is not intended to be directly consumed by host applications"
+- [23] Tác giả Luca Beurer-Kellner, Marc Fischer (Invariant Labs), 2025-04-01; shadowing đổi hành vi send_email → invariantlabs.ai blog
+- [24] Tác giả Adam Jones, Conor Kelly; 98,7% tiết kiệm; code execution cần sandbox, giới hạn tài nguyên, giám sát → https://www.anthropic.com/engineering/code-execution-with-mcp
+- [25] Claude API có MCP connector nối remote MCP server từ Messages API → https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview → "Connect to remote MCP servers from the Messages API without a separate MCP client"
+- [27] Registry tính năng deprecated: Roots, Sampling, Logging, DCR deprecated ở 2026-07-28, sớm nhất gỡ ở "First revision released on or after 2027-07-28" → https://modelcontextprotocol.io/specification/2026-07-28/deprecated
+- [28] Progressive discovery: ngưỡng 1%–5% context window; meta-tool search_tools; chiến lược keyword/embedding/subagent/hybrid → https://modelcontextprotocol.io/docs/2026-07-28/develop/clients/client-best-practices → "Implement a threshold as a percentage of the context window. For example, 1%-5%."
+- [28] Thêm/bớt tool giữa hội thoại làm mất prompt cache → cùng URL → "Adding or removing tool definitions mid-conversation invalidates that cache"
+- [28] Code mode: model viết code gọi tool trong sandbox, chỉ kết quả cuối về model; host giữ credential → cùng URL → "Authorization tokens and credentials are held by the host and never exposed to the generated code"
+- [28] Kết quả tool của server này là input không tin cậy với server khác → cùng URL → "Tool results from one server are untrusted input to another"
+- [29] ToolAnnotations: readOnlyHint (mặc định false), destructiveHint (mặc định true), idempotentHint (mặc định false), openWorldHint (mặc định true); chỉ là gợi ý → https://modelcontextprotocol.io/specification/2026-07-28/schema → "Clients should never make tool use decisions based on `ToolAnnotations` received from untrusted servers"
+
+Số nguồn trong trang `model-context-protocol/index.html` giữ đúng số [1]–[26] của ghi chú này; thêm ba nguồn mới: [27] deprecated features, [28] client best practices, [29] schema.
+
+## Kiểm lại thêm ngày 2026-11-17 (sau khi viết trang)
+- [14] Mẫu DiscoverResult: resultType, supportedVersions, capabilities, _meta["io.modelcontextprotocol/serverInfo"], instructions, ttlMs 3600000, cacheScope "public" → https://modelcontextprotocol.io/specification/2026-07-28/server/discover → "serverInfo is self-reported ... SHOULD NOT rely on it for security decisions"
+- [10] InputRequiredResult nằm trong result; inputResponses và requestState nằm trong params khi gửi lại; elicitation trả {action, content} → /basic/patterns/mrtr → "Keys correspond to the keys in the InputRequests map"
+- [6] Thứ tự tool cố định ghi cả ở trang Tools → /server/tools → "Servers SHOULD return tools in a deterministic order"
+- [6] Không dựa vào tên serverInfo để phân biệt → cùng URL → "The server name (from serverInfo) is not guaranteed to be unique across servers"
+- [6] Hiện tham số trước khi gọi, timeout, log → cùng URL → "Show tool inputs to the user before calling the server, to avoid malicious or accidental data exfiltration"
+- [6] list_changed gửi qua subscriptions/listen → cùng URL → "send a notification to clients that have opened a subscriptions/listen stream"
+- [6] structuredContent nên kèm JSON dạng text → cùng URL → "a tool that returns structured content SHOULD also return the serialized JSON in a TextContent block"
+- [3] Deprecated giữ ít nhất 12 tháng → /specification/versioning → "remain in the specification for at least twelve months"
+- [3] Lỗi phiên bản kèm danh sách phiên bản hỗ trợ → cùng URL → "responds with an UnsupportedProtocolVersionError listing the versions it does support"
+- [28] Meta-tool get_tool_details; có thể tăng độ chính xác chọn tool; đổi tool giữa hội thoại làm mất cache; kết quả tool server này là đầu vào không tin cậy với server khác → /docs/2026-07-28/develop/clients/client-best-practices → "Adding or removing tool definitions mid-conversation invalidates that cache" / "Tool results from one server are untrusted input to another"
+- [26] OWASP: chưa rõ có cách chặn tuyệt đối → https://genai.owasp.org/llmrisk/llm01-prompt-injection/ → "it is unclear if there are fool-proof methods of prevention for prompt injection"
+- [9] Server làm OAuth client với bên thứ ba qua URL mode, server giữ token → /client/elicitation → "URL mode elicitation enables a pattern where MCP servers act as OAuth clients to third-party resource servers"
+- [22] Registry riêng có thể theo OpenAPI spec của registry chính thức → /registry/about → "Private MCP registries can implement it as well"
+- [1] Host phải có đồng ý rõ ràng trước khi gọi tool; MCP không tự cưỡng chế ở mức giao thức → /specification/latest → "Hosts must obtain explicit user consent before invoking any tool" / "MCP itself cannot enforce these security principles at the protocol level"
+- [13] Origin sai → 403; session Mcp-Session-Id chỉ có ở bản 2025-03-26 đến 2025-11-25 → /basic/transports/streamable-http → "servers MUST respond with HTTP 403 Forbidden"
+- [12] stdio: lỗi lạ hoặc không phản hồi khi probe thì quay về initialize → /basic/transports/stdio → "The server returns any other error, or does not respond within a reasonable timeout: the server is legacy"
+- [16] 401 kèm resource_metadata và scope; 403 insufficient_scope; không nhận hay chuyển tiếp token khác → /basic/authorization → "MCP servers MUST NOT accept or transit any other tokens"
+- [25] Mở lại 2026-11-17: MCP connector nối remote MCP server từ Messages API → https://platform.claude.com/docs/en/agents-and-tools/tool-use/overview → "Connect to remote MCP servers from the Messages API without a separate MCP client"
+- [28] Hình minh họa progressive discovery: ~150.000 token nếu nạp hết, ~2.000 token nếu chỉ nạp tool cần → /docs/2026-07-28/develop/clients/client-best-practices → "The upfront approach consumes ~150,000 tokens on definitions alone, while progressive discovery uses ~2,000 tokens"
+- [6] Nghĩa vụ server và danh sách tool theo quyền: đã đưa lên trang (callout mục 8) → /server/tools → "The set MAY vary by the authorization presented on the request"
