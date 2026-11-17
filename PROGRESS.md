@@ -39,7 +39,7 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 
 ## Trạng thái các chủ đề
 
-### Đã publish (12)
+### Đã publish (14)
 
 | Slug | Nguồn | Ghi chú |
 |---|---|---|
@@ -52,15 +52,15 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 | `hybrid-search` | 21 | |
 | `harness` | 24 | Publish 2026-11-16 |
 | `multi-agent-agentic-rag` | 16 | Publish 2026-11-16. Đã áp dụng review kongming (kết quả ở cuối file review). Có link tới `context-engineering`, `llm-evaluation`, `query-transformation`: **404 tới khi các trang đó publish** |
-| `context-engineering` | 14 | Publish 2026-11-16. Review kongming: `_work/notes/kongming-261116-context-engineering-review.md`. Link tới `llm-fundamentals`: **404 tới khi trang đó publish** |
+| `context-engineering` | 14 | Publish 2026-11-16. Review kongming: `_work/notes/kongming-261116-context-engineering-review.md`.  |
 | `llm-evaluation` | 28 | Publish 2026-11-16. Review: `_work/notes/kongming-261116-llm-evaluation-review.md` |
 | `query-transformation` | 24 | Publish 2026-11-16. Review: `_work/notes/kongming-261116-query-transformation-review.md` |
+| `llm-fundamentals` | 22 | Publish 2026-11-17. Review: `_work/notes/kongming-261117-llm-fundamentals-review.md` |
+| `prompt-engineering` | 24 | Publish 2026-11-17. Review: `_work/notes/kongming-261117-prompt-engineering-review.md` |
 
 ### Bản nháp trong repo, chưa publish (nằm trong `exclude`)
 
-| Slug | Tình trạng khi dừng | Việc còn lại |
-|---|---|---|
-| `llm-fundamentals` | Có bản nháp | Chưa review và chưa test |
+Không còn bản nháp nào.
 
 ### Mới có ghi chú nguồn, chưa có trang
 
@@ -76,7 +76,7 @@ Mỗi đợt 2 chủ đề chạy song song, mỗi chủ đề một phiên theo
 
 | Đợt | Chủ đề | Port | Trạng thái |
 |---|---|---|---|
-| 1 | `llm-fundamentals` (đã có bản nháp), `prompt-engineering` | 8781, 8782 | Đang làm |
+| 1 | `llm-fundamentals` (đã có bản nháp), `prompt-engineering` | 8781, 8782 | Xong (2026-11-17) |
 | 2 | `tool-calling-structured-output`, `model-context-protocol` | 8783, 8787 | Chờ |
 | 3 | `agent-memory`, `prompt-injection-guardrails` | 8788, 8791 | Chờ |
 | 4 | `llm-observability`, `llm-cost-optimization` | 8792, 8793 | Chờ |

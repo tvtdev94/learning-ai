@@ -107,3 +107,28 @@ Ngày truy cập tất cả: 2026-11-14. Mỗi dòng: khẳng định → URL �
 - Mask: vị trí i chỉ phụ thuộc vị trí trước → [5] → "predictions for position i can depend only on the known outputs at positions less than i"
 - Attention = tổng có trọng số; trọng số qua softmax → [5] → "computed as a weighted sum of the values"; "apply a softmax function to obtain the weights"
 - Embedding biến token thành vector → [5] → "learned embeddings to convert the input tokens and output tokens to vectors"
+
+## Mở lại toàn bộ 20 URL ngày 2026-11-17 (trang đổi ngày truy cập sang 2026-11-17)
+- [1] glossary: vẫn khớp mọi câu trên. Thêm: "Claude 4.7 and later models ... use a newer tokenizer that produces approximately 30 percent more tokens"; "The Claude API does not currently offer fine-tuning"; RAG "to better ground the model’s response in evidence"; "the effectiveness of RAG depends on the quality and relevance of the external knowledge base".
+- [11] context windows: khớp. Thêm: "On Claude 4.5 models and newer, if input tokens plus `max_tokens` exceeds the context window size, the API accepts the request. If generation then reaches the context window limit, it stops with `stop_reason: \"model_context_window_exceeded\"`. On earlier models, the API returns a validation error instead."
+- [14] models overview: khớp ($4/$20 Opus 5.5; $8/$40; $2/$10; Haiku "From $0.10 / From $0.50"; mọi dòng output = 5 × input); "1M tokens is roughly 555k words or 2.5M Unicode characters on the current tokenizer (introduced with Claude Opus 4.7)"; "Batch API requests are 50% off; prompt cache reads cost 10% of the base input price (2.5% on ... 5% on ...)".
+- [15] migration guide Opus 5.5: khớp, "Omit `temperature`, `top_p`, and `top_k`. Use prompting"; "it never guaranteed identical outputs on prior models".
+- [20] Messages API: khớp max_tokens, stop_reason ("end_turn", "max_tokens", "model_context_window_exceeded"), "bills and rate-limits by token counts". Trang KHÔNG còn mô tả temperature/top_p → bỏ câu "thường chỉ chỉnh một trong hai: temperature hoặc top-p" (không có nguồn), thay bằng lời khuyên đổi từng tham số rồi đo.
+- [19] OpenAI latency: khớp. Thêm: "For repeated inputs, put stable instructions, examples, and tool definitions first." (đỡ dòng "đặt phần cố định lên đầu để tận dụng prompt caching").
+- [13] Chroma: tác giả Hong, Troynikov, Huber, 2025-07-14; "we evaluate 18 LLMs"; "even under these minimal conditions, model performance degrades as input length increases". Đổi "giảm đều" thành "giảm" cho sát nguồn.
+- [2] [3] [4] [5] [6] [7] [8] [9] [10] [12] [16] [17] [18]: mở lại, câu trích ở trên vẫn khớp (Kalai et al.: "modifying the scoring of existing benchmarks"; Liu et al. TACL 2023; Ji et al. ACM Computing Surveys 2022; He 2025-09-10).
+
+## Nguồn thêm sau review kongming (2026-11-17)
+### [21] Anthropic, Thinking — https://platform.claude.com/docs/en/build-with-claude/thinking
+- Thinking bật mặc định trên Messages API → [21] → "Messages API: On by default."
+- Model viết nháp trước khi trả lời, khối thinking đứng trước text → [21] → "Claude works through the problem in its own words before answering"; "arrives in `thinking` content blocks ahead of the response"
+- Lợi ích cho task phức tạp → [21] → "thinking improves performance on complex tasks such as math, coding, analysis, and long-running agentic wo[rk]"
+- Chi phí → [21] → "billed as output tokens, even when the thinking text isn’t returned to you, and they count toward `max_tokens`"
+- [14] bổ sung: "Adaptive thinking lets the model decide how much to think, steered by effort"; "Actual latency depends on prompt length, output length, and thinking effort"; Opus 5.5 Thinking "Adaptive (always on)".
+### [22] OWASP, LLM01:2025 Prompt Injection — https://genai.owasp.org/llmrisk/llm01-prompt-injection/
+- Định nghĩa → [22] → "occurs when user prompts alter the LLM's behavior or output in unintended ways"
+- Gián tiếp qua nội dung ngoài → [22] → "Indirect prompt injections occur when an LLM accepts input from external sources, such as websites or files."
+- [20] bổ sung: "Under the hood, the API transforms requests into a format suitable for the model."; stop_reason "tool_use: the model invoked one or more tools".
+- [11] bổ sung: tool_result là input ở lượt sau ("Input components: Every block in the first turn and the `tool_result`").
+### [7] bổ sung
+- Top-k → [7] → "the K most likely next words are filtered and the probability mass is redistributed among only those K next words"

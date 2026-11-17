@@ -108,3 +108,91 @@ All URLs below were opened with WebFetch on 2026-11-14. Format: claim -> URL -> 
 
 ## [17] Liu et al., Lost in the Middle (TACL 2023)
 - Middle of long context degrades -> https://arxiv.org/abs/2307.03172 -> "performance is often highest when relevant information occurs at the beginning or end of the input context"
+
+---
+# Re-check and new evidence (2026-11-17)
+
+All 17 URLs above were re-opened with WebFetch on 2026-11-17; the quoted text still matches unless noted. Page numbering below = source number in `prompt-engineering/index.html`.
+
+## Corrections found on re-check
+- [4] develop-tests: the "automate" list reads "multiple-choice, string match, code-graded, LLM-graded" (not "exact match"). Exact match is described separately -> "Exact match evals measure whether the model's output matches a predefined correct answer, typically after normalizing whitespace and case."
+- [4] LLM-graded examples: use a different grader model -> "Generally best practice to evaluate with a different model from the one used to generate the evaluated output"
+- [12] Wei et al.: abstract says "a 540B-parameter language model" with "just eight chain of thought exemplars" reaching SOTA on GSM8K; it does not name PaLM in the abstract.
+- [3] quote-first applies to long documents -> "For tasks involving long documents (>20k tokens), ask Claude to extract word-for-word quotes first"
+
+## Extra evidence from re-opened sources
+- [2] Explicit > infer -> https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices -> "If you want Claude to do more than the task strictly requires, explicitly request it rather than relying on the model to infer this from vague prompts."
+- [2] Examples relevant/diverse/structured in <example> tags -> same -> "Wrap examples in `<example>` tags (multiple examples in `<examples>` tags) so Claude can distinguish them from instructions."
+- [2] Long data at top for 20k+ tokens -> same -> "Place your long documents and inputs near the top of your prompt, above your query, instructions, and examples."
+- [2] Negative -> positive instruction example -> same -> "Instead of: "Do not use markdown in your response" ... Try: "Your response should be composed of smoothly flowing prose paragraphs.""
+- [2] Aggressive language overtriggers -> same -> "Where you might have said "CRITICAL: You MUST use this tool when...," you can use more normal prompting such as "Use this tool when...""
+- [2] Prefill 400 error -> same -> "Starting with Claude 4.6 models ... prefilled responses ... are no longer supported. Requests with prefilled assistant messages to these models return a 400 error."
+- [2] Self-check instruction -> same -> "Append something like "Before you finish, verify your answer against [test criteria].""
+- [2] Precise instruction following ("suggest" vs "make changes") -> same -> "If you say "can you suggest some changes," Claude will sometimes provide suggestions rather than implementing them"
+- [6] Reasoning model = senior co-worker, GPT = junior coworker -> https://developers.openai.com/api/docs/guides/prompt-engineering -> "A reasoning model is like a senior co-worker." / "A GPT model is like a junior coworker."
+- [6] Markdown headers mark sections -> same -> "Markdown headers and lists can be helpful to mark distinct sections of a prompt"
+- [6] Reused content at beginning for caching -> same -> "keep content that you expect to use over and over in your API requests at the beginning of your prompt"
+- [7] CoT phrasing may hinder reasoning models -> https://developers.openai.com/api/docs/guides/reasoning-best-practices -> "may not enhance performance (and can sometimes hinder it)" / "Try zero shot first, then few shot if needed."
+- [7] Keep simple -> same -> "Keep prompts simple and direct."
+- [8] Evals before prompts, BDD -> https://developers.openai.com/api/docs/guides/model-optimization -> "You might even consider writing evals before you start writing prompts" ; flywheel "evals, prompt engineering, and fine-tuning"
+- [9] Judge biases -> https://developers.openai.com/api/docs/guides/evaluation-best-practices -> "Position bias (response order), verbosity bias (preferring longer responses)" ; "Add reasoning and chain-of-thought as reasoning before scoring improves eval performance" ; "Use pairwise comparison or pass/fail for more reliability."
+- [10] Instructions above context if only once -> https://developers.openai.com/cookbook/examples/gpt4-1_prompting_guide -> "above the provided context works better than below"
+- [10] No all-caps/bribes -> same -> "It's generally not necessary to use all-caps or other incentives like bribes or tips."
+- [10] Suggested structure -> same -> "Role and Objective, Instructions, Reasoning Steps, Output Format, Examples, Context, Final instructions"
+- [11] Context first, instruction at end -> https://aistudio.google.com/docs/prompting-strategies -> "supply all the context first." ; zero-shot/few-shot definitions "prompts that provide no examples are called zero-shot prompts"
+- [14] Holds over 12 models -> https://arxiv.org/abs/2202.12837 -> "consistently over 12 different models including GPT-3"
+- [15] Variance range -> https://arxiv.org/abs/2102.09690 -> "from near chance to near state-of-the-art" ; common token bias "common in the pre-training data"
+- [16] Persists with scale -> https://arxiv.org/abs/2310.11324 -> "Sensitivity remains even when increasing model size, the number of few-shot examples, or performing instruction tuning."
+- [17] Even long-context models -> https://arxiv.org/abs/2307.03172 -> "significantly degrades when models must access relevant information in the middle of long contexts" / "even for explicitly long-context models"
+
+## New sources (opened 2026-11-17)
+## [5] Anthropic, Building effective agents (re-check)
+- Start simple -> https://www.anthropic.com/engineering/building-effective-agents -> "Start with simple prompts, optimize them with comprehensive evaluation"
+- Tool definitions deserve prompt engineering -> same -> "Tool definitions and specifications should be given just as much prompt engineering attention as your overall prompts."
+- Chaining examples -> same -> "Writing an outline of a document, checking that the outline meets certain criteria"
+
+## [18] Anthropic, Effective context engineering for AI agents (2025-09-29)
+- Progression of prompt engineering -> https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents -> "we view context engineering as the natural progression of prompt engineering."
+- Right altitude, two failure modes -> same -> "hardcoding complex, brittle logic in their prompts" / "vague, high-level guidance that fails to give the LLM concrete signals"
+- Sections with XML/Markdown; formatting less important -> same -> "the exact formatting of prompts is likely becoming less important as models become more capable."
+- Minimal prompt, add on failure modes -> same -> "start by testing a minimal prompt with the best model available" / "add clear instructions and examples to improve performance based on failure modes found during initial testing."
+- Don't stuff edge cases; diverse canonical examples -> same -> "We do not recommend this." / "curate a set of diverse, canonical examples"
+
+## [19] OWASP, LLM01:2025 Prompt Injection
+- Definition -> https://genai.owasp.org/llmrisk/llm01-prompt-injection/ -> "A Prompt Injection Vulnerability occurs when user prompts alter the LLM's behavior or output in unintended ways."
+- Indirect -> same -> "Indirect prompt injections occur when an LLM accepts input from external sources, such as websites or files."
+- No fool-proof -> same -> "it is unclear if there are fool-proof methods of prevention for prompt injection."
+- Mitigations -> same -> "Separate and clearly denote untrusted content" / "use deterministic code to validate adherence to these formats" / "Restrict the model's access privileges to the minimum necessary"
+
+## [20] Wang et al., Self-Consistency (ICLR 2023)
+- Method -> https://arxiv.org/abs/2203.11171 -> "first samples a diverse set of reasoning paths instead of only taking the greedy one" / "selects the most consistent answer by marginalizing out the sampled reasoning paths"
+- Gains -> same -> "GSM8K (+17.9%), SVAMP (+11.0%), AQuA (+12.2%), StrategyQA (+6.4%) and ARC-challenge (+3.9%)"
+
+## [21] OpenAI, Structured Outputs guide
+- Schema adherence vs JSON mode -> https://developers.openai.com/api/docs/guides/structured-outputs -> "While both ensure valid JSON is produced, only Structured Outputs ensure schema adherence."
+- No strongly worded prompts -> same -> "No need for strongly worded prompts to achieve consistent formatting"
+- Still validate business rules -> same -> "validate any business rules that the schema does not express"
+
+## [22] Anthropic, Prompt caching
+- What it does -> https://platform.claude.com/docs/en/build-with-claude/prompt-caching -> "letting the API resume from specific prefixes in your prompts. This significantly reduces processing time and costs"
+- Exact prefix -> same -> "Cache hits require 100 percent identical prompt segments"
+- Static first -> same -> "Place static content (tool definitions, system instructions, context, examples) at the beginning of your prompt."
+
+## [23] DAIR.AI, Prompt Engineering Guide: techniques
+- Catalog of techniques (zero-shot, few-shot, CoT, self-consistency, prompt chaining, ReAct, ...) -> https://www.promptingguide.ai/techniques -> page lists "Zero-shot Prompting", "Few-shot Prompting", "Chain-of-Thought Prompting", "Self-Consistency", "Prompt Chaining", "ReAct"; footer "DAIR.AI"
+
+## Evidence added after kongming review (2026-11-17)
+- [8] Fine-tuning benefits -> https://developers.openai.com/api/docs/guides/model-optimization -> "For some use cases, it may be desirable to fine-tune a model for a specific task." / "You can provide more example inputs and outputs than could fit within the context window of a single request." / "You can train a smaller, cheaper, faster model"
+- [8] Platform winding down -> same -> "OpenAI is winding down the fine-tuning platform." / "The platform is no longer accessible to new users"
+- [5] Byline checked -> https://www.anthropic.com/engineering/building-effective-agents -> "Written by Erik S. and Barry Zhang." (page gives only "Erik S.")
+- [5] Tools vs prompt time -> same -> "actually spent more time optimizing our tools than the overall prompt."
+- [17] Venue year checked -> https://arxiv.org/abs/2307.03172 -> Comments: "Accepted for publication in Transactions of the Association for Computational Linguistics (TACL), 2023"
+- [11] One format consistently -> https://aistudio.google.com/docs/prompting-strategies -> "XML-style tags (e.g., <context>, <task>) or Markdown headings are effective." / "Choose one format and use it consistently within a single prompt."
+- [3] Template placeholders in examples -> https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-hallucinations -> example prompts use "<report>{{REPORT}}</report>", "{{POLICY}}", "{{DOCUMENTS}}"
+- [6] v1/prompts shutdown date -> https://developers.openai.com/api/docs/guides/prompt-engineering -> "v1/prompts is scheduled to shut down on November 30, 2026."
+- [9] Log from development -> https://developers.openai.com/api/docs/guides/evaluation-best-practices -> "Log as you develop so you can mine your logs for good eval cases."
+
+## [24] OWASP, LLM07:2025 System Prompt Leakage (opened 2026-11-17)
+- Not a secret -> https://genai.owasp.org/llmrisk/llm072025-system-prompt-leakage/ -> "the system prompt should not be considered a secret, nor should it be used as a security control."
+- No credentials -> same -> "sensitive data such as credentials, connection strings, etc. should not be contained within the system prompt language."
+- Control outside LLM -> same -> "rely on systems outside of the LLM to ensure this behavior."
