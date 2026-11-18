@@ -85,6 +85,8 @@ Mỗi đợt 2 chủ đề chạy song song, mỗi chủ đề một phiên theo
 | 3 | `agent-memory`, `prompt-injection-guardrails` | 8788, 8791 | Xong (2026-11-17) |
 | 4 | `llm-observability`, `llm-cost-optimization` | 8792, 8793 | Xong (2026-11-17) |
 | 5 | `graphrag`, `fine-tuning-vs-rag` (chưa có ghi chú nguồn) | 8790, 8794 | Xong (2026-11-17) |
+| 6 | `langchain`, `langgraph` (chuỗi hệ sinh thái LangChain, trang mới) | 8795, 8796 | Đang làm (2026-11-18) |
+| 7 | `langsmith` (bài cuối chuỗi, trang mới) | 8797 | Chờ đợt 6 |
 
 Bảng port (8781–8794) và phạm vi nội dung của từng chủ đề nằm trong `_work/topic-session-brief.md`, cùng mục "Bảng chủ đề đợt 2".
 
