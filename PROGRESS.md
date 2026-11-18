@@ -39,7 +39,7 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 
 ## Trạng thái các chủ đề
 
-### Đã publish (23)
+### Đã publish (24)
 
 | Slug | Nguồn | Ghi chú |
 |---|---|---|
@@ -65,7 +65,8 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 | `llm-cost-optimization` | 25 | Publish 2026-11-17. Giá lấy từ trang giá chính thức ngày 2026-11-17; giá đổi thì cập nhật. Review: `_work/notes/kongming-261117-llm-cost-optimization-review.md` |
 | `fine-tuning-vs-rag` | 25 | Publish 2026-11-17. Tình trạng fine-tuning của nhà cung cấp lấy từ trang chính thức ngày 2026-11-17 (OpenAI đang thu hẹp). Review: `_work/notes/kongming-261117-fine-tuning-vs-rag-review.md` |
 | `graphrag` | 25 | Publish 2026-11-17. README Microsoft GraphRAG ghi dự án "largely in maintenance mode"; trang đã cảnh báo. Review: `_work/notes/kongming-261117-graphrag-review.md` |
-| `langchain` | 40 | Publish 2026-11-18. Bài 1/3 chuỗi LangChain. Có link tới `langgraph`, `langsmith`: **404 tới khi hai trang đó publish**. Review: `_work/notes/kongming-261118-langchain-review.md` |
+| `langchain` | 40 | Publish 2026-11-18. Bài 1/3 chuỗi LangChain. Có link tới `langsmith`: **404 tới khi trang đó publish**. Review: `_work/notes/kongming-261118-langchain-review.md` |
+| `langgraph` | 30 | Publish 2026-11-18. Bài 2/3 chuỗi LangChain. Có link tới `langsmith`: **404 tới khi trang đó publish**. Review: `_work/notes/kongming-261118-langgraph-review.md` |
 
 ### Bản nháp trong repo, chưa publish (nằm trong `exclude`)
 
@@ -86,8 +87,8 @@ Mỗi đợt 2 chủ đề chạy song song, mỗi chủ đề một phiên theo
 | 3 | `agent-memory`, `prompt-injection-guardrails` | 8788, 8791 | Xong (2026-11-17) |
 | 4 | `llm-observability`, `llm-cost-optimization` | 8792, 8793 | Xong (2026-11-17) |
 | 5 | `graphrag`, `fine-tuning-vs-rag` (chưa có ghi chú nguồn) | 8790, 8794 | Xong (2026-11-17) |
-| 6 | `langchain`, `langgraph` (chuỗi hệ sinh thái LangChain, trang mới) | 8795, 8796 | Đang làm (2026-11-18) |
-| 7 | `langsmith` (bài cuối chuỗi, trang mới) | 8797 | Chờ đợt 6 |
+| 6 | `langchain`, `langgraph` (chuỗi hệ sinh thái LangChain, trang mới) | 8795, 8796 | Xong (2026-11-18) |
+| 7 | `langsmith` (bài cuối chuỗi, trang mới) | 8797 | Đang làm (2026-11-18) |
 
 Bảng port (8781–8794) và phạm vi nội dung của từng chủ đề nằm trong `_work/topic-session-brief.md`, cùng mục "Bảng chủ đề đợt 2".
 
