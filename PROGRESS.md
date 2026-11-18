@@ -39,7 +39,7 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 
 ## Trạng thái các chủ đề
 
-### Đã publish (22)
+### Đã publish (23)
 
 | Slug | Nguồn | Ghi chú |
 |---|---|---|
@@ -65,6 +65,7 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 | `llm-cost-optimization` | 25 | Publish 2026-11-17. Giá lấy từ trang giá chính thức ngày 2026-11-17; giá đổi thì cập nhật. Review: `_work/notes/kongming-261117-llm-cost-optimization-review.md` |
 | `fine-tuning-vs-rag` | 25 | Publish 2026-11-17. Tình trạng fine-tuning của nhà cung cấp lấy từ trang chính thức ngày 2026-11-17 (OpenAI đang thu hẹp). Review: `_work/notes/kongming-261117-fine-tuning-vs-rag-review.md` |
 | `graphrag` | 25 | Publish 2026-11-17. README Microsoft GraphRAG ghi dự án "largely in maintenance mode"; trang đã cảnh báo. Review: `_work/notes/kongming-261117-graphrag-review.md` |
+| `langchain` | 40 | Publish 2026-11-18. Bài 1/3 chuỗi LangChain. Có link tới `langgraph`, `langsmith`: **404 tới khi hai trang đó publish**. Review: `_work/notes/kongming-261118-langchain-review.md` |
 
 ### Bản nháp trong repo, chưa publish (nằm trong `exclude`)
 
