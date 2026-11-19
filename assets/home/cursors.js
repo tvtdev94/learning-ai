@@ -7,9 +7,10 @@ var btn=document.getElementById('themeBtn'),langBtn=document.getElementById('lan
 
 // Five cursors assemble the page on open. Each drag moves exactly one small piece:
 // a word, a menu link, an icon, a chip. Rings are resized, constellations are drawn.
+// A sixth, the season cursor, sets the current look's decorations when it has any.
 var layer=document.getElementById('cursors'),replay=document.getElementById('replay'),running=[],timers=[];
 // Each cursor is named after its job.
-var CUR=[{vi:'Bố cục',en:'Layout',color:'#2f6fe0'},{vi:'Chữ',en:'Typography',color:'#8b4fd8'},{vi:'Nội dung',en:'Content',color:'#0f8a5f'},{vi:'Liên hệ',en:'Contact',color:'#c2410c'},{vi:'Vũ trụ',en:'Cosmos',color:'#be185d'}];
+var CUR=[{vi:'Bố cục',en:'Layout',color:'#2f6fe0'},{vi:'Chữ',en:'Typography',color:'#8b4fd8'},{vi:'Nội dung',en:'Content',color:'#0f8a5f'},{vi:'Liên hệ',en:'Contact',color:'#c2410c'},{vi:'Vũ trụ',en:'Cosmos',color:'#be185d'},{vi:'Mùa',en:'Season',color:'#b45309'}];
 var EASE='cubic-bezier(.22,1,.36,1)',INOUT='cubic-bezier(.65,0,.35,1)',DIVE='cubic-bezier(.5,0,.9,.5)',APPROACH=340,PRESS=90,MOVE=480;
 function later(fn,ms){timers.push(setTimeout(fn,ms))}
 function stop(){
@@ -67,6 +68,14 @@ function assemble(){
     ic.map(function(a,i){var v=[[-40,90,-20],[30,110,15],[-20,100,-18],[50,80,22]][i];return D(a,.5,.5,v[0],v[1],v[2])}).concat([D(hs[0],.3,.5,40,50,4),D(hs[1],.5,.5,-30,44,-4)]),
     [['r',rings[0],200,28],['r',rings[1],-40,21],['r',rings[2],120,13]].concat(CONS.map(function(cn){return ['s',cn]}))
   ];
+  // Season decorations live in a fixed layer behind the page, so they are moved in place and
+  // never scattered: ['m', el, grab x, grab y, offset x, offset y, rotate] slides the corner piece in,
+  // pulls lanterns down and lifts the moon; ['g', strip] sweeps the ground strip in from the left.
+  var deco=QA('#season .ground,#season .corner,#season .hang,#season .moon').filter(function(e){return e.getBoundingClientRect().width>0}).map(function(e){
+    var r=e.getBoundingClientRect(),cl=e.classList;
+    return cl.contains('ground')?['g',e]:cl.contains('corner')?['m',e,.35,.35,r.width*.45,r.height*.45,8]:cl.contains('hang')?['m',e,.5,.85,0,-r.height*.7,0]:['m',e,.5,.5,-r.width*.6,r.height*1.4,0];
+  });
+  if(deco.length)jobs.push(deco);
   // Work out when each piece is picked up and dropped, before choosing where it scatters.
   jobs.forEach(function(list,c){var t=80+c*140;list.forEach(function(j){
     if(j[0]==='d'){j.ga=t+APPROACH;j.da=j.ga+PRESS+MOVE;t=j.da+80}
@@ -100,11 +109,17 @@ function assemble(){
     }else if(j[0]==='r'){
       var k1=parseFloat(j[1].style.getPropertyValue('--in'))/100,k0=j[3]/100,ph=j[2]*Math.PI/180;
       j.k1=k1;j.s={x:OC.x+Math.cos(ph)*OW*(.5-k0),y:OC.y+Math.sin(ph)*OW*(.5-k0)};j.g={x:OC.x+Math.cos(ph)*OW*(.5-k1),y:OC.y+Math.sin(ph)*OW*(.5-k1)};
+    }else if(j[0]==='m'){
+      j.g=pt(j[1],j[2],j[3]);j.s={x:j.g.x+j[4],y:j.g.y+j[5]};
+    }else if(j[0]==='g'){
+      var gr=j[1].getBoundingClientRect(),gy=gr.top+scrollY+gr.height*.4;
+      j.s={x:gr.left+12,y:gy};j.g={x:gr.right-12,y:gy};
     }
   })});
   var A=pt(me,.5,.5),RAD=me.getBoundingClientRect().width/2;
   var mr=mark.getClientRects(),ma=mr[0],mb=mr[mr.length-1];
-  var starts=[{x:-40,y:scrollY+vh*.75},{x:vw+40,y:scrollY+vh*.35},{x:vw*.75,y:scrollY-40},{x:vw*.3,y:scrollY+vh+40},{x:-40,y:scrollY+vh*.12}];
+  // One start per cursor that has work; the season cursor comes in from the lower right.
+  var starts=[{x:-40,y:scrollY+vh*.75},{x:vw+40,y:scrollY+vh*.35},{x:vw*.75,y:scrollY-40},{x:vw*.3,y:scrollY+vh+40},{x:-40,y:scrollY+vh*.12},{x:vw+40,y:scrollY+vh*.9}].slice(0,jobs.length);
   var paths=starts.map(function(p){return [{t:0,x:p.x,y:p.y,s:1,o:0}]});
   var lastEnd=0;
   jobs.forEach(function(list,c){
@@ -142,6 +157,17 @@ function assemble(){
           running.push(ln.animate([{strokeDashoffset:L,offset:0},{strokeDashoffset:L,offset:a0/a1,easing:INOUT},{strokeDashoffset:0}],{duration:a1,fill:'forwards'}));
         });
         t=end+60;
+      }else if(j[0]==='m'){
+        var dec=j[1],mGrab=t+APPROACH,mDrop=mGrab+PRESS+MOVE,mst='translate('+j[4].toFixed(1)+'px,'+j[5].toFixed(1)+'px) rotate('+j[6]+'deg)';
+        path.push({t:mGrab,x:j.s.x,y:j.s.y,s:1,o:1,e:INOUT},{t:mGrab+PRESS,x:j.s.x,y:j.s.y,s:.8,o:1},{t:mDrop,x:j.g.x,y:j.g.y,s:.8,o:1,e:EASE},{t:mDrop+80,x:j.g.x,y:j.g.y,s:1,o:1});
+        running.push(dec.animate([{transform:mst,offset:0},{transform:mst,offset:mGrab/mDrop},{transform:mst,offset:(mGrab+PRESS)/mDrop,easing:EASE},{transform:'none',offset:1}],{duration:mDrop}));
+        burst(j.g.x,j.g.y,CUR[c].color,mDrop);
+        t=mDrop+80;
+      }else if(j[0]==='g'){
+        var G=t+APPROACH,GE=G+PRESS+900;
+        path.push({t:G,x:j.s.x,y:j.s.y,s:1,o:1,e:INOUT},{t:G+PRESS,x:j.s.x,y:j.s.y,s:.8,o:1},{t:GE,x:j.g.x,y:j.g.y,s:.8,o:1,e:INOUT},{t:GE+80,x:j.g.x,y:j.g.y,s:1,o:1});
+        running.push(j[1].animate([{clipPath:'inset(0 100% 0 0)'},{clipPath:'inset(0 100% 0 0)',offset:(G+PRESS)/GE},{clipPath:'inset(0 0 0 0)'}],{duration:GE}));
+        t=GE+80;
       }else if(j[0]==='h'){
         // The typography cursor highlights the topics in the bio like selecting text.
         var sx=ma.left+scrollX,sy=ma.top+scrollY+ma.height*.6,ex=mb.right+scrollX,ey=mb.top+scrollY+mb.height*.6,S=t+APPROACH;
