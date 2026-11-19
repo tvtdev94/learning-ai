@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sản phẩm · Trần Văn Tuấn</title>
+<!-- pwa -->
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15171a" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" sizes="32x32" href="../icons/favicon-32.png">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sổ tay">
+<script>if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('../sw.js').catch(function(){})})</script>
+<meta name="description" content="Các công cụ mã nguồn mở của Trần Văn Tuấn cho Claude Code: mcgram (thông báo qua Telegram, ntfy.sh, Discord) và dbread (truy vấn cơ sở dữ liệu chỉ-đọc).">
+<meta property="og:title" content="Sản phẩm · Trần Văn Tuấn">
+<meta property="og:description" content="mcgram và dbread: công cụ MCP mã nguồn mở cho Claude Code.">
+<meta property="og:image" content="https://tvtdev94.github.io/images/avatar.png">
+<meta property="og:url" content="https://tvtdev94.github.io/products/">
+<script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<script>try{var l=/[?&]lang=(en|vi)\b/.exec(location.search);l=l?l[1]:localStorage.getItem('profile-lang');if(l==='en')document.documentElement.lang='en'}catch(e){}</script>
+<!--
+  Each product is one <article class="prod">. Text comes in pairs: data-l="vi" and data-l="en";
+  only the active language shows. Facts here come from each project's README and PyPI page;
+  version numbers and test counts are left out on purpose because they go stale.
+-->
+<style>
+:root{
+  --bg:#f3f6fc; --bg-glow:rgba(37,89,184,.12); --surface:#ffffff; --surface-2:#e7edf8; --line:#d1daeb;
+  --text:#111729; --muted:#47526a; --accent:#2559b8; --mark:rgba(37,89,184,.12); --ok:#16703d; --bad:#a82f2f; --star:#b06a00; --focus:#2559b8;
+  --term:#0d1326; --term-text:#dfe6f5; --term-muted:#9aa6c2;
+  --shadow:0 1px 2px rgba(17,23,41,.05),0 8px 24px rgba(17,23,41,.06);
+  --ease:cubic-bezier(.22,1,.36,1); color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0a0f1f; --bg-glow:rgba(120,160,255,.14); --surface:#121a31; --surface-2:#19223d; --line:#273356;
+    --text:#ebeff8; --muted:#a6b0c6; --accent:#86acff; --mark:rgba(134,172,255,.16); --ok:#4cc184; --bad:#ec7373; --star:#f4c95d; --focus:#86acff;
+    --term:#060a16; --shadow:none; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0a0f1f; --bg-glow:rgba(120,160,255,.14); --surface:#121a31; --surface-2:#19223d; --line:#273356;
+  --text:#ebeff8; --muted:#a6b0c6; --accent:#86acff; --mark:rgba(134,172,255,.16); --ok:#4cc184; --bad:#ec7373; --star:#f4c95d; --focus:#86acff;
+  --term:#060a16; --shadow:none; color-scheme:dark;
+}
+*{box-sizing:border-box}
+:root[lang="en"] [data-l="vi"],:root:not([lang="en"]) [data-l="en"]{display:none!important}
+body{margin:0;background:radial-gradient(90% 50% at 80% -10%,var(--bg-glow),transparent 60%) no-repeat,var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:3px;border-radius:8px}
+
+.bar{max-width:1000px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:8px}
+.back{display:inline-flex;align-items:center;gap:6px;min-height:40px;margin-right:auto;font-weight:600;font-size:15px;color:var(--muted);text-decoration:none}
+.back:hover{color:var(--text)}
+.btn{display:inline-grid;place-items:center;min-width:40px;height:40px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:800 13px/1 system-ui,-apple-system,sans-serif;letter-spacing:.04em;cursor:pointer;transition:border-color .2s}
+.btn:hover{border-color:var(--accent)}
+.btn svg{width:20px;height:20px}
+
+main{max-width:1000px;margin:0 auto;padding:8px 16px 56px}
+h1{margin:8px 0 6px;font-size:clamp(32px,8vw,52px);line-height:1.1;letter-spacing:-.02em}
+.lead{margin:0;max-width:60ch;color:var(--muted);font-size:17px}
+
+.prod{position:relative;margin-top:28px;display:grid;grid-template-columns:minmax(0,1fr);gap:18px;padding:20px;background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);overflow:hidden}
+.prod::before{content:"";position:absolute;inset:-1px -1px auto;height:3px;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+.p-head{display:flex;align-items:center;gap:14px}
+.logo{flex:none;width:56px;height:56px;border-radius:16px;display:grid;place-items:center;background:var(--mark);transition:rotate .4s var(--ease)}
+.prod:hover .logo{rotate:-8deg}
+.logo svg{width:30px;height:30px;fill:none;stroke:var(--accent);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.p-head h2{margin:0;font-size:26px;line-height:1.2;font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;letter-spacing:-.01em}
+.tagline{margin:2px 0 0;font-weight:600;color:var(--muted);font-size:15px}
+.desc{margin:0;font-size:17px;max-width:62ch}
+.feats{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.feats li{display:flex;gap:10px;align-items:flex-start;font-size:15px}
+.feats li::before{content:"";flex:none;width:8px;height:8px;margin-top:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--mark)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips span{font-size:13px;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
+.links{display:flex;flex-wrap:wrap;gap:8px}
+.links a{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--line);font-weight:700;font-size:15px;text-decoration:none;transition:translate .2s var(--ease),border-color .2s}
+.links a:hover{translate:0 -2px;border-color:var(--accent)}
+.links a.primary{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.links svg{width:18px;height:18px;fill:currentColor}
+.note{margin:0;font-size:14px;color:var(--muted)}
+
+/* install snippet */
+.term{display:flex;gap:10px;align-items:flex-start;border-radius:14px;background:var(--term);color:var(--term-text);font:14px/1.7 ui-monospace,"SF Mono",Menlo,Consolas,monospace;padding:12px 10px 12px 14px}
+.term .k{color:var(--term-muted);user-select:none}
+.term code{flex:1;min-width:0;overflow-x:auto;white-space:pre;padding:2px 0 6px}
+.copy{order:1;flex:none;min-height:40px;padding:0 12px;border-radius:10px;border:1px solid #2a3558;background:#141c35;color:var(--term-text);font:600 13px system-ui,sans-serif;cursor:pointer}
+.copy:hover{border-color:#86acff}
+
+/* illustrative demos */
+.demo{border-radius:16px;border:1px dashed var(--line);padding:14px;background:var(--bg)}
+.demo-k{margin:0 0 10px;font-size:13px;font-weight:700;color:var(--muted)}
+.chat{display:grid;gap:8px}
+.msg{justify-self:start;max-width:92%;padding:9px 12px;border-radius:14px 14px 14px 4px;background:var(--surface);border:1px solid var(--line);font-size:15px}
+.msg.me{justify-self:end;border-radius:14px 14px 4px 14px;background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.msg .who{display:block;font-size:12px;font-weight:700;color:var(--muted)}
+.msg.me .who{color:inherit;opacity:.85}
+.btns{display:flex;gap:6px;margin-top:8px}
+.btns span{padding:6px 12px;border-radius:999px;border:1px solid var(--line);font-size:13px;font-weight:700;background:var(--surface-2)}
+.btns span.on{background:var(--ok);border-color:var(--ok);color:var(--surface)}
+.q{display:grid;gap:8px;font:14px/1.5 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.q div{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line);overflow-wrap:anywhere}
+.q b{flex:none;font:700 12px system-ui,sans-serif;padding:4px 8px;border-radius:999px}
+.q .ok b{background:rgba(22,112,61,.14);color:var(--ok)}
+.q .no b{background:rgba(168,47,47,.14);color:var(--bad)}
+.layers{display:flex;gap:4px;margin-top:10px}
+.layers i{flex:1;height:6px;border-radius:3px;background:var(--accent);opacity:.25}
+
+/* entrance: each demo line appears in order once its card scrolls into view */
+.play .step{animation:pop .5s var(--ease) both;animation-delay:calc(var(--i) * 450ms + 200ms)}
+.play .layers i{animation:lit .3s ease-out both;animation-delay:calc(var(--i) * 140ms + 1600ms)}
+@keyframes pop{from{opacity:0;translate:0 10px;scale:.97}to{opacity:1;translate:0 0;scale:1}}
+@keyframes lit{to{opacity:1}}
+
+@media (min-width:860px){
+  .prod{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);align-items:start;padding:28px;column-gap:32px}
+  .prod>.p-main{grid-column:1}
+  .prod>.p-side{grid-column:2;grid-row:1}
+}
+.p-main,.p-side{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;min-width:0}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <a class="back" href="../">← <span data-l="vi">Trang chủ</span><span data-l="en">Home</span></a>
+  <button class="btn" id="langBtn" type="button">EN</button>
+  <button class="btn" id="themeBtn" type="button" aria-label="Đổi giao diện sáng/tối"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2v16a8 8 0 0 1 0-16z"/></svg></button>
+</header>
+
+<main>
+  <h1><span data-l="vi">Sản phẩm</span><span data-l="en">Products</span></h1>
+  <p class="lead" data-l="vi">Công cụ mã nguồn mở tôi làm để Claude Code làm việc an toàn và đỡ tốn công hơn.</p>
+  <p class="lead" data-l="en">Open-source tools I build so Claude Code works more safely and with less effort.</p>
+
+  <article class="prod" id="mcgram">
+    <div class="p-main">
+      <div class="p-head">
+        <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 3 3 10.5l7 2.5 2.5 7L21 3z"/><path d="M10 13l4-4"/></svg></span>
+        <div><h2>mcgram</h2><p class="tagline"><span data-l="vi">Cầu nối thông báo cho Claude Code</span><span data-l="en">Notification bridge for Claude Code</span></p></div>
+      </div>
+      <p class="desc" data-l="vi">Claude nhắn tin, hỏi ý kiến và nhắc việc cho bạn qua Telegram, ntfy.sh hoặc Discord, nên bạn có thể rời máy khi tác vụ còn chạy lâu.</p>
+      <p class="desc" data-l="en">Claude can ping you, ask you and remind you over Telegram, ntfy.sh or Discord, so you can walk away from a long-running task.</p>
+      <ul class="feats">
+        <li><span data-l="vi">Gửi thông báo, kèm file log hoặc video.</span><span data-l="en">Send notifications, with log files or videos attached.</span></li>
+        <li><span data-l="vi">Hỏi rồi chờ trả lời bằng nút bấm, có hạn giờ.</span><span data-l="en">Ask and wait for an answer with buttons and a timeout.</span></li>
+        <li><span data-l="vi">Đặt lời nhắc sau N phút.</span><span data-l="en">Set reminders for later.</span></li>
+        <li><span data-l="vi">Không cần token: dùng ntfy.sh hoặc Discord webhook ở nơi chặn Telegram.</span><span data-l="en">No-token mode: ntfy.sh or a Discord webhook where Telegram is blocked.</span></li>
+      </ul>
+      <div class="chips"><span>MCP</span><span>Python 3.11+</span><span>MIT</span><span>Telegram</span><span>ntfy.sh</span><span>Discord</span></div>
+      <div class="term"><button class="copy" type="button" data-copy="uv tool install git+https://github.com/tvtdev94/mcgram&#10;mcgram init"><span data-l="vi">Chép</span><span data-l="en">Copy</span></button><code><span class="k">$ </span>uv tool install git+https://github.com/tvtdev94/mcgram
+<span class="k">$ </span>mcgram init</code></div>
+      <div class="links">
+        <a class="primary" href="https://github.com/tvtdev94/mcgram" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.4-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.6 2.4 1.1 3 .9.1-.7.4-1.1.6-1.4-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.8 1a9.6 9.6 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .6 1.4.2 2.4.1 2.7.7.7 1 1.6 1 2.7 0 3.9-2.3 4.7-4.6 5 .4.3.7.9.7 1.9V21c0 .3.2.6.7.5A10 10 0 0 0 12 2z"/></svg>GitHub</a>
+        <a href="https://pypi.org/project/mcgram/" target="_blank" rel="noopener">PyPI</a>
+      </div>
+    </div>
+    <div class="p-side">
+      <div class="demo" aria-hidden="true">
+        <p class="demo-k"><span data-l="vi">Minh họa</span><span data-l="en">Illustration</span></p>
+        <div class="chat">
+          <div class="msg step" style="--i:0"><span class="who">Claude</span><span data-l="vi">Build xong, test đều qua ✅</span><span data-l="en">Build finished, all tests passed ✅</span></div>
+          <div class="msg step" style="--i:1"><span class="who">Claude</span><span data-l="vi">Deploy lên staging nhé?</span><span data-l="en">Deploy to staging?</span><div class="btns"><span class="on" data-l="vi">Đồng ý</span><span class="on" data-l="en">Approve</span><span data-l="vi">Huỷ</span><span data-l="en">Cancel</span></div></div>
+          <div class="msg me step" style="--i:2"><span class="who"><span data-l="vi">Bạn</span><span data-l="en">You</span></span><span data-l="vi">nhắc tôi sau 30 phút kiểm tra log</span><span data-l="en">remind me in 30 minutes to check the logs</span></div>
+          <div class="msg step" style="--i:3"><span class="who">Claude</span>⏰ <span data-l="vi">Đã đặt lời nhắc.</span><span data-l="en">Reminder set.</span></div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="prod" id="dbread">
+    <div class="p-main">
+      <div class="p-head">
+        <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><ellipse cx="11" cy="5" rx="7" ry="3"/><path d="M4 5v6c0 1.7 3.1 3 7 3"/><path d="M4 11v6c0 1.7 3.1 3 7 3"/><path d="M18 5v4"/><path d="M17.5 12.5 21 14v3c0 2-1.5 3.3-3.5 4-2-.7-3.5-2-3.5-4v-3z"/></svg></span>
+        <div><h2>dbread</h2><p class="tagline"><span data-l="vi">Proxy cơ sở dữ liệu chỉ-đọc cho AI</span><span data-l="en">Read-only database proxy for AI</span></p></div>
+      </div>
+      <p class="desc" data-l="vi">Đứng giữa AI và cơ sở dữ liệu của bạn: cho Claude Code truy vấn đọc trên nhiều loại DB, còn mọi lệnh ghi bị chặn qua 5 lớp kiểm tra độc lập.</p>
+      <p class="desc" data-l="en">Sits between your AI and your databases: Claude Code gets read queries across many databases, while writes are blocked by five independent layers.</p>
+      <ul class="feats">
+        <li><span data-l="vi">SQL chỉ chạy SELECT, WITH, EXPLAIN, SHOW; MongoDB chỉ find, count, distinct, aggregate.</span><span data-l="en">SQL runs only SELECT, WITH, EXPLAIN and SHOW; MongoDB only find, count, distinct and aggregate.</span></li>
+        <li><span data-l="vi">Thêm kết nối bằng một lệnh, không phải sửa YAML tay.</span><span data-l="en">Add a connection with one command, no hand-edited YAML.</span></li>
+        <li><span data-l="vi">Kèm skill hướng dẫn Claude quy trình truy vấn an toàn.</span><span data-l="en">Ships a skill that teaches Claude the safe query workflow.</span></li>
+      </ul>
+      <div class="chips"><span>PostgreSQL</span><span>MySQL</span><span>MSSQL</span><span>Oracle</span><span>SQLite</span><span>DuckDB</span><span>ClickHouse</span><span>MongoDB</span></div>
+      <div class="term"><button class="copy" type="button" data-copy="uv tool install &quot;dbread[postgres]&quot;&#10;dbread init"><span data-l="vi">Chép</span><span data-l="en">Copy</span></button><code><span class="k">$ </span>uv tool install "dbread[postgres]"
+<span class="k">$ </span>dbread init</code></div>
+      <p class="note" data-l="vi">Lưu ý từ tài liệu dự án: chỉ tài khoản DB chỉ-đọc mới là bảo đảm không thể vượt qua; các lớp còn lại giúp giảm rủi ro.</p>
+      <p class="note" data-l="en">From the project docs: a read-only database user is the only guarantee that cannot be bypassed; the other layers reduce risk.</p>
+      <div class="links">
+        <a class="primary" href="https://github.com/tvtdev94/dbread" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.4-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.6 2.4 1.1 3 .9.1-.7.4-1.1.6-1.4-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.8 1a9.6 9.6 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .6 1.4.2 2.4.1 2.7.7.7 1 1.6 1 2.7 0 3.9-2.3 4.7-4.6 5 .4.3.7.9.7 1.9V21c0 .3.2.6.7.5A10 10 0 0 0 12 2z"/></svg>GitHub</a>
+        <a href="https://pypi.org/project/dbread/" target="_blank" rel="noopener">PyPI</a>
+      </div>
+    </div>
+    <div class="p-side">
+      <div class="demo" aria-hidden="true">
+        <p class="demo-k"><span data-l="vi">Minh họa</span><span data-l="en">Illustration</span></p>
+        <div class="q">
+          <div class="ok step" style="--i:0"><span>SELECT name FROM users LIMIT 5</span><b><span data-l="vi">cho phép</span><span data-l="en">allowed</span></b></div>
+          <div class="no step" style="--i:1"><span>DELETE FROM users</span><b><span data-l="vi">chặn</span><span data-l="en">blocked</span></b></div>
+          <div class="ok step" style="--i:2"><span>db.orders.find({status:"paid"})</span><b><span data-l="vi">cho phép</span><span data-l="en">allowed</span></b></div>
+          <div class="no step" style="--i:3"><span>DROP TABLE orders</span><b><span data-l="vi">chặn</span><span data-l="en">blocked</span></b></div>
+        </div>
+        <div class="layers"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i></div>
+      </div>
+    </div>
+  </article>
+</main>
+
+<script>
+(function(){
+  var root=document.documentElement,reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var themeBtn=document.getElementById('themeBtn'),langBtn=document.getElementById('langBtn');
+  themeBtn.addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+    var next=cur==='dark'?'light':'dark';root.setAttribute('data-theme',next);try{localStorage.setItem('rag-theme',next)}catch(e){}
+  });
+  // Language is shared with the profile and CV pages.
+  function setLang(l){
+    root.lang=l;document.title=l==='en'?'Products · Trần Văn Tuấn':'Sản phẩm · Trần Văn Tuấn';
+    langBtn.textContent=l==='en'?'VI':'EN';langBtn.lang=l==='en'?'vi':'en';
+    langBtn.setAttribute('aria-label',l==='en'?'Chuyển sang tiếng Việt':'Switch to English');
+    themeBtn.setAttribute('aria-label',l==='en'?'Toggle light/dark theme':'Đổi giao diện sáng/tối');
+  }
+  setLang(root.lang==='en'?'en':'vi');
+  langBtn.addEventListener('click',function(){
+    var next=root.lang==='en'?'vi':'en';setLang(next);
+    try{localStorage.setItem('profile-lang',next)}catch(e){}
+    history.replaceState(null,'',next==='en'?'?lang=en':location.pathname);
+  });
+  // Copy buttons.
+  document.querySelectorAll('.copy').forEach(function(b){
+    b.addEventListener('click',function(){
+      var done=function(){var o=b.innerHTML;b.textContent=root.lang==='en'?'Copied':'Đã chép';setTimeout(function(){b.innerHTML=o},1400)};
+      if(navigator.clipboard)navigator.clipboard.writeText(b.dataset.copy).then(done,function(){});
+    });
+  });
+  // Demos play once when their card comes into view; without support they simply show.
+  if(!reduce&&'IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('play');io.unobserve(e.target)}})},{threshold:.35});
+    document.querySelectorAll('.demo').forEach(function(d){io.observe(d)});
+  }
+})();
+</script>
+</body>
+</html>
