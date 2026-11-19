@@ -113,7 +113,7 @@ footer{color:var(--muted);font-size:14px;margin-top:32px}
 <script>
 (function(){
   // Add a new topic: create its folder at the site root (slug/index.html), then add one entry here.
-  // href is relative to the site root; cards link to '../'+href from this page.
+  // href is relative to this page: each topic lives in so-tay/<slug>/.
   // group: 'ai' | 'code' | 'life'. Entries without a group belong to 'ai'.
   var TOPICS=[
     {href:'rag/',icon:'📚',title:'RAG',sub:'Retrieval-Augmented Generation',desc:'Cách cho LLM trả lời dựa trên tài liệu của bạn: flow hai pha, embedding, retrieval, đánh giá và các kỹ thuật nâng cao.',tags:['Cốt lõi + flow','Không cần code','~3 tuần']},
@@ -151,7 +151,7 @@ footer{color:var(--muted);font-size:14px;margin-top:32px}
   var GROUPS=[['all','Tất cả'],['ai','AI'],['code','Lập trình'],['life','Cuộc sống']];
   var filters=document.getElementById('filters'),empty=document.getElementById('empty');
   TOPICS.forEach(function(t){
-    var a=document.createElement('a');a.className='topic';a.href='../'+t.href;a.dataset.group=t.group||'ai';
+    var a=document.createElement('a');a.className='topic';a.href=t.href;a.dataset.group=t.group||'ai';
     a.innerHTML='<div class="icon" aria-hidden="true">'+t.icon+'</div><h2>'+esc(t.title)+'</h2><p><b>'+esc(t.sub)+'</b></p><p style="margin-top:6px">'+esc(t.desc)+'</p><div class="meta">'+t.tags.map(function(g){return '<span class="tag">'+esc(g)+'</span>'}).join('')+'</div><div class="go">Bắt đầu học →</div>';
     grid.appendChild(a);
   });
@@ -300,7 +300,7 @@ footer{color:var(--muted);font-size:14px;margin-top:32px}
       if(!n){info.innerHTML=summary;return}
       info.innerHTML='<h3>'+n.t.icon+' '+esc2(n.t.title)+'</h3><p class="sub">'+esc2(n.t.sub)+'</p>'+
         '<p class="rel-k">Nối với '+n.nb.length+' bài:</p><div class="rel">'+n.nb.map(function(m){return '<button type="button" data-i="'+m.i+'">'+m.t.icon+' '+esc2(m.t.title)+'</button>'}).join('')+'</div>'+
-        '<a class="read" href="../'+n.t.href+'">Đọc bài <span aria-hidden="true">→</span></a>';
+        '<a class="read" href="'+n.t.href+'">Đọc bài <span aria-hidden="true">→</span></a>';
     }
     var summary='<p class="sum"><b>'+N.length+' bài, '+L.length+' liên kết.</b> Chạm vào một chấm để xem bài và những bài nối với nó. Kéo chấm để xếp lại, dùng nút + − để phóng to.</p>';
     info.addEventListener('click',function(e){var b=e.target.closest('button[data-i]');if(b)select(N[+b.dataset.i])});

@@ -1,15 +1,18 @@
 """Add the PWA tags (manifest, icons, service worker) to site pages.
 
 Usage, from the repo root:
-    python3 _work/add-pwa-head.py index.html rag/index.html ...
+    python3 _work/add-pwa-head.py so-tay/<slug>/index.html ...
 
 Pages already carrying the tags are skipped, so it is safe to rerun.
-Run it on every new topic page before publishing.
+Run it on every new topic page before publishing. Topics live in
+so-tay/<slug>/; a topic folder at the repo root is refused.
 """
 import sys
 from pathlib import Path
 
 MARKER = '<!-- pwa -->'
+# Top-level folders that are site sections, not misplaced topics.
+SECTIONS = {'cv', 'products', 'so-tay', 'learning-ai'}
 SNIPPET = """{marker}
 <link rel="manifest" href="{p}manifest.webmanifest">
 <meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
@@ -31,12 +34,19 @@ def add(path: Path) -> str:
     if end < 0:
         return 'ERROR: no </title>'
     end += len('</title>\n')
-    prefix = '' if path.parent == Path('.') else '../'
+    parts = path.parent.parts
+    if len(parts) == 1 and parts[0] not in SECTIONS:
+        return f'ERROR: topics go in so-tay/{parts[0]}/, not at the repo root'
+    prefix = '../' * len(parts)
     html = html[:end] + SNIPPET.format(marker=MARKER, p=prefix) + html[end:]
     path.write_text(html, encoding='utf-8')
     return 'added'
 
 
 if __name__ == '__main__':
+    failed = False
     for arg in sys.argv[1:]:
-        print(f'{arg}: {add(Path(arg))}')
+        result = add(Path(arg))
+        failed = failed or result.startswith('ERROR')
+        print(f'{arg}: {result}')
+    sys.exit(1 if failed else 0)

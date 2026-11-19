@@ -1,6 +1,6 @@
 # Brief chung cho mỗi phiên làm chủ đề (learning-ai, đợt 2)
 
-Status: active · Ngày: 2026-11-14 · Timezone: Asia/Bangkok · Mọi đường dẫn trong file này tính từ gốc repo `learning-ai`.
+Status: active · Ngày: 2026-11-14 · Timezone: Asia/Bangkok · Mọi đường dẫn trong file này tính từ gốc repo `tvtdev94.github.io`. Từ 2026-11-19 mỗi bài nằm ở `so-tay/<slug>/index.html` (URL `/so-tay/<slug>/`); asset gốc dùng `../../` (`../../icons/`, `../../sw.js`, `../../manifest.webmanifest`).
 
 ## Mục tiêu
 Tạo MỘT trang HTML học một chủ đề AI cho site https://tvtdev94.github.io/ (repo này, tên hiển thị "Sổ tay"). Nội dung lấy từ nghiên cứu web và có evidence. Trang phải qua kongming review, test bằng Orca browser (đặc biệt chart), dễ đọc trên điện thoại. Xong thì tự dọn dẹp.
@@ -12,18 +12,18 @@ Tạo MỘT trang HTML học một chủ đề AI cho site https://tvtdev94.gith
 - Ngôn ngữ: tiếng Việt có dấu đầy đủ, thuật ngữ kỹ thuật giữ tiếng Anh.
 
 ## Thiết kế: dùng lại hệ thống sẵn có
-Đọc kỹ trang mẫu `rag/index.html` và dùng lại đúng các thành phần sau:
+Đọc kỹ trang mẫu `so-tay/rag/index.html` và dùng lại đúng các thành phần sau:
 - CSS tokens `:root`, kèm dark mode: `prefers-color-scheme` được guard bởi `:root:not([data-theme="light"])`, và có thêm `:root[data-theme="dark"]`.
 - Script đọc theme sớm trong `<head>`, key localStorage `rag-theme` (dùng chung toàn site).
-- Header sticky có nút `a.home` href `../so-tay/` (danh sách bài), mục lục ngang tự cuộn, nút đổi theme.
+- Header sticky có nút `a.home` href `../` (danh sách bài), mục lục ngang tự cuộn, nút đổi theme.
 - Các lớp `.card .grid .callout .tag .table-wrap table.stack .vflow .m-only .d-only .svgbox`.
 - Quy tắc mobile `@media (max-width:600px)` và hàm `labelTables`.
 - Bọc mọi truy cập localStorage trong try/catch.
-- Chép nguyên khối CSS `/* cite-tap */` ở cuối `<style>` của `rag/index.html`: số trích dẫn `[N]` có vùng bấm cao ≥ 40px, rộng ≥ 24px.
+- Chép nguyên khối CSS `/* cite-tap */` ở cuối `<style>` của `so-tay/rag/index.html`: số trích dẫn `[N]` có vùng bấm cao ≥ 40px, rộng ≥ 24px.
 
 Một file tự chứa, không dùng CDN hay thư viện ngoài.
 
-Site là một PWA (`manifest.webmanifest`, `sw.js`, `icons/`). Phiên chính chạy `python3 _work/add-pwa-head.py <slug>/index.html` trước khi publish để gắn thẻ PWA; phiên chủ đề không cần tự thêm.
+Site là một PWA (`manifest.webmanifest`, `sw.js`, `icons/`). Phiên chính chạy `python3 _work/add-pwa-head.py so-tay/<slug>/index.html` trước khi publish để gắn thẻ PWA; phiên chủ đề không cần tự thêm.
 
 Liên kết sang các trang liên quan khi hợp lý: `../rag/`, `../ai-agent/`, `../harness/`, `../hybrid-search/`, `../reranking/`, `../embedding-performance/`, `../governance/`, `../knowledge-base/`, và các slug đợt 2 bên dưới.
 
@@ -60,7 +60,7 @@ Liên kết sang các trang liên quan khi hợp lý: `../rag/`, `../ai-agent/`,
 - Tương phản đủ ở cả chế độ sáng và tối.
 
 ## File được phép sửa
-CHỈ `<slug>/index.html` và các file report hoặc ghi chú của chủ đề mình trong `_work/notes/`.
+CHỈ `so-tay/<slug>/index.html` và các file report hoặc ghi chú của chủ đề mình trong `_work/notes/`.
 KHÔNG sửa `index.html` gốc và `so-tay/index.html`, KHÔNG sửa thư mục chủ đề khác, KHÔNG chạy git (phiên chính sẽ gộp và đẩy lên).
 
 ## Kongming review: BẮT BUỘC
@@ -78,7 +78,7 @@ Bạn phải tự kiểm lại từng phát hiện, sửa những cái đúng, v
 ## Test bằng Orca browser: BẮT BUỘC, đặc biệt là chart
 1. Chạy nền `python -m http.server <port> --bind 127.0.0.1` tại gốc repo.
 2. Xem lệnh bằng `orca skills get orca-cli --reference browser`.
-3. Tạo tab riêng bằng `orca tab create --url http://127.0.0.1:<port>/<slug>/ --json` và luôn dùng `--page <id>` của tab đó.
+3. Tạo tab riêng bằng `orca tab create --url http://127.0.0.1:<port>/so-tay/<slug>/ --json` và luôn dùng `--page <id>` của tab đó.
 4. Test ở viewport 1280x900 và `orca viewport --width 390 --height 844 --mobile`. Đặt lại viewport sau mỗi reload hoặc goto.
 5. Kiểm các điểm chung:
    - `orca console` không có lỗi.

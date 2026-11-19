@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Không tìm thấy trang · Trần Văn Tuấn</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+<script>
+// Notebook topics lived at the site root (/rag/) until they moved under /so-tay/.
+// This frozen list sends those old links to the new place. New topics never lived
+// at the root, so the list never grows.
+(function(){
+  var OLD=['agent-memory','ai-agent','context-engineering','document-parsing-chunking','embedding-performance','fine-tuning-vs-rag','governance','graphrag','harness','hybrid-search','knowledge-base','langchain','langgraph','langsmith','llm-cost-optimization','llm-evaluation','llm-fundamentals','llm-observability','llm-rubric-grading','long-document-extraction','model-context-protocol','multi-agent-agentic-rag','multilingual-rag','prompt-engineering','prompt-injection-guardrails','query-transformation','rag','reranking','tool-calling-structured-output'];
+  var seg=location.pathname.split('/')[1];
+  if(OLD.indexOf(seg)>=0)location.replace('/so-tay'+location.pathname+location.search+location.hash);
+})();
+</script>
+<script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+:root{--bg:#f3f6fc;--text:#111729;--muted:#47526a;--line:#d1daeb;--accent:#2559b8;color-scheme:light}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0a0f1f;--text:#ebeff8;--muted:#a6b0c6;--line:#273356;--accent:#86acff;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0a0f1f;--text:#ebeff8;--muted:#a6b0c6;--line:#273356;--accent:#86acff;color-scheme:dark}
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:24px;box-sizing:border-box}
+main{max-width:30rem;text-align:center}
+.code{font:800 64px/1 ui-monospace,Menlo,Consolas,monospace;color:var(--accent);margin:0}
+h1{font-size:24px;margin:12px 0 4px}
+p{color:var(--muted);margin:0}
+nav{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:20px}
+a{display:inline-flex;align-items:center;min-height:44px;padding:0 18px;border-radius:999px;border:1px solid var(--line);color:inherit;font-weight:700;text-decoration:none}
+a:hover{border-color:var(--accent)}
+a:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+</style>
+</head>
+<body>
+<main>
+  <p class="code">404</p>
+  <h1>Không tìm thấy trang</h1>
+  <p>Page not found. Trang này không tồn tại hoặc đã chuyển chỗ.</p>
+  <nav><a href="/">Trang chủ</a><a href="/so-tay/">Sổ tay</a><a href="/products/">Sản phẩm</a></nav>
+</main>
+</body>
+</html>

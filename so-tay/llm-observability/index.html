@@ -1,0 +1,1065 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLM observability: trace, đo và gỡ lỗi ứng dụng LLM</title>
+<!-- pwa -->
+<link rel="manifest" href="../../manifest.webmanifest">
+<meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15171a" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" sizes="32x32" href="../../icons/favicon-32.png">
+<link rel="apple-touch-icon" href="../../icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sổ tay">
+<script>if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('../../sw.js').catch(function(){})})</script>
+<script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+:root{
+  --bg:#f7f6f2; --surface:#ffffff; --surface-2:#f0eee8; --text:#1f2328; --muted:#5b6370;
+  --border:#dcd8cf; --accent:#2559b8; --accent-soft:#e3ecfc; --ok:#16703d; --ok-soft:#e1f3e8;
+  --warn:#8f4c0a; --warn-soft:#fbeedd; --bad:#a82f2f; --bad-soft:#fae3e3;
+  --p1:#2559b8; --p2:#7440b8; --p3:#16703d; --p4:#8f4c0a;
+  --code-bg:#f0eee8; --shadow:0 1px 2px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04); --on-accent:#ffffff; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+    --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+    --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+    --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --code-bg:#252930; --shadow:none; --on-accent:#15171a; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+  --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+  --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+  --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --code-bg:#252930; --shadow:none; --on-accent:#15171a; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+a{color:var(--accent)}
+header.top{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
+.top-inner{max-width:1100px;margin:0 auto;padding:10px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.brand{font-weight:700;white-space:nowrap}
+.home{white-space:nowrap;text-decoration:none;color:var(--text);border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:4px 10px;font-size:14px}
+.home:hover{border-color:var(--accent);color:var(--accent)}
+nav.toc{display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin;flex:1}
+nav.toc a{white-space:nowrap;text-decoration:none;color:var(--muted);padding:4px 10px;border-radius:999px;font-size:14px}
+nav.toc a:hover,nav.toc a.active{background:var(--accent-soft);color:var(--accent)}
+button{font:inherit;cursor:pointer}
+button:disabled{opacity:.45;cursor:default}
+.theme-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:4px 10px;font-size:14px}
+main{max-width:1100px;margin:0 auto;padding:16px}
+section{padding:28px 0;border-bottom:1px solid var(--border);scroll-margin-top:64px}
+section:last-child{border-bottom:none}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.2;margin:16px 0 8px}
+h2{font-size:clamp(22px,3.5vw,28px);margin:0 0 12px}
+h3{font-size:18px;margin:20px 0 8px}
+p{margin:8px 0}
+.lead{font-size:18px;color:var(--muted);max-width:760px}
+.muted{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 10px 10px 0;margin:12px 0}
+.callout.ok{border-color:var(--ok);background:var(--ok-soft)}
+.callout.warn{border-color:var(--warn);background:var(--warn-soft)}
+.callout.bad{border-color:var(--bad);background:var(--bad-soft)}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);margin-right:4px}
+.tag.p1{background:var(--accent-soft);color:var(--p1)}
+.tag.p2{background:var(--surface-2);color:var(--p2)}
+.tag.p3{background:var(--ok-soft);color:var(--p3)}
+.tag.p4{background:var(--warn-soft);color:var(--p4)}
+.tag.bad{background:var(--bad-soft);color:var(--bad)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+th{background:var(--surface-2);font-weight:600}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.mono,code{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:14px}
+code{background:var(--code-bg);padding:1px 5px;border-radius:5px;overflow-wrap:anywhere}
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-word;margin:8px 0;font-size:14px;line-height:1.55}
+pre.txt{font-family:inherit;font-size:15px}
+svg text{fill:var(--text);font-family:inherit}
+.diagram{width:100%;height:auto;display:block}
+.svgbox{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;overflow-x:auto}
+.svgbox svg{min-width:640px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:8px 0}
+.legend .sw{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:5px;border:2px solid}
+.sw.s1{border-color:var(--p1);background:var(--accent-soft)} .sw.s2{border-color:var(--p2);background:var(--surface)} .sw.s3{border-color:var(--p3);background:var(--ok-soft)} .sw.s4{border-color:var(--p4);background:var(--warn-soft)} .sw.s5{border-color:var(--bad);background:var(--bad-soft)}
+.sw.f1{border-color:var(--p1);background:var(--p1)} .sw.f2{border-color:var(--p2);background:var(--p2)} .sw.f3{border-color:var(--p3);background:var(--p3)} .sw.f4{border-color:var(--p4);background:var(--p4)} .sw.f5{border-color:var(--bad);background:var(--bad)}
+/* Glossary */
+.gloss-tools{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+.gloss-tools input{flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
+.chip{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:999px;padding:4px 12px;font-size:14px}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.term{overflow-wrap:anywhere;min-width:0}
+.term h4{margin:0 0 4px;font-size:16px}
+.term .en{font-weight:400;color:var(--muted);font-size:14px}
+.term p{margin:4px 0;font-size:15px}
+.term .ex{font-size:14px;color:var(--muted)}
+.term .rel{font-size:13px;margin-top:6px}
+.term .rel a{font-size:13px}
+/* Stepper */
+.stepper{display:grid;grid-template-columns:240px 1fr;gap:12px}
+.stepper>div{min-width:0}
+@media (max-width:720px){.stepper{grid-template-columns:1fr}}
+.steps{display:flex;flex-direction:column;gap:6px}
+@media (max-width:720px){.steps{flex-direction:row;overflow-x:auto}}
+.steps button{text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px;white-space:nowrap}
+.steps button .n{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--surface-2);text-align:center;line-height:22px;font-size:12px;margin-right:6px}
+.steps button.on{border-color:var(--accent);background:var(--accent-soft)}
+.steps button.on .n{background:var(--accent);color:var(--on-accent)}
+.step-nav{display:flex;gap:8px;margin-top:12px}
+.step-nav button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 14px}
+/* Trace waterfall */
+.wf{margin:10px 0 6px;border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:var(--surface)}
+.wf-head{font-size:14px;color:var(--muted);margin-bottom:4px}
+.wf-row,.wf-axis{display:grid;grid-template-columns:250px 1fr;gap:2px 10px;align-items:center}
+.wf-row{padding:5px 0;border-bottom:1px dashed var(--border)}
+.wf-row:last-of-type{border-bottom:none}
+.wf-name{font-size:14px;min-width:0;overflow-wrap:anywhere;line-height:1.35}
+.wf-name small{display:block;color:var(--muted);font-size:13px}
+.wf-name .ix{color:var(--muted)}
+.wf-track{position:relative;height:20px;background:var(--surface-2);border-radius:5px}
+.wf-bar{position:absolute;top:3px;bottom:3px;border-radius:4px;min-width:3px}
+.k-agent{background:var(--p2)} .k-ret{background:var(--p3)} .k-llm{background:var(--p1)} .k-tool{background:var(--p4)} .k-err{background:var(--bad)}
+.wf-row.dim .wf-bar{opacity:.3}
+.wf-row.dim .wf-name{color:var(--muted)}
+.wf-row.focus .wf-track{outline:2px solid var(--accent);outline-offset:2px}
+.wf-row.focus .wf-name{font-weight:600}
+.wf-ticks{position:relative;height:20px;font-size:13px;color:var(--muted)}
+.wf-ticks span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap}
+.wf-ticks span:first-child{transform:none}
+.wf-ticks span:last-child{transform:translateX(-100%)}
+.kv{display:grid;grid-template-columns:minmax(0,auto) minmax(0,1fr);gap:2px 12px;font-size:14px;margin:8px 0;background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.kv code{background:none;padding:0}
+.kv .k{color:var(--muted);overflow-wrap:anywhere}
+.kv .v{overflow-wrap:anywhere;font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+.kv .v.bad{color:var(--bad);font-weight:700}
+/* Simulator */
+.calc{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:4px 20px}
+.rng label{display:flex;justify-content:space-between;gap:8px;font-size:15px;margin-top:6px}
+.rng label b{white-space:nowrap}
+.rng input{width:100%;height:40px;margin:0;accent-color:var(--accent)}
+.ctxrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:8px 0}
+.ctxrow>span{font-size:15px;margin-right:4px}
+.toggle{display:flex;gap:10px;align-items:center;font-size:15px;margin:6px 0;min-height:40px}
+.toggle input{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.kpi{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.kpi .card{flex:1;min-width:150px}
+.kpi .card>span{display:block;font-size:14px}
+.kpi b{display:block;font-size:20px}
+.hist{margin:10px 0}
+.hrow{display:grid;grid-template-columns:76px 1fr 44px;gap:2px 8px;align-items:center;padding:3px 0}
+.hrow .hl{font-size:14px;white-space:nowrap}
+.hrow .ht{display:flex;height:18px;background:var(--surface-2);border-radius:4px;overflow:hidden}
+.hrow .ht span{display:block;height:100%}
+.hrow .hc{text-align:right;font-weight:700;font-size:14px}
+.hrow .mk{grid-column:2/4;display:flex;gap:6px;flex-wrap:wrap}
+.mkr{font-size:13px;font-weight:700;padding:0 7px;border-radius:6px;border:1px solid var(--border);background:var(--surface);white-space:nowrap}
+.mkr.m{color:var(--p4);border-color:var(--p4)} .mkr.q{color:var(--p1);border-color:var(--p1)}
+.b-ok{background:var(--p1)} .b-err{background:var(--bad)}
+.verdict{font-weight:700}
+.verdict.good{color:var(--ok)} .verdict.risk{color:var(--warn)} .verdict.bad{color:var(--bad)}
+.res{font-weight:700;white-space:nowrap}
+.res.ok{color:var(--ok)} .res.err{color:var(--bad)} .res.mid{color:var(--warn)}
+details{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0 14px;margin:8px 0}
+details summary{cursor:pointer;font-weight:600;padding:10px 0;min-height:40px}
+details[open]{padding-bottom:10px}
+.check{display:flex;gap:8px;align-items:flex-start;padding:6px 0}
+.check input{margin-top:6px}
+footer{max-width:1100px;margin:0 auto;padding:24px 16px;color:var(--muted);font-size:14px}
+.card>h4:first-child,.card>.tag+h4{margin-top:4px}
+.card h4{margin-bottom:6px}
+.m-only{display:none}
+/* Citations */
+sup.cite{font-size:max(11px,.72em);line-height:0;margin-left:1px;white-space:nowrap}
+sup.cite a{text-decoration:none;font-weight:600;padding:10px 6px;margin:-10px 0}
+sup.cite a:hover{text-decoration:underline}
+sup.cite a+a{margin-left:4px}
+ol.sources{padding-left:1.6em;margin:8px 0}
+ol.sources li{margin:0 0 10px;font-size:15px;overflow-wrap:anywhere;scroll-margin-top:64px}
+ol.sources li:target{background:var(--accent-soft);border-radius:6px}
+ol.sources .acc{color:var(--muted);font-size:14px}
+.vflow .box,.vflow .node,.vflow .ar{display:block}
+.vflow .ph{font-weight:700;font-size:14px;margin:4px 0 8px}
+.vflow .ph1{color:var(--p1)} .vflow .ph2{color:var(--p3)} .vflow .ph3{color:var(--p2)} .vflow .ph4{color:var(--p4)} .vflow .ph5{color:var(--bad)} .vflow .ph0{color:var(--muted)}
+.vflow .node{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px}
+.vflow .node b{display:block}
+.vflow .node span{font-size:13px;color:var(--muted)}
+.vflow .node.r{border:2px solid var(--p1)} .vflow .node.a{border:2px solid var(--p2)} .vflow .node.g{border:2px solid var(--p3)} .vflow .node.o{border:2px solid var(--p4)} .vflow .node.x{border:2px solid var(--bad)}
+.vflow .ar{text-align:center;color:var(--muted);font-size:13px;line-height:1.3;padding:4px 0}
+.vflow .ar.loop{color:var(--p4);font-weight:600}
+.vflow .ar.loop2{color:var(--p2);font-weight:600}
+.vflow .ar.loop3{color:var(--p3);font-weight:600}
+.vflow .box{border-radius:12px;padding:10px;margin-bottom:10px}
+.vflow .box0{background:var(--surface-2)} .vflow .box1{background:var(--accent-soft)} .vflow .box2{background:var(--ok-soft)} .vflow .box4{background:var(--warn-soft)} .vflow .box5{background:var(--bad-soft)}
+.vflow .gap{height:8px}
+/* Desktop SVG diagrams (viewBox 1000 wide) only from 1081px so their small labels render at ~11px or larger */
+@media (max-width:860px){.wf-row,.wf-axis{grid-template-columns:1fr}.wf-axis .sp{display:none}}
+@media (max-width:1080px){.d-only{display:none}.m-only{display:block}.vflow{max-width:560px;margin:0 auto}}
+@media (max-width:600px){
+  .brand{display:none} body{font-size:15px}
+  .theme-btn .lbl,.home .lbl{display:none}
+  main{padding:12px 16px}
+  section{padding:22px 0}
+  .card{padding:14px}
+  table.stack thead{display:none}
+  table.stack,table.stack tbody,table.stack tr,table.stack td{display:block;width:100%}
+  table.stack tr{border-bottom:1px solid var(--border);padding:8px 0}
+  table.stack tr:last-child{border-bottom:none}
+  table.stack td{border:none;padding:3px 12px}
+  table.stack td[data-label]::before{content:attr(data-label);display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  table.stack td:first-child{font-size:16px}
+  table.stack td:first-child::before{display:none}
+  .home,.theme-btn,nav.toc a,.chip,.step-nav button,.steps button{min-height:40px}
+  .home,.theme-btn,nav.toc a{display:inline-flex;align-items:center}
+  pre,.term .ex{font-size:15px}
+  .vflow .node span{font-size:15px}
+  .term .rel a{font-size:14px;padding:12px 2px}
+  .term .rel{line-height:2.6}
+  .gloss-tools input{font-size:16px;min-height:40px}
+  .legend,.kpi .card>span{font-size:14px}
+  .wf-name{font-size:15px}
+  .wf-name small{font-size:14px}
+  .kv{grid-template-columns:1fr;gap:0;font-size:15px}
+  .vflow .ar{font-size:14px}
+  ol.sources a{display:inline-block;padding:9px 0}
+  .kv .v{margin-bottom:6px}
+  .kpi .card{min-width:130px}
+}
+/* cite-tap */
+/* Same tap area for citation links on every page: at least 40px high and 24px wide.
+   Negative vertical margins keep line spacing unchanged. */
+sup.cite a{display:inline-block;box-sizing:border-box;min-width:24px;line-height:1;padding:15px 3px;margin-top:-15px;margin-bottom:-15px;text-align:center}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <a class="home" href="../" aria-label="Về trang tất cả chủ đề">←<span class="lbl"> Chủ đề</span></a>
+    <span class="brand">LLM observability</span>
+    <nav class="toc" id="toc">
+      <a href="#tong-quan">1. Tổng quan</a>
+      <a href="#flow">2. Flow</a>
+      <a href="#vi-du">3. Đọc một trace</a>
+      <a href="#mo-phong">4. Mô phỏng sampling</a>
+      <a href="#khai-niem">5. Khái niệm</a>
+      <a href="#quan-he">6. Mối quan hệ</a>
+      <a href="#so-sanh">7. So sánh</a>
+      <a href="#loi">8. Lỗi &amp; chẩn đoán</a>
+      <a href="#danh-gia">9. Đo lường</a>
+      <a href="#lo-trinh">10. Lộ trình</a>
+      <a href="#nguon">Nguồn</a>
+    </nav>
+    <button class="theme-btn" id="themeBtn" aria-label="Đổi giao diện sáng/tối">◐<span class="lbl"> Giao diện</span></button>
+  </div>
+</header>
+
+<main>
+
+<!-- 1. TỔNG QUAN -->
+<section id="tong-quan">
+  <h1>LLM observability: nhìn thấy từng bước bên trong ứng dụng LLM</h1>
+  <p class="lead">Observability giúp bạn hiểu một hệ thống từ bên ngoài, qua dữ liệu nó phát ra: trace, metric, log.<sup class="cite"><a href="#src-1">[1]</a></sup> Với ứng dụng LLM, một trace có thể ghi lại đúng prompt đã gửi, câu trả lời của model, số token, độ trễ, và mọi bước retrieval hay tool ở giữa.<sup class="cite"><a href="#src-14">[14]</a></sup> Thiếu nó, debug gần như là đoán.<sup class="cite"><a href="#src-14">[14]</a></sup></p>
+  <p class="muted">Trang này dành cho người xây RAG và agent cho doanh nghiệp. Không cần code. Nên đọc trước <a href="../llm-fundamentals/">Cách LLM hoạt động</a> và <a href="../ai-agent/">AI Agent</a>; trang <a href="../llm-evaluation/">LLM evaluation</a> là bạn đồng hành của trang này.</p>
+
+  <h3>Vì sao ứng dụng LLM cần observability riêng?</h3>
+  <div class="grid g3">
+    <div class="card"><span class="tag p1">Lý do 1</span><h4>Chạy lại không ra lỗi cũ</h4><p>Kể cả temperature 0, kết quả vẫn không hoàn toàn tất định; cùng input có thể ra output khác.<sup class="cite"><a href="#src-22">[22]</a></sup> Agent còn đưa ra quyết định khác nhau giữa các lần chạy, dù prompt giống hệt.<sup class="cite"><a href="#src-29">[29]</a></sup> Muốn biết lỗi vì đâu, bạn phải có bản ghi của <b>đúng lần</b> bị lỗi.</p></div>
+    <div class="card"><span class="tag bad">Lý do 2</span><h4>Lỗi không báo lỗi</h4><p>Sách SRE của Google đã cảnh báo kiểu lỗi trả về HTTP 200 nhưng nội dung sai.<sup class="cite"><a href="#src-24">[24]</a></sup> Với LLM, đây là chuyện thường ngày: model trả lời trôi chảy nhưng bịa. Log lỗi và status code không bắt được; phải có trace để xem từng bước, và điểm chất lượng gắn vào trace.</p></div>
+    <div class="card"><span class="tag p4">Lý do 3</span><h4>Agent có nhiều bước, lỗi dồn lại</h4><p>Agent tự quyết nhiều bước nên tốn kém hơn và lỗi có thể dồn qua các bước.<sup class="cite"><a href="#src-23">[23]</a></sup> Nhóm Anthropic kể: thêm tracing đầy đủ ở production mới giúp họ chẩn đoán vì sao agent thất bại và sửa có hệ thống.<sup class="cite"><a href="#src-29">[29]</a></sup></p></div>
+  </div>
+
+  <h3>Bốn loại dữ liệu bạn sẽ gặp</h3>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Loại</th><th>Là gì</th><th>Ví dụ ở trợ lý tra cứu đơn hàng</th></tr></thead>
+    <tbody>
+      <tr><td><b>Trace</b><sup class="cite"><a href="#src-1">[1]</a><a href="#src-2">[2]</a></sup></td><td>Đường đi của <b>một</b> request. Gồm nhiều <b>span</b>, mỗi span là một bước có giờ bắt đầu, giờ kết thúc; span con lồng trong span cha.</td><td>Câu hỏi "đơn MP-48213 đâu rồi?": tìm tài liệu → gọi model → gọi tool tra đơn → gọi model lần hai</td></tr>
+      <tr><td><b>Metric</b><sup class="cite"><a href="#src-1">[1]</a></sup></td><td>Số liệu gộp theo thời gian</td><td>p95 độ trễ trong 5 phút; tổng token mỗi giờ; tỷ lệ lỗi tool</td></tr>
+      <tr><td><b>Log</b><sup class="cite"><a href="#src-1">[1]</a></sup></td><td>Một thông điệp có dấu thời gian</td><td>"14:02:07 get_order_status timeout sau 6 s"</td></tr>
+      <tr><td><b>Score</b> (điểm chất lượng)<sup class="cite"><a href="#src-13">[13]</a><a href="#src-18">[18]</a></sup></td><td>Kết quả chấm một câu trả lời, gắn vào trace hoặc span đã tạo ra nó</td><td>Khách bấm 👎; LLM giám khảo chấm "không bám kết quả tool"</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted">Ba loại đầu là ba tín hiệu kinh điển của OpenTelemetry.<sup class="cite"><a href="#src-1">[1]</a></sup> Loại thứ tư là phần riêng của ứng dụng LLM: OpenTelemetry định nghĩa event <code>gen_ai.evaluation.result</code> để ghi kết quả chấm,<sup class="cite"><a href="#src-13">[13]</a></sup> còn Langfuse lưu mọi phản hồi của người dùng thành score trên trace.<sup class="cite"><a href="#src-18">[18]</a></sup></p>
+
+  <div class="callout"><b>Monitoring và observability.</b> Monitoring trả lời hai câu: cái gì hỏng, và vì sao.<sup class="cite"><a href="#src-24">[24]</a></sup> Dashboard và cảnh báo cho biết "cái gì": p95 tăng, tỷ lệ 👎 tăng. Trace cho biết "vì sao": request nào, bước nào, input gì. Observability cho phép đặt câu hỏi mới với hệ thống mà không cần biết trước bên trong nó chạy ra sao.<sup class="cite"><a href="#src-1">[1]</a></sup></div>
+  <div class="callout warn"><b>Observability không thay evaluation.</b> Observability cho evaluation dữ liệu production thật để chấm.<sup class="cite"><a href="#src-14">[14]</a></sup> Hamel Husain viết: điều kiện tiên quyết để chấm bằng người hay bằng model là phải ghi trace.<sup class="cite"><a href="#src-28">[28]</a></sup> Trang <a href="../llm-evaluation/">LLM evaluation</a> nói cách dựng bộ eval; trang này nói cách thu dữ liệu, đọc nó, và nối nó với vòng cải tiến.</div>
+</section>
+
+<!-- 2. FLOW -->
+<section id="flow">
+  <h2>2. Flow: từ một request tới một bản sửa</h2>
+  <p>Dữ liệu đi qua bảy chặng. Ba chặng đầu chạy trong ứng dụng của bạn. Chặng 4 là đường ống chuyển dữ liệu: OpenTelemetry chỉ lo tạo và xuất telemetry, còn lưu trữ và giao diện xem là việc của backend khác.<sup class="cite"><a href="#src-33">[33]</a></sup> Ba chặng cuối biến dữ liệu thành bản sửa.</p>
+
+  <div class="vflow m-only" role="group" aria-label="Flow observability (dạng dọc)">
+    <div class="box box1">
+      <div class="ph ph1">TRONG ỨNG DỤNG</div>
+      <div class="node r"><b>1. Instrument</b><span>SDK hoặc thư viện tự động tạo span cho mỗi lần gọi model, retrieval, tool</span></div>
+      <div class="ar">↓</div>
+      <div class="node r"><b>2. Che dữ liệu</b><span>theo quy ước OpenTelemetry, mặc định không ghi nội dung prompt; nếu bật thì che số điện thoại, email… trước khi gửi đi</span></div>
+      <div class="ar">↓</div>
+      <div class="node r"><b>3. Head sampling</b><span>quyết định giữ trace nào ngay từ đầu, theo một tỷ lệ</span></div>
+    </div>
+    <div class="ar">↓</div>
+    <div class="box box4">
+      <div class="ph ph4">ĐƯỜNG ỐNG</div>
+      <div class="node o"><b>4. Export, tail sampling</b><span>gửi qua giao thức OTLP, thường qua Collector: nhận, xử lý, chuyển tiếp. Tail sampling (xem cả trace rồi mới quyết) chạy ở đây, sau khi span rời ứng dụng</span></div>
+    </div>
+    <div class="ar">↓</div>
+    <div class="box box2">
+      <div class="ph ph2">BACKEND</div>
+      <div class="node g"><b>5. Lưu và xem</b><span>xem trace dạng thác nước, dashboard metric, cảnh báo</span></div>
+      <div class="ar">↓</div>
+      <div class="node g"><b>6. Chấm điểm</b><span>LLM giám khảo, phản hồi người dùng → score</span></div>
+      <div class="ar loop3">↺ score được gắn ngược vào trace, span đã tạo ra câu trả lời</div>
+    </div>
+    <div class="ar">↓</div>
+    <div class="box box0">
+      <div class="ph ph3">CẢI TIẾN</div>
+      <div class="node a"><b>7. Sửa và kiểm</b><span>đưa trace lỗi vào dataset, thử bản sửa bằng experiment, phát hành phiên bản mới</span></div>
+      <div class="ar loop2">↺ phiên bản mới lại được trace: quay về bước 1</div>
+    </div>
+  </div>
+
+  <div class="svgbox d-only">
+  <svg class="diagram" viewBox="0 0 1000 300" role="img" aria-label="Flow observability: instrument, che dữ liệu, sampling, export, lưu và xem, chấm điểm, sửa và kiểm, rồi lặp lại">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+      <marker id="arrP2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--p2)"/></marker>
+      <marker id="arrP3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--p3)"/></marker>
+    </defs>
+    <text x="214" y="226" text-anchor="middle" font-weight="700" font-size="14" style="fill:var(--p1)">TRONG ỨNG DỤNG</text>
+    <text x="498" y="226" text-anchor="middle" font-weight="700" font-size="14" style="fill:var(--p4)">ĐƯỜNG ỐNG</text>
+    <text x="711" y="226" text-anchor="middle" font-weight="700" font-size="14" style="fill:var(--p3)">BACKEND</text>
+    <text x="924" y="226" text-anchor="middle" font-weight="700" font-size="14" style="fill:var(--p2)">CẢI TIẾN</text>
+    <g font-size="14">
+      <rect x="10" y="110" width="124" height="90" rx="10" fill="var(--accent-soft)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="72" y="142" text-anchor="middle" font-weight="600">1. Instrument</text>
+      <text x="72" y="164" text-anchor="middle" font-size="12" style="fill:var(--muted)">SDK tạo span</text>
+      <text x="72" y="182" text-anchor="middle" font-size="12" style="fill:var(--muted)">model · tool · tìm</text>
+      <rect x="152" y="110" width="124" height="90" rx="10" fill="var(--accent-soft)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="214" y="142" text-anchor="middle" font-weight="600">2. Che dữ liệu</text>
+      <text x="214" y="164" text-anchor="middle" font-size="12" style="fill:var(--muted)">nội dung: opt-in</text>
+      <text x="214" y="182" text-anchor="middle" font-size="12" style="fill:var(--muted)">masking</text>
+      <rect x="294" y="110" width="124" height="90" rx="10" fill="var(--accent-soft)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="356" y="142" text-anchor="middle" font-weight="600">3. Head sampling</text>
+      <text x="356" y="164" text-anchor="middle" font-size="12" style="fill:var(--muted)">quyết từ đầu</text>
+      <text x="356" y="182" text-anchor="middle" font-size="12" style="fill:var(--muted)">theo tỷ lệ</text>
+      <rect x="436" y="110" width="124" height="90" rx="10" fill="var(--warn-soft)" stroke="var(--p4)" stroke-width="2"/>
+      <text x="498" y="142" text-anchor="middle" font-weight="600">4. Export</text>
+      <text x="498" y="164" text-anchor="middle" font-size="12" style="fill:var(--muted)">OTLP · Collector</text>
+      <text x="498" y="182" text-anchor="middle" font-size="12" style="fill:var(--muted)">tail sampling</text>
+      <rect x="578" y="110" width="124" height="90" rx="10" fill="var(--ok-soft)" stroke="var(--p3)" stroke-width="2"/>
+      <text x="640" y="142" text-anchor="middle" font-weight="600">5. Lưu và xem</text>
+      <text x="640" y="164" text-anchor="middle" font-size="12" style="fill:var(--muted)">trace · dashboard</text>
+      <text x="640" y="182" text-anchor="middle" font-size="12" style="fill:var(--muted)">cảnh báo</text>
+      <rect x="720" y="110" width="124" height="90" rx="10" fill="var(--ok-soft)" stroke="var(--p3)" stroke-width="2"/>
+      <text x="782" y="142" text-anchor="middle" font-weight="600">6. Chấm điểm</text>
+      <text x="782" y="164" text-anchor="middle" font-size="12" style="fill:var(--muted)">giám khảo · phản hồi</text>
+      <text x="782" y="182" text-anchor="middle" font-size="12" style="fill:var(--muted)">→ score</text>
+      <rect x="862" y="110" width="124" height="90" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="924" y="142" text-anchor="middle" font-weight="600">7. Sửa và kiểm</text>
+      <text x="924" y="164" text-anchor="middle" font-size="12" style="fill:var(--muted)">dataset</text>
+      <text x="924" y="182" text-anchor="middle" font-size="12" style="fill:var(--muted)">experiment</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="2" fill="none" marker-end="url(#arr)">
+      <line x1="134" y1="155" x2="150" y2="155"/>
+      <line x1="276" y1="155" x2="292" y2="155"/>
+      <line x1="418" y1="155" x2="434" y2="155"/>
+      <line x1="560" y1="155" x2="576" y2="155"/>
+      <line x1="702" y1="155" x2="718" y2="155"/>
+      <line x1="844" y1="155" x2="860" y2="155"/>
+    </g>
+    <path d="M782 110 L782 54 L640 54 L640 108" fill="none" stroke="var(--p3)" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrP3)"/>
+    <text x="711" y="40" text-anchor="middle" font-size="13" font-weight="600" style="fill:var(--p3)">score gắn ngược vào trace, span</text>
+    <path d="M966 200 L966 252 L72 252 L72 202" fill="none" stroke="var(--p2)" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrP2)"/>
+    <text x="498" y="278" text-anchor="middle" font-size="13" font-weight="600" style="fill:var(--p2)">phiên bản mới (prompt, model, code) lại được trace</text>
+  </svg>
+  </div>
+  <div class="legend" aria-label="Chú thích màu"><span><span class="sw s1"></span>Trong ứng dụng</span><span><span class="sw s4"></span>Đường ống</span><span><span class="sw s3"></span>Backend</span><span><span class="sw s2"></span>Cải tiến</span></div>
+  <div class="grid g4" style="margin-top:12px">
+    <div class="card"><span class="tag p1">Bước 1–2</span><p>Quy ước GenAI của OpenTelemetry khuyên <b>mặc định không ghi</b> prompt và câu trả lời, vì chúng nhạy cảm và thường lớn; muốn ghi phải bật (opt-in).<sup class="cite"><a href="#src-9">[9]</a></sup> Nếu bật, nên che dữ liệu nhạy cảm trước khi trace rời ứng dụng.<sup class="cite"><a href="#src-19">[19]</a></sup></p></div>
+    <div class="card"><span class="tag p1">Bước 3</span><p>Sampling là một trong những cách hiệu quả nhất để giảm chi phí observability mà vẫn thấy được hệ thống.<sup class="cite"><a href="#src-4">[4]</a></sup> Head sampling quyết ngay từ đầu; tail sampling cần một thành phần giữ trạng thái ở sau trong đường ống, ví dụ Collector có bộ xử lý tail sampling.<sup class="cite"><a href="#src-4">[4]</a></sup> Mục 4 cho bạn thử hai cách.</p></div>
+    <div class="card"><span class="tag p4">Bước 4</span><p>Collector là một proxy nhận, xử lý và xuất telemetry.<sup class="cite"><a href="#src-33">[33]</a></sup> Nhờ chuẩn chung, cùng một bộ instrument có thể gửi tới nhiều backend.<sup class="cite"><a href="#src-33">[33]</a></sup></p></div>
+    <div class="card"><span class="tag p3">Bước 5–7</span><p>Lọc trace điểm thấp, thêm ca lỗi vào dataset, thử bản sửa bằng experiment trước khi phát hành, rồi biến lỗi hay lặp lại thành evaluator tự động.<sup class="cite"><a href="#src-18">[18]</a></sup></p></div>
+  </div>
+</section>
+
+<!-- 3. VÍ DỤ -->
+<section id="vi-du">
+  <h2>3. Ví dụ: đọc một trace để tìm lỗi</h2>
+  <p>Công ty giao hàng Minh Phát có trợ lý trả lời khách qua chat, dùng RAG trên kho chính sách và một tool tra trạng thái đơn (xem <a href="../tool-calling-structured-output/">Tool calling</a>). Một khách khiếu nại: trợ lý nói đơn đã giao, nhưng chưa hề giao. Kỹ sư Hà mở trace của request đó và đi qua từng span. <span class="muted">Tên công ty, mã đơn, thời gian, số token, tên model và nội dung là <b>minh họa</b>. Tên span và tên thuộc tính theo quy ước GenAI của OpenTelemetry, hiện ở trạng thái Development nên còn có thể đổi.<sup class="cite"><a href="#src-7">[7]</a></sup></span></p>
+  <div class="stepper card">
+    <div class="steps" id="steps"></div>
+    <div>
+      <div id="stepBody" aria-live="polite"></div>
+      <div class="wf" id="wf" role="group" aria-label="Biểu đồ thác nước của trace"></div>
+      <div class="legend" aria-label="Chú thích màu biểu đồ thác nước"><span><span class="sw f2"></span>Agent (span gốc)</span><span><span class="sw f3"></span>Retrieval</span><span><span class="sw f1"></span>Gọi model</span><span><span class="sw f5"></span>Span lỗi (ở đây là tool)</span></div>
+      <div class="step-nav"><button id="prevStep">← Trước</button><button id="nextStep">Tiếp →</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. MÔ PHỎNG -->
+<section id="mo-phong">
+  <h2>4. Mô phỏng: 1.000 request, giữ trace nào?</h2>
+  <p>Giữ mọi trace thì tốn dung lượng và tiền. Sampling chọn ra một phần. <b>Head sampling</b> quyết định càng sớm càng tốt, trước khi biết request có lỗi hay không; <b>tail sampling</b> quyết định sau khi xét cả trace, nên có thể luôn giữ trace lỗi hoặc trace chậm.<sup class="cite"><a href="#src-4">[4]</a></sup> Mô phỏng này còn cho thấy vì sao nên nhìn percentile thay vì trung bình.<sup class="cite"><a href="#src-24">[24]</a></sup></p>
+  <p class="muted">Dữ liệu là <b>minh họa</b>: 1.000 request do JS sinh từ một bộ số ngẫu nhiên cố định (lần nào tải trang cũng như nhau). Khoảng 7% request đi vòng dài (agent gọi thêm tool) nên chậm hơn. Request lỗi có hai loại, chọn ngẫu nhiên: lỗi nhanh (bị từ chối vì rate limit, dưới 1 giây) và lỗi chậm (tool timeout, khoảng 30 giây). Percentile tính theo cách nearest-rank. Dung lượng giả định 40 KB mỗi trace. Mọi con số dưới đây do JS tính.</p>
+  <div class="card">
+    <div class="calc">
+      <div class="rng"><label for="errRate"><span>Tỷ lệ request lỗi</span><b id="vErr"></b></label><input id="errRate" type="range" min="0" max="10" step="1" value="3"></div>
+      <div class="rng"><label for="smpRate"><span>Tỷ lệ giữ ngẫu nhiên</span><b id="vSmp"></b></label><input id="smpRate" type="range" min="0" max="5" step="1" value="2"></div>
+    </div>
+    <p class="muted" style="margin:4px 0 0">Head sampling chỉ dùng tỷ lệ giữ ngẫu nhiên. Tail sampling dùng tỷ lệ đó cho phần còn lại, cộng thêm các luật bên dưới.</p>
+    <label class="toggle"><input type="checkbox" id="keepErr" checked><span>Tail: luôn giữ trace có lỗi</span></label>
+    <label class="toggle"><input type="checkbox" id="keepSlow" checked><span>Tail: luôn giữ trace chậm hơn ngưỡng</span></label>
+    <div class="ctxrow" id="thrRow"><span>Ngưỡng "chậm":</span></div>
+    <h3>Độ trễ của 1.000 request</h3>
+    <div class="kpi" id="latKpi" aria-live="polite"></div>
+    <div class="legend"><span><span class="sw f1"></span>Request thành công</span><span><span class="sw f5"></span>Request lỗi</span><span><span class="mkr m">trung bình</span> <span class="mkr q">p50 · p95 · p99</span>: khoảng chứa giá trị đó</span></div>
+    <div class="hist" id="hist" role="group" aria-label="Histogram độ trễ"></div>
+    <h3>Head hay tail: giữ được gì?</h3>
+    <div class="table-wrap"><table class="stack" id="smpTable">
+      <thead><tr><th>Chỉ số</th><th>Head sampling</th><th>Tail sampling</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+    <p id="simNote"></p>
+  </div>
+  <div class="callout"><b>Thử ba việc.</b><ol>
+    <li>Để mặc định và so trung bình với p50, p99: trung bình cao hơn p50 khoảng 1 giây, còn p99 vượt 30 giây. Kéo tỷ lệ lỗi về 0%: p99 tụt xuống còn khoảng 16 giây. Lỗi chậm là thứ kéo đuôi lên; lỗi chậm còn tệ hơn lỗi nhanh.<sup class="cite"><a href="#src-24">[24]</a></sup></li>
+    <li>Với tỷ lệ giữ 10%, head sampling chỉ giữ được vài trace lỗi trong số khoảng 37 trace lỗi. Đúng như tài liệu OpenTelemetry nói: chỉ dùng head sampling thì không thể đảm bảo giữ mọi trace có lỗi.<sup class="cite"><a href="#src-4">[4]</a></sup></li>
+    <li>Kéo tỷ lệ giữ về 1%: head còn khoảng 10 trace và gần như mất hết trace lỗi; tail vẫn giữ đủ trace lỗi và trace chậm với khoảng 100 trace. Đổi ngưỡng sang 5 giây để thấy cái giá: tail giữ nhiều trace hơn hẳn.</li>
+  </ol></div>
+  <p class="muted">Tail sampling cũng có giá: khó cài đặt, khó vận hành vì phải giữ nhiều dữ liệu chờ trace kết thúc, và hiện thường gắn với công nghệ của từng nhà cung cấp.<sup class="cite"><a href="#src-4">[4]</a></sup> SDK Langfuse lấy mẫu phía client theo cả trace: trace được chọn thì giữ mọi observation và score bên trong; giá trị 0,2 nghĩa là giữ 20% trace.<sup class="cite"><a href="#src-34">[34]</a></sup> Hệ thống lưu lượng lớn có thể kết hợp: head sampling một tỷ lệ nhỏ trước để bảo vệ đường ống khỏi quá tải, rồi tail sampling ở sau.<sup class="cite"><a href="#src-4">[4]</a></sup></p>
+  <div class="callout warn"><b>Đừng tính tỷ lệ lỗi từ trace đã sampling.</b> Tail sampling cố tình giữ nhiều trace lỗi, nên tỷ lệ lỗi trong kho trace cao hơn thực tế rất nhiều (dòng cuối của ô kết quả ở trên cho thấy con số). Tỷ lệ lỗi, percentile, số token phải tính từ metric của mọi request; trace đã sampling chỉ dùng để điều tra từng ca (nhận định của trang này).</div>
+</section>
+
+<!-- 5. KHÁI NIỆM -->
+<section id="khai-niem">
+  <h2>5. Từ điển khái niệm</h2>
+  <p>Mỗi thẻ có định nghĩa ngắn và liên kết sang khái niệm liên quan. Lọc theo nhóm hoặc gõ để tìm (gõ không dấu cũng được).</p>
+  <div class="gloss-tools">
+    <input id="glossSearch" type="search" placeholder="Tìm khái niệm… (vd: span, sampling, masking)" aria-label="Tìm khái niệm">
+  </div>
+  <div class="gloss-tools" id="glossChips"></div>
+  <div class="grid g3" id="glossGrid"></div>
+</section>
+
+<!-- 6. MỐI QUAN HỆ -->
+<section id="quan-he">
+  <h2>6. Bản đồ mối quan hệ: observability đứng ở đâu</h2>
+  <p>Observability dựa trên hai nền tảng: distributed tracing (OpenTelemetry) và kinh nghiệm monitoring của SRE. Nó nhận span từ mọi thành phần của ứng dụng LLM, cung cấp dữ liệu cho evaluation, và tự nó cũng là một kho dữ liệu nhạy cảm phải bảo vệ.</p>
+
+  <div class="vflow m-only" role="group" aria-label="Bản đồ mối quan hệ (dạng dọc)">
+    <div class="box box1"><div class="ph ph1">NỀN TẢNG</div>
+      <div class="node r"><b>OpenTelemetry, distributed tracing</b><span>trace, span, truyền context qua traceparent, OTLP</span></div>
+      <div class="gap"></div>
+      <div class="node r"><b>Monitoring kiểu SRE</b><span>bốn tín hiệu vàng, percentile, SLI và SLO, cảnh báo hành động được</span></div>
+    </div>
+    <div class="ar">↓ các thành phần dưới đây phát span theo chuẩn này</div>
+    <div class="box box2"><div class="ph ph2">THÀNH PHẦN PHÁT RA SPAN</div>
+      <div class="node g"><b>RAG, retrieval</b><span>span retrieval ghi top-k, tài liệu tìm được. Xem <a href="../rag/">RAG</a>, <a href="../hybrid-search/">Hybrid search</a>, <a href="../reranking/">Reranking</a></span></div>
+      <div class="gap"></div>
+      <div class="node g"><b>Tool calling, MCP</b><span>span execute_tool; có cả quy ước riêng cho MCP. Xem <a href="../tool-calling-structured-output/">Tool calling</a>, <a href="../model-context-protocol/">MCP</a></span></div>
+      <div class="gap"></div>
+      <div class="node g"><b>Agent, multi-agent</b><span>span invoke_agent bao các bước con. Xem <a href="../ai-agent/">AI Agent</a>, <a href="../multi-agent-agentic-rag/">Multi-agent</a></span></div>
+    </div>
+    <div class="ar">↓ span đi vào</div>
+    <div class="box box4"><div class="ph ph4">TRUNG TÂM</div>
+      <div class="node o"><b>LLM observability</b><span>trace · metric · log · score</span></div>
+    </div>
+    <div class="ar">↕ cung cấp trace thật, nhận score về</div>
+    <div class="box box0"><div class="ph ph3">DÙNG DỮ LIỆU</div>
+      <div class="node a"><b>Evaluation</b><span>LLM giám khảo, dataset từ trace lỗi, experiment. Xem <a href="../llm-evaluation/">LLM evaluation</a></span></div>
+      <div class="gap"></div>
+      <div class="node a"><b>Chi phí, context</b><span>token mỗi request cho biết chỗ tốn tiền và context phình to. Xem <a href="../context-engineering/">Context engineering</a> và <a href="../llm-cost-optimization/">Tối ưu chi phí</a></span></div>
+    </div>
+    <div class="ar">↓ mặt trái</div>
+    <div class="box box5"><div class="ph ph5">RỦI RO</div>
+      <div class="node x"><b>Trace chứa dữ liệu nhạy cảm</b><span>prompt có PII, thời gian lưu, ai được xem. Xem <a href="../governance/">AI Governance</a>, <a href="../prompt-injection-guardrails/">Prompt injection &amp; guardrails</a></span></div>
+    </div>
+  </div>
+
+  <div class="svgbox d-only">
+  <svg class="diagram" viewBox="0 0 1000 440" role="img" aria-label="Bản đồ mối quan hệ của LLM observability">
+    <defs>
+      <marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+      <marker id="arrP2b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--p2)"/></marker>
+      <marker id="arrP3b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--p3)"/></marker>
+      <marker id="arrBad" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--bad)"/></marker>
+    </defs>
+    <text x="135" y="30" text-anchor="middle" font-weight="700" font-size="14" style="fill:var(--p1)">NỀN TẢNG</text>
+    <text x="135" y="262" text-anchor="middle" font-weight="700" font-size="14" style="fill:var(--p2)">DÙNG DỮ LIỆU</text>
+    <text x="865" y="30" text-anchor="middle" font-weight="700" font-size="14" style="fill:var(--p3)">THÀNH PHẦN PHÁT RA SPAN</text>
+    <g font-size="14">
+      <rect x="20" y="50" width="230" height="62" rx="10" fill="var(--accent-soft)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="135" y="76" text-anchor="middle" font-weight="600">OpenTelemetry</text>
+      <text x="135" y="96" text-anchor="middle" font-size="12" style="fill:var(--muted)">trace · span · traceparent · OTLP</text>
+      <rect x="20" y="130" width="230" height="62" rx="10" fill="var(--accent-soft)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="135" y="156" text-anchor="middle" font-weight="600">Monitoring kiểu SRE</text>
+      <text x="135" y="176" text-anchor="middle" font-size="12" style="fill:var(--muted)">tín hiệu vàng · percentile · SLO</text>
+
+      <rect x="20" y="274" width="230" height="62" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="135" y="300" text-anchor="middle" font-weight="600">Evaluation</text>
+      <text x="135" y="320" text-anchor="middle" font-size="12" style="fill:var(--muted)">giám khảo · dataset · experiment</text>
+      <rect x="20" y="354" width="230" height="62" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="135" y="380" text-anchor="middle" font-weight="600">Chi phí, context</text>
+      <text x="135" y="400" text-anchor="middle" font-size="12" style="fill:var(--muted)">token mỗi request, mỗi bước</text>
+
+      <rect x="380" y="160" width="240" height="110" rx="14" fill="var(--warn-soft)" stroke="var(--p4)" stroke-width="2.5"/>
+      <text x="500" y="200" text-anchor="middle" font-weight="700" font-size="16">LLM observability</text>
+      <text x="500" y="224" text-anchor="middle" font-size="12" style="fill:var(--muted)">trace · metric · log</text>
+      <text x="500" y="242" text-anchor="middle" font-size="12" style="fill:var(--muted)">+ score chất lượng</text>
+
+      <g fill="var(--ok-soft)" stroke="var(--p3)" stroke-width="1.5">
+        <rect x="750" y="50" width="230" height="62" rx="10"/><rect x="750" y="150" width="230" height="62" rx="10"/><rect x="750" y="250" width="230" height="62" rx="10"/>
+      </g>
+      <text x="865" y="76" text-anchor="middle" font-weight="600">RAG, retrieval</text>
+      <text x="865" y="96" text-anchor="middle" font-size="12" style="fill:var(--muted)">span retrieval: top-k, tài liệu</text>
+      <text x="865" y="176" text-anchor="middle" font-weight="600">Tool calling, MCP</text>
+      <text x="865" y="196" text-anchor="middle" font-size="12" style="fill:var(--muted)">span execute_tool</text>
+      <text x="865" y="276" text-anchor="middle" font-weight="600">Agent, multi-agent</text>
+      <text x="865" y="296" text-anchor="middle" font-size="12" style="fill:var(--muted)">span invoke_agent bao bước con</text>
+
+      <rect x="380" y="350" width="240" height="76" rx="10" fill="var(--bad-soft)" stroke="var(--bad)" stroke-width="2"/>
+      <text x="500" y="376" text-anchor="middle" font-weight="600">Rủi ro dữ liệu</text>
+      <text x="500" y="396" text-anchor="middle" font-size="12" style="fill:var(--muted)">PII trong prompt · thời gian lưu</text>
+      <text x="500" y="414" text-anchor="middle" font-size="12" style="fill:var(--muted)">ai được xem trace</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="1.8" fill="none" marker-end="url(#arr2)">
+      <line x1="250" y1="81" x2="378" y2="186"/>
+      <line x1="250" y1="161" x2="378" y2="204"/>
+    </g>
+    <g stroke="var(--p3)" stroke-width="1.8" fill="none" marker-end="url(#arrP3b)">
+      <line x1="750" y1="81" x2="622" y2="182"/>
+      <line x1="750" y1="181" x2="622" y2="208"/>
+      <line x1="750" y1="281" x2="622" y2="240"/>
+    </g>
+    <text x="700" y="166" text-anchor="middle" font-size="12" style="fill:var(--p3)">phát span</text>
+    <line x1="252" y1="300" x2="378" y2="252" stroke="var(--p2)" stroke-width="1.8" marker-start="url(#arrP2b)" marker-end="url(#arrP2b)"/>
+    <line x1="388" y1="270" x2="254" y2="378" stroke="var(--p2)" stroke-width="1.8" marker-end="url(#arrP2b)"/>
+    <text x="268" y="240" font-size="12" style="fill:var(--p2)">trace thật ↔ score</text>
+    <line x1="500" y1="270" x2="500" y2="348" stroke="var(--bad)" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#arrBad)"/>
+    <text x="512" y="314" font-size="12" style="fill:var(--bad)">mặt trái</text>
+  </svg>
+  </div>
+  <p class="muted">Đọc hình: mũi tên xám từ "Nền tảng" nghĩa là observability dùng các khái niệm đó. Mũi tên xanh lá nghĩa là mỗi thành phần phát span vào trace. Mũi tên hai chiều với Evaluation nghĩa là trace thật đi sang để chấm, score quay về gắn vào trace.<sup class="cite"><a href="#src-13">[13]</a><a href="#src-14">[14]</a></sup> Mũi tên tới "Chi phí, context" nghĩa là trace cung cấp số token cho việc tối ưu. Quy ước GenAI của OpenTelemetry có tài liệu riêng cho retrieval, tool, agent và cả MCP.<sup class="cite"><a href="#src-7">[7]</a></sup> Đường đứt sang "Rủi ro" được nói ở mục 8.</p>
+</section>
+
+<!-- 7. SO SÁNH -->
+<section id="so-sanh">
+  <h2>7. So sánh và đánh đổi</h2>
+  <h3>Trace, metric, log, score: dùng cái nào khi nào</h3>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Loại</th><th>Trả lời câu hỏi</th><th>Mạnh ở</th><th>Yếu ở</th></tr></thead>
+    <tbody>
+      <tr><td><b>Metric</b><sup class="cite"><a href="#src-1">[1]</a><a href="#src-24">[24]</a></sup></td><td>Hệ thống có đang ổn không?</td><td>Rẻ, giữ lâu được, hợp để vẽ dashboard và cảnh báo; histogram cho percentile</td><td>Chỉ là số gộp; không cho thấy request nào, input gì</td></tr>
+      <tr><td><b>Log</b><sup class="cite"><a href="#src-1">[1]</a></sup></td><td>Chuyện gì xảy ra lúc đó?</td><td>Đơn giản, ai cũng quen</td><td>Rời rạc; khó ghép các dòng của cùng một request qua nhiều dịch vụ</td></tr>
+      <tr><td><b>Trace</b><sup class="cite"><a href="#src-1">[1]</a><a href="#src-2">[2]</a><a href="#src-4">[4]</a></sup></td><td>Request này đi qua những bước nào, bước nào chậm hay sai?</td><td>Thấy quan hệ cha-con, thời gian, thuộc tính của từng bước</td><td>Tốn dung lượng, nên thường phải sampling</td></tr>
+      <tr><td><b>Score</b><sup class="cite"><a href="#src-13">[13]</a><a href="#src-18">[18]</a><a href="#src-32">[32]</a></sup></td><td>Câu trả lời có tốt không?</td><td>Bắt được lỗi ngầm mà status code không thấy</td><td>Phản hồi người dùng hiếm và lệch; LLM giám khảo tốn tiền và phải được kiểm lại</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted">Cột "Trả lời câu hỏi", "Mạnh ở", "Yếu ở" là tóm tắt của trang này từ các định nghĩa trong nguồn.</p>
+
+  <h3>Head sampling hay tail sampling</h3>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Tiêu chí</th><th>Head sampling</th><th>Tail sampling</th></tr></thead>
+    <tbody>
+      <tr><td><b>Khi nào quyết</b></td><td>Càng sớm càng tốt, chưa xem cả trace<sup class="cite"><a href="#src-4">[4]</a></sup></td><td>Sau khi xét hết hoặc gần hết span của trace<sup class="cite"><a href="#src-4">[4]</a></sup></td></tr>
+      <tr><td><b>Giữ trace lỗi</b></td><td>Không đảm bảo giữ được mọi trace lỗi<sup class="cite"><a href="#src-4">[4]</a></sup></td><td>Có thể luôn giữ trace lỗi, giữ theo độ trễ<sup class="cite"><a href="#src-4">[4]</a></sup></td></tr>
+      <tr><td><b>Vận hành</b></td><td>Đơn giản; ví dụ SDK Langfuse lấy mẫu ở client, theo cả trace<sup class="cite"><a href="#src-34">[34]</a></sup></td><td>Khó cài, khó vận hành, phải có thành phần giữ trạng thái và chứa nhiều dữ liệu<sup class="cite"><a href="#src-4">[4]</a></sup></td></tr>
+      <tr><td><b>Hợp khi</b></td><td>Lưu lượng lớn, chỉ cần số liệu thống kê</td><td>Cần chắc chắn có trace của mọi sự cố để điều tra</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted">Dòng "Hợp khi" là nhận định của trang này.</p>
+
+  <h3>Ghi nội dung prompt và câu trả lời tới đâu?</h3>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Cách</th><th>Thấy được gì khi debug</th><th>Rủi ro, chi phí</th></tr></thead>
+    <tbody>
+      <tr><td><b>Không ghi nội dung</b> (mặc định của quy ước OpenTelemetry, <code>NO_CONTENT</code>)<sup class="cite"><a href="#src-9">[9]</a></sup></td><td>Thời gian, token, model, lỗi, cây span; không thấy model đã đọc và viết gì</td><td>Thấp nhất. Bước 6 ở mục 3 sẽ không đọc được câu trả lời bịa</td></tr>
+      <tr><td><b>Ghi trên span hoặc event</b> (<code>SPAN_ONLY</code>, <code>EVENT_ONLY</code>, <code>SPAN_AND_EVENT</code>)<sup class="cite"><a href="#src-9">[9]</a></sup></td><td>Đủ để tái hiện lỗi</td><td>Telemetry phình to; dữ liệu nhạy cảm nằm trong mọi nơi trace đi qua, nên phải che trước<sup class="cite"><a href="#src-19">[19]</a></sup></td></tr>
+      <tr><td><b>Lưu nội dung ra kho riêng</b>, span chỉ giữ tham chiếu (<code>…_ref</code>)<sup class="cite"><a href="#src-9">[9]</a></sup></td><td>Đủ để tái hiện lỗi, mở khi cần</td><td>Được khuyên cho production khi lo khối lượng telemetry; kho riêng có phân quyền riêng<sup class="cite"><a href="#src-9">[9]</a></sup></td></tr>
+      <tr><td><b>Framework ghi đầy đủ theo mặc định</b> (ví dụ OpenAI Agents SDK: <code>trace_include_sensitive_data</code> mặc định True)<sup class="cite"><a href="#src-30">[30]</a></sup></td><td>Thấy hết ngay từ đầu</td><td>Dễ vô tình ghi dữ liệu khách; hãy kiểm cấu hình mặc định của framework bạn dùng</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Chọn cách instrument</h3>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Lựa chọn</th><th>Là gì</th><th>Ưu điểm</th><th>Lưu ý</th></tr></thead>
+    <tbody>
+      <tr><td><b>Quy ước GenAI của OpenTelemetry</b><sup class="cite"><a href="#src-5">[5]</a><a href="#src-7">[7]</a></sup></td><td>Tên span, thuộc tính, metric chuẩn cho gọi model, retrieval, tool, agent</td><td>Chuẩn mở, không phụ thuộc nhà cung cấp; OpenTelemetry dùng được với nhiều backend<sup class="cite"><a href="#src-33">[33]</a></sup></td><td>Trạng thái Development; đã chuyển sang repo riêng <code>semantic-conventions-genai</code>, tên có thể còn đổi<sup class="cite"><a href="#src-5">[5]</a><a href="#src-6">[6]</a><a href="#src-7">[7]</a></sup></td></tr>
+      <tr><td><b>OpenInference</b><sup class="cite"><a href="#src-21">[21]</a></sup></td><td>Bộ quy ước và thư viện instrumentation xây trên OpenTelemetry để trace agent: lần gọi model, tool, retrieval, bước suy luận</td><td>Dùng với mọi backend tương thích OpenTelemetry<sup class="cite"><a href="#src-21">[21]</a></sup></td><td>Tên thuộc tính khác quy ước GenAI chính thức; chọn một bộ và giữ nhất quán (nhận định của trang này)</td></tr>
+      <tr><td><b>Nền tảng chuyên cho LLM</b> (ví dụ Langfuse)<sup class="cite"><a href="#src-14">[14]</a><a href="#src-15">[15]</a></sup></td><td>Trace, session, score, LLM giám khảo, dataset trong một chỗ</td><td>Nối sẵn trace với eval và phản hồi người dùng<sup class="cite"><a href="#src-18">[18]</a><a href="#src-32">[32]</a></sup></td><td>Mô hình dữ liệu riêng (observation, generation…)<sup class="cite"><a href="#src-16">[16]</a></sup>; kiểm nơi lưu dữ liệu và chính sách giữ<sup class="cite"><a href="#src-20">[20]</a></sup></td></tr>
+      <tr><td><b>Tracing có sẵn trong framework agent</b> (ví dụ OpenAI Agents SDK)<sup class="cite"><a href="#src-30">[30]</a></sup></td><td>Tự tạo span cho agent, lần gọi model, tool, guardrail, handoff</td><td>Bật sẵn, không cần làm gì<sup class="cite"><a href="#src-30">[30]</a></sup></td><td>Mặc định gửi trace về backend của OpenAI và ghi cả dữ liệu nhạy cảm; muốn gửi nơi khác phải thay bộ xử lý trace; không dùng được với tổ chức theo chính sách Zero Data Retention<sup class="cite"><a href="#src-30">[30]</a></sup></td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout warn"><b>Cẩn thận với lớp trừu tượng.</b> Anthropic nhắc: framework có thể thêm lớp trừu tượng che mất prompt và câu trả lời thật, làm khó debug; hiểu sai thứ bên dưới là nguồn lỗi hay gặp.<sup class="cite"><a href="#src-23">[23]</a></sup> Trace tốt phải cho bạn thấy đúng thứ model nhận và trả về, không chỉ tên hàm của framework.</div>
+</section>
+
+<!-- 8. LỖI -->
+<section id="loi">
+  <h2>8. Lỗi thường gặp và cách chẩn đoán</h2>
+  <p>Nhóm lỗi thứ nhất là lỗi của chính ứng dụng LLM, tìm ra nhờ trace. Nhóm thứ hai là lỗi của hệ thống observability: trace đứt, thiếu, đếm sai, hoặc làm lộ dữ liệu.</p>
+  <div class="grid g2">
+    <div class="card">
+      <h4>Cây chẩn đoán: câu trả lời sai mà không có lỗi nào</h4>
+      <ol>
+        <li><b>Tìm được trace của request đó không?</b><br><span class="muted">Tìm theo session hoặc user id.<sup class="cite"><a href="#src-15">[15]</a></sup> Không có: request bị sampling bỏ đi, hoặc phần đó chưa được instrument.<sup class="cite"><a href="#src-4">[4]</a></sup></span></li>
+        <li><b>Span retrieval có tài liệu đúng không?</b><br><span class="muted">Xem top-k và danh sách tài liệu (nếu đã bật ghi).<sup class="cite"><a href="#src-10">[10]</a></sup> Không có: lỗi tìm kiếm. Xem <a href="../hybrid-search/">Hybrid search</a>, <a href="../reranking/">Reranking</a>.</span></li>
+        <li><b>Có span tool nào lỗi, timeout, trả rỗng?</b><br><span class="muted">Span có status Error và <code>error.type</code>.<sup class="cite"><a href="#src-2">[2]</a><a href="#src-11">[11]</a></sup> Có: xem lần gọi model ngay sau đó có xử lý lỗi hay bịa tiếp (mục 3).</span></li>
+        <li><b>Lần gọi model có bị cắt ngang không?</b><br><span class="muted">Xem lý do dừng (<code>gen_ai.response.finish_reasons</code>) và số token input.<sup class="cite"><a href="#src-8">[8]</a></sup> Dừng vì hết max tokens, hoặc context quá dài: xem <a href="../context-engineering/">Context engineering</a>. Giá trị cụ thể của lý do dừng tùy nhà cung cấp.</span></li>
+        <li><b>Prompt hay model có vừa đổi phiên bản không?</b><br><span class="muted">So trace theo <code>gen_ai.prompt.version</code>, release, môi trường.<sup class="cite"><a href="#src-8">[8]</a><a href="#src-15">[15]</a></sup></span></li>
+        <li><b>Mọi bước đều đúng mà vẫn sai?</b><br><span class="muted">Lỗi ở cách model đọc và suy luận. Đưa trace vào dataset để sửa prompt và kiểm hồi quy.<sup class="cite"><a href="#src-18">[18]</a></sup></span></li>
+      </ol>
+    </div>
+    <div class="card">
+      <h4>Bảng triệu chứng của hệ thống observability</h4>
+      <div class="table-wrap"><table class="stack">
+        <thead><tr><th>Triệu chứng</th><th>Nguyên nhân thường gặp và cách sửa</th></tr></thead>
+        <tbody>
+          <tr><td>Một request hiện thành nhiều trace rời, thiếu span của dịch vụ khác</td><td>Context không được truyền giữa các dịch vụ. Chuẩn W3C Trace Context dùng header <code>traceparent</code> (version, trace-id, parent-id, trace-flags) để nối chúng.<sup class="cite"><a href="#src-3">[3]</a></sup> Trong hệ LLM, chỗ dễ đứt là hàng đợi, job nền, MCP server, sub-agent chạy ở dịch vụ khác (nhận định của trang này); quy ước GenAI có tài liệu riêng cho lần gọi agent từ xa và cho MCP.<sup class="cite"><a href="#src-7">[7]</a></sup></td></tr>
+          <tr><td>Có khiếu nại mà không tìm thấy trace lỗi</td><td>Head sampling bỏ mất.<sup class="cite"><a href="#src-4">[4]</a></sup> Dùng tail sampling giữ mọi trace lỗi, hoặc tăng tỷ lệ ở luồng quan trọng (mục 4).</td></tr>
+          <tr><td>Chi phí trên dashboard cao hơn hóa đơn</td><td>Đếm token trùng: các nhóm token (input, input đã cache…) chồng lên nhau thì bị cộng hai lần.<sup class="cite"><a href="#src-17">[17]</a></sup> Bẫy hay gặp: quy ước OpenTelemetry tính token đã cache <i>trong</i> số token input,<sup class="cite"><a href="#src-8">[8]</a></sup> còn Langfuse yêu cầu mỗi token chỉ nằm ở một nhóm;<sup class="cite"><a href="#src-17">[17]</a></sup> chuyển dữ liệu giữa hai bên thì phải trừ phần cache ra.</td></tr>
+          <tr><td>Một số lần gọi model không có chi phí</td><td>Langfuse không còn tự ước lượng token từ văn bản; không gửi usage (hoặc chi phí) thì không có chi phí.<sup class="cite"><a href="#src-17">[17]</a></sup></td></tr>
+          <tr><td>Độ trễ trung bình ổn mà khách kêu chậm</td><td>Trung bình che phần đuôi. Nhìn p95, p99, histogram; tách độ trễ của request lỗi.<sup class="cite"><a href="#src-24">[24]</a></sup></td></tr>
+          <tr><td>Agent lặp vòng, tốn token bất thường</td><td>Theo dõi số lần gọi model và số lần gọi tool mỗi lần chạy agent (<code>gen_ai.invoke_agent.inference_calls</code>, <code>…tool_calls</code>).<sup class="cite"><a href="#src-31">[31]</a></sup></td></tr>
+          <tr><td>Không biết lỗi bắt đầu từ bản nào</td><td>Gắn tên và phiên bản prompt vào span, gắn release và môi trường vào trace.<sup class="cite"><a href="#src-8">[8]</a><a href="#src-15">[15]</a></sup></td></tr>
+          <tr><td>Biểu đồ theo tên agent có hàng nghìn dòng</td><td><code>gen_ai.agent.name</code> phải có ít giá trị khác nhau (low cardinality); không đặt id phiên vào đó.<sup class="cite"><a href="#src-12">[12]</a></sup></td></tr>
+          <tr><td>Quá nhiều cảnh báo, không ai đọc</td><td>Mỗi cảnh báo gọi người phải dẫn tới một hành động; việc chỉ cần phản ứng máy móc thì nên tự động hóa, đừng đánh thức người trực.<sup class="cite"><a href="#src-24">[24]</a></sup></td></tr>
+          <tr><td>LLM giám khảo chấm khác người</td><td>LLM giám khảo là một prompt do bạn viết. So điểm của nó với điểm người chấm trên cùng dữ liệu trước khi tin.<sup class="cite"><a href="#src-32">[32]</a></sup></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+  <div class="callout bad"><p><b>Trace là kho dữ liệu nhạy cảm.</b> Prompt, tin nhắn người dùng và câu trả lời được coi là nhạy cảm, thường lớn, nên quy ước OpenTelemetry khuyên không ghi theo mặc định.<sup class="cite"><a href="#src-9">[9]</a></sup> Kết quả tool, tham số tool và câu truy vấn retrieval cũng có thể chứa thông tin nhạy cảm.<sup class="cite"><a href="#src-10">[10]</a><a href="#src-11">[11]</a></sup> Nếu bật ghi, hãy che dữ liệu trước khi trace rời ứng dụng.<sup class="cite"><a href="#src-19">[19]</a></sup> Công cụ phát hiện PII như Presidio giúp tự động hóa, nhưng không đảm bảo tìm ra mọi thông tin nhạy cảm.<sup class="cite"><a href="#src-27">[27]</a></sup></p>
+  <p>Che ở một exporter không tự che ở exporter khác; che ở Collector nghĩa là dữ liệu đã rời ứng dụng.<sup class="cite"><a href="#src-19">[19]</a></sup> Đặt thời gian giữ: Langfuse cho cấu hình theo project, tối thiểu 3 ngày, xóa hằng đêm và không khôi phục được.<sup class="cite"><a href="#src-20">[20]</a></sup> GDPR yêu cầu chỉ thu dữ liệu cần thiết và không giữ lâu hơn mức cần thiết.<sup class="cite"><a href="#src-25">[25]</a></sup> Ở Việt Nam, Luật Bảo vệ dữ liệu cá nhân (số 91/2025/QH15) có hiệu lực từ 01/01/2026;<sup class="cite"><a href="#src-26">[26]</a></sup> trace chứa dữ liệu khách thì cũng nằm trong phạm vi bạn phải rà soát. Đây là lời khuyên kỹ thuật, không phải tư vấn pháp lý.</p></div>
+  <div class="callout"><b>Theo dõi mà không đọc hội thoại.</b> Nhóm Anthropic theo dõi mẫu quyết định và cấu trúc tương tác của agent mà không xem nội dung từng hội thoại, để giữ quyền riêng tư của người dùng.<sup class="cite"><a href="#src-29">[29]</a></sup> Nhiều câu hỏi vận hành (bước nào chậm, tool nào lỗi, agent gọi bao nhiêu vòng) trả lời được chỉ bằng cấu trúc trace, không cần nội dung. Xem thêm <a href="../governance/">AI Governance</a>; trace cũng là nơi ghi lại các lần guardrail chặn, xem <a href="../prompt-injection-guardrails/">Prompt injection &amp; guardrails</a>.</div>
+</section>
+
+<!-- 9. ĐÁNH GIÁ -->
+<section id="danh-gia">
+  <h2>9. Đo lường: chỉ số nào, ngưỡng nào</h2>
+  <p>Sách SRE của Google đưa ra bốn tín hiệu vàng: latency, traffic, errors, saturation.<sup class="cite"><a href="#src-24">[24]</a></sup> Áp vào ứng dụng LLM, cần thêm hai nhóm: chất lượng câu trả lời và chi phí. SLI là số đo hành vi của dịch vụ, tốt nhất là từ góc nhìn người dùng; SLO là cách nối SLI với giá trị kinh doanh để cả tổ chức hiểu.<sup class="cite"><a href="#src-1">[1]</a></sup> Trong thực tế, SLO được viết thành một mục tiêu đo được, ví dụ "95% câu trả lời tới tay khách trong vòng 8 giây, tính trên 30 ngày" (ví dụ của trang này).</p>
+  <div class="grid g3">
+    <div class="card"><span class="tag p1">Latency</span><h4>Độ trễ</h4><p>p50, p95, p99 của cả request; tách request thành công và request lỗi.<sup class="cite"><a href="#src-24">[24]</a></sup> Nếu stream, đo thêm thời gian tới token đầu tiên (TTFT).<sup class="cite"><a href="#src-22">[22]</a></sup> Quy ước GenAI có metric <code>gen_ai.client.inference.duration</code> và <code>gen_ai.client.inference.time_to_first_chunk</code>, đều là histogram.<sup class="cite"><a href="#src-8">[8]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Traffic, saturation</span><h4>Lưu lượng và mức bão hòa</h4><p>Số request, số phiên, token mỗi phút. Với LLM, "bão hòa" thường là chạm rate limit hay hàng đợi của nhà cung cấp (nhận định của trang này). Token input nên gồm cả token đã cache; token output gồm cả token suy luận.<sup class="cite"><a href="#src-8">[8]</a></sup></p></div>
+    <div class="card"><span class="tag bad">Errors</span><h4>Lỗi rõ và lỗi ngầm</h4><p>Lỗi rõ: exception, <code>error.type</code>, tool lỗi.<sup class="cite"><a href="#src-8">[8]</a><a href="#src-11">[11]</a></sup> Lỗi ngầm: trả 200 nhưng sai,<sup class="cite"><a href="#src-24">[24]</a></sup> bắt bằng LLM giám khảo (judge) chạy trên một phần trace production và phản hồi người dùng.<sup class="cite"><a href="#src-32">[32]</a><a href="#src-18">[18]</a></sup></p></div>
+    <div class="card"><span class="tag p3">Chất lượng</span><h4>Score</h4><p>LLM giám khảo chấm điểm kèm lý do; dùng filter và sampling để giảm số trace phải chấm.<sup class="cite"><a href="#src-32">[32]</a></sup> Phản hồi 👍👎 rõ ràng nhưng hiếm và lệch về phía người không hài lòng; tín hiệu gián tiếp (hỏi lại, sửa bản nháp) có ở mọi trace nhưng phải diễn giải.<sup class="cite"><a href="#src-18">[18]</a></sup></p></div>
+    <div class="card"><span class="tag p2">Chi phí</span><h4>Token và tiền</h4><p>Ưu tiên chi phí lấy từ phản hồi của nhà cung cấp; nếu suy ra thì là usage nhân giá model.<sup class="cite"><a href="#src-17">[17]</a></sup> Gắn user, tag, tính năng vào trace để chia chi phí theo khách hàng và theo tính năng.<sup class="cite"><a href="#src-15">[15]</a><a href="#src-17">[17]</a></sup> Hệ multi-agent dùng khoảng 15 lần token so với chat; trên BrowseComp, riêng số token giải thích 80% phương sai hiệu năng.<sup class="cite"><a href="#src-29">[29]</a></sup> Vì vậy hãy theo dõi token cùng với chất lượng, không chỉ để cắt giảm.</p></div>
+    <div class="card"><span class="tag p2">Agent</span><h4>Hình dạng của một lần chạy</h4><p>Thời gian end-to-end của một lần chạy agent, số lần gọi model, số lần gọi tool.<sup class="cite"><a href="#src-31">[31]</a></sup> Số vòng tăng đột ngột thường báo hiệu agent đang loay hoay, trước cả khi chi phí tăng (nhận định của trang này).</p></div>
+    <div class="card"><span class="tag p3">RAG</span><h4>Chỉ số riêng cho retrieval</h4><p>Tỷ lệ span retrieval trả rỗng, điểm của tài liệu top-k, độ trễ riêng của span retrieval, và tỷ lệ câu trả lời bám tài liệu do LLM giám khảo chấm. Đây là gợi ý của trang này; dữ liệu lấy từ span retrieval (top-k, tài liệu và điểm nếu bật ghi).<sup class="cite"><a href="#src-10">[10]</a></sup> Xem <a href="../rag/">RAG</a>, <a href="../llm-evaluation/">LLM evaluation</a>.</p></div>
+  </div>
+
+  <h3>Tính thử: prompt v7 hay v8 tốt hơn?</h3>
+  <p>Sau sự cố ở mục 3, Minh Phát phát hành prompt v8 (khi tool lỗi thì nói rõ chưa tra được) và giảm timeout tool từ 6 giây xuống 3 giây, thử lại một lần. Mỗi trace mang phiên bản prompt,<sup class="cite"><a href="#src-8">[8]</a></sup> nên có thể so hai tuần. LLM giám khảo chấm ngẫu nhiên 10% trace. Đây là so sánh trước–sau, không phải A/B: hai thay đổi phát hành cùng lúc nên không tách được công của từng cái, và hai tuần có thể có lưu lượng khác nhau. Muốn tách, chạy song song hai phiên bản hoặc chạy experiment trên dataset (nhận định của trang này). <span class="muted">Mọi số đếm, SLO và p95 là <b>minh họa</b>; tỷ lệ, so sánh và kết luận do JS tính từ bảng.</span></p>
+  <div class="table-wrap"><table class="stack" id="verTable">
+    <thead><tr><th>Chỉ số</th><th>SLO (minh họa)</th><th>v7 (tuần 1)</th><th>v8 (tuần 2)</th><th>Thay đổi (tỷ lệ: điểm phần trăm)</th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+  <p class="muted" id="verNote"></p>
+  <div class="callout warn"><b>Đọc số cho đúng.</b> Tỷ lệ 👎 tính trên số người <i>có</i> phản hồi, mà phản hồi rõ ràng lệch về phía người không hài lòng,<sup class="cite"><a href="#src-18">[18]</a></sup> nên chỉ nên xem xu hướng, không xem như tỷ lệ thật của mọi khách. Điểm của LLM giám khảo chỉ đáng tin sau khi đã so với người chấm.<sup class="cite"><a href="#src-32">[32]</a></sup> Lúc đầu, một bộ khoảng 20 câu hỏi sát thực tế đã đủ để thấy thay đổi lớn, như kinh nghiệm của nhóm Anthropic.<sup class="cite"><a href="#src-29">[29]</a></sup></div>
+</section>
+
+<!-- 10. LỘ TRÌNH -->
+<section id="lo-trinh">
+  <h2>10. Lộ trình tự học 2 tuần (không cần code)</h2>
+  <p class="muted">Khoảng 3–4 giờ mỗi tuần. Nên đọc trước <a href="../llm-fundamentals/">Cách LLM hoạt động</a> và <a href="../ai-agent/">AI Agent</a>; đọc song song <a href="../llm-evaluation/">LLM evaluation</a>. Các ô đã đánh dấu được lưu trong trình duyệt của bạn.</p>
+  <div class="grid g3">
+    <div class="card"><span class="tag p1">Tuần 1</span><h4>Đọc được trace</h4><p>Đọc mục 1–5.</p>
+      <label class="check"><input type="checkbox" data-k="w1a"><span>Vẽ cây span cho một request của hệ thống bạn định xây (RAG hoặc agent): mỗi span tên gì, cha là span nào, cần ghi thuộc tính nào.</span></label>
+      <label class="check"><input type="checkbox" data-k="w1b"><span>Trong mô phỏng mục 4, ở tỷ lệ lỗi 3%, tìm cấu hình tail sampling giữ hết trace lỗi mà lưu dưới 15% trace. Ghi lại vì sao head sampling không làm được.</span></label>
+    </div>
+    <div class="card"><span class="tag p1">Tuần 2</span><h4>Vận hành và dữ liệu</h4><p>Đọc mục 6–9.</p>
+      <label class="check"><input type="checkbox" data-k="w2a"><span>Viết chính sách dữ liệu trace: có ghi nội dung không, che những gì, giữ bao lâu, ai được xem, xóa theo yêu cầu bằng cách nào.</span></label>
+      <label class="check"><input type="checkbox" data-k="w2b"><span>Chọn 3 SLI cho trợ lý của bạn (một về độ trễ, một về lỗi, một về chất lượng), đặt SLO và viết một cảnh báo hành động được cho mỗi cái.</span></label>
+    </div>
+    <div class="card"><span class="tag p1">Mở rộng</span><h4>Đọc tài liệu gốc</h4><p>Đọc lướt, tập trung vào bảng thuộc tính.</p>
+      <label class="check"><input type="checkbox" data-k="w3a"><span>Quy ước span gọi model<sup class="cite"><a href="#src-8">[8]</a></sup> và quy định ghi nội dung:<sup class="cite"><a href="#src-9">[9]</a></sup> liệt kê thuộc tính Required và Opt-In.</span></label>
+      <label class="check"><input type="checkbox" data-k="w3b"><span>Bài của Hamel Husain<sup class="cite"><a href="#src-28">[28]</a></sup> và hướng dẫn vòng phản hồi của Langfuse:<sup class="cite"><a href="#src-18">[18]</a></sup> phác vòng "trace lỗi → dataset → experiment → phát hành" cho đội bạn.</span></label>
+    </div>
+  </div>
+
+  <h3>Tự kiểm tra</h3>
+  <details><summary>1. Ứng dụng trả HTTP 200, không có log lỗi, mà khách nhận câu trả lời sai. Dashboard tỷ lệ lỗi có bắt được không?</summary>
+    <p>Không. Đây là lỗi ngầm: 200 nhưng nội dung sai, chỉ kiểm tra đầu-cuối mới phát hiện.<sup class="cite"><a href="#src-24">[24]</a></sup> Cần trace để xem từng bước, và score (LLM giám khảo, phản hồi người dùng) gắn vào trace để đếm được loại lỗi này.<sup class="cite"><a href="#src-13">[13]</a><a href="#src-18">[18]</a></sup></p></details>
+  <details><summary>2. Vì sao chạy lại đúng câu hỏi đó trên máy mình thường không ra lỗi cũ?</summary>
+    <p>Vì output không hoàn toàn tất định, kể cả temperature 0,<sup class="cite"><a href="#src-22">[22]</a></sup> và agent có thể chọn đường khác ở mỗi lần chạy.<sup class="cite"><a href="#src-29">[29]</a></sup> Kết quả tool (như trạng thái đơn) cũng đổi theo thời gian. Bản ghi của đúng lần lỗi, tức trace, là bằng chứng duy nhất chắc chắn.</p></details>
+  <details><summary>3. Trong trace ở mục 3, bằng chứng nào cho thấy lỗi nằm ở tool chứ không ở retrieval?</summary>
+    <p>Span retrieval kết thúc bình thường và đã tìm đúng tài liệu chính sách. Span <code>execute_tool get_order_status</code> có status Error, <code>error.type</code> là timeout, và kéo dài 6 giây.<sup class="cite"><a href="#src-2">[2]</a><a href="#src-11">[11]</a></sup> Lần gọi model ngay sau đó vẫn trả lời "đã giao": model bịa thay vì báo lỗi. Cần sửa cả hai: cách xử lý lỗi tool trong prompt, và timeout của tool.</p></details>
+  <details><summary>4. Độ trễ trung bình là 3,5 giây. Có phải phần lớn khách chờ khoảng 3,5 giây?</summary>
+    <p>Không hẳn. Trong mô phỏng mục 4, trung bình cao hơn p50 khoảng 1 giây, còn 1% chậm nhất chờ hơn 30 giây. Trung bình bị phần đuôi kéo lên; nên dùng percentile và histogram.<sup class="cite"><a href="#src-24">[24]</a></sup></p></details>
+  <details><summary>5. Có nên bật ghi toàn bộ prompt và câu trả lời ở production?</summary>
+    <p>Quy ước OpenTelemetry để mặc định là không ghi, và khuyên nên có tùy chọn để bật.<sup class="cite"><a href="#src-9">[9]</a></sup> Nếu cần nội dung để debug: che dữ liệu nhạy cảm trước khi gửi,<sup class="cite"><a href="#src-19">[19]</a></sup> cân nhắc lưu nội dung ra kho riêng có phân quyền riêng,<sup class="cite"><a href="#src-9">[9]</a></sup> và đặt thời gian giữ.<sup class="cite"><a href="#src-20">[20]</a><a href="#src-25">[25]</a></sup> Với framework ghi đầy đủ theo mặc định, phải chủ động tắt hoặc che.<sup class="cite"><a href="#src-30">[30]</a></sup></p></details>
+  <details><summary>6. Head sampling 10% thì mất gì? Khi nào chấp nhận được?</summary>
+    <p>Mỗi trace có cùng cơ hội được giữ, nên trung bình chỉ giữ được khoảng một phần mười số trace lỗi (trong mô phỏng: 6/37); không đảm bảo giữ được mọi trace lỗi.<sup class="cite"><a href="#src-4">[4]</a></sup> Chấp nhận được khi bạn chỉ cần số liệu thống kê và lưu lượng rất lớn. Nếu cần điều tra mọi sự cố, dùng tail sampling, dù khó vận hành hơn.<sup class="cite"><a href="#src-4">[4]</a></sup></p></details>
+  <details><summary>7. Observability và evaluation khác nhau thế nào?</summary>
+    <p>Observability thu và cho xem dữ liệu của từng request thật; evaluation chấm chất lượng. Hai bên nối nhau: trace là nguyên liệu để chấm,<sup class="cite"><a href="#src-14">[14]</a><a href="#src-28">[28]</a></sup> kết quả chấm quay về gắn vào span được chấm,<sup class="cite"><a href="#src-13">[13]</a></sup> trace lỗi được đưa vào dataset để kiểm bản sửa.<sup class="cite"><a href="#src-18">[18]</a></sup></p></details>
+</section>
+
+<!-- NGUỒN -->
+<section id="nguon">
+  <h2>Nguồn tham khảo</h2>
+  <p class="muted">Các khẳng định kỹ thuật trong trang được đối chiếu với những nguồn dưới đây. Số trong ngoặc vuông ở thân bài trỏ tới mục tương ứng. Mọi nguồn được mở và kiểm lại nội dung ngày 2026-11-17.</p>
+  <ol class="sources">
+    <li id="src-1">OpenTelemetry. <i>Observability primer</i> (tài liệu khái niệm). Tài liệu cập nhật liên tục, không ghi năm. <a href="https://opentelemetry.io/docs/concepts/observability-primer/" target="_blank" rel="noopener">opentelemetry.io/docs/concepts/observability-primer</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-2">OpenTelemetry. <i>Traces</i> (tài liệu khái niệm). Tài liệu cập nhật liên tục, không ghi năm. <a href="https://opentelemetry.io/docs/concepts/signals/traces/" target="_blank" rel="noopener">opentelemetry.io/docs/concepts/signals/traces</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-3">W3C. <i>Trace Context</i>. W3C Recommendation, 2021-11-23. <a href="https://www.w3.org/TR/trace-context/" target="_blank" rel="noopener">w3.org/TR/trace-context</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-4">OpenTelemetry. <i>Sampling</i> (tài liệu khái niệm). Tài liệu cập nhật liên tục, không ghi năm. <a href="https://opentelemetry.io/docs/concepts/sampling/" target="_blank" rel="noopener">opentelemetry.io/docs/concepts/sampling</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-5">OpenTelemetry. <i>Moved: Generative AI semantic conventions</i>. Tài liệu cập nhật liên tục, không ghi năm. <a href="https://opentelemetry.io/docs/specs/semconv/gen-ai/" target="_blank" rel="noopener">opentelemetry.io/docs/specs/semconv/gen-ai</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-6">OpenTelemetry. <i>semantic-conventions-genai</i> (kho mã GitHub). Cập nhật liên tục. <a href="https://github.com/open-telemetry/semantic-conventions-genai" target="_blank" rel="noopener">github.com/open-telemetry/semantic-conventions-genai</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-7">OpenTelemetry. <i>Semantic conventions for generative AI systems</i> (docs/gen-ai/README.md, Status: Development). Cập nhật liên tục. <a href="https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/README.md" target="_blank" rel="noopener">semantic-conventions-genai … /docs/gen-ai/README.md</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-8">OpenTelemetry. <i>Semantic conventions for GenAI client inference</i> (client-inference.md, Status: Development). Cập nhật liên tục. <a href="https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/client-inference.md" target="_blank" rel="noopener">semantic-conventions-genai … /client-inference.md</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-9">OpenTelemetry. <i>Semantic conventions for GenAI model spans</i> (gen-ai-spans.md, mục ghi nội dung, Status: Development). Cập nhật liên tục. <a href="https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-spans.md" target="_blank" rel="noopener">semantic-conventions-genai … /gen-ai-spans.md</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-10">OpenTelemetry. <i>Semantic conventions for GenAI retrieval</i> (retrieval.md, Status: Development). Cập nhật liên tục. <a href="https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/retrieval.md" target="_blank" rel="noopener">semantic-conventions-genai … /retrieval.md</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-11">OpenTelemetry. <i>Semantic conventions for GenAI tool execution</i> (execute-tool.md, Status: Development). Cập nhật liên tục. <a href="https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/execute-tool.md" target="_blank" rel="noopener">semantic-conventions-genai … /execute-tool.md</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-12">OpenTelemetry. <i>Semantic conventions for GenAI agent spans</i> (gen-ai-agent-spans.md, Status: Development). Cập nhật liên tục. <a href="https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-agent-spans.md" target="_blank" rel="noopener">semantic-conventions-genai … /gen-ai-agent-spans.md</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-13">OpenTelemetry. <i>Semantic conventions for GenAI events</i> (gen-ai-events.md, event gen_ai.evaluation.result, Status: Development). Cập nhật liên tục. <a href="https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-events.md" target="_blank" rel="noopener">semantic-conventions-genai … /gen-ai-events.md</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-14">Langfuse. <i>LLM observability overview</i> (tài liệu). Tài liệu cập nhật liên tục, không ghi năm. <a href="https://langfuse.com/docs/observability/overview" target="_blank" rel="noopener">langfuse.com/docs/observability/overview</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-15">Langfuse. <i>Core concepts: data model</i> (tài liệu). Tài liệu cập nhật liên tục, không ghi năm. <a href="https://langfuse.com/docs/observability/data-model" target="_blank" rel="noopener">langfuse.com/docs/observability/data-model</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-16">Langfuse. <i>Observation types</i> (tài liệu). Tài liệu cập nhật liên tục, không ghi năm. <a href="https://langfuse.com/docs/observability/features/observation-types" target="_blank" rel="noopener">langfuse.com … /features/observation-types</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-17">Langfuse. <i>Token and cost tracking</i> (tài liệu). Tài liệu cập nhật liên tục, không ghi năm. <a href="https://langfuse.com/docs/observability/features/token-and-cost-tracking" target="_blank" rel="noopener">langfuse.com … /features/token-and-cost-tracking</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-18">Langfuse. <i>User feedback loop</i> (hướng dẫn). Tài liệu cập nhật liên tục, không ghi năm. <a href="https://langfuse.com/guides/user-feedback-loop" target="_blank" rel="noopener">langfuse.com/guides/user-feedback-loop</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-19">Langfuse. <i>Masking</i> (tài liệu). Tài liệu cập nhật liên tục, không ghi năm. <a href="https://langfuse.com/docs/observability/features/masking" target="_blank" rel="noopener">langfuse.com … /features/masking</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-20">Langfuse. <i>Data retention</i> (tài liệu). Tài liệu cập nhật liên tục, không ghi năm. <a href="https://langfuse.com/docs/administration/data-retention" target="_blank" rel="noopener">langfuse.com/docs/administration/data-retention</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-21">Arize AI. <i>OpenInference</i> (kho mã GitHub). Cập nhật liên tục. <a href="https://github.com/Arize-ai/openinference" target="_blank" rel="noopener">github.com/Arize-ai/openinference</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-22">Anthropic. <i>Glossary</i> (tài liệu Claude). Tài liệu cập nhật liên tục, không ghi năm. <a href="https://platform.claude.com/docs/en/about-claude/glossary" target="_blank" rel="noopener">platform.claude.com/docs/en/about-claude/glossary</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-23">Anthropic. <i>Building effective agents</i>. 2024-12-19. <a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener">anthropic.com/engineering/building-effective-agents</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-24">Ewaschuk, R. (Beyer, B. biên tập), Google. <i>Monitoring Distributed Systems</i>, chương 6 sách <i>Site Reliability Engineering</i>. O'Reilly Media; bản trực tuyến tại sre.google ghi © 2017. <a href="https://sre.google/sre-book/monitoring-distributed-systems/" target="_blank" rel="noopener">sre.google/sre-book/monitoring-distributed-systems</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-25">Liên minh châu Âu. <i>GDPR, Điều 5: Nguyên tắc xử lý dữ liệu cá nhân</i> (bản trình bày tại gdpr-info.eu). 2016. <a href="https://gdpr-info.eu/art-5-gdpr/" target="_blank" rel="noopener">gdpr-info.eu/art-5-gdpr</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-26">Quốc hội Việt Nam. <i>Luật số 91/2025/QH15 Luật Bảo vệ dữ liệu cá nhân</i>, ban hành 26/06/2025, hiệu lực 01/01/2026 (trang Công báo). <a href="https://congbao.chinhphu.vn/van-ban/luat-so-91-2025-qh15-45578.htm" target="_blank" rel="noopener">congbao.chinhphu.vn … /luat-so-91-2025-qh15-45578.htm</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-27">Microsoft. <i>Presidio: data protection and de-identification SDK</i> (tài liệu). Tài liệu cập nhật liên tục, không ghi năm. <a href="https://presidio.dataprivacystack.org/" target="_blank" rel="noopener">presidio.dataprivacystack.org</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-28">Husain, H. <i>Your AI Product Needs Evals</i>. 2024-03-29. <a href="https://hamel.dev/blog/posts/evals/" target="_blank" rel="noopener">hamel.dev/blog/posts/evals</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-29">Hadfield, J.; Zhang, B.; Lien, K.; Scholz, F.; Fox, J.; Ford, D. (Anthropic). <i>How we built our multi-agent research system</i>. 2025-06-13. <a href="https://www.anthropic.com/engineering/multi-agent-research-system" target="_blank" rel="noopener">anthropic.com/engineering/multi-agent-research-system</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-30">OpenAI. <i>Tracing</i> (tài liệu OpenAI Agents SDK cho Python). Tài liệu cập nhật liên tục, không ghi năm. <a href="https://openai.github.io/openai-agents-python/tracing/" target="_blank" rel="noopener">openai.github.io/openai-agents-python/tracing</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-31">OpenTelemetry. <i>Semantic conventions for generative AI metrics</i> (gen-ai-metrics.md, Status: Development). Cập nhật liên tục. <a href="https://github.com/open-telemetry/semantic-conventions-genai/blob/main/docs/gen-ai/gen-ai-metrics.md" target="_blank" rel="noopener">semantic-conventions-genai … /gen-ai-metrics.md</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-32">Langfuse. <i>LLM-as-a-Judge</i> (tài liệu). Tài liệu cập nhật liên tục, không ghi năm. <a href="https://langfuse.com/docs/evaluation/evaluation-methods/llm-as-a-judge" target="_blank" rel="noopener">langfuse.com … /evaluation-methods/llm-as-a-judge</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-33">OpenTelemetry. <i>What is OpenTelemetry?</i> (tài liệu). Tài liệu cập nhật liên tục, không ghi năm. <a href="https://opentelemetry.io/docs/what-is-opentelemetry/" target="_blank" rel="noopener">opentelemetry.io/docs/what-is-opentelemetry</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-34">Langfuse. <i>Sampling</i> (tài liệu). Tài liệu cập nhật liên tục, không ghi năm. <a href="https://langfuse.com/docs/observability/features/sampling" target="_blank" rel="noopener">langfuse.com … /features/sampling</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+  </ol>
+</section>
+</main>
+
+<footer>
+  Tài liệu học LLM observability ở mức khái niệm. Tên công ty, mã đơn, thời gian, số token, nội dung trace, dữ liệu mô phỏng và bảng so sánh phiên bản là minh họa để hiểu cơ chế, không phải số đo của một hệ thống cụ thể.
+</footer>
+
+<script>
+(function(){
+  // ---------- Theme ----------
+  var root=document.documentElement;
+  function safeGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+  function safeSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  var saved=safeGet('rag-theme'); if(saved) root.setAttribute('data-theme',saved);
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme');
+    if(!cur){cur=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+    var next=cur==='dark'?'light':'dark'; root.setAttribute('data-theme',next); safeSet('rag-theme',next);
+  });
+
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function cite(){return '<sup class="cite">'+[].map.call(arguments,function(n){return '<a href="#src-'+n+'">['+n+']</a>'}).join('')+'</sup>'}
+  function vn(x,d){var s=x.toFixed(d).split('.');s[0]=s[0].replace(/\B(?=(\d{3})+(?!\d))/g,'.');return s.join(',')}
+  function pct(a,b,d){return b?vn(a/b*100,d===undefined?1:d)+'%':'—'}
+
+  // ---------- Stacked tables on phones: give each cell its column name ----------
+  function labelTables(root){
+    [].forEach.call(root.querySelectorAll('table.stack'),function(t){
+      var heads=[].map.call(t.querySelectorAll('thead th'),function(th){return th.textContent});
+      [].forEach.call(t.querySelectorAll('tbody tr'),function(tr){[].forEach.call(tr.children,function(td,i){if(heads[i])td.setAttribute('data-label',heads[i])})});
+    });
+  }
+  function kv(rows){return '<div class="kv">'+rows.map(function(r){return '<span class="k"><code>'+esc(r[0])+'</code></span><span class="v'+(r[2]?' '+r[2]:'')+'">'+esc(r[1])+'</span>'}).join('')+'</div>'}
+  function pre(s){return '<pre class="txt">'+esc(s)+'</pre>'}
+
+  // ---------- Trace waterfall (illustrative trace; names follow OTel GenAI conventions) ----------
+  // id, depth, name, sub label, kind, start ms, end ms, error
+  var SP=[
+    {id:'root',d:0,n:'invoke_agent tro-ly-giao-hang',s:'span gốc · agent',k:'agent',a:0,b:9400},
+    {id:'ret',d:1,n:'retrieval',s:'tìm kho chính sách',k:'ret',a:150,b:520},
+    {id:'llm1',d:1,n:'chat model-a',s:'lượt 1: quyết định gọi tool',k:'llm',a:560,b:2050},
+    {id:'tool',d:1,n:'execute_tool get_order_status',s:'tra trạng thái đơn',k:'tool',a:2100,b:8100,err:1},
+    {id:'llm2',d:1,n:'chat model-a',s:'lượt 2: viết câu trả lời',k:'llm',a:8150,b:9350}
+  ];
+  var TOTAL=SP[0].b, wfEl=document.getElementById('wf');
+  function sec(ms){return vn(ms/1000,2)+' s'}
+  function drawWf(focus){
+    var h='<div class="wf-head">Trace 4bf92f35… · 5 span · tổng '+sec(TOTAL)+'</div>';
+    SP.forEach(function(s){
+      var f=focus.indexOf(s.id)>=0, cls='wf-row'+(focus.length?(f?' focus':' dim'):'');
+      h+='<div class="'+cls+'"><div class="wf-name" style="padding-left:'+(s.d*14)+'px">'+(s.d?'<span class="ix">└ </span>':'')+esc(s.n)+' · <b>'+sec(s.b-s.a)+'</b>'+(s.err?' <span class="res err">Error</span>':'')+'<small>'+esc(s.s)+'</small></div>'+
+        '<div class="wf-track"><span class="wf-bar '+(s.err?'k-err':'k-'+s.k)+'" style="left:'+(s.a/TOTAL*100)+'%;width:'+((s.b-s.a)/TOTAL*100)+'%"></span></div></div>';
+    });
+    var ticks='';for(var t=0;t<=10;t+=2){var ms=Math.min(t*1000,TOTAL);ticks+='<span style="left:'+(t===10?100:ms/TOTAL*100)+'%">'+(t===10?vn(TOTAL/1000,1):t)+' s</span>'}
+    h+='<div class="wf-axis"><span class="sp"></span><div class="wf-ticks" aria-hidden="true">'+ticks+'</div></div>';
+    wfEl.innerHTML=h;
+  }
+  var toolShare=(SP[3].b-SP[3].a)/TOTAL*100;
+
+  // ---------- Stepper ----------
+  var STEPS=[
+    {t:'Khiếu nại',f:['root'],h:'<span class="tag bad">Sự cố</span><h3>Bước 1 · Trả lời trôi chảy, nhưng sai</h3>'+
+      '<p>Chị Thu, chủ một shop online, hỏi trợ lý Minh Phát: <i>"Đơn MP-48213 của chị sao chưa thấy giao?"</i> Trợ lý đáp: <i>"Đơn đã giao thành công ngày 15/11."</i> Thực tế đơn còn nằm ở kho. Chị gọi tổng đài khiếu nại.</p>'+
+      '<p>Dashboard không có gì bất thường: request trả HTTP 200, không có exception. Đây đúng kiểu lỗi 200 nhưng nội dung sai mà sách SRE cảnh báo.'+cite(24)+' Hà tìm trace theo session id của cuộc chat; trace còn mang user id, môi trường và phiên bản.'+cite(15)+' Span gốc của trace:</p>'+
+      kv([['span','invoke_agent tro-ly-giao-hang'],['trace_id','4bf92f3577b34da6a3ce929d0e0e4736'],['parent_id','(không có: đây là span gốc)'],['gen_ai.operation.name','invoke_agent'],['gen_ai.conversation.id','chat-20261117-0912'],['environment (thuộc tính cấp trace của Langfuse)','production']])+
+      '<p class="muted">Span không có parent_id là span gốc.'+cite(2)+' Operation <code>invoke_agent</code> dùng khi LLM điều khiển luồng qua các lần gọi tool.'+cite(12)+' <code>environment</code> không thuộc quy ước OpenTelemetry; đó là thuộc tính cấp trace của Langfuse, dùng để tách production với staging.'+cite(15)+'</p>'},
+    {t:'Đọc thác nước',f:['ret','llm1','tool','llm2'],h:'<span class="tag p1">Cách đọc</span><h3>Bước 2 · Nhìn cả trace trước khi soi từng span</h3>'+
+      '<p>Biểu đồ thác nước (waterfall) bên dưới là cách hầu hết công cụ hiển thị trace. Mỗi dòng là một span; dòng thụt vào là span con, tức bước nhỏ nằm trong bước lớn.'+cite(2)+' Vị trí thanh cho biết lúc bắt đầu, độ dài thanh cho biết thời gian chạy.</p>'+
+      '<p>Ngay cái nhìn đầu tiên: trong '+sec(TOTAL)+' của cả request, span tool chiếm '+sec(SP[3].b-SP[3].a)+', tức <b>'+vn(toolShare,0)+'%</b>, và có status <b>Error</b>. Một span có ba trạng thái: Unset (mặc định, nghĩa là xong không lỗi), Error, Ok.'+cite(2)+'</p>'+
+      '<p class="muted">Bốn span con đều là con trực tiếp của span agent, giống cách quy ước GenAI mô tả các bước tool là "anh em" dưới cùng một span <code>invoke_agent</code>.'+cite(12)+'</p>'},
+    {t:'Span retrieval',f:['ret'],h:'<span class="tag p3">Retrieval</span><h3>Bước 3 · Tìm tài liệu: có đúng không?</h3>'+
+      '<p>Span đầu tiên tìm trong kho chính sách giao hàng. Quy ước GenAI đặt tên span là <code>retrieval</code>, loại INTERNAL; số tài liệu tối đa (top-k) là thuộc tính nên có; danh sách tài liệu và câu truy vấn chỉ ghi khi bật (opt-in), vì có thể chứa thông tin nhạy cảm.'+cite(10)+'</p>'+
+      kv([['gen_ai.operation.name','retrieval'],['gen_ai.retrieval.top_k','5'],['gen_ai.retrieval.documents','chinh-sach-giao-hang#3 (0,82), tra-cuu-don#1 (0,77), …'],['thời gian','0,37 s']])+
+      '<p>Tài liệu đúng nằm ở đầu danh sách. Bước này ổn, lỗi nằm chỗ khác. Nếu tài liệu đúng không có ở đây, hướng sửa sẽ là <a href="../hybrid-search/">tìm kiếm</a> và <a href="../reranking/">reranking</a>, không phải prompt.</p>'},
+    {t:'Gọi model lượt 1',f:['llm1'],h:'<span class="tag p1">Gọi model</span><h3>Bước 4 · Model quyết định gọi tool</h3>'+
+      '<p>Span gọi model có tên theo mẫu <code>{operation} {model}</code>, loại CLIENT.'+cite(8)+' Bắt buộc có tên thao tác và nhà cung cấp; tên model bắt buộc nếu có; nên có số token và lý do dừng.'+cite(8)+'</p>'+
+      kv([['gen_ai.operation.name','chat'],['gen_ai.provider.name','(nhà cung cấp)'],['gen_ai.request.model','model-a'],['gen_ai.usage.input_tokens','3.180'],['gen_ai.usage.output_tokens','42'],['gen_ai.response.finish_reasons','["tool_calls"]']])+
+      '<p>Model dừng để gọi tool <code>get_order_status</code> với mã đơn MP-48213. Đúng việc cần làm. Số token input nên gồm cả token đã cache; token output gồm cả token suy luận.'+cite(8)+'</p>'+
+      '<p class="muted">Giá trị lý do dừng tùy nhà cung cấp; "tool_calls" ở đây là minh họa.</p>'},
+    {t:'Span tool lỗi',f:['tool'],h:'<span class="tag bad">Tool</span><h3>Bước 5 · Tool timeout sau 6 giây</h3>'+
+      '<p>Span tool tên <code>execute_tool get_order_status</code>, loại INTERNAL. Tên tool là bắt buộc; nếu lỗi thì phải có <code>error.type</code>. Tham số và kết quả của tool chỉ ghi khi bật, vì có thể chứa thông tin nhạy cảm.'+cite(11)+'</p>'+
+      kv([['gen_ai.tool.name','get_order_status'],['gen_ai.tool.call.id','call_7Qx…'],['gen_ai.tool.call.arguments','{"order_id": "MP-48213"}'],['status','Error','bad'],['error.type','timeout','bad'],['thời gian','6,00 s']])+
+      '<p>Hệ thống quản lý kho trả lời chậm, tool bỏ cuộc sau 6 giây và trả về một thông báo lỗi cho model. Đây là "vì sao". Một event trên span có thể ghi chi tiết lỗi, như một dòng log có cấu trúc gắn vào span.'+cite(2)+'</p>'},
+    {t:'Gọi model lượt 2',f:['llm2'],h:'<span class="tag bad">Lỗi ngầm</span><h3>Bước 6 · Model nhận lỗi, vẫn trả lời "đã giao"</h3>'+
+      '<p>Lần gọi model thứ hai nhận kết quả tool là thông báo timeout, nhưng vẫn viết: <i>"Đơn đã giao thành công ngày 15/11."</i> Lý do dừng là bình thường, request trả 200.</p>'+
+      kv([['gen_ai.usage.input_tokens','3.260'],['gen_ai.usage.output_tokens','96'],['gen_ai.response.finish_reasons','["stop"]'],['gen_ai.output.messages_ref','(tham chiếu tới nội dung ở kho riêng)']])+
+      '<p>Hà đọc được câu trả lời vì Minh Phát đã bật ghi nội dung: nội dung đã che số điện thoại, địa chỉ, nằm ở kho riêng, span chỉ giữ tham chiếu (bước 9). Theo mặc định, quy ước OpenTelemetry <b>không</b> ghi nội dung; khi đó trace chỉ cho thấy thứ tự "tool lỗi → model trả lời", vẫn đủ để nghi ngờ, nhưng không đọc được câu bịa.'+cite(9)+'</p>'+
+      '<p class="muted">Chỉ trace mới nối được hai sự kiện: tool lỗi ở bước 5 và câu trả lời tự tin ở bước 6. Nhìn riêng từng dòng log thì không thấy.</p>'},
+    {t:'Score và phản hồi',f:['llm2'],h:'<span class="tag p3">Score</span><h3>Bước 7 · Phản hồi người dùng và LLM giám khảo</h3>'+
+      '<p>Chị Thu bấm 👎 rồi hỏi lại bằng cách khác. Langfuse gọi cái đầu là phản hồi rõ ràng (hiếm, lệch về người không hài lòng), cái sau là tín hiệu gián tiếp; cả hai được lưu thành score trên trace đã tạo ra câu trả lời.'+cite(18)+'</p>'+
+      '<p>Minh Phát cũng chạy một LLM giám khảo (judge) trên một phần trace production, kiểm "câu trả lời có bám kết quả tool không".'+cite(32)+' Kết quả được ghi thành event <code>gen_ai.evaluation.result</code> gắn vào span gọi model đang được chấm:'+cite(13)+'</p>'+
+      kv([['gen_ai.evaluation.name','bam_ket_qua_tool'],['gen_ai.evaluation.score.label','fail','bad'],['gen_ai.evaluation.score.value','0'],['gen_ai.evaluation.explanation','Tool trả timeout nhưng câu trả lời khẳng định đã giao.']])+
+      '<p>Hà lọc các trace trong 7 ngày có span tool lỗi: <b>412</b> trace. Không phải ca hiếm.</p>'},
+    {t:'Sửa và kiểm',f:['tool','llm2'],h:'<span class="tag p2">Cải tiến</span><h3>Bước 8 · Từ trace lỗi tới bản sửa có kiểm chứng</h3>'+
+      '<p>Quy trình theo hướng dẫn của Langfuse: lọc trace điểm thấp, đưa ca lỗi vào dataset, thử bản sửa bằng experiment trước khi phát hành, rồi biến lỗi hay lặp lại thành evaluator tự động chấm mọi trace từ đó về sau.'+cite(18)+'</p>'+
+      '<ul><li>Dataset: 40 trace "tool lỗi" lấy từ production, kèm đáp án mong muốn ("chưa tra được, sẽ báo lại").</li>'+
+      '<li>Bản sửa: prompt v8 dặn model khi tool lỗi phải nói rõ là chưa tra được; tool giảm timeout xuống 3 giây và thử lại một lần.</li>'+
+      '<li>Phát hành: mọi span gọi model mang <code>gen_ai.prompt.name</code> = tra-cuu-don và <code>gen_ai.prompt.version</code> = v8, nên có thể so hai phiên bản trên dữ liệu thật (mục 9).'+cite(8)+'</li></ul>'+
+      '<p class="muted">Hamel Husain gọi đây là việc liên tục: cập nhật bộ test theo các lỗi mới thấy trong dữ liệu.'+cite(28)+'</p>'},
+    {t:'Bảo vệ dữ liệu',f:['root'],h:'<span class="tag bad">Quyền riêng tư</span><h3>Bước 9 · Trace này chứa gì về chị Thu?</h3>'+
+      '<p>Trace có mã đơn, nội dung chat, và trong kết quả tool có địa chỉ, số điện thoại người nhận. Minh Phát áp dụng:</p><ul>'+
+      '<li>Chỉ bật ghi nội dung ở luồng cần debug; mặc định không ghi.'+cite(9)+'</li>'+
+      '<li>Che số điện thoại, email trước khi trace rời ứng dụng.'+cite(19)+' Công cụ tự động không đảm bảo bắt hết.'+cite(27)+'</li>'+
+      '<li>Nội dung lưu ở kho riêng, phân quyền riêng; span chỉ giữ tham chiếu.'+cite(9)+'</li>'+
+      '<li>Giữ trace 30 ngày rồi tự xóa (con số của Minh Phát; Langfuse cho tối thiểu 3 ngày).'+cite(20)+'</li>'+
+      '<li>40 ca lỗi đã đưa vào dataset ở bước 8 <b>không</b> bị xóa theo hạn giữ trace: Langfuse không xóa dataset item.'+cite(20)+' Vì vậy ẩn danh trước khi đưa vào dataset, và đặt hạn riêng cho dataset.</li></ul>'+
+      '<p class="muted">Danh sách trên là đề xuất kỹ thuật của trang này. Nguyên tắc tối thiểu hóa và giới hạn thời gian lưu có trong GDPR;'+cite(25)+' ở Việt Nam, hãy rà soát theo Luật Bảo vệ dữ liệu cá nhân.'+cite(26)+'</p>'}
+  ];
+  var cur=0, stepsEl=document.getElementById('steps'), bodyEl=document.getElementById('stepBody');
+  STEPS.forEach(function(s,i){var b=document.createElement('button');b.innerHTML='<span class="n">'+(i+1)+'</span>'+s.t;b.addEventListener('click',function(){show(i,true)});stepsEl.appendChild(b)});
+  function show(i,jump){cur=i;var s=STEPS[i];
+    bodyEl.innerHTML=s.h; drawWf(s.f);
+    [].forEach.call(stepsEl.children,function(b,j){b.classList.toggle('on',j===i);b.setAttribute('aria-current',j===i?'step':'false')});
+    document.getElementById('prevStep').disabled=i===0;var ab=stepsEl.children[i];if(stepsEl.scrollWidth>stepsEl.clientWidth){stepsEl.scrollLeft=ab.offsetLeft-stepsEl.offsetLeft-8}document.getElementById('nextStep').disabled=i===STEPS.length-1;
+    if(jump){var st=document.querySelector('.stepper'),top=st.getBoundingClientRect().top;if(top<64)window.scrollTo({top:top+window.scrollY-72,behavior:'instant'})}}
+  document.getElementById('prevStep').addEventListener('click',function(){if(cur>0)show(cur-1,true)});
+  document.getElementById('nextStep').addEventListener('click',function(){if(cur<STEPS.length-1)show(cur+1,true)});
+  show(0);
+
+  // ---------- Sampling + percentile simulator (illustrative data, fixed seed) ----------
+  function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+  var rnd=mulberry32(20261117), N=1000, REQ=[];
+  function gauss(){var u=rnd()||1e-9,v=rnd();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+  // base latency ~ lognormal around 2.4 s; ~7% take a long agent path (+5..14 s); ue/ut/us are fixed draws for error, error type, sampling
+  for(var i=0;i<N;i++){var base=Math.exp(Math.log(2.4)+0.35*gauss());if(rnd()<0.07)base+=5+rnd()*9;REQ.push({ok:base,ue:rnd(),ut:rnd(),us:rnd()})}
+  var RATES=[1,5,10,25,50,100], THR=[5,10], thr=10, KB=40;
+  var IN={err:document.getElementById('errRate'),smp:document.getElementById('smpRate'),ke:document.getElementById('keepErr'),ks:document.getElementById('keepSlow')};
+  var thrRow=document.getElementById('thrRow');
+  THR.forEach(function(v){var b=document.createElement('button');b.className='chip';b.textContent=v+' giây';b.dataset.v=v;thrRow.appendChild(b)});
+  thrRow.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;thr=+b.dataset.v;sim()});
+  ['err','smp'].forEach(function(k){IN[k].addEventListener('input',sim)});
+  ['ke','ks'].forEach(function(k){IN[k].addEventListener('change',sim)});
+  var BK=[0,1,2,3,4,6,10,20,30,Infinity];
+  function bucketOf(v){for(var j=0;j<BK.length-1;j++){if(v>=BK[j]&&v<BK[j+1])return j}return BK.length-2}
+  function sim(){
+    var er=+IN.err.value/100, rate=RATES[+IN.smp.value]/100, ke=IN.ke.checked, ks=IN.ks.checked;
+    document.getElementById('vErr').textContent=IN.err.value+'%';
+    document.getElementById('vSmp').textContent=RATES[+IN.smp.value]+'%'; IN.smp.setAttribute('aria-valuetext',RATES[+IN.smp.value]+'%'); IN.err.setAttribute('aria-valuetext',IN.err.value+'%');
+    [].forEach.call(thrRow.querySelectorAll('button'),function(b){var on=+b.dataset.v===thr;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
+    var L=REQ.map(function(x){var e=x.ue<er,lat=x.ok,kind='';if(e){if(x.ut<0.5){lat=0.2+x.ut*0.8;kind='fast'}else{lat=30+x.ut*2;kind='slow'}}return {lat:lat,e:e,kind:kind,us:x.us}});
+    var s=L.map(function(x){return x.lat}).sort(function(a,b){return a-b});
+    function p(q){return s[Math.ceil(q*N)-1]}
+    var mean=s.reduce(function(a,b){return a+b},0)/N, p50=p(.5), p95=p(.95), p99=p(.99);
+    var errs=L.filter(function(x){return x.e}), fast=errs.filter(function(x){return x.kind==='fast'}).length, slowE=errs.length-fast;
+    var okL=L.filter(function(x){return !x.e}), okMean=okL.length?okL.reduce(function(a,x){return a+x.lat},0)/okL.length:0;
+    document.getElementById('latKpi').innerHTML=
+      '<div class="card"><span class="muted">Trung bình</span><b style="color:var(--p4)">'+vn(mean,2)+' s</b></div>'+
+      '<div class="card"><span class="muted">p50 (trung vị)</span><b style="color:var(--p1)">'+vn(p50,2)+' s</b></div>'+
+      '<div class="card"><span class="muted">p95</span><b style="color:var(--p1)">'+vn(p95,2)+' s</b></div>'+
+      '<div class="card"><span class="muted">p99</span><b style="color:var(--p1)">'+vn(p99,2)+' s</b></div>';
+    // histogram
+    var cnt=BK.slice(0,-1).map(function(){return [0,0]});
+    L.forEach(function(x){cnt[bucketOf(x.lat)][x.e?1:0]++});
+    var mx=Math.max.apply(null,cnt.map(function(c){return c[0]+c[1]}))||1;
+    var mk={};function addMk(v,t,c){var b=bucketOf(v);(mk[b]=mk[b]||[]).push('<span class="mkr '+c+'">'+t+'</span>')}
+    addMk(mean,'trung bình','m');addMk(p50,'p50','q');addMk(p95,'p95','q');addMk(p99,'p99','q');
+    var h='';
+    cnt.forEach(function(c,j){var lab=BK[j+1]===Infinity?'≥ '+BK[j]+' s':BK[j]+'–'+BK[j+1]+' s';
+      h+='<div class="hrow"><span class="hl">'+lab+'</span><span class="ht" aria-label="'+lab+': '+c[0]+' thành công, '+c[1]+' lỗi"><span class="b-ok" style="width:'+(c[0]/mx*100)+'%"></span><span class="b-err" style="width:'+(c[1]/mx*100)+'%"></span></span><span class="hc">'+(c[0]+c[1])+'</span>'+(mk[j]?'<span class="mk">'+mk[j].join('')+'</span>':'')+'</div>'});
+    document.getElementById('hist').innerHTML=h;
+    // sampling
+    var slowAll=L.filter(function(x){return x.lat>thr}).length;
+    var head=L.filter(function(x){return x.us<rate});
+    var tail=L.filter(function(x){return (ke&&x.e)||(ks&&x.lat>thr)||x.us<rate});
+    function st(arr){return {n:arr.length,e:arr.filter(function(x){return x.e}).length,sl:arr.filter(function(x){return x.lat>thr}).length}}
+    var H=st(head),T=st(tail);
+    function frac(a,b){return vn(a,0)+'/'+vn(b,0)+(b?' ('+pct(a,b,0)+')':'')}
+    function col(a,b){return b&&a===b?'ok':(a===0&&b>0?'err':'mid')}
+    var rows=[
+      ['Trace được lưu',frac(H.n,N),frac(T.n,N),'',''],
+      ['Trace lỗi giữ được',frac(H.e,errs.length),frac(T.e,errs.length),errs.length?col(H.e,errs.length):'',errs.length?col(T.e,errs.length):''],
+      ['Trace chậm hơn '+thr+' s giữ được',frac(H.sl,slowAll),frac(T.sl,slowAll),slowAll?col(H.sl,slowAll):'',slowAll?col(T.sl,slowAll):''],
+      ['Dung lượng ước tính','≈ '+vn(H.n*KB/1000,1)+' MB','≈ '+vn(T.n*KB/1000,1)+' MB','','']
+    ];
+    var tb=document.querySelector('#smpTable tbody');
+    tb.innerHTML=rows.map(function(r){return '<tr><td><b>'+r[0]+'</b></td><td>'+(r[3]?'<span class="res '+r[3]+'">'+r[1]+'</span>':r[1])+'</td><td>'+(r[4]?'<span class="res '+r[4]+'">'+r[2]+'</span>':r[2])+'</td></tr>'}).join('');
+    labelTables(document.getElementById('smpTable').parentNode);
+    var v,cls;
+    if(!errs.length){v='Không có request lỗi nào để mất';cls='good'}
+    else if(T.e===errs.length&&H.e<errs.length){v='Tail giữ đủ trace lỗi, head mất '+(errs.length-H.e)+' trace lỗi';cls='good'}
+    else if(T.e<errs.length){v='Tail đang bỏ sót trace lỗi: hãy bật luật "luôn giữ trace có lỗi"';cls='bad'}
+    else {v='Cả hai đều giữ đủ trace lỗi';cls='risk'}
+    document.getElementById('simNote').innerHTML='<span class="verdict '+cls+'">'+v+'.</span> Có '+errs.length+' request lỗi: '+fast+' lỗi nhanh (dưới 1 s) và '+slowE+' lỗi chậm (khoảng 30 s). Độ trễ trung bình riêng của request thành công là '+vn(okMean,2)+' s. '+(T.n>H.n?'Tail lưu thêm '+(T.n-H.n)+' trace so với head'+(H.n?', tức gấp '+vn(T.n/H.n,1)+' lần':'')+'.':'Hai cách lưu cùng số trace.')+
+      (errs.length&&T.n?' Trong kho trace của tail, '+pct(T.e,T.n)+' là trace lỗi; head là '+pct(H.e,H.n)+'; tỷ lệ lỗi thật của 1.000 request là '+pct(errs.length,N)+'.':'');
+  }
+  sim();
+
+  // ---------- Glossary ----------
+  var G={base:'Nền tảng tracing',genai:'Quy ước GenAI',ops:'Vận hành & đo',qual:'Chất lượng & phản hồi',priv:'Quyền riêng tư'};
+  // [id, group, name, alias, definition, example, related ids, source numbers]
+  var T=[
+    ['obs','base','Observability','khả năng quan sát','Hiểu một hệ thống từ bên ngoài: đặt câu hỏi với hệ thống mà không cần biết bên trong nó chạy ra sao, dựa vào dữ liệu nó phát ra.','',['telemetry','trace'],[1]],
+    ['telemetry','base','Telemetry','dữ liệu đo từ xa','Dữ liệu hệ thống phát ra về chính nó và hành vi của nó, dưới dạng trace, metric hoặc log.','',['trace','metric','log'],[1]],
+    ['log','base','Log','','Một thông điệp có dấu thời gian do dịch vụ hay thành phần phát ra.','"14:02:07 get_order_status timeout sau 6 s"',['spanevent','metric'],[1]],
+    ['metric','base','Metric','số đo','Số liệu gộp theo một khoảng thời gian về hạ tầng hay ứng dụng.','Số token mỗi phút; p95 độ trễ trong 5 phút.',['histogram','golden'],[1]],
+    ['trace','base','Trace','distributed trace','Ghi lại đường đi của một request qua các dịch vụ. Gồm các span có quan hệ cha-con.','Một câu hỏi của khách, từ lúc nhận tới lúc trả lời.',['span','rootspan','session'],[1,15]],
+    ['span','base','Span','','Một đơn vị công việc trong trace, có giờ bắt đầu, giờ kết thúc. Span có thể lồng nhau: span con là thao tác con của span cha.','Một lần gọi model; một lần gọi tool.',['rootspan','attribute','spankind'],[2]],
+    ['rootspan','base','Root span','span gốc','Span không có parent_id. Nó bao trọn cả request; mọi span khác là con cháu của nó.','',['span','traceparent'],[2]],
+    ['spanctx','base','Span context','','Phần thông tin bất biến đi kèm span: trace ID, span ID, trace flags, trace state. Đây là thứ được truyền sang dịch vụ khác để nối trace.','',['traceparent','span'],[2]],
+    ['attribute','base','Attribute','thuộc tính','Cặp khóa-giá trị gắn vào span để mô tả nó. Khóa là chuỗi, giá trị là chuỗi, số, boolean hoặc mảng.','gen_ai.request.model = "model-a"',['span','inference'],[2]],
+    ['spanevent','base','Span event','','Một thông điệp có cấu trúc, như một dòng log, gắn vào một thời điểm trong span.','',['log','evalevent'],[2]],
+    ['status','base','Span status','trạng thái span','Ba giá trị: Unset (mặc định, xong không lỗi), Error, Ok.','',['span','errortype'],[2]],
+    ['spankind','base','Span kind','loại span','Client, Server, Internal, Producer hoặc Consumer. Không ghi thì là Internal. Span gọi model nên là CLIENT; span tool và retrieval là INTERNAL.','',['span','inference'],[2,8,10,11]],
+    ['traceparent','base','traceparent','W3C Trace Context','Header HTTP chuẩn để truyền context của trace giữa các dịch vụ. Có bốn trường: version, trace-id, parent-id, trace-flags.','00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01',['spanctx','rootspan'],[3]],
+    ['otel','base','OpenTelemetry','OTel','Framework và bộ công cụ mã nguồn mở để tạo, xuất và thu telemetry, không phụ thuộc nhà cung cấp. Bản thân nó không phải backend lưu trữ hay giao diện xem.','',['collector','semconv'],[33]],
+    ['collector','base','Collector, OTLP','','Collector là proxy nhận, xử lý và xuất telemetry. OTLP là giao thức chuẩn định nghĩa hình dạng dữ liệu telemetry.','',['otel','tail'],[33]],
+    ['semconv','genai','Quy ước GenAI','GenAI semantic conventions','Bộ tên chuẩn cho span, metric, event của ứng dụng GenAI: gọi model, embedding, retrieval, tool, agent, MCP. Trạng thái Development; đã chuyển sang repo riêng.','',['inference','agentspan'],[5,7]],
+    ['inference','genai','Span gọi model','inference span','Tên theo mẫu "{gen_ai.operation.name} {gen_ai.request.model}", loại CLIENT. Bắt buộc có tên thao tác và nhà cung cấp.','chat model-a',['usage','finish'],[8]],
+    ['usage','genai','Token usage','gen_ai.usage.*','Số token input (nên gồm cả token đã cache) và output (nên gồm cả token suy luận) do nhà cung cấp báo, kèm các thuộc tính riêng cho token đọc hay ghi cache.','',['inference','cost'],[8]],
+    ['finish','genai','Finish reasons','lý do dừng','Mảng lý do model dừng sinh token, mỗi phần tử ứng với một kết quả trả về. Giá trị cụ thể tùy nhà cung cấp.','',['inference'],[8]],
+    ['errortype','genai','error.type','','Thuộc tính mô tả loại lỗi, bắt buộc khi thao tác kết thúc bằng lỗi.','timeout',['status','toolspan'],[8,11]],
+    ['retspan','genai','Span retrieval','','Tên "retrieval", loại INTERNAL. Nên ghi top-k; tài liệu tìm được và câu truy vấn chỉ ghi khi bật, vì có thể nhạy cảm.','',['inference','capture'],[10]],
+    ['toolspan','genai','Span execute_tool','','Tên "execute_tool {tên tool}", loại INTERNAL. Tên tool bắt buộc; tham số và kết quả chỉ ghi khi bật.','execute_tool get_order_status',['errortype','agentspan'],[11]],
+    ['agentspan','genai','Span invoke_agent','','Bao một lần chạy agent. Dùng invoke_agent khi LLM điều khiển luồng qua tool call, invoke_workflow khi ứng dụng định sẵn luồng. Tên agent phải ít giá trị khác nhau.','invoke_agent tro-ly-giao-hang',['toolspan','agentmetric'],[12]],
+    ['capture','genai','Ghi nội dung (opt-in)','content capture','Prompt, tin nhắn và câu trả lời mặc định không được ghi. Biến môi trường OTEL_INSTRUMENTATION_GENAI_CAPTURE_CONTENT, mặc định NO_CONTENT; giá trị khác: SPAN_ONLY, EVENT_ONLY, SPAN_AND_EVENT.','',['contentref','masking'],[9]],
+    ['contentref','genai','Lưu nội dung ra ngoài','…_ref','Lưu nội dung ở kho riêng, span chỉ giữ tham chiếu. Được khuyên cho production khi lo khối lượng telemetry; kho riêng có phân quyền riêng.','',['capture','retention'],[9]],
+    ['convid','genai','gen_ai.conversation.id','','Id của cuộc hội thoại, dùng để nối các lần gọi trong cùng một phiên chat.','',['session','inference'],[7,8]],
+    ['promptver','genai','Tên và phiên bản prompt','gen_ai.prompt.name, version','Ghi khi dùng prompt template có tên; giúp so chất lượng theo phiên bản.','tra-cuu-don / v8',['release','experiment'],[8]],
+    ['evalevent','genai','gen_ai.evaluation.result','','Event ghi kết quả chấm câu trả lời: tên tiêu chí, điểm, nhãn, giải thích. Nên gắn vào span GenAI đang được chấm.','bam_ket_qua_tool = fail',['score','judge'],[13]],
+    ['openinf','genai','OpenInference','','Bộ quy ước và thư viện instrumentation xây trên OpenTelemetry để trace agent: lần gọi model, tool, retrieval, bước suy luận. Dùng với mọi backend tương thích OpenTelemetry.','',['semconv','otel'],[21]],
+    ['obstype','genai','Observation (Langfuse)','','Langfuse gọi span là observation, có nhiều loại: span, generation, agent, tool, chain, retriever, evaluator, embedding, guardrail, event.','',['span','trace'],[15,16]],
+    ['session','ops','Session','phiên','Nhóm các trace thuộc cùng một tương tác của người dùng, ví dụ một cuộc chat nhiều lượt.','',['convid','userattr'],[15]],
+    ['userattr','ops','User, tag, environment, release','thuộc tính cấp trace','Nhãn gắn vào trace để lọc: người dùng nào, tính năng nào, môi trường production hay staging, phiên bản ứng dụng nào.','',['session','promptver'],[15]],
+    ['release','ops','Release, version','','Theo dõi phiên bản ứng dụng và thành phần để biết thay đổi nào gây lỗi.','',['promptver','userattr'],[15]],
+    ['head','ops','Head sampling','lấy mẫu đầu','Quyết định giữ trace càng sớm càng tốt, chưa xem cả trace. Đơn giản nhưng không đảm bảo giữ mọi trace lỗi.','',['tail','sampling'],[4,34]],
+    ['tail','ops','Tail sampling','lấy mẫu đuôi','Quyết định sau khi xét hết hoặc gần hết span của trace; có thể luôn giữ trace lỗi hoặc chậm. Khó cài, khó vận hành.','',['head','collector'],[4]],
+    ['sampling','ops','Sampling','lấy mẫu','Chỉ giữ một phần trace để giảm chi phí mà vẫn thấy được hệ thống. Ở Langfuse, giữ trace nào thì giữ cả observation và score bên trong.','LANGFUSE_SAMPLE_RATE = 0,2 → giữ 20%',['head','tail'],[4,34]],
+    ['percentile','ops','Percentile','p50, p95, p99','Giá trị mà x% request nhanh hơn. Trung bình che phần đuôi: trung bình 100 ms vẫn có thể có 1% request mất 5 giây.','',['histogram','golden'],[24]],
+    ['histogram','ops','Histogram','','Đếm request theo từng khoảng độ trễ thay vì lưu từng giá trị; dùng để tính percentile. Metric độ trễ GenAI đều là histogram.','',['percentile','metric'],[24,8]],
+    ['ttft','ops','TTFT','time to first token','Thời gian từ lúc gửi prompt tới lúc model sinh token đầu tiên; quan trọng cho chat stream. Metric phía server gồm cả thời gian xếp hàng.','',['percentile'],[22,31]],
+    ['golden','ops','Bốn tín hiệu vàng','golden signals','Latency, traffic, errors, saturation: bốn thứ nên đo đầu tiên của một dịch vụ hướng người dùng.','',['percentile','silent'],[24]],
+    ['silent','ops','Lỗi ngầm','implicit failure','Request trả HTTP 200 nhưng nội dung sai. Chỉ kiểm tra đầu-cuối mới phát hiện; với LLM, cần score chất lượng.','Trợ lý bịa "đơn đã giao".',['score','judge'],[24]],
+    ['slo','ops','SLI, SLO','','SLI là số đo hành vi dịch vụ, tốt nhất từ góc nhìn người dùng. SLO nối SLI với giá trị kinh doanh để truyền đạt mức tin cậy cho tổ chức; thường được viết thành mục tiêu đo được.','95% câu trả lời trong vòng 8 giây, tính trên 30 ngày (ví dụ của trang này).',['golden','alert'],[1]],
+    ['alert','ops','Cảnh báo dẫn tới hành động','actionable alert','Mỗi cảnh báo gọi người phải dẫn tới một hành động; việc chỉ cần phản ứng máy móc thì nên tự động hóa, đừng gọi người.','',['slo'],[24]],
+    ['cost','ops','Chi phí ingested, inferred','','Ingested: lấy chi phí từ phản hồi của nhà cung cấp. Inferred: usage nhân giá của model. Có cả hai thì ingested được ưu tiên.','',['usage','doublecount'],[17]],
+    ['doublecount','ops','Đếm token trùng','','Langfuse yêu cầu mỗi token chỉ nằm ở một nhóm; nhóm chồng lấn thì usage và chi phí suy ra bị cộng hai lần. Trong khi đó quy ước OpenTelemetry tính token đã cache trong số token input, nên chuyển dữ liệu giữa hai bên phải trừ phần cache ra.','17.903 token prompt, 17.817 cache hit → lưu input 86 + cached 17.817.',['cost','usage'],[17,8]],
+    ['agentmetric','ops','Metric của agent','','Thời gian end-to-end của một lần chạy agent, số lần gọi model, số lần gọi tool trong lần chạy đó.','',['agentspan','percentile'],[31]],
+    ['nondet','ops','Không tất định','non-determinism','Cùng input có thể ra output khác, kể cả temperature 0; agent có thể chọn đường khác giữa các lần chạy. Lý do phải ghi trace của đúng lần lỗi.','',['trace'],[22,29]],
+    ['score','qual','Score','điểm','Kết quả chấm gắn vào trace hay span: từ người dùng, người chấm, hoặc evaluator tự động. Lọc trace theo score để tìm ca cần xem.','',['explicit','judge'],[18]],
+    ['explicit','qual','Phản hồi rõ ràng','explicit feedback','Người dùng chủ động chấm (👍👎, sao). Rõ nghĩa nhưng hiếm và lệch về người không hài lòng.','',['implicit','score'],[18]],
+    ['implicit','qual','Tín hiệu gián tiếp','implicit feedback','Suy ra từ hành động: hỏi lại cách khác, sao chép câu trả lời, sửa bản nháp trước khi gửi. Có ở mọi trace nhưng phải diễn giải.','',['explicit','score'],[18]],
+    ['judge','qual','LLM giám khảo (judge) online','LLM-as-a-judge','Dùng một model chấm câu trả lời theo tiêu chí, kèm lý do. Chạy trên một phần trace production nhờ filter và sampling. Phải so với người chấm trước khi tin.','',['evalevent','score'],[32]],
+    ['dataset','qual','Dataset từ trace','','Đưa các ca lỗi thật vào dataset để thử bản sửa; cập nhật bộ test liên tục theo lỗi mới thấy trong dữ liệu.','',['experiment','score'],[18,28]],
+    ['experiment','qual','Experiment','','Chạy bản sửa trên dataset để kiểm trước khi phát hành.','',['dataset','promptver'],[18]],
+    ['lookdata','qual','Nhìn vào dữ liệu','','Phải bỏ mọi cản trở khi xem dữ liệu; ghi trace là điều kiện tiên quyết để chấm bằng người hay bằng model.','',['dataset','trace'],[28]],
+    ['masking','priv','Masking','che dữ liệu','Hàm che thông tin nhạy cảm trong input, output, metadata trước khi trace rời ứng dụng. Che ở exporter này không tự che ở exporter khác.','Số thẻ, email, số điện thoại.',['pii','capture'],[19]],
+    ['pii','priv','Phát hiện PII','Presidio','Công cụ tự động tìm và ẩn danh thông tin cá nhân trong văn bản, ảnh. Không đảm bảo tìm ra mọi thông tin nhạy cảm, nên cần thêm lớp bảo vệ khác.','',['masking'],[27]],
+    ['retention','priv','Thời gian giữ dữ liệu','data retention','Số ngày giữ trace trước khi tự xóa. Langfuse cho cấu hình theo project, tối thiểu 3 ngày, xóa hằng đêm, không khôi phục được.','',['minimize','contentref'],[20]],
+    ['minimize','priv','Tối thiểu hóa, giới hạn lưu trữ','GDPR Điều 5','Chỉ thu dữ liệu cá nhân cần thiết cho mục đích, và không giữ lâu hơn mức cần thiết.','',['retention','vnlaw'],[25]],
+    ['vnlaw','priv','Luật Bảo vệ dữ liệu cá nhân','91/2025/QH15','Luật của Việt Nam, ban hành 26/06/2025, hiệu lực 01/01/2026. Trace chứa dữ liệu khách nằm trong phạm vi cần rà soát.','',['minimize'],[26]],
+    ['zdr','priv','Zero Data Retention','ZDR','Tên một chính sách dữ liệu của OpenAI API. Tracing của OpenAI Agents SDK không dùng được với tổ chức theo chính sách này; mặc định nó gửi trace về backend của OpenAI.','',['capture','retention'],[30]]
+  ];
+  var byId={};T.forEach(function(t){byId[t[0]]=t});
+  var grid=document.getElementById('glossGrid'), chips=document.getElementById('glossChips'), search=document.getElementById('glossSearch'), activeG='all';
+  function fold(s){return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d')}
+  function renderGloss(){
+    var q=fold(search.value.trim()); grid.innerHTML='';var n=0;
+    T.forEach(function(t){
+      if(activeG!=='all'&&t[1]!==activeG)return;
+      var hay=fold(t[2]+' '+t[3]+' '+t[4]+' '+t[5]); if(q&&hay.indexOf(q)<0)return; n++;
+      var d=document.createElement('div');d.className='card term';d.id='term-'+t[0];
+      var rel=t[6].filter(function(r){return byId[r]}).map(function(r){return '<a href="#term-'+r+'" data-goto="'+r+'">'+esc(byId[r][2])+'</a>'}).join(', ');
+      var cs=(t[7]||[]).filter(function(n){return n===(n|0)&&document.getElementById('src-'+n)}).map(function(n){return '<a href="#src-'+n+'">['+n+']</a>'}).join('');if(cs)cs='<sup class="cite">'+cs+'</sup>';
+      d.innerHTML='<span class="tag">'+G[t[1]]+'</span><h4>'+esc(t[2])+(t[3]?' <span class="en">· '+esc(t[3])+'</span>':'')+'</h4><p>'+esc(t[4])+(t[5]?'':cs)+'</p>'+(t[5]?'<p class="ex">Ví dụ: '+esc(t[5])+cs+'</p>':'')+(rel?'<div class="rel">Liên quan: '+rel+'</div>':'');
+      grid.appendChild(d);
+    });
+    if(!n)grid.innerHTML='<p class="muted">Không có khái niệm khớp.</p>';
+  }
+  var all=document.createElement('button');all.className='chip on';all.textContent='Tất cả ('+T.length+')';all.dataset.g='all';chips.appendChild(all);
+  Object.keys(G).forEach(function(k){var b=document.createElement('button');b.className='chip';b.dataset.g=k;b.textContent=G[k];chips.appendChild(b)});
+  chips.addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;activeG=b.dataset.g;[].forEach.call(chips.children,function(c){c.classList.toggle('on',c===b)});renderGloss()});
+  search.addEventListener('input',renderGloss);
+  grid.addEventListener('click',function(e){var a=e.target.closest('a[data-goto]');if(!a)return;e.preventDefault();
+    if(!document.getElementById('term-'+a.dataset.goto)){activeG='all';search.value='';[].forEach.call(chips.children,function(c){c.classList.toggle('on',c.dataset.g==='all')});renderGloss()}
+    var t=document.getElementById('term-'+a.dataset.goto);t.scrollIntoView({behavior:'smooth',block:'center'});t.style.outline='2px solid var(--accent)';setTimeout(function(){t.style.outline=''},1500)});
+  renderGloss();
+
+  // ---------- Version comparison worked example (illustrative counts) ----------
+  var V={v7:{req:8420,exc:59,tool:412,judged:842,jfail:61,fb:1310,down:233,p95:9.8,tok:7150},
+         v8:{req:8610,exc:52,tool:398,judged:861,jfail:22,fb:1280,down:141,p95:7.6,tok:7420}};
+  // [label, SLO text, value fn, format fn, slo check fn (null = no SLO), lower is better, denominator fn for rates (compare in percentage points)]
+  // n fn for rate rows: denominator used for a 95% normal-approximation interval of the difference
+  var M=[
+    ['Tỷ lệ exception','≤ 1%',function(x){return x.exc/x.req*100},function(v,x){return vn(v,2)+'% ('+x.exc+'/'+vn(x.req,0)+')'},function(v){return v<=1},true,function(x){return x.req}],
+    ['p95 độ trễ end-to-end','≤ 8 s',function(x){return x.p95},function(v){return vn(v,1)+' s'},function(v){return v<=8},true],
+    ['LLM giám khảo "bám kết quả tool": đạt','≥ 95%',function(x){return (x.judged-x.jfail)/x.judged*100},function(v,x){return vn(v,1)+'% ('+(x.judged-x.jfail)+'/'+x.judged+' trace được chấm)'},function(v){return v>=95},false,function(x){return x.judged}],
+    ['Tỷ lệ span tool lỗi','(theo dõi)',function(x){return x.tool/x.req*100},function(v,x){return vn(v,2)+'% ('+x.tool+')'},null,true,function(x){return x.req}],
+    ['Tỷ lệ 👎 trên số phản hồi','(theo dõi)',function(x){return x.down/x.fb*100},function(v,x){return vn(v,1)+'% ('+x.down+'/'+vn(x.fb,0)+')'},null,true,function(x){return x.fb}],
+    ['Token trung bình mỗi request','(theo dõi)',function(x){return x.tok},function(v){return vn(v,0)},null,true]
+  ];
+  var vt=document.querySelector('#verTable tbody'), passN={v7:0,v8:0}, sloN=0;
+  M.forEach(function(m){
+    var a=m[2](V.v7),b=m[2](V.v8);
+    function cell(v,x,k){var t=m[3](v,x);if(!m[4])return t;var ok=m[4](v);if(ok)passN[k]++;return '<span class="res '+(ok?'ok':'err')+'">'+(ok?'✓ ':'✗ ')+t+'</span>'}
+    if(m[4])sloN++;
+    // rates: difference in percentage points; absolute values: relative change
+    var pp=m[6], dv=pp?b-a:(b-a)/a*100, better=m[5]?b<a:b>a, d=(dv>0?'+':'')+vn(dv,pp?2:1)+(pp?' điểm phần trăm':'%'), noise=false;
+    if(pp){var p1=a/100,p2=b/100,n1=pp(V.v7),n2=pp(V.v8),half=1.96*Math.sqrt(p1*(1-p1)/n1+p2*(1-p2)/n2)*100;noise=Math.abs(dv)<half;d+=' (± '+vn(half,2)+')'}
+    vt.insertAdjacentHTML('beforeend','<tr><td><b>'+m[0]+'</b></td><td>'+m[1]+'</td><td>'+cell(a,V.v7,'v7')+'</td><td>'+cell(b,V.v8,'v8')+'</td><td><span class="res '+(noise?'':better?'ok':'mid')+'">'+d+(noise?' gần như không đổi':better?' tốt hơn':' tệ hơn')+'</span></td></tr>');
+  });
+  var tokRel=(V.v8.tok-V.v7.tok)/V.v7.tok*100;
+  document.getElementById('verNote').innerHTML='Đạt SLO: v7 '+passN.v7+'/'+sloN+', v8 '+passN.v8+'/'+sloN+'. Số trace bị LLM giám khảo chấm trượt giảm từ '+V.v7.jfail+' xuống '+V.v8.jfail+', trong khi tỷ lệ tool lỗi gần như không đổi: tool vẫn lỗi, nhưng model đã xử lý lỗi đúng hơn. Đổi lại, prompt dài hơn làm token trung bình tăng '+vn(tokRel,1)+'%. Số "±" là nửa khoảng tin cậy 95% của chênh lệch giữa hai tỷ lệ (xấp xỉ chuẩn): chênh lệch nhỏ hơn số này thì coi là nhiễu, như tỷ lệ exception và tỷ lệ tool lỗi ở đây. p95 và token không có số ± vì bảng không có dữ liệu từng request.';
+  labelTables(document);
+
+  // ---------- Checklist persistence (topic-specific prefix) ----------
+  [].forEach.call(document.querySelectorAll('input[data-k]'),function(cb){
+    cb.checked=safeGet('llm-observability-'+cb.dataset.k)==='1';
+    cb.addEventListener('change',function(){safeSet('llm-observability-'+cb.dataset.k,cb.checked?'1':'0')});
+  });
+
+  // ---------- Active TOC ----------
+  var links=[].slice.call(document.querySelectorAll('#toc a'));
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(l){var on=l.getAttribute('href')==='#'+e.target.id;l.classList.toggle('active',on);if(on){var nav=l.parentNode;nav.scrollLeft=l.offsetLeft-nav.offsetLeft-(nav.clientWidth-l.offsetWidth)/2}})}})},{rootMargin:'-40% 0px -55% 0px'});
+    document.querySelectorAll('main section').forEach(function(s){io.observe(s)});
+  }
+})();
+</script>
+</body>
+</html>

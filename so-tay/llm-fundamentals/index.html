@@ -1,0 +1,1122 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cách LLM hoạt động</title>
+<!-- pwa -->
+<link rel="manifest" href="../../manifest.webmanifest">
+<meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15171a" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" sizes="32x32" href="../../icons/favicon-32.png">
+<link rel="apple-touch-icon" href="../../icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sổ tay">
+<script>if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('../../sw.js').catch(function(){})})</script>
+<script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+:root{
+  --bg:#f7f6f2; --surface:#ffffff; --surface-2:#f0eee8; --text:#1f2328; --muted:#5b6370;
+  --border:#dcd8cf; --accent:#2559b8; --accent-soft:#e3ecfc; --ok:#16703d; --ok-soft:#e1f3e8;
+  --warn:#8f4c0a; --warn-soft:#fbeedd; --bad:#a82f2f; --bad-soft:#fae3e3;
+  --p1:#2559b8; --p2:#7440b8; --p3:#16703d; --p4:#8f4c0a;
+  --code-bg:#f0eee8; --shadow:0 1px 2px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04); --on-accent:#ffffff; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+    --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+    --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+    --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --code-bg:#252930; --shadow:none; --on-accent:#15171a; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+  --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+  --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+  --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --code-bg:#252930; --shadow:none; --on-accent:#15171a; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+a{color:var(--accent)}
+header.top{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
+.top-inner{max-width:1100px;margin:0 auto;padding:10px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.brand{font-weight:700;white-space:nowrap}
+.home{white-space:nowrap;text-decoration:none;color:var(--text);border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:4px 10px;font-size:14px}
+.home:hover{border-color:var(--accent);color:var(--accent)}
+nav.toc{display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin;flex:1}
+nav.toc a{white-space:nowrap;text-decoration:none;color:var(--muted);padding:4px 10px;border-radius:999px;font-size:14px}
+nav.toc a:hover,nav.toc a.active{background:var(--accent-soft);color:var(--accent)}
+button{font:inherit;cursor:pointer}
+.theme-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:4px 10px;font-size:14px}
+main{max-width:1100px;margin:0 auto;padding:16px}
+section{padding:28px 0;border-bottom:1px solid var(--border);scroll-margin-top:64px}
+section:last-child{border-bottom:none}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.2;margin:16px 0 8px}
+h2{font-size:clamp(22px,3.5vw,28px);margin:0 0 12px}
+h3{font-size:18px;margin:20px 0 8px}
+p{margin:8px 0}
+.lead{font-size:18px;color:var(--muted);max-width:760px}
+.muted{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 10px 10px 0;margin:12px 0}
+.callout.ok{border-color:var(--ok);background:var(--ok-soft)}
+.callout.warn{border-color:var(--warn);background:var(--warn-soft)}
+.callout.bad{border-color:var(--bad);background:var(--bad-soft)}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);margin-right:4px}
+.tag.p1{background:var(--accent-soft);color:var(--p1)}
+.tag.p2{background:var(--accent-soft);color:var(--p2)}
+.tag.p3{background:var(--ok-soft);color:var(--p3)}
+.tag.p4{background:var(--warn-soft);color:var(--p4)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+th{background:var(--surface-2);font-weight:600}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.mono,code{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:14px}
+code{background:var(--code-bg);padding:1px 5px;border-radius:5px}
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-word;margin:8px 0;font-size:14px;line-height:1.55}
+svg text{fill:var(--text);font-family:inherit}
+.diagram{width:100%;height:auto;display:block}
+.svgbox{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;overflow-x:auto}
+.svgbox svg{min-width:640px}
+/* Glossary */
+.gloss-tools{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+.gloss-tools input{flex:1;min-width:200px;padding:8px 12px;font-size:16px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
+.chip{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:999px;padding:4px 12px;font-size:14px}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.term h4{margin:0 0 4px;font-size:16px}
+.term .en{font-weight:400;color:var(--muted);font-size:14px}
+.term p{margin:4px 0;font-size:15px}
+.term .ex{font-size:14px;color:var(--muted)}
+.term .rel{font-size:13px;margin-top:6px}
+.term .rel a{font-size:13px}
+/* Stepper */
+.stepper{display:grid;grid-template-columns:240px 1fr;gap:12px}
+@media (max-width:720px){.stepper{grid-template-columns:1fr}}
+.steps{display:flex;flex-direction:column;gap:6px}
+@media (max-width:720px){.steps{flex-direction:row;overflow-x:auto}}
+.steps button{text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px;white-space:nowrap}
+.steps button .n{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--surface-2);text-align:center;line-height:22px;font-size:12px;margin-right:6px}
+.steps button.on{border-color:var(--accent);background:var(--accent-soft)}
+.steps button.on .n{background:var(--accent);color:var(--on-accent)}
+.step-nav{display:flex;gap:8px;margin-top:12px}
+.step-nav button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 14px}
+.chunk{border:1px dashed var(--border);border-radius:8px;padding:8px 10px;margin:6px 0;font-size:14px;background:var(--surface)}
+.chunk.hit{border-style:solid;border-color:var(--ok);background:var(--ok-soft)}
+.chunk .id{font-weight:700;font-size:12px;color:var(--muted)}
+.vec{font-family:ui-monospace,Consolas,monospace;font-size:13px;color:var(--p2)}
+.bar{height:8px;background:var(--surface-2);border-radius:4px;overflow:hidden;margin-top:4px}
+.bar>span{display:block;height:100%;background:var(--ok)}
+/* Space demo */
+.space{display:grid;grid-template-columns:1fr 300px;gap:12px}
+@media (max-width:820px){.space{grid-template-columns:1fr}}
+.qbtns{display:flex;flex-direction:column;gap:6px}
+.qbtns button{text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px}
+.qbtns button.on{border-color:var(--p4);background:var(--warn-soft)}
+#spaceSvg{width:100%;height:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px}
+details{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin:8px 0}
+details summary{cursor:pointer;font-weight:600;padding:8px 0}
+details[open] summary{margin-bottom:6px}
+.check{display:flex;gap:8px;align-items:flex-start;padding:6px 0}
+.check input{margin-top:6px}
+footer{max-width:1100px;margin:0 auto;padding:24px 16px;color:var(--muted);font-size:14px}
+.kpi{display:flex;gap:10px;flex-wrap:wrap}
+.kpi .card{flex:1;min-width:130px}
+.kpi b{display:block;font-size:20px}
+.card>h4:first-child,.card>.tag+h4{margin-top:4px}
+.card h4{margin-bottom:6px}
+.m-only{display:none}
+/* Citations */
+sup.cite{font-size:max(11px,.72em);line-height:0;margin-left:1px;white-space:nowrap}
+sup.cite a{text-decoration:none;font-weight:600;padding:10px 3px;margin:-10px 0}
+sup.cite a:hover{text-decoration:underline}
+sup.cite a+a{margin-left:2px}
+ol.sources{padding-left:1.6em;margin:8px 0}
+ol.sources li{margin:0 0 10px;font-size:15px;overflow-wrap:anywhere;scroll-margin-top:64px}
+ol.sources li:target{background:var(--accent-soft);border-radius:6px}
+ol.sources .acc{color:var(--muted);font-size:14px;white-space:nowrap}
+.vflow .box,.vflow .node,.vflow .ar{display:block}
+.vflow .ph{font-weight:700;font-size:14px;margin:4px 0 8px}
+.vflow .ph1{color:var(--p1)} .vflow .ph2{color:var(--p3)}
+.vflow .node{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px}
+.vflow .node b{display:block}
+.vflow .node span{font-size:13px;color:var(--muted)}
+.vflow .node.r{border:2px solid var(--p1)} .vflow .node.a{border:2px solid var(--p2)} .vflow .node.g{border:2px solid var(--p3)} .vflow .node.db{border:2px solid var(--p2)}
+.vflow .opt{background:var(--warn-soft);border-color:var(--p4)}
+.vflow .ar{text-align:center;color:var(--muted);font-size:13px;line-height:1.3;padding:4px 0}
+.vflow .box{border-radius:12px;padding:10px;margin-bottom:10px}
+.vflow .box1{background:var(--accent-soft)} .vflow .box2{background:var(--ok-soft)}
+.vflow .note{font-size:13px;color:var(--muted);margin-top:6px}
+/* Desktop SVG diagrams (viewBox 1000 wide) only above 1080px, same breakpoint as the rest of the site */
+@media (max-width:1080px){.d-only{display:none}.m-only{display:block}.vflow{max-width:560px;margin:0 auto}}
+@media (max-width:600px){
+  .brand{display:none} body{font-size:15px}
+  .theme-btn .lbl,.home .lbl{display:none}
+  main{padding:12px 16px}
+  section{padding:22px 0}
+  .card{padding:14px}
+  table.stack thead{display:none}
+  table.stack,table.stack tbody,table.stack tr,table.stack td{display:block;width:100%}
+  table.stack tr{border-bottom:1px solid var(--border);padding:8px 0}
+  table.stack tr:last-child{border-bottom:none}
+  table.stack td{border:none;padding:3px 12px}
+  table.stack td[data-label]::before{content:attr(data-label);display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  table.stack td:first-child{font-size:16px}
+  table.stack td:first-child::before{display:none}
+  .home,.theme-btn,nav.toc a,.chip,.step-nav button,.qbtns button,.steps button{min-height:40px}
+  .home,.theme-btn,nav.toc a{display:inline-flex;align-items:center}
+  pre,pre.mono,.term .ex{font-size:15px}
+  .vflow .node span{font-size:14px}
+  .term .rel a{font-size:14px;padding:12px 2px}
+}
+/* Shared buttons */
+.btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 12px;font-size:14px}
+.btn.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.btn-row{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+/* Tokenizer demo */
+.tok-wrap{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0}
+.tok{display:inline-flex;flex-direction:column;align-items:center;border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:15px;line-height:1.3;white-space:pre;color:var(--text)}
+.tok small{font-size:12px;color:var(--muted);font-family:system-ui,sans-serif}
+.tok.c0{background:var(--accent-soft)} .tok.c1{background:var(--ok-soft)} .tok.c2{background:var(--warn-soft)} .tok.c3{background:var(--surface-2)} .tok.c4{background:var(--bad-soft)}
+.tok.byte{border-style:dashed;border-color:var(--bad)}
+.tok-input{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit;font-size:16px;min-height:40px}
+/* Sampling demo */
+.ctrl{margin:10px 0}
+.ctrl label{display:flex;justify-content:space-between;gap:8px;font-weight:600}
+.ctrl label output{font-family:ui-monospace,Consolas,monospace;color:var(--accent)}
+.ctrl input[type=range]{width:100%;height:40px;accent-color:var(--accent)}
+.prefix{font-size:16px;background:var(--surface-2);border-radius:8px;padding:8px 12px;margin:6px 0}
+.prefix b{color:var(--accent)}
+.dist-row{display:grid;grid-template-columns:84px 1fr 78px;gap:8px;align-items:center;padding:4px 0;font-size:15px}
+.dist-row .lbl{white-space:pre}
+.dist-row .bar{height:18px;margin:0}
+.dist-row .bar>span{background:var(--accent)}
+.dist-row .val{text-align:right;font-family:ui-monospace,Consolas,monospace;font-size:14px;line-height:1.25}
+.dist-row .val small{display:block;color:var(--muted);font-size:12px}
+.dist-row.top .bar>span{background:var(--ok)}
+.dist-row.cut .bar{opacity:.4}
+.dist-row.cut .lbl,.dist-row.cut .val{color:var(--muted)}
+.dist-row.cut .lbl{text-decoration:line-through}
+.samples{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.samples span{font-size:14px;border:1px solid var(--border);border-radius:6px;padding:2px 6px;background:var(--surface-2);white-space:pre}
+/* Attention illustration */
+.att-row{display:grid;grid-template-columns:110px 1fr 48px;gap:8px;align-items:center;font-size:15px;padding:2px 0}
+.att-row .bar>span{background:var(--p2)}
+.att-row .val{text-align:right;font-family:ui-monospace,Consolas,monospace;font-size:14px}
+/* Calculator */
+.calc{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:10px 0}
+.calc label{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--muted)}
+.calc input,.calc select{font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);min-height:40px;width:100%}
+.ctxbar{display:flex;height:30px;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:var(--surface-2);margin:8px 0}
+.ctxbar span{display:block;height:100%;min-width:0}
+.bar-cap{font-size:14px;color:var(--muted);margin:10px 0 0}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.seg-sys{background:var(--p1)} .seg-tools{background:var(--p2)} .seg-hist{background:var(--p3)} .seg-docs{background:var(--p4)} .seg-q{background:var(--muted)} .seg-out{background:var(--bad)}
+.out-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:10px}
+.out-grid .card b{display:block;font-size:20px}
+.out-grid .card span{font-size:14px;color:var(--muted)}
+@media (max-width:600px){
+  .btn{min-height:40px}
+  .dist-row{grid-template-columns:70px 1fr 72px}
+  .att-row{grid-template-columns:92px 1fr 44px}
+}
+/* cite-tap */
+/* Same tap area for citation links on every page: at least 40px high and 24px wide.
+   Negative vertical margins keep line spacing unchanged. */
+sup.cite a{display:inline-block;box-sizing:border-box;min-width:24px;line-height:1;padding:15px 3px;margin-top:-15px;margin-bottom:-15px;text-align:center}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <a class="home" href="../" aria-label="Về trang tất cả chủ đề">←<span class="lbl"> Chủ đề</span></a>
+    <span class="brand">Cách LLM hoạt động</span>
+    <nav class="toc" id="toc">
+      <a href="#tong-quan">1. Tổng quan</a>
+      <a href="#flow">2. Flow</a>
+      <a href="#vi-du">3. Ví dụ từng bước</a>
+      <a href="#token">4. Token</a>
+      <a href="#ben-trong">5. Bên trong model</a>
+      <a href="#sampling">6. Sampling</a>
+      <a href="#context">7. Context &amp; giới hạn</a>
+      <a href="#chi-phi">8. Chi phí &amp; độ trễ</a>
+      <a href="#khai-niem">9. Khái niệm</a>
+      <a href="#quan-he">10. Mối quan hệ</a>
+      <a href="#so-sanh">11. Đánh đổi</a>
+      <a href="#loi">12. Lỗi &amp; chẩn đoán</a>
+      <a href="#danh-gia">13. Đo lường</a>
+      <a href="#lo-trinh">14. Lộ trình</a>
+      <a href="#nguon">Nguồn</a>
+    </nav>
+    <button class="theme-btn" id="themeBtn" aria-label="Đổi giao diện sáng/tối">◐<span class="lbl"> Giao diện</span></button>
+  </div>
+</header>
+
+<main>
+
+<!-- 1. TỔNG QUAN -->
+<section id="tong-quan">
+  <h1>Cách LLM hoạt động</h1>
+  <p class="lead">Một mô hình ngôn ngữ lớn (LLM) làm đúng một việc lặp đi lặp lại: nhìn dãy <b>token</b> đang có, tính <b>xác suất</b> cho token tiếp theo, chọn một token, nối vào cuối, rồi làm lại.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-7">[7]</a></sup> Mọi thứ khác (trả lời câu hỏi, viết code, gọi tool) đều xây trên vòng lặp đó.</p>
+
+  <h3>Vì sao người xây RAG và agent cần hiểu phần này?</h3>
+  <div class="grid g3">
+    <div class="card"><span class="tag p1">Chi phí</span><h4>Mọi thứ tính bằng token</h4><p>Giá API, giới hạn đầu vào và giới hạn tần suất gọi (rate limit) đều tính bằng token.<sup class="cite"><a href="#src-14">[14]</a><a href="#src-20">[20]</a></sup> Nhét thêm 10 đoạn tài liệu vào prompt là trả thêm tiền cho mỗi câu hỏi.</p></div>
+    <div class="card"><span class="tag p1">Giới hạn</span><h4>Context window có trần</h4><p>Model chỉ "thấy" những gì nằm trong context window. Context càng dài, độ chính xác càng có xu hướng giảm (context rot).<sup class="cite"><a href="#src-11">[11]</a><a href="#src-13">[13]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Kiểu lỗi</span><h4>Hiểu cơ chế mới đoán được lỗi</h4><p>Vì sao model bịa, vì sao hỏi hai lần ra hai câu khác nhau, vì sao không biết tin tuần trước: tất cả đều có lý do nằm trong cơ chế.<sup class="cite"><a href="#src-16">[16]</a><a href="#src-17">[17]</a></sup></p></div>
+  </div>
+
+  <h3>Hình dung bằng ví dụ đời thường</h3>
+  <div class="grid g2">
+    <div class="card">
+      <h4>⌨️ Bàn phím gợi ý từ, phiên bản khổng lồ</h4>
+      <p>Bàn phím điện thoại gợi ý từ tiếp theo dựa trên vài từ bạn vừa gõ. LLM làm việc tương tự nhưng nhìn được cả trăm nghìn token phía trước, và đã "đọc" một kho văn bản khổng lồ khi huấn luyện.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-9">[9]</a></sup></p>
+      <p class="muted">Khác biệt quan trọng: LLM không tra cứu trong một cơ sở dữ liệu sự kiện. Nó sinh ra chữ <i>nghe hợp lý</i> theo những gì đã học. Đây là gốc của hiện tượng bịa (hallucination, mục 7).</p>
+    </div>
+    <div class="card">
+      <h4>🎓 Sinh viên giỏi và thời điểm tốt nghiệp</h4>
+      <p><b>Pretraining</b> giống những năm đọc sách: biết rộng nhưng chưa biết cách làm việc theo yêu cầu. <b>Post-training</b> giống thực tập: học cách làm theo hướng dẫn và trả lời hữu ích.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-10">[10]</a></sup></p>
+      <p class="muted">Kiến thức dừng ở ngày "tốt nghiệp" (knowledge cutoff). Muốn sinh viên biết nội quy công ty mới ban hành thì phải đưa tài liệu cho họ đọc lúc làm việc, đó là việc của <a href="../rag/">RAG</a>.</p>
+    </div>
+  </div>
+  <div class="callout ok"><b>Điều cần nhớ:</b> LLM không có trí nhớ giữa các lần gọi API. Mỗi request, ứng dụng gửi lại toàn bộ văn bản cần thiết (lời dặn, lịch sử hội thoại, tài liệu, câu hỏi), và model chỉ dựa vào đúng chừng đó cộng với những gì đã học khi huấn luyện.<sup class="cite"><a href="#src-11">[11]</a></sup></div>
+</section>
+
+<!-- 2. FLOW -->
+<section id="flow">
+  <h2>2. Flow: một vòng sinh token</h2>
+  <p>Văn bản được cắt thành token, đổi thành dãy số. Transformer đọc toàn bộ dãy và trả ra điểm số cho mọi token có thể đứng tiếp theo. Điểm số đổi thành xác suất, một bước <b>sampling</b> chọn ra một token. Token đó được nối vào cuối dãy và vòng lặp chạy lại. Cách sinh "từng token, dựa trên các token trước" này gọi là <b>tự hồi quy</b> (autoregressive).<sup class="cite"><a href="#src-7">[7]</a><a href="#src-9">[9]</a></sup></p>
+
+  <div class="vflow m-only" aria-label="Flow sinh token (dạng dọc)">
+    <div class="box box1">
+      <div class="ph ph1">MỖI VÒNG = 1 TOKEN ĐẦU RA</div>
+      <div class="node"><b>Văn bản (prompt)</b><span>lời dặn + dữ liệu + câu hỏi</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>Tokenizer</b><span>cắt văn bản thành token</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>Token IDs</b><span>dãy số nguyên, vd. [8812, 311, 9025…]</span></div>
+      <div class="ar">↓</div>
+      <div class="node a"><b>Transformer</b><span>nhiều lớp attention đọc cả dãy</span></div>
+      <div class="ar">↓</div>
+      <div class="node r"><b>Xác suất token tiếp theo</b><span>logits → softmax</span></div>
+      <div class="ar">↓</div>
+      <div class="node r"><b>Sampling</b><span>temperature, top-p chọn 1 token</span></div>
+      <div class="ar">↓</div>
+      <div class="node g"><b>Token mới</b><span>nối vào cuối dãy</span></div>
+    </div>
+    <div class="ar" style="color:var(--p2)">↺ quay lại bước Token IDs, lặp đến khi model sinh token kết thúc hoặc chạm max_tokens</div>
+    <div class="box box2">
+      <div class="ph ph2">KẾT THÚC</div>
+      <div class="node"><b>Detokenize</b><span>ghép token thành văn bản trả lời</span></div>
+    </div>
+    <p class="note">Toàn bộ dãy (input + output đã sinh) phải nằm trong context window.<sup class="cite"><a href="#src-11">[11]</a></sup></p>
+  </div>
+  <div class="svgbox d-only">
+  <svg class="diagram" viewBox="0 0 1000 300" role="img" aria-label="Flow sinh token của LLM">
+    <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker><marker id="arrP" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--p2)"/></marker></defs>
+    <rect x="10" y="10" width="980" height="280" rx="14" fill="var(--accent-soft)" stroke="var(--p1)" stroke-opacity=".4"/>
+    <text x="28" y="38" font-weight="700" font-size="16" style="fill:var(--p1)">MỖI VÒNG SINH RA ĐÚNG 1 TOKEN ĐẦU RA</text>
+    <g font-size="14">
+      <rect x="21" y="60" width="124" height="84" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="83" y="96" text-anchor="middle" font-weight="600">Văn bản</text>
+      <text x="83" y="118" text-anchor="middle" font-size="12" style="fill:var(--muted)">prompt</text>
+      <rect x="160" y="60" width="124" height="84" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="222" y="96" text-anchor="middle" font-weight="600">Tokenizer</text>
+      <text x="222" y="118" text-anchor="middle" font-size="12" style="fill:var(--muted)">cắt thành token</text>
+      <rect x="299" y="60" width="124" height="84" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="361" y="96" text-anchor="middle" font-weight="600">Token IDs</text>
+      <text x="361" y="118" text-anchor="middle" font-size="12" style="fill:var(--muted)">dãy số nguyên</text>
+      <rect x="438" y="60" width="124" height="84" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="500" y="96" text-anchor="middle" font-weight="600">Transformer</text>
+      <text x="500" y="118" text-anchor="middle" font-size="12" style="fill:var(--muted)">các lớp attention</text>
+      <rect x="577" y="60" width="124" height="84" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="639" y="96" text-anchor="middle" font-weight="600">Xác suất</text>
+      <text x="639" y="118" text-anchor="middle" font-size="12" style="fill:var(--muted)">logits → softmax</text>
+      <rect x="716" y="60" width="124" height="84" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="778" y="96" text-anchor="middle" font-weight="600">Sampling</text>
+      <text x="778" y="118" text-anchor="middle" font-size="12" style="fill:var(--muted)">temperature · top-p</text>
+      <rect x="855" y="60" width="124" height="84" rx="10" fill="var(--surface)" stroke="var(--p3)" stroke-width="2"/>
+      <text x="917" y="96" text-anchor="middle" font-weight="600">Token mới</text>
+      <text x="917" y="118" text-anchor="middle" font-size="12" style="fill:var(--muted)">đúng 1 token</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="2" marker-end="url(#arr)">
+      <line x1="145" y1="102" x2="158" y2="102"/><line x1="284" y1="102" x2="297" y2="102"/><line x1="423" y1="102" x2="436" y2="102"/><line x1="562" y1="102" x2="575" y2="102"/><line x1="701" y1="102" x2="714" y2="102"/><line x1="840" y1="102" x2="853" y2="102"/>
+    </g>
+    <path d="M917 146 V196 H361 V148" fill="none" stroke="var(--p2)" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arrP)"/>
+    <text x="639" y="216" text-anchor="middle" font-size="13" style="fill:var(--p2)">nối token mới vào cuối dãy rồi chạy lại cả vòng (tự hồi quy)</text>
+    <text x="28" y="254" font-size="13" style="fill:var(--muted)">Dừng khi model sinh token kết thúc hoặc chạm max_tokens; sau đó ghép các token đầu ra thành văn bản (detokenize).</text>
+    <text x="28" y="276" font-size="13" style="fill:var(--muted)">Toàn bộ dãy, gồm input và các token đã sinh, phải nằm trong context window.</text>
+  </svg>
+  </div>
+
+  <div class="grid g3" style="margin-top:12px">
+    <div class="card"><span class="tag p1">Hệ quả 1</span><p><b>Output dài thì chờ lâu.</b> Mỗi token đầu ra cần một vòng như trên. Vì vậy khi câu trả lời bắt đầu nhanh nhưng lâu xong, việc đầu tiên nên xem là model đang sinh bao nhiêu token.<sup class="cite"><a href="#src-19">[19]</a></sup></p></div>
+    <div class="card"><span class="tag p1">Hệ quả 2</span><p><b>Chữ được chốt từng token.</b> Model không soạn sẵn cả câu rồi mới in ra: mỗi token được chọn dựa trên các token đứng trước nó,<sup class="cite"><a href="#src-5">[5]</a><a href="#src-7">[7]</a></sup> nên một token chọn sai có thể kéo phần sau sai theo. Đây là lý do nhiều model có bước <b>thinking</b>: viết nháp trước khi trả lời (mục 6).<sup class="cite"><a href="#src-21">[21]</a></sup></p></div>
+    <div class="card"><span class="tag p1">Hệ quả 3</span><p><b>Có bước ngẫu nhiên.</b> Sampling là lựa chọn có xác suất, nên cùng một prompt có thể ra câu trả lời khác nhau (mục 6).<sup class="cite"><a href="#src-1">[1]</a><a href="#src-7">[7]</a></sup></p></div>
+  </div>
+</section>
+
+<!-- 3. VÍ DỤ TỪNG BƯỚC -->
+<section id="vi-du">
+  <h2>3. Ví dụ đi qua từng bước</h2>
+  <p>Một chuỗi bán lẻ có chatbot chăm sóc khách hàng. Khách hỏi về đơn hàng của mình. Bấm từng bước để xem chuyện gì xảy ra từ lúc ứng dụng gọi API tới lúc có hóa đơn token. <span class="muted">Số token, ID, xác suất và giá trong ví dụ là <b>minh họa</b>, không phải đầu ra thật của một model cụ thể.</span></p>
+  <div class="stepper card">
+    <div class="steps" id="steps"></div>
+    <div>
+      <div id="stepBody"></div>
+      <div class="step-nav"><button id="prevStep">← Trước</button><button id="nextStep">Tiếp →</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. TOKEN -->
+<section id="token">
+  <h2>4. Token và tokenizer</h2>
+  <p><b>Token</b> là đơn vị nhỏ nhất mà model xử lý: có thể là một từ, một phần của từ, một ký tự, hoặc một byte.<sup class="cite"><a href="#src-1">[1]</a></sup> <b>Tokenizer</b> là bộ cắt văn bản thành token và đổi mỗi token thành một số nguyên (token ID). Model chỉ nhìn thấy dãy số này, không nhìn thấy chữ.<sup class="cite"><a href="#src-3">[3]</a></sup></p>
+  <div class="grid g2">
+    <div class="card">
+      <h4>Vì sao không cắt theo từ cho đơn giản?</h4>
+      <p>Nếu mỗi từ là một token, gặp từ chưa từng thấy (tên riêng, mã sản phẩm, từ mới) thì model bó tay. Cách phổ biến là cắt theo <b>subword</b>: từ hay gặp giữ nguyên, từ hiếm tách thành nhiều mảnh nhỏ hơn. Một thuật toán phổ biến là BPE (Byte Pair Encoding).<sup class="cite"><a href="#src-2">[2]</a><a href="#src-3">[3]</a></sup></p>
+      <p class="muted">Tokenizer kiểu BPE cấp byte xử lý được mọi văn bản, kể cả thứ chưa có trong dữ liệu huấn luyện của nó, và có thể ghép ngược lại thành văn bản gốc không mất gì.<sup class="cite"><a href="#src-3">[3]</a></sup></p>
+    </div>
+    <div class="card">
+      <h4>Một token dài bao nhiêu?</h4>
+      <p>Tùy tokenizer và ngôn ngữ. Vài con số từ tài liệu chính thức:</p>
+      <ul>
+        <li>tiktoken (OpenAI): trung bình khoảng 4 byte mỗi token.<sup class="cite"><a href="#src-3">[3]</a></sup></li>
+        <li>Claude đời trước: khoảng 3,5 ký tự tiếng Anh mỗi token; tokenizer mới (từ Claude 4.7) sinh nhiều hơn khoảng 30% token cho cùng văn bản.<sup class="cite"><a href="#src-1">[1]</a></sup></li>
+      </ul>
+      <p class="muted">Cùng một nội dung dịch sang các ngôn ngữ khác nhau có thể chênh tới 15 lần số token, kéo theo chênh chi phí, độ trễ và lượng nội dung nhét vừa context.<sup class="cite"><a href="#src-4">[4]</a></sup> Với tiếng Việt, đừng ước lượng theo tỷ lệ tiếng Anh: hãy đếm bằng công cụ token counting của nhà cung cấp.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    </div>
+  </div>
+
+  <h3>Thử tách câu thành token (tokenizer đồ chơi)</h3>
+  <p>Chọn một câu mẫu hoặc tự gõ. Bộ tách dưới đây là <b>tokenizer đồ chơi minh họa</b> theo đúng ý tưởng BPE cấp byte: mảnh nào có trong "từ điển" nhỏ của nó thì thành 1 token; không có thì rơi xuống từng ký tự, và ký tự có dấu ngoài từ điển rơi xuống từng <b>byte</b> UTF-8 (viền đỏ nét đứt). Token ID cũng là số minh họa. <span class="muted">Số token ở đây không phải số token thật của bất kỳ model nào.</span></p>
+  <div class="card">
+    <div class="btn-row" id="tokSamples"></div>
+    <input id="tokInput" class="tok-input" type="text" maxlength="200" aria-label="Câu cần tách token" placeholder="Gõ một câu (tối đa 200 ký tự)…">
+    <div class="tok-wrap" id="tokOut" aria-live="polite"></div>
+    <div class="kpi" id="tokStats"></div>
+    <p class="muted" style="margin-top:10px">Quan sát: từ có trong từ điển ("nhân", "viên", "the") gọn trong 1 token; từ hiếm ("Unbelievably") bị tách nhiều mảnh; mã đơn "ORD-2024-118" và chữ có dấu không có trong từ điển bị vỡ vụn. So mẫu tiếng Anh với mẫu tiếng Việt: cùng ý nhưng số token chênh nhau. Từ điển ở đây chọn tay để minh họa, nên đừng lấy tỷ lệ này làm số thật. Tokenizer thật học từ điển (vocabulary) từ dữ liệu, nên ngôn ngữ ít xuất hiện trong dữ liệu đó thường bị tách vụn hơn.<sup class="cite"><a href="#src-2">[2]</a><a href="#src-4">[4]</a></sup></p>
+  </div>
+</section>
+
+<!-- 5. BÊN TRONG MODEL -->
+<section id="ben-trong">
+  <h2>5. Bên trong model: Transformer, attention và hai giai đoạn huấn luyện</h2>
+  <h3>Transformer ở mức trực giác</h3>
+  <div class="grid g2">
+    <div class="card">
+      <h4>Từ token thành vector</h4>
+      <p>Mỗi token ID được đổi thành một vector (embedding) mà model học được trong lúc huấn luyện.<sup class="cite"><a href="#src-5">[5]</a></sup> Sau đó vector đi qua một chồng nhiều lớp giống nhau; mỗi lớp cập nhật vector của từng token dựa trên các token khác.<sup class="cite"><a href="#src-5">[5]</a></sup></p>
+      <p class="muted">Đây là embedding <i>bên trong</i> model. Embedding model dùng để tìm kiếm trong RAG là một model riêng, cùng ý tưởng "chữ thành vector" (xem <a href="../embedding-performance/">Hiệu năng embedding</a>).</p>
+      <p class="muted">Kiến trúc Transformer (2017) chỉ dựa vào cơ chế attention, bỏ hẳn mạng hồi quy, nên huấn luyện song song được nhiều hơn.<sup class="cite"><a href="#src-5">[5]</a></sup> Hầu hết LLM hiện nay xây trên ý tưởng này.</p>
+    </div>
+    <div class="card">
+      <h4>Attention: "token này nên chú ý tới token nào?"</h4>
+      <p>Với mỗi token, attention tính một bộ <b>trọng số</b> trên các token khác (qua softmax) rồi lấy tổng có trọng số của thông tin từ chúng.<sup class="cite"><a href="#src-5">[5]</a></sup> Có nhiều "đầu" attention chạy song song, mỗi đầu có thể bắt một kiểu quan hệ khác nhau.<sup class="cite"><a href="#src-5">[5]</a></sup></p>
+      <p class="muted">Khi sinh văn bản, token ở vị trí i chỉ được nhìn các vị trí trước nó, không nhìn trước tương lai.<sup class="cite"><a href="#src-5">[5]</a></sup></p>
+    </div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <h4>Minh họa: token "Nó" chú ý tới đâu?</h4>
+    <p class="prefix">Hợp đồng số 15 hết hạn ngày 30/6. <b>Nó</b> có được gia hạn không?</p>
+    <p class="muted">Trọng số dưới đây là <b>minh họa</b> để thấy ý tưởng (tổng = 1). Trọng số thật nằm rải trên nhiều lớp và nhiều đầu, không đọc trực tiếp như một lời giải thích được.</p>
+    <div id="attDemo"></div>
+  </div>
+  <div class="callout warn"><b>Vì sao context dài lại tốn và dễ "loãng"?</b> Mỗi token có thể chú ý tới các token khác trong context, nên số cặp quan hệ tăng theo n² khi có n token. Anthropic mô tả model có một "ngân sách attention": mỗi token thêm vào đều tiêu một ít ngân sách đó.<sup class="cite"><a href="#src-6">[6]</a></sup> Đây là trực giác đằng sau context rot ở mục 7.</div>
+
+  <h3>Hai giai đoạn huấn luyện</h3>
+  <div class="grid g2">
+    <div class="card"><span class="tag p1">Giai đoạn 1</span><h4>Pretraining: học đoán token tiếp theo</h4>
+      <p>Model đọc một kho văn bản rất lớn không gắn nhãn và học dự đoán từ tiếp theo dựa trên phần văn bản phía trước.<sup class="cite"><a href="#src-1">[1]</a></sup> Kết quả là <b>base model</b>: viết tiếp văn bản rất giỏi, nhưng tự nó không giỏi trả lời câu hỏi hay làm theo hướng dẫn.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+      <p class="muted">Một phát hiện quan trọng từ GPT-3 (175 tỷ tham số): model đủ lớn có thể làm task mới chỉ từ vài ví dụ viết trong prompt, không cần huấn luyện lại. Đây gọi là học trong ngữ cảnh (in-context learning, few-shot).<sup class="cite"><a href="#src-9">[9]</a></sup> Nó là nền tảng của <a href="../prompt-engineering/">prompt engineering</a>.</p>
+    </div>
+    <div class="card"><span class="tag p3">Giai đoạn 2</span><h4>Post-training: dạy làm trợ lý</h4>
+      <p><b>Instruction tuning (SFT):</b> huấn luyện tiếp trên các cặp "yêu cầu → câu trả lời mẫu" do người viết.<sup class="cite"><a href="#src-10">[10]</a></sup></p>
+      <p><b>RLHF:</b> người chấm xếp hạng nhiều câu trả lời; quá trình học tăng cường đẩy model về phía câu được xếp hạng cao.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-10">[10]</a></sup></p>
+      <p class="muted">Nghiên cứu InstructGPT cho thấy làm model to hơn không tự động giúp nó hiểu ý người dùng hơn; người chấm còn ưa câu trả lời của model 1,3 tỷ tham số đã qua RLHF hơn model GPT-3 175 tỷ tham số.<sup class="cite"><a href="#src-10">[10]</a></sup></p>
+    </div>
+  </div>
+  <div class="callout"><b>Liên hệ với dự án doanh nghiệp:</b> bạn gần như không bao giờ tự pretrain. Bạn dùng model đã post-training qua API, rồi đưa kiến thức riêng vào bằng context (prompt, <a href="../rag/">RAG</a>) hoặc huấn luyện thêm (fine-tuning). Bảng ở mục 11 so sánh ba nguồn kiến thức này.</div>
+</section>
+
+<!-- 6. SAMPLING -->
+<section id="sampling">
+  <h2>6. Sampling: temperature, top-p và vì sao LLM không tất định</h2>
+  <p>Ở cuối mỗi vòng, model cho ra một <b>điểm thô (logit)</b> cho từng token có thể đứng tiếp. Hàm <b>softmax</b> đổi các điểm này thành xác suất (dương, tổng bằng 1). Sau đó bước sampling chọn một token theo xác suất đó.<sup class="cite"><a href="#src-7">[7]</a></sup></p>
+  <div class="grid g3">
+    <div class="card"><span class="tag p1">Greedy</span><p>Luôn chọn token xác suất cao nhất.<sup class="cite"><a href="#src-7">[7]</a></sup> Hợp với câu trả lời ngắn có đáp án rõ. Khi viết văn bản dài, tự do, giải mã theo kiểu "chọn khả năng cao nhất" dễ cho văn bản nhạt và lặp lại.<sup class="cite"><a href="#src-8">[8]</a></sup></p></div>
+    <div class="card"><span class="tag p1">Temperature</span><p>Chia logit cho T trước softmax. T nhỏ làm phân phối <b>nhọn</b> (token mạnh càng mạnh); T lớn làm phân phối <b>phẳng</b> (token yếu có cơ hội). T tiến về 0 thì giống greedy.<sup class="cite"><a href="#src-7">[7]</a></sup></p></div>
+    <div class="card"><span class="tag p1">Top-p (nucleus)</span><p>Chỉ giữ tập token nhỏ nhất có tổng xác suất vượt p, chuẩn hóa lại rồi mới chọn.<sup class="cite"><a href="#src-7">[7]</a></sup> Mục đích là cắt bỏ "phần đuôi" gồm các token kém tin cậy.<sup class="cite"><a href="#src-8">[8]</a></sup> Biến thể <b>top-k</b> thì chỉ giữ k token có xác suất cao nhất.<sup class="cite"><a href="#src-7">[7]</a></sup></p></div>
+  </div>
+
+  <h3>Mô phỏng: kéo temperature và top-p</h3>
+  <p>Logit dưới đây là số <b>minh họa</b> cho 8 token ứng viên. Mỗi ứng viên là mảnh đầu của một từ: "xử" (lý), "vận" (chuyển), "kiểm" (tra)… Còn phép tính là thật: trang chạy softmax(logit / T), rồi lọc top-p, ngay trong trình duyệt.</p>
+  <div class="card">
+    <div class="prefix">Đơn hàng của anh đang được <b>___</b></div>
+    <div class="ctrl"><label for="tSlider">Temperature (T) <output id="tVal">1,00</output></label><input id="tSlider" type="range" min="0" max="2" step="0.05" value="1" aria-describedby="tHint"><span id="tHint" class="muted" style="font-size:14px">Kéo về 0 = greedy (luôn chọn token cao nhất).</span></div>
+    <div class="ctrl"><label for="pSlider">Top-p <output id="pVal">1,00</output></label><input id="pSlider" type="range" min="0.05" max="1" step="0.05" value="1"></div>
+    <div class="btn-row"><button class="btn" data-preset="0">T = 0 (greedy)</button><button class="btn" data-preset="0.3">T = 0,3</button><button class="btn" data-preset="1">T = 1</button><button class="btn" data-preset="1.8">T = 1,8</button></div>
+    <div id="distOut"></div>
+    <p class="muted" style="font-size:14px">Số lớn: xác suất cuối cùng dùng để chọn. Số nhỏ: xác suất sau temperature, trước khi lọc top-p. Dòng gạch ngang là token bị top-p loại.</p>
+    <div id="distSummary" class="callout" style="margin:8px 0" aria-live="polite"></div>
+    <div class="btn-row"><button class="btn" id="sampleBtn">🎲 Lấy mẫu 12 lần</button></div>
+    <div class="samples" id="sampleOut" aria-live="polite"></div>
+  </div>
+
+  <h3>Vì sao cùng một prompt lại ra câu trả lời khác nhau?</h3>
+  <div class="grid g2">
+    <div class="card"><span class="tag p4">Lý do 1 · có chủ đích</span><h4>Sampling ngẫu nhiên</h4><p>Với T &gt; 0, mỗi lần chạy là một lần "tung xúc xắc" theo phân phối. Bấm "Lấy mẫu" ở trên vài lần để thấy. Temperature cao cho câu chữ đa dạng hơn, thấp cho câu trả lời bảo thủ hơn.<sup class="cite"><a href="#src-1">[1]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Lý do 2 · ngoài ý muốn</span><h4>Hạ tầng suy luận</h4><p>Kể cả temperature 0, kết quả qua API vẫn không hoàn toàn giống nhau giữa các lần gọi.<sup class="cite"><a href="#src-1">[1]</a></sup> Một phân tích của Thinking Machines chỉ ra nguyên nhân chính: phép tính trên server phụ thuộc vào kích thước batch, mà batch lại tùy lượng request đang chạy cùng lúc. Họ gọi đó là thiếu "batch invariance".<sup class="cite"><a href="#src-16">[16]</a></sup></p></div>
+  </div>
+  <div class="callout warn"><b>Thực tế khi dùng API:</b> tham số sampling tùy nhà cung cấp và tùy model. Ví dụ, tài liệu chuyển sang Claude Opus 5.5 yêu cầu bỏ <code>temperature</code>, <code>top_p</code>, <code>top_k</code> khỏi request và điều khiển hành vi bằng prompt; tài liệu cũng nhắc temperature 0 chưa bao giờ đảm bảo kết quả giống hệt.<sup class="cite"><a href="#src-15">[15]</a></sup> Vì vậy đừng thiết kế hệ thống dựa trên giả định "cùng input thì chắc chắn cùng output". Cần định dạng ổn định thì dùng structured output và kiểm tra đầu ra bằng code.</div>
+
+  <h3>Thinking: model viết nháp trước khi trả lời</h3>
+  <div class="grid g2">
+    <div class="card"><span class="tag p2">Thinking</span><h4>Token suy nghĩ cũng là token sinh ra</h4><p>Khi thinking bật, model tự phân tích yêu cầu, thử cách giải, kiểm tra kết quả trung gian, rồi mới viết câu trả lời. Phần nháp này nằm trong các khối <code>thinking</code> đứng trước khối <code>text</code>.<sup class="cite"><a href="#src-21">[21]</a></sup> Nó vẫn chạy đúng vòng lặp ở mục 2: từng token một.</p>
+      <p class="muted">Với nhiều model Claude hiện tại, thinking bật sẵn theo kiểu "adaptive": model tự quyết định nghĩ nhiều hay ít, điều chỉnh bằng tham số effort.<sup class="cite"><a href="#src-14">[14]</a><a href="#src-21">[21]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Cái giá</span><h4>Tốn output, tốn thời gian</h4><p>Token thinking được tính tiền như output, kể cả khi bạn không nhận lại phần chữ nháp, và nằm trong trần <code>max_tokens</code> cùng câu trả lời.<sup class="cite"><a href="#src-11">[11]</a><a href="#src-21">[21]</a></sup> Độ trễ thực tế phụ thuộc độ dài prompt, độ dài output và mức effort của thinking.<sup class="cite"><a href="#src-14">[14]</a></sup></p>
+      <p class="muted">Đổi lại, thinking giúp các task phức tạp như toán, code, phân tích và agent chạy dài.<sup class="cite"><a href="#src-21">[21]</a></sup> Task đơn giản như phân loại thì nên đo xem có đáng không.</p></div>
+  </div>
+
+  <h3>Gọi tool cũng chạy trên vòng lặp này</h3>
+  <div class="card"><p>Model không tự chạy code hay gọi hệ thống. Khi cần dữ liệu, nó sinh ra một <b>yêu cầu gọi tool</b> (cũng là token) và dừng với <code>stop_reason: tool_use</code>.<sup class="cite"><a href="#src-20">[20]</a></sup> Ứng dụng của bạn chạy tool, rồi gửi kết quả lại trong request kế tiếp dưới dạng <code>tool_result</code>; kết quả đó thành input và chiếm chỗ trong context như mọi thứ khác.<sup class="cite"><a href="#src-11">[11]</a></sup> Vòng "model yêu cầu, ứng dụng làm, model đọc kết quả" là nền của <a href="../ai-agent/">AI Agent</a>.</p></div>
+</section>
+
+<!-- 7. CONTEXT & GIỚI HẠN -->
+<section id="context">
+  <h2>7. Context window, knowledge cutoff và hallucination</h2>
+  <h3>Context window = input + output</h3>
+  <p><b>Context window</b> là toàn bộ văn bản model có thể tham chiếu khi sinh câu trả lời, <b>tính cả chính câu trả lời</b>. Nó giống "bộ nhớ làm việc", khác hẳn kho dữ liệu đã dùng để huấn luyện.<sup class="cite"><a href="#src-11">[11]</a></sup></p>
+  <div class="grid g2">
+    <div class="card">
+      <h4>Cái gì chiếm chỗ trong context?</h4>
+      <ul>
+        <li>System prompt (lời dặn).</li>
+        <li>Mọi tin nhắn trong hội thoại, kể cả kết quả tool, ảnh, tài liệu.</li>
+        <li>Định nghĩa tool.</li>
+        <li>Output model sinh ra, kể cả phần "suy nghĩ" (thinking).</li>
+      </ul>
+      <p class="muted">Tất cả đều được tính.<sup class="cite"><a href="#src-11">[11]</a></sup> Trong hội thoại nhiều lượt, mỗi câu hỏi và câu trả lời cũ cứ tích lũy dần trong context.<sup class="cite"><a href="#src-11">[11]</a></sup></p>
+    </div>
+    <div class="card">
+      <h4>Lớn cỡ nào? Vượt thì sao?</h4>
+      <p>Ví dụ ở Claude: nhiều model hiện tại có context 1 triệu token, một số model khác 200 nghìn token.<sup class="cite"><a href="#src-11">[11]</a></sup> Theo Anthropic, 1 triệu token xấp xỉ 555 nghìn từ với tokenizer hiện tại.<sup class="cite"><a href="#src-14">[14]</a></sup></p>
+      <p>Nếu riêng input đã vượt context window, API từ chối với lỗi 400 "prompt is too long".<sup class="cite"><a href="#src-11">[11]</a></sup> Nếu output chạm trần <code>max_tokens</code>, câu trả lời bị cắt ngang và <code>stop_reason</code> là <code>max_tokens</code>.<sup class="cite"><a href="#src-20">[20]</a></sup></p>
+    </div>
+  </div>
+
+  <h3>Context dài không tự động tốt hơn</h3>
+  <div class="grid g2">
+    <div class="card"><span class="tag p4">Lost in the Middle</span><p>Nghiên cứu năm 2023 thấy model thường làm tốt nhất khi thông tin cần dùng nằm ở <b>đầu hoặc cuối</b> context, và kém đi rõ rệt khi nó nằm <b>ở giữa</b>, kể cả với model được quảng cáo là hỗ trợ context dài.<sup class="cite"><a href="#src-12">[12]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Context rot</span><p>Khi số token tăng, độ chính xác và khả năng nhớ lại giảm dần.<sup class="cite"><a href="#src-11">[11]</a></sup> Báo cáo của Chroma thử 18 model và thấy hiệu năng giảm khi input dài ra, kể cả với tác vụ đơn giản.<sup class="cite"><a href="#src-13">[13]</a></sup></p></div>
+  </div>
+  <div class="callout ok"><b>Hệ quả cho RAG và agent:</b> mục tiêu là đưa vào <b>tập token nhỏ nhất nhưng giàu tín hiệu nhất</b>, không phải nhét càng nhiều càng tốt.<sup class="cite"><a href="#src-6">[6]</a></sup> Cách chọn, sắp xếp và nén context là chủ đề của trang <a href="../context-engineering/">Context engineering</a>.</div>
+
+  <h3>Knowledge cutoff</h3>
+  <p>Model chỉ biết những gì có trong dữ liệu huấn luyện. Anthropic công bố hai mốc cho mỗi model: <b>reliable knowledge cutoff</b> (đến ngày này kiến thức của model rộng và đáng tin nhất) và <b>training data cutoff</b> (phạm vi dữ liệu rộng hơn đã dùng).<sup class="cite"><a href="#src-14">[14]</a></sup> Sự kiện sau các mốc đó model không biết, trừ khi bạn đưa vào context.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+
+  <h3>Hallucination: vì sao model bịa?</h3>
+  <p><b>Hallucination</b> là khi model sinh ra nội dung nghe trôi chảy nhưng sai hoặc không có căn cứ. Đây là vấn đề chung của các mô hình sinh văn bản, làm giảm chất lượng hệ thống trong thực tế.<sup class="cite"><a href="#src-18">[18]</a></sup></p>
+  <div class="grid g3">
+    <div class="card"><span class="tag p4">Nguyên nhân 1</span><h4>Áp lực thống kê khi pretraining</h4><p>Model học sinh văn bản hợp lý. Với những sự kiện mà dữ liệu không đủ để phân biệt đúng sai, lỗi xuất hiện một cách tự nhiên.<sup class="cite"><a href="#src-17">[17]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Nguyên nhân 2</span><h4>Huấn luyện và chấm điểm thưởng việc đoán</h4><p>Nhiều cách huấn luyện và benchmark cho điểm khi đoán trúng nhưng không cho điểm khi nói "tôi không chắc", nên đoán khi không chắc lại có lợi.<sup class="cite"><a href="#src-17">[17]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Nguyên nhân 3</span><h4>Thiếu thông tin trong context</h4><p>Hỏi về sự kiện sau cutoff hoặc tài liệu nội bộ mà không đưa vào prompt, model vẫn có thể trả lời bằng chữ "nghe hợp lý". RAG giúp bằng cách đưa đúng tài liệu vào context.<sup class="cite"><a href="#src-1">[1]</a></sup></p></div>
+  </div>
+  <p class="muted">Một lưu ý về sampling: phần đuôi của phân phối gồm các token kém tin cậy;<sup class="cite"><a href="#src-8">[8]</a></sup> temperature cao làm các token này dễ được chọn hơn (thử ở mô phỏng mục 6 với token " nấu").</p>
+</section>
+
+<!-- 8. CHI PHÍ & ĐỘ TRỄ -->
+<section id="chi-phi">
+  <h2>8. Chi phí và độ trễ tính theo token</h2>
+  <div class="grid g2">
+    <div class="card"><span class="tag p1">Chi phí</span><h4>Input và output tính giá riêng</h4>
+      <p>API tính phí theo số token.<sup class="cite"><a href="#src-20">[20]</a></sup> Giá thường niêm yết theo <b>triệu token (MTok)</b>, tách riêng input và output. Trong bảng giá Claude truy cập ngày 2026-11-17, giá output của mỗi model đều gấp 5 lần giá input, ví dụ $4 input và $20 output cho mỗi triệu token.<sup class="cite"><a href="#src-14">[14]</a></sup></p>
+      <p class="muted">Token "suy nghĩ" (thinking) được tính như output.<sup class="cite"><a href="#src-11">[11]</a></sup> Token đọc từ prompt cache và request chạy theo batch được giảm giá mạnh.<sup class="cite"><a href="#src-14">[14]</a></sup> Giá thay đổi theo thời gian, luôn xem bảng giá hiện hành.</p>
+    </div>
+    <div class="card"><span class="tag p1">Độ trễ</span><h4>Hai con số cần đo riêng</h4>
+      <p><b>TTFT</b> (time to first token): bao lâu thì bắt đầu có chữ trả về.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-19">[19]</a></sup> Prompt dài, nhất là phần chưa được cache, có thể làm chậm token đầu.<sup class="cite"><a href="#src-19">[19]</a></sup></p>
+      <p><b>Thời gian sinh</b>: phụ thuộc số token output vì mỗi token là một vòng (mục 2). Trả lời bắt đầu nhanh mà lâu xong thì xem lại độ dài output.<sup class="cite"><a href="#src-19">[19]</a></sup></p>
+    </div>
+  </div>
+
+  <h3>Máy tính: context, chi phí và độ trễ cho một chatbot</h3>
+  <p>Mọi giá trị mặc định là <b>minh họa</b> (giá theo tỷ lệ 1:5 giống bảng giá ở trên, tốc độ sinh và TTFT tự đặt). Đổi số để thấy phần nào chiếm context và tiền nhiều nhất. Máy tính bỏ qua cache và batch.</p>
+  <div class="card">
+    <div class="calc" id="calcInputs">
+      <label>System prompt (token)<input type="number" min="0" step="100" data-c="sys" value="1500"></label>
+      <label>Định nghĩa tool (token)<input type="number" min="0" step="100" data-c="tools" value="1000"></label>
+      <label>Lịch sử hội thoại (token)<input type="number" min="0" step="500" data-c="hist" value="4000"></label>
+      <label>Tài liệu RAG (token)<input type="number" min="0" step="500" data-c="docs" value="6000"></label>
+      <label>Câu hỏi (token)<input type="number" min="0" step="10" data-c="q" value="100"></label>
+      <label>Output, gồm cả thinking (token)<input type="number" min="0" step="50" data-c="out" value="500"></label>
+      <label>Context window<select data-c="win"><option value="200000">200.000 token</option><option value="1000000">1.000.000 token</option></select></label>
+      <label>Giá input ($/MTok)<input type="number" min="0" step="0.5" data-c="pin" value="3"></label>
+      <label>Giá output ($/MTok)<input type="number" min="0" step="0.5" data-c="pout" value="15"></label>
+      <label>Số request / ngày<input type="number" min="0" step="100" data-c="req" value="2000"></label>
+      <label>TTFT (giây)<input type="number" min="0" step="0.1" data-c="ttft" value="0.8"></label>
+      <label>Tốc độ sinh (token/giây)<input type="number" min="1" step="5" data-c="speed" value="50"></label>
+    </div>
+    <p class="bar-cap">Phần đã dùng so với cả context window:</p>
+    <div class="ctxbar" id="ctxBar" role="img" aria-label="Phần đã dùng so với cả context window"></div>
+    <p class="bar-cap">Thành phần của phần đã dùng (100% = input + output):</p>
+    <div class="ctxbar" id="ctxMix" role="img" aria-label="Tỷ lệ từng phần trong số token đã dùng"></div>
+    <div class="legend">
+      <span><i class="seg-sys"></i>System</span><span><i class="seg-tools"></i>Tool</span><span><i class="seg-hist"></i>Lịch sử</span><span><i class="seg-docs"></i>Tài liệu</span><span><i class="seg-q"></i>Câu hỏi</span><span><i class="seg-out"></i>Output</span>
+    </div>
+    <div class="out-grid" id="calcOut" aria-live="polite"></div>
+    <div id="calcNote"></div>
+  </div>
+</section>
+
+<!-- 9. KHÁI NIỆM -->
+<section id="khai-niem">
+  <h2>9. Từ điển khái niệm</h2>
+  <p>Mỗi thẻ có định nghĩa ngắn, ví dụ và liên kết sang khái niệm liên quan. Lọc theo nhóm hoặc gõ để tìm (gõ không dấu cũng được).</p>
+  <div class="gloss-tools">
+    <input id="glossSearch" type="search" placeholder="Tìm khái niệm… (vd: token, nhiet do, cutoff)">
+  </div>
+  <div class="gloss-tools" id="glossChips"></div>
+  <div class="grid g3" id="glossGrid"></div>
+</section>
+
+<!-- 10. MỐI QUAN HỆ -->
+<section id="quan-he">
+  <h2>10. Bản đồ mối quan hệ</h2>
+  <p>Hai thế giới tách biệt: <b>lúc huấn luyện</b> (nhà cung cấp làm, tạo ra trọng số và quyết định knowledge cutoff) và <b>lúc sử dụng</b> (ứng dụng của bạn gọi API mỗi request). Ứng dụng doanh nghiệp chủ yếu điều khiển được phần thứ hai.</p>
+  <div class="vflow m-only" aria-label="Bản đồ quan hệ (dạng dọc)">
+    <div class="box box1">
+      <div class="ph ph1">LÚC HUẤN LUYỆN · nhà cung cấp làm</div>
+      <div class="node"><b>Dữ liệu văn bản lớn</b><span>web, sách, code… · ngày chốt dữ liệu → knowledge cutoff</span></div>
+      <div class="ar">↓ dùng cho</div>
+      <div class="node"><b>Pretraining</b><span>học đoán token tiếp theo</span></div>
+      <div class="ar">↓ tạo ra</div>
+      <div class="node"><b>Base model</b><span>viết tiếp giỏi, chưa biết làm theo hướng dẫn</span></div>
+      <div class="ar">↓ qua</div>
+      <div class="node"><b>Post-training</b><span>SFT + RLHF</span></div>
+      <div class="ar">↓ tạo ra</div>
+      <div class="node a"><b>Model trợ lý</b><span>trọng số cố định khi bạn gọi API</span></div>
+    </div>
+    <div class="ar" style="color:var(--p2)">↓ trọng số được dùng lúc chạy ↓</div>
+    <div class="box box2">
+      <div class="ph ph2">LÚC SỬ DỤNG · mỗi request</div>
+      <div class="node"><b>Prompt</b><span>lời dặn + lịch sử + tài liệu RAG + câu hỏi</span></div>
+      <div class="ar">↓ tokenizer</div>
+      <div class="node"><b>Token</b><span>phải vừa context window (input + output)</span></div>
+      <div class="ar">↓</div>
+      <div class="node a"><b>Transformer</b><span>attention trên toàn bộ token</span></div>
+      <div class="ar">↓ logits → softmax</div>
+      <div class="node r"><b>Phân phối xác suất</b></div>
+      <div class="ar">↓ temperature · top-p</div>
+      <div class="node r"><b>Sampling</b></div>
+      <div class="ar">↓ lặp từng token</div>
+      <div class="node g"><b>Output</b><span>văn bản trả lời</span></div>
+    </div>
+    <div class="ph" style="color:var(--p4)">HỆ QUẢ CHUNG CỦA CẢ DÒNG TRÊN</div>
+    <div class="node opt"><b>Context window</b><span>giới hạn input + output; context dài → context rot</span></div>
+    <div class="ar"></div>
+    <div class="node opt"><b>Chi phí &amp; độ trễ</b><span>tính theo token input và output</span></div>
+    <div class="ar"></div>
+    <div class="node opt"><b>Hallucination</b><span>gốc từ huấn luyện và chấm điểm thưởng việc đoán; thiếu tài liệu trong context làm nặng thêm</span></div>
+  </div>
+  <div class="svgbox d-only">
+  <svg class="diagram" viewBox="0 0 1000 470" role="img" aria-label="Bản đồ quan hệ giữa huấn luyện và sử dụng LLM">
+    <defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker><marker id="arr2P" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--p2)"/></marker></defs>
+    <rect x="10" y="10" width="980" height="165" rx="14" fill="var(--accent-soft)" stroke="var(--p1)" stroke-opacity=".4"/>
+    <text x="28" y="36" font-weight="700" font-size="15" style="fill:var(--p1)">LÚC HUẤN LUYỆN · nhà cung cấp làm, một lần cho mỗi model</text>
+    <g font-size="14">
+      <rect x="25" y="52" width="170" height="76" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="110" y="84" text-anchor="middle" font-weight="600">Dữ liệu văn bản</text>
+      <text x="110" y="106" text-anchor="middle" font-size="12" style="fill:var(--muted)">web, sách, code…</text>
+      <rect x="218" y="52" width="170" height="76" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="303" y="84" text-anchor="middle" font-weight="600">Pretraining</text>
+      <text x="303" y="106" text-anchor="middle" font-size="12" style="fill:var(--muted)">đoán token tiếp theo</text>
+      <rect x="411" y="52" width="170" height="76" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="496" y="84" text-anchor="middle" font-weight="600">Base model</text>
+      <text x="496" y="106" text-anchor="middle" font-size="12" style="fill:var(--muted)">giỏi viết tiếp văn bản</text>
+      <rect x="604" y="52" width="170" height="76" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="689" y="84" text-anchor="middle" font-weight="600">Post-training</text>
+      <text x="689" y="106" text-anchor="middle" font-size="12" style="fill:var(--muted)">SFT + RLHF</text>
+      <rect x="797" y="52" width="170" height="76" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="882" y="84" text-anchor="middle" font-weight="600">Model trợ lý</text>
+      <text x="882" y="106" text-anchor="middle" font-size="12" style="fill:var(--muted)">làm theo hướng dẫn</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="2" marker-end="url(#arr2)">
+      <line x1="195" y1="90" x2="216" y2="90"/><line x1="388" y1="90" x2="409" y2="90"/><line x1="581" y1="90" x2="602" y2="90"/><line x1="774" y1="90" x2="795" y2="90"/>
+    </g>
+    <text x="28" y="156" font-size="12" style="fill:var(--muted)">Ngày chốt dữ liệu quyết định knowledge cutoff của model.</text>
+    <rect x="10" y="215" width="980" height="245" rx="14" fill="var(--ok-soft)" stroke="var(--p3)" stroke-opacity=".4"/>
+    <path d="M882 128 V 196 H 420 V 260" fill="none" stroke="var(--p2)" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arr2P)"/>
+    <text x="651" y="190" text-anchor="middle" font-size="13" style="fill:var(--p2)">trọng số cố định được dùng lúc chạy</text>
+    <text x="28" y="241" font-weight="700" font-size="15" style="fill:var(--p3)">LÚC SỬ DỤNG · mỗi request</text>
+    <g font-size="14">
+      <rect x="22" y="262" width="140" height="76" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="92" y="294" text-anchor="middle" font-weight="600">Prompt</text>
+      <text x="92" y="316" text-anchor="middle" font-size="12" style="fill:var(--muted)">lời dặn + dữ liệu</text>
+      <rect x="186" y="262" width="140" height="76" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="256" y="294" text-anchor="middle" font-weight="600">Tokenizer</text>
+      <text x="256" y="316" text-anchor="middle" font-size="12" style="fill:var(--muted)">văn bản → token</text>
+      <rect x="350" y="262" width="140" height="76" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="420" y="294" text-anchor="middle" font-weight="600">Transformer</text>
+      <text x="420" y="316" text-anchor="middle" font-size="12" style="fill:var(--muted)">attention</text>
+      <rect x="514" y="262" width="140" height="76" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="584" y="294" text-anchor="middle" font-weight="600">Xác suất</text>
+      <text x="584" y="316" text-anchor="middle" font-size="12" style="fill:var(--muted)">token tiếp theo</text>
+      <rect x="678" y="262" width="140" height="76" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="748" y="294" text-anchor="middle" font-weight="600">Sampling</text>
+      <text x="748" y="316" text-anchor="middle" font-size="12" style="fill:var(--muted)">temperature · top-p</text>
+      <rect x="842" y="262" width="140" height="76" rx="10" fill="var(--surface)" stroke="var(--p3)" stroke-width="2"/>
+      <text x="912" y="294" text-anchor="middle" font-weight="600">Output</text>
+      <text x="912" y="316" text-anchor="middle" font-size="12" style="fill:var(--muted)">lặp từng token</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="2" marker-end="url(#arr2)">
+      <line x1="162" y1="300" x2="184" y2="300"/><line x1="326" y1="300" x2="348" y2="300"/><line x1="490" y1="300" x2="512" y2="300"/><line x1="654" y1="300" x2="676" y2="300"/><line x1="818" y1="300" x2="840" y2="300"/>
+    </g>
+    <g font-size="13">
+      <rect x="22" y="362" width="300" height="80" rx="10" fill="var(--warn-soft)" stroke="var(--p4)"/>
+      <text x="36" y="388" font-weight="700" style="fill:var(--p4)">Context window</text>
+      <text x="36" y="408">giới hạn tổng input + output</text>
+      <text x="36" y="428" style="fill:var(--muted)">context dài → context rot</text>
+      <rect x="350" y="362" width="300" height="80" rx="10" fill="var(--warn-soft)" stroke="var(--p4)"/>
+      <text x="364" y="388" font-weight="700" style="fill:var(--p4)">Chi phí &amp; độ trễ</text>
+      <text x="364" y="408">tính theo token input và output</text>
+      <text x="364" y="428" style="fill:var(--muted)">output dài → chờ lâu, giá cao hơn</text>
+      <rect x="678" y="362" width="304" height="80" rx="10" fill="var(--warn-soft)" stroke="var(--p4)"/>
+      <text x="692" y="388" font-weight="700" style="fill:var(--p4)">Hallucination</text>
+      <text x="692" y="408">gốc từ huấn luyện, chấm điểm</text>
+      <text x="692" y="428" style="fill:var(--muted)">thiếu tài liệu trong context → nặng hơn</text>
+    </g>
+  </svg>
+  </div>
+  <p class="muted" style="margin-top:10px">Đọc theo chiều mũi tên: mọi thứ ứng dụng của bạn gửi đi đều thành token. Ba ô cam là hệ quả chung của cả dòng "lúc sử dụng": token quyết định đồng thời model thấy gì, tốn bao nhiêu và chờ bao lâu.</p>
+</section>
+
+<!-- 11. SO SÁNH & ĐÁNH ĐỔI -->
+<section id="so-sanh">
+  <h2>11. So sánh và đánh đổi</h2>
+  <h3>Ba nguồn kiến thức của LLM</h3>
+  <div class="table-wrap">
+  <table class="stack">
+    <thead><tr><th>Nguồn kiến thức</th><th>Cập nhật thế nào</th><th>Hợp khi</th><th>Hạn chế</th></tr></thead>
+    <tbody>
+      <tr><td><b>Trọng số từ pretraining</b></td><td>Chỉ khi nhà cung cấp ra model mới.</td><td>Kiến thức phổ thông, ngôn ngữ, cách lập luận.</td><td>Dừng ở knowledge cutoff; không biết dữ liệu nội bộ; có thể bịa.<sup class="cite"><a href="#src-14">[14]</a><a href="#src-17">[17]</a></sup></td></tr>
+      <tr><td><b>Context (prompt, RAG)</b></td><td>Mỗi request, bằng cách đổi nội dung gửi đi.</td><td>Tài liệu riêng, hay thay đổi, cần trích nguồn.<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>Tốn token mỗi lần gọi; bị giới hạn context window và context rot.<sup class="cite"><a href="#src-11">[11]</a><a href="#src-13">[13]</a></sup></td></tr>
+      <tr><td><b>Fine-tuning</b></td><td>Huấn luyện thêm trên dữ liệu của bạn.</td><td>Thích nghi với lĩnh vực, loại task hoặc văn phong.<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>Cần chuẩn bị dữ liệu cẩn thận, có thể ảnh hưởng chất lượng và thiên lệch của model; Claude API hiện chưa mở fine-tuning.<sup class="cite"><a href="#src-1">[1]</a></sup></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Các "núm vặn" và cái giá của chúng</h3>
+  <div class="table-wrap">
+  <table class="stack">
+    <thead><tr><th>Núm vặn</th><th>Tăng lên thì được</th><th>Tăng lên thì mất</th><th>Gợi ý</th></tr></thead>
+    <tbody>
+      <tr><td><b>Temperature</b></td><td>Câu chữ đa dạng, sáng tạo hơn.<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>Dễ chọn token kém tin cậy ở phần đuôi.<sup class="cite"><a href="#src-8">[8]</a></sup></td><td>Task trích xuất, phân loại: để thấp (nếu model cho chỉnh). Viết nội dung: cao hơn.</td></tr>
+      <tr><td><b>Top-p</b></td><td>Giữ nhiều ứng viên hơn.</td><td>Mở lại phần đuôi kém tin cậy.<sup class="cite"><a href="#src-8">[8]</a></sup></td><td>Nếu model cho chỉnh, đổi từng tham số một rồi đo lại trên bộ câu hỏi kiểm tra.</td></tr>
+      <tr><td><b>Độ dài context (input)</b></td><td>Model thấy nhiều thông tin hơn.</td><td>Tốn tiền hơn, token đầu có thể chậm hơn, dễ bỏ sót thông tin ở giữa.<sup class="cite"><a href="#src-12">[12]</a><a href="#src-13">[13]</a><a href="#src-19">[19]</a></sup></td><td>Chỉ đưa phần liên quan; đặt thông tin then chốt ở đầu hoặc cuối.</td></tr>
+      <tr><td><b>Độ dài output / max_tokens</b></td><td>Câu trả lời đầy đủ hơn, không bị cắt.</td><td>Chờ lâu hơn, output đắt hơn input.<sup class="cite"><a href="#src-14">[14]</a><a href="#src-19">[19]</a></sup></td><td>Yêu cầu đúng mức chi tiết cần; theo dõi stop_reason.<sup class="cite"><a href="#src-20">[20]</a></sup></td></tr>
+      <tr><td><b>Model lớn hơn</b></td><td>Thường giỏi hơn ở task khó.</td><td>Giá và độ trễ cao hơn; to hơn không tự động hiểu ý người dùng hơn.<sup class="cite"><a href="#src-10">[10]</a><a href="#src-14">[14]</a></sup></td><td>Đo trên bộ test của bạn rồi chọn model nhỏ nhất đạt yêu cầu.</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- 12. LỖI -->
+<section id="loi">
+  <h2>12. Lỗi thường gặp và cách chẩn đoán</h2>
+  <p>Khi chatbot trả lời sai hoặc chạy chậm, hãy hỏi theo thứ tự: <b>model có thấy đúng thông tin không</b> (context) → <b>thông tin có bị chìm không</b> (vị trí, độ dài) → <b>output có bị cắt không</b> → <b>có phải do ngẫu nhiên không</b> (chạy lại nhiều lần).</p>
+  <div class="table-wrap">
+  <table class="stack">
+    <thead><tr><th>Triệu chứng</th><th>Nguyên nhân thường gặp</th><th>Chẩn đoán và cách sửa</th></tr></thead>
+    <tbody>
+      <tr><td>Trả lời theo thông tin cũ hoặc "không biết" sự kiện gần đây</td><td>Knowledge cutoff.<sup class="cite"><a href="#src-14">[14]</a></sup></td><td>Đưa dữ liệu mới vào context (RAG, tool tra cứu).</td></tr>
+      <tr><td>Bịa con số, chính sách, tên người</td><td>Thiếu tài liệu trong context; model được thưởng khi đoán.<sup class="cite"><a href="#src-17">[17]</a></sup></td><td>Kiểm tra prompt có chứa đáp án không; dặn rõ "không có trong tài liệu thì nói không biết"; yêu cầu trích nguồn.</td></tr>
+      <tr><td>Câu trả lời bị cụt giữa chừng</td><td>Chạm <code>max_tokens</code>.</td><td>Xem <code>stop_reason</code>; tăng max_tokens hoặc yêu cầu trả lời ngắn hơn.<sup class="cite"><a href="#src-20">[20]</a></sup></td></tr>
+      <tr><td>Lỗi 400 "prompt is too long"</td><td>Input vượt context window.<sup class="cite"><a href="#src-11">[11]</a></sup></td><td>Đếm token trước khi gửi; cắt bớt lịch sử, giảm số đoạn RAG, tóm tắt.</td></tr>
+      <tr><td>Bỏ qua chỉ dẫn hoặc dữ kiện nằm giữa prompt dài</td><td>Lost in the middle, context rot.<sup class="cite"><a href="#src-12">[12]</a><a href="#src-13">[13]</a></sup></td><td>Rút gọn context; đưa thông tin then chốt lên đầu hoặc cuối.</td></tr>
+      <tr><td>Hỏi hai lần ra hai câu trả lời khác nhau</td><td>Sampling; hạ tầng suy luận không tất định.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-16">[16]</a></sup></td><td>Đánh giá bằng nhiều lần chạy; dùng structured output và kiểm tra bằng code cho phần cần ổn định.</td></tr>
+      <tr><td>Hóa đơn tăng dần theo độ dài hội thoại</td><td>Lịch sử tích lũy trong context mỗi lượt.<sup class="cite"><a href="#src-11">[11]</a></sup></td><td>Đọc số token trong <code>usage</code>; tóm tắt hoặc cắt lịch sử cũ.</td></tr>
+      <tr><td>Bắt đầu trả lời chậm</td><td>Prompt dài, phần lớn là nội dung mới chưa cache.<sup class="cite"><a href="#src-19">[19]</a></sup></td><td>Đo TTFT riêng; rút gọn input; đặt phần cố định lên đầu để tận dụng prompt caching.<sup class="cite"><a href="#src-19">[19]</a></sup></td></tr>
+      <tr><td>Văn bản tiếng Việt tốn token hơn dự tính</td><td>Tokenizer tách ngôn ngữ khác nhau với độ dài khác nhau.<sup class="cite"><a href="#src-4">[4]</a></sup></td><td>Đếm token thật trên dữ liệu mẫu của bạn bằng token counting.<sup class="cite"><a href="#src-1">[1]</a></sup></td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<!-- 13. ĐÁNH GIÁ -->
+<section id="danh-gia">
+  <h2>13. Đánh giá và đo lường</h2>
+  <p>Ở tầng "LLM nền", có ba nhóm số nên đo cho mọi tính năng dùng LLM. Đánh giá chất lượng câu trả lời chi tiết hơn nằm ở trang <a href="../llm-evaluation/">Đánh giá LLM</a>.</p>
+  <div class="grid g3">
+    <div class="card"><span class="tag p1">Nhóm 1 · Token &amp; chi phí</span>
+      <ul>
+        <li>Input và output token mỗi request, đọc từ trường <code>usage</code>.<sup class="cite"><a href="#src-11">[11]</a></sup></li>
+        <li>Chi phí mỗi request và mỗi ngày (như máy tính ở mục 8).</li>
+        <li>Tỷ lệ request kết thúc do <code>max_tokens</code>.<sup class="cite"><a href="#src-20">[20]</a></sup></li>
+      </ul></div>
+    <div class="card"><span class="tag p1">Nhóm 2 · Độ trễ</span>
+      <ul>
+        <li>TTFT, đo từ lúc gửi tới token đầu tiên.<sup class="cite"><a href="#src-19">[19]</a></sup></li>
+        <li>Tổng thời gian trả lời.</li>
+        <li>Xem phân phối (p50, p95), không chỉ trung bình.</li>
+      </ul></div>
+    <div class="card"><span class="tag p3">Nhóm 3 · Độ tin cậy</span>
+      <ul>
+        <li><b>Độ ổn định:</b> chạy mỗi câu hỏi kiểm tra nhiều lần, đo tỷ lệ đúng, vì output không tất định.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-16">[16]</a></sup></li>
+        <li><b>Tỷ lệ bịa:</b> câu hỏi có đáp án biết trước, kể cả câu mà tài liệu <i>không</i> có đáp án.</li>
+        <li><b>Từ chối đúng lúc:</b> cho điểm khi model nói "không biết" đúng chỗ, thay vì chỉ thưởng câu trả lời đúng.<sup class="cite"><a href="#src-17">[17]</a></sup></li>
+      </ul></div>
+  </div>
+  <h3>Hai bài thử nhanh cho context dài</h3>
+  <div class="grid g2">
+    <div class="card"><h4>Thử theo vị trí</h4><p>Đặt cùng một dữ kiện then chốt ở đầu, giữa và cuối một context dài, hỏi cùng câu hỏi, so tỷ lệ đúng. Đây là cách bài báo "Lost in the Middle" đo hiện tượng.<sup class="cite"><a href="#src-12">[12]</a></sup></p></div>
+    <div class="card"><h4>Thử theo độ dài</h4><p>Giữ câu hỏi và dữ kiện, tăng dần lượng nội dung không liên quan xung quanh. Nếu tỷ lệ đúng giảm khi context dài ra, bạn đang gặp context rot.<sup class="cite"><a href="#src-13">[13]</a></sup></p></div>
+  </div>
+  <div class="callout"><b>Đọc kết quả:</b> nếu sai ngay cả khi context ngắn và có đáp án, vấn đề nằm ở prompt hoặc model. Nếu chỉ sai khi context dài, hãy giảm và sắp xếp lại context trước khi đổi model.</div>
+</section>
+
+<!-- 14. LỘ TRÌNH -->
+<section id="lo-trinh">
+  <h2>14. Lộ trình tự học 2 tuần (không cần code)</h2>
+  <p class="muted">Khoảng 4 giờ mỗi tuần. Các ô đã đánh dấu được lưu trong trình duyệt của bạn.</p>
+  <div class="grid g3">
+    <div class="card"><span class="tag p1">Tuần 1 · nửa đầu</span><h4>Token và vòng sinh</h4><p>Đọc mục 1–4.</p>
+      <label class="check"><input type="checkbox" data-k="w1a"><span>Tự vẽ lại vòng sinh token và giải thích "tự hồi quy" trong 1 phút.</span></label>
+      <label class="check"><input type="checkbox" data-k="w1b"><span>Dán một đoạn nội quy tiếng Việt và bản tiếng Anh vào công cụ đếm token của một nhà cung cấp, so số token.</span></label>
+    </div>
+    <div class="card"><span class="tag p1">Tuần 1 · nửa sau</span><h4>Bên trong model và sampling</h4><p>Đọc mục 5–6.</p>
+      <label class="check"><input type="checkbox" data-k="w1c"><span>Dùng mô phỏng mục 6: tìm mức T mà token " nấu" có xác suất trên 1%.</span></label>
+      <label class="check"><input type="checkbox" data-k="w1d"><span>Hỏi một chatbot cùng một câu 5 lần, ghi lại các khác biệt.</span></label>
+    </div>
+    <div class="card"><span class="tag p1">Tuần 2</span><h4>Giới hạn, chi phí, đo lường</h4><p>Đọc mục 7–13.</p>
+      <label class="check"><input type="checkbox" data-k="w2a"><span>Dùng máy tính mục 8 ước tính chi phí tháng cho một chatbot nội bộ của bạn.</span></label>
+      <label class="check"><input type="checkbox" data-k="w2b"><span>Làm bài thử theo vị trí (mục 13) với một tài liệu dài khoảng 20 trang.</span></label>
+    </div>
+  </div>
+  <p>Học tiếp: <a href="../prompt-engineering/">Prompt engineering</a> → <a href="../context-engineering/">Context engineering</a> → <a href="../rag/">RAG</a> → <a href="../ai-agent/">AI Agent</a>.</p>
+
+  <h3>Tự kiểm tra: trả lời được là đã nắm cốt lõi</h3>
+  <details><summary>1. Vì sao câu trả lời dài lại chậm hơn câu trả lời ngắn?</summary>
+    <p>Vì model sinh từng token một; mỗi token đầu ra cần một vòng tính toán dựa trên mọi token trước đó. Nhiều token output thì nhiều vòng.<sup class="cite"><a href="#src-7">[7]</a><a href="#src-19">[19]</a></sup></p></details>
+  <details><summary>2. Context window gồm những gì? Output có tính không?</summary>
+    <p>Gồm system prompt, mọi tin nhắn (cả kết quả tool, tài liệu), định nghĩa tool và cả output model sinh ra, kể cả phần thinking.<sup class="cite"><a href="#src-11">[11]</a></sup></p></details>
+  <details><summary>3. Đặt temperature = 0 có đảm bảo kết quả giống hệt nhau không?</summary>
+    <p>Không. Tài liệu Anthropic nói rõ kết quả vẫn không hoàn toàn tất định,<sup class="cite"><a href="#src-1">[1]</a></sup> và một nguyên nhân chính là phép tính trên server phụ thuộc kích thước batch.<sup class="cite"><a href="#src-16">[16]</a></sup> Một số model mới còn yêu cầu bỏ hẳn tham số temperature.<sup class="cite"><a href="#src-15">[15]</a></sup></p></details>
+  <details><summary>4. Base model khác model trợ lý ở đâu?</summary>
+    <p>Base model chỉ qua pretraining: giỏi viết tiếp văn bản nhưng không giỏi làm theo hướng dẫn. Model trợ lý được post-training thêm (SFT, RLHF) để làm theo yêu cầu và hữu ích hơn.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-10">[10]</a></sup></p></details>
+  <details><summary>5. Nêu hai nguyên nhân khiến LLM bịa.</summary>
+    <p>(1) Pretraining tạo ra áp lực thống kê: với sự kiện mà dữ liệu không đủ để phân biệt đúng sai, lỗi tự nhiên xuất hiện. (2) Huấn luyện và benchmark thưởng việc đoán hơn là thừa nhận không chắc.<sup class="cite"><a href="#src-17">[17]</a></sup> Ngoài ra, thiếu tài liệu trong context làm model phải dựa vào trí nhớ.</p></details>
+  <details><summary>6. Vì sao nhét toàn bộ tài liệu vào context 1 triệu token chưa chắc tốt?</summary>
+    <p>Tốn tiền cho mỗi câu hỏi, token đầu có thể chậm hơn, và độ chính xác có xu hướng giảm khi context dài (context rot), đặc biệt với thông tin nằm ở giữa.<sup class="cite"><a href="#src-12">[12]</a><a href="#src-13">[13]</a><a href="#src-19">[19]</a></sup></p></details>
+  <details><summary>7. Top-p = 0,9 nghĩa là gì?</summary>
+    <p>Chỉ giữ tập token nhỏ nhất có tổng xác suất vượt 0,9, chuẩn hóa lại rồi chọn trong tập đó; các token còn lại ở phần đuôi bị loại.<sup class="cite"><a href="#src-7">[7]</a></sup></p></details>
+</section>
+
+<!-- NGUỒN -->
+<section id="nguon">
+  <h2>Nguồn tham khảo</h2>
+  <p class="muted">Các khẳng định kỹ thuật trong trang được đối chiếu với những nguồn dưới đây. Số trong ngoặc vuông ở thân bài trỏ tới mục tương ứng. Tất cả truy cập ngày 2026-11-17.</p>
+  <ol class="sources">
+    <li id="src-1">Anthropic. <i>Glossary</i> (tài liệu Claude). <a href="https://platform.claude.com/docs/en/about-claude/glossary" target="_blank" rel="noopener">platform.claude.com/docs/en/about-claude/glossary</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-2">Sennrich, R.; Haddow, B.; Birch, A. <i>Neural Machine Translation of Rare Words with Subword Units</i>. ACL, 2016. <a href="https://arxiv.org/abs/1508.07909" target="_blank" rel="noopener">arxiv.org/abs/1508.07909</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-3">OpenAI. <i>tiktoken</i> (README). GitHub. <a href="https://github.com/openai/tiktoken" target="_blank" rel="noopener">github.com/openai/tiktoken</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-4">Petrov, A. và cộng sự. <i>Language Model Tokenizers Introduce Unfairness Between Languages</i>. NeurIPS, 2023. <a href="https://arxiv.org/abs/2305.15425" target="_blank" rel="noopener">arxiv.org/abs/2305.15425</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-5">Vaswani, A. và cộng sự. <i>Attention Is All You Need</i>. NeurIPS, 2017. <a href="https://arxiv.org/abs/1706.03762" target="_blank" rel="noopener">arxiv.org/abs/1706.03762</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-6">Anthropic Applied AI team. <i>Effective context engineering for AI agents</i>. 2025. <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank" rel="noopener">anthropic.com/engineering/effective-context-engineering-for-ai-agents</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-7">von Platen, P. <i>How to generate text: using different decoding methods for language generation with Transformers</i>. Hugging Face, 2020 (cập nhật 2023). <a href="https://huggingface.co/blog/how-to-generate" target="_blank" rel="noopener">huggingface.co/blog/how-to-generate</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-8">Holtzman, A. và cộng sự. <i>The Curious Case of Neural Text Degeneration</i>. ICLR, 2020. <a href="https://arxiv.org/abs/1904.09751" target="_blank" rel="noopener">arxiv.org/abs/1904.09751</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-9">Brown, T. và cộng sự. <i>Language Models are Few-Shot Learners</i>. NeurIPS, 2020. <a href="https://arxiv.org/abs/2005.14165" target="_blank" rel="noopener">arxiv.org/abs/2005.14165</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-10">Ouyang, L. và cộng sự. <i>Training language models to follow instructions with human feedback</i>. NeurIPS, 2022. <a href="https://arxiv.org/abs/2203.02155" target="_blank" rel="noopener">arxiv.org/abs/2203.02155</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-11">Anthropic. <i>Context windows</i> (tài liệu Claude API). <a href="https://platform.claude.com/docs/en/build-with-claude/context-windows" target="_blank" rel="noopener">platform.claude.com/docs/en/build-with-claude/context-windows</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-12">Liu, N. F. và cộng sự. <i>Lost in the Middle: How Language Models Use Long Contexts</i>. arXiv 2023, đăng ở TACL. <a href="https://arxiv.org/abs/2307.03172" target="_blank" rel="noopener">arxiv.org/abs/2307.03172</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-13">Hong, K.; Troynikov, A.; Huber, J. <i>Context Rot: How Increasing Input Tokens Impacts LLM Performance</i>. Chroma, 2025. <a href="https://www.trychroma.com/research/context-rot" target="_blank" rel="noopener">trychroma.com/research/context-rot</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-14">Anthropic. <i>Models overview</i> (tài liệu Claude, gồm giá và knowledge cutoff). <a href="https://platform.claude.com/docs/en/models/overview" target="_blank" rel="noopener">platform.claude.com/docs/en/models/overview</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-15">Anthropic. <i>Claude Opus 5.5 migration guide</i>. <a href="https://platform.claude.com/docs/en/models/opus-5-5/migration-guide" target="_blank" rel="noopener">platform.claude.com/docs/en/models/opus-5-5/migration-guide</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-16">He, H. và Thinking Machines Lab. <i>Defeating Nondeterminism in LLM Inference</i>. 2025. <a href="https://thinkingmachines.ai/blog/defeating-nondeterminism-in-llm-inference/" target="_blank" rel="noopener">thinkingmachines.ai/blog/defeating-nondeterminism-in-llm-inference</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-17">Kalai, A. T. và cộng sự. <i>Why Language Models Hallucinate</i>. arXiv, 2025. <a href="https://arxiv.org/abs/2509.04664" target="_blank" rel="noopener">arxiv.org/abs/2509.04664</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-18">Ji, Z. và cộng sự. <i>Survey of Hallucination in Natural Language Generation</i>. arXiv 2022, đăng ở ACM Computing Surveys. <a href="https://arxiv.org/abs/2202.03629" target="_blank" rel="noopener">arxiv.org/abs/2202.03629</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-19">OpenAI. <i>Latency optimization</i> (tài liệu API). <a href="https://developers.openai.com/api/docs/guides/latency-optimization" target="_blank" rel="noopener">developers.openai.com/api/docs/guides/latency-optimization</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-20">Anthropic. <i>Messages API: Create a Message</i> (tham chiếu API). <a href="https://platform.claude.com/docs/en/api/messages/create" target="_blank" rel="noopener">platform.claude.com/docs/en/api/messages/create</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-21">Anthropic. <i>Thinking</i> (tài liệu Claude API). <a href="https://platform.claude.com/docs/en/build-with-claude/thinking" target="_blank" rel="noopener">platform.claude.com/docs/en/build-with-claude/thinking</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-22">OWASP Gen AI Security Project. <i>LLM01:2025 Prompt Injection</i>. 2025. <a href="https://genai.owasp.org/llmrisk/llm01-prompt-injection/" target="_blank" rel="noopener">genai.owasp.org/llmrisk/llm01-prompt-injection</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+  </ol>
+</section>
+</main>
+
+<footer>
+  Tài liệu học cách LLM hoạt động ở mức khái niệm. Tokenizer đồ chơi, token ID, logit, trọng số attention, giá và tốc độ mặc định trong trang là minh họa để hiểu cơ chế, không phải số liệu đo từ một model cụ thể.
+</footer>
+
+<script>
+(function(){
+  // ---------- Theme ----------
+  var root=document.documentElement;
+  function safeGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+  function safeSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  var saved=safeGet('rag-theme'); if(saved) root.setAttribute('data-theme',saved);
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme');
+    if(!cur){cur=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+    var next=cur==='dark'?'light':'dark'; root.setAttribute('data-theme',next); safeSet('rag-theme',next);
+  });
+
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function fmt(n,d){return Number(n).toLocaleString('vi-VN',{minimumFractionDigits:d,maximumFractionDigits:d})}
+
+  // ---------- Stacked tables on phones: give each cell its column name ----------
+  function labelTables(root){
+    [].forEach.call(root.querySelectorAll('table.stack'),function(t){
+      var heads=[].map.call(t.querySelectorAll('thead th'),function(th){return th.textContent});
+      [].forEach.call(t.querySelectorAll('tbody tr'),function(tr){[].forEach.call(tr.children,function(td,i){if(heads[i])td.setAttribute('data-label',heads[i])})});
+    });
+  }
+  labelTables(document);
+
+  // ---------- Stepper example ----------
+  // Illustrative cost: 180 input tokens at $3/MTok + 35 output tokens at $15/MTok.
+  var EX={inTok:180,outTok:35,pin:3,pout:15,req:10000};
+  var exCost=EX.inTok*EX.pin/1e6+EX.outTok*EX.pout/1e6;
+  var STEPS=[
+    {t:'Ghép prompt',h:'<h3 style="margin-top:0">Bước 1 · Ứng dụng ghép prompt</h3><p>Khách gõ: "Đơn ORD-118 của tôi bao giờ giao?". Ứng dụng tra hệ thống đơn hàng rồi ghép tất cả thành <b>một khối văn bản</b> gửi lên API:</p><pre class="mono">[system] Bạn là trợ lý CSKH của Shop A. Chỉ trả lời dựa trên\ndữ liệu đơn hàng bên dưới. Không có dữ liệu thì nói không biết.\n[dữ liệu] ORD-118: đang vận chuyển, dự kiến giao 16/11.\n[user] Đơn ORD-118 của tôi bao giờ giao?</pre><p class="muted">Model không tự vào hệ thống đơn hàng. Nó chỉ thấy đúng khối văn bản này.<sup class="cite"><a href="#src-11">[11]</a></sup> Nếu bước tra cứu quên dòng [dữ liệu], model có thể đoán một ngày nghe hợp lý: đó là hallucination.</p><p class="muted">Các nhãn [system], [user] cũng chỉ là một phần của dãy đầu vào: API chuyển cả request sang định dạng model đọc được.<sup class="cite"><a href="#src-20">[20]</a></sup> Vì vậy chữ trong tài liệu hay trang web đưa vào prompt có thể làm model đổi hành vi ngoài ý muốn (prompt injection gián tiếp).<sup class="cite"><a href="#src-22">[22]</a></sup></p>'},
+    {t:'Tách token',h:'<h3 style="margin-top:0">Bước 2 · Tokenizer cắt thành token</h3><p>Khối văn bản biến thành dãy token và token ID (số minh họa):</p><div class="tok-wrap"><span class="tok c0">Đơn<small>48213</small></span><span class="tok c1">␣OR<small>2917</small></span><span class="tok c2">D<small>35</small></span><span class="tok c3">-<small>12</small></span><span class="tok c4">118<small>7743</small></span><span class="tok c0">␣của<small>6021</small></span><span class="tok c1">␣tôi<small>8890</small></span><span class="tok c2">…<small>…</small></span></div><p>Giả sử cả prompt thành <b>'+EX.inTok+' input token</b> (minh họa). Con số này quyết định phần tiền input và chiếm chỗ trong context window.<sup class="cite"><a href="#src-11">[11]</a></sup></p>'},
+    {t:'Transformer đọc',h:'<h3 style="margin-top:0">Bước 3 · Transformer đọc toàn bộ dãy</h3><p>Mỗi token thành một vector, đi qua nhiều lớp. Ở mỗi lớp, attention cho phép từng token "nhìn" các token khác để cập nhật ý nghĩa của mình.<sup class="cite"><a href="#src-5">[5]</a></sup></p><p>Ví dụ (minh họa): khi chuẩn bị viết ngày giao, các token của "16/11" và "ORD-118" trong phần dữ liệu nhận trọng số attention cao.</p><p class="muted">Đây là lý do vị trí và độ dài context quan trọng: dữ kiện bị chôn giữa hàng chục nghìn token khác dễ bị "bỏ sót" hơn.<sup class="cite"><a href="#src-12">[12]</a></sup></p>'},
+    {t:'Tính xác suất',h:'<h3 style="margin-top:0">Bước 4 · Ra phân phối xác suất cho token tiếp theo</h3><p>Giả sử model đã viết được "Đơn ORD-118 dự kiến được giao vào". Lớp cuối cho logit, softmax đổi thành xác suất (minh họa):</p><div class="table-wrap"><table class="stack"><thead><tr><th>Token ứng viên</th><th>Xác suất</th></tr></thead><tbody><tr><td><code>␣ngày</code></td><td>0,62</td></tr><tr><td><code>␣16</code></td><td>0,21</td></tr><tr><td><code>␣thứ</code></td><td>0,09</td></tr><tr><td><code>␣cuối</code></td><td>0,05</td></tr><tr><td>mọi token khác</td><td>0,03</td></tr></tbody></table></div><p class="muted">Tổng bằng 1. Model không "biết" ngày giao như một cơ sở dữ liệu; nó cho điểm cao cho token khớp với ngữ cảnh.<sup class="cite"><a href="#src-7">[7]</a></sup></p>'},
+    {t:'Chọn token',h:'<h3 style="margin-top:0">Bước 5 · Sampling chọn một token</h3><p>Greedy sẽ luôn chọn <code>␣ngày</code> (0,62). Với sampling, khoảng 21% số lần model chọn <code>␣16</code>, và câu trả lời vẫn đúng: "…giao vào 16/11".<sup class="cite"><a href="#src-7">[7]</a></sup></p><p class="muted">Vì thế hai lần hỏi có thể ra hai câu chữ khác nhau dù cùng ý. Thử ở mô phỏng mục 6.</p>'},
+    {t:'Lặp lại',h:'<h3 style="margin-top:0">Bước 6 · Nối vào và lặp lại</h3><p>Token vừa chọn được nối vào cuối dãy, rồi cả vòng chạy lại để ra token kế tiếp: "ngày" → "16" → "/" → "11" → "." …<sup class="cite"><a href="#src-7">[7]</a></sup></p><p>Vòng lặp dừng khi model sinh token kết thúc (<code>stop_reason: end_turn</code>) hoặc chạm <code>max_tokens</code>.<sup class="cite"><a href="#src-20">[20]</a></sup> Giả sử câu trả lời dài <b>'+EX.outTok+' output token</b> (minh họa).</p><p class="muted">Mỗi token output là một vòng, nên trả lời dài thì chờ lâu.<sup class="cite"><a href="#src-19">[19]</a></sup></p>'},
+    {t:'Tính tiền',h:'<h3 style="margin-top:0">Bước 7 · Hóa đơn token</h3><p>API trả về số token đã dùng trong trường <code>usage</code>.<sup class="cite"><a href="#src-11">[11]</a></sup> Với giá minh họa $'+EX.pin+'/MTok input và $'+EX.pout+'/MTok output:</p><pre class="mono">input  = '+EX.inTok+' × $'+EX.pin+' ÷ 1.000.000\n       = $'+fmt(EX.inTok*EX.pin/1e6,6)+'\noutput = '+EX.outTok+' × $'+EX.pout+' ÷ 1.000.000\n       = $'+fmt(EX.outTok*EX.pout/1e6,6)+'\ntổng   = $'+fmt(exCost,6)+' / câu hỏi\n× '+fmt(EX.req,0)+' câu/ngày ≈ $'+fmt(exCost*EX.req,2)+'/ngày</pre><p class="muted">Output chỉ bằng khoảng 1/5 số token input nhưng chiếm gần nửa tiền, vì giá output cao hơn. Thêm 10 đoạn RAG mỗi câu hỏi thì phần input tăng ngay. Thử máy tính ở mục 8.</p>'}
+  ];
+  var cur=0, stepsEl=document.getElementById('steps'), bodyEl=document.getElementById('stepBody');
+  STEPS.forEach(function(s,i){var b=document.createElement('button');b.innerHTML='<span class="n">'+(i+1)+'</span>'+s.t;b.addEventListener('click',function(){show(i)});stepsEl.appendChild(b)});
+  function show(i){cur=i;bodyEl.innerHTML=STEPS[i].h;labelTables(bodyEl);[].forEach.call(stepsEl.children,function(b,j){b.classList.toggle('on',j===i)});
+    document.getElementById('prevStep').disabled=i===0;var ab=stepsEl.children[i];if(stepsEl.scrollWidth>stepsEl.clientWidth){stepsEl.scrollLeft=ab.offsetLeft-stepsEl.offsetLeft-8}document.getElementById('nextStep').disabled=i===STEPS.length-1;}
+  document.getElementById('prevStep').addEventListener('click',function(){if(cur>0)show(cur-1)});
+  document.getElementById('nextStep').addEventListener('click',function(){if(cur<STEPS.length-1)show(cur+1)});
+  show(0);
+
+  // ---------- Toy byte-level BPE-style tokenizer (illustrative only) ----------
+  var VOCAB=['employ','ees',' can',' take',' days',' of',' annual',' leave',' the',' token','izer',' split','s',' rare',' words',' word','un','believ','ably',
+    'nhân',' viên',' được',' ngày',' năm','đơn','mã',' mã',' đơn',' bị',' giao',' hàng',' của',' tôi',' không',' có',' và',' là',' khách',' anh',' chị',
+    ' or',' tr',' th',' ph',' kh',' nh',' ch',' gi',' ng',' h',' đ','ng','nh','an','on','ong','ang','inh','em','in','ai','ao'];
+  var VSET={}, MAXL=1;
+  VOCAB.forEach(function(v){VSET[v]=1;MAXL=Math.max(MAXL,Array.from(v).length)});
+  function utf8Len(ch){var c=ch.codePointAt(0);return c<0x80?1:c<0x800?2:c<0x10000?3:4}
+  function fakeId(s){var h=2166136261;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0)%50000+100}
+  var RE_PIECE, RE_NUM, RE_PUNCT;
+  try{RE_PIECE=new RegExp('\\s?\\p{L}+|\\s?\\p{N}{1,3}|\\s?[^\\s\\p{L}\\p{N}]|\\s+','gu');RE_NUM=new RegExp('^\\s?\\p{N}+$','u');RE_PUNCT=new RegExp('^\\s?[^\\s\\p{L}\\p{N}]$','u')}
+  catch(e){RE_PIECE=/\s?[A-Za-zÀ-ỹ]+|\s?\d{1,3}|\s?[^\sA-Za-zÀ-ỹ0-9]|\s+/g;RE_NUM=/^\s?\d+$/;RE_PUNCT=/^\s?[^\sA-Za-zÀ-ỹ0-9]$/}
+  function tokenize(text){
+    text=(text||'').normalize('NFC');
+    var pieces=text.match(RE_PIECE)||[], out=[];
+    pieces.forEach(function(p){
+      if(/^\s+$/.test(p)||RE_NUM.test(p)||RE_PUNCT.test(p)){out.push({t:p,k:'w'});return}
+      var chars=Array.from(p), lchars=Array.from(p.toLowerCase());
+      if(lchars.length!==chars.length)lchars=chars;
+      var i=0;
+      while(i<chars.length){
+        var found=0;
+        for(var L=Math.min(MAXL,chars.length-i);L>=1;L--){if(VSET[lchars.slice(i,i+L).join('')]){found=L;break}}
+        if(found){out.push({t:chars.slice(i,i+found).join(''),k:'w'});i+=found;continue}
+        var ch=chars[i], n=utf8Len(ch);
+        if(n===1)out.push({t:ch,k:'c'});
+        else for(var b=1;b<=n;b++)out.push({t:ch,k:'b',b:b,n:n});
+        i++;
+      }
+    });
+    return out;
+  }
+  var TOK_SAMPLES=[
+    {l:'Tiếng Anh',s:'Employees can take 12 days of annual leave.'},
+    {l:'Tiếng Việt',s:'Nhân viên được nghỉ phép 12 ngày mỗi năm.'},
+    {l:'Mã đơn hàng',s:'Mã đơn ORD-2024-118 bị trễ giao hàng.'},
+    {l:'Từ hiếm',s:'Unbelievably, the tokenizer splits rare words.'},
+    {l:'Từ ít gặp',s:'Hợp đồng thuê kho hết hiệu lực vào quý tư.'}
+  ];
+  var tokIn=document.getElementById('tokInput'), tokOut=document.getElementById('tokOut'), tokStats=document.getElementById('tokStats'), tokSamples=document.getElementById('tokSamples');
+  TOK_SAMPLES.forEach(function(s,i){var b=document.createElement('button');b.className='btn';b.textContent=s.l;b.addEventListener('click',function(){tokIn.value=s.s;[].forEach.call(tokSamples.children,function(c,j){c.classList.toggle('on',j===i)});renderTok()});tokSamples.appendChild(b)});
+  tokIn.addEventListener('input',function(){[].forEach.call(tokSamples.children,function(c){c.classList.remove('on')});renderTok()});
+  function renderTok(){
+    var text=tokIn.value.slice(0,200), toks=tokenize(text), html='', bytes=0, ci=0;
+    toks.forEach(function(t){
+      var shown=t.t.replace(/ /g,'␣');
+      if(t.k==='b'){bytes++;html+='<span class="tok byte c'+(ci%5)+'" title="byte '+t.b+'/'+t.n+' của ký tự '+esc(t.t)+'">'+esc(shown)+'<small>byte '+t.b+'/'+t.n+'</small></span>';if(t.b===t.n)ci++}
+      else{html+='<span class="tok c'+(ci%5)+'">'+esc(shown)+'<small>'+fakeId(t.t)+'</small></span>';ci++}
+    });
+    tokOut.innerHTML=html||'<span class="muted">Chưa có văn bản.</span>';
+    var nChar=Array.from(text.normalize('NFC')).length;
+    tokStats.innerHTML='<div class="card"><b>'+nChar+'</b><span class="muted">ký tự</span></div><div class="card"><b>'+toks.length+'</b><span class="muted">token (đồ chơi)</span></div><div class="card"><b>'+(toks.length?fmt(nChar/toks.length,2):'0')+'</b><span class="muted">ký tự / token</span></div><div class="card"><b>'+bytes+'</b><span class="muted">token là byte lẻ</span></div>';
+  }
+  tokIn.value=TOK_SAMPLES[1].s; tokSamples.children[1].classList.add('on'); renderTok();
+
+  // ---------- Attention illustration (static, illustrative weights) ----------
+  var ATT=[['Hợp đồng',0.41],['số',0.03],['15',0.12],['hết hạn',0.17],['ngày',0.04],['30/6',0.09],['.',0.02],['Nó',0.12]];
+  var attSum=ATT.reduce(function(a,x){return a+x[1]},0);
+  document.getElementById('attDemo').innerHTML=ATT.map(function(a){return '<div class="att-row"><span>'+esc(a[0])+'</span><div class="bar"><span style="width:'+(a[1]/0.41*100).toFixed(1)+'%"></span></div><span class="val">'+fmt(a[1],2)+'</span></div>'}).join('')+'<p class="muted" style="font-size:14px;margin-top:6px">Tổng trọng số = '+fmt(attSum,2)+'. "Nó" dồn trọng số lớn nhất vào "Hợp đồng": model dùng thông tin đó để hiểu "Nó" là hợp đồng nào.</p>';
+
+  // ---------- Temperature / top-p simulator (real softmax over illustrative logits) ----------
+  var CANDS=[[' giao',3.0],[' xử',2.4],[' vận',2.0],[' kiểm',1.5],[' chuẩn',1.1],[' đóng',0.6],[' hủy',-0.4],[' nấu',-2.5]];
+  var tS=document.getElementById('tSlider'), pS=document.getElementById('pSlider'), tV=document.getElementById('tVal'), pV=document.getElementById('pVal');
+  var distOut=document.getElementById('distOut'), distSum=document.getElementById('distSummary'), sampleOut=document.getElementById('sampleOut');
+  var curDist=null;
+  function computeDist(T,P){
+    var n=CANDS.length, p=new Array(n), i;
+    if(T<0.01){ // T -> 0: greedy, all mass on the arg-max logit
+      var best=0;for(i=1;i<n;i++)if(CANDS[i][1]>CANDS[best][1])best=i;
+      for(i=0;i<n;i++)p[i]=i===best?1:0;
+    }else{
+      var z=CANDS.map(function(c){return c[1]/T}), m=Math.max.apply(null,z), s=0;
+      var e=z.map(function(v){var x=Math.exp(v-m);s+=x;return x});
+      for(i=0;i<n;i++)p[i]=e[i]/s;
+    }
+    var order=p.map(function(v,i){return i}).sort(function(a,b){return p[b]-p[a]}), keep={}, cum=0;
+    for(i=0;i<n;i++){keep[order[i]]=1;cum+=p[order[i]];if(P<1&&cum>=P-1e-9)break} // top-p = 1 keeps every token
+    var ks=0;for(i=0;i<n;i++)if(keep[i])ks+=p[i];
+    var q=p.map(function(v,i){return keep[i]?v/ks:0});
+    return {p:p,q:q,keep:keep,kept:Object.keys(keep).length};
+  }
+  function pct(v){return v>=0.995?'100%':v<0.001&&v>0?'<0,1%':fmt(v*100,1)+'%'}
+  function renderDist(){
+    var T=parseFloat(tS.value), P=parseFloat(pS.value);
+    tV.textContent=T<0.01?'0 (greedy)':fmt(T,2); pV.textContent=fmt(P,2);
+    var d=computeDist(T,P); curDist=d;
+    var maxQ=Math.max.apply(null,d.q), top=d.q.indexOf(maxQ), qsum=d.q.reduce(function(a,b){return a+b},0);
+    distOut.innerHTML=CANDS.map(function(c,i){
+      var cut=!d.keep[i];
+      return '<div class="dist-row'+(cut?' cut':'')+(i===top&&!cut?' top':'')+'"><span class="lbl">'+esc(c[0].replace(/ /g,'␣'))+'</span><div class="bar"><span style="width:'+(d.q[i]*100).toFixed(2)+'%"></span></div><span class="val">'+pct(d.q[i])+'<small>'+(cut?'bị loại · ':'')+pct(d.p[i])+'</small></span></div>';
+    }).join('');
+    [].forEach.call(document.querySelectorAll('[data-preset]'),function(b){b.classList.toggle('on',Math.abs(parseFloat(b.dataset.preset)-T)<0.001)});
+    distSum.innerHTML='Token cao nhất: <b>'+esc(CANDS[top][0].trim())+'</b> với '+pct(maxQ)+'. '+(T<0.01?'<b>Greedy</b>: luôn chọn token này.':'Còn <b>'+d.kept+'/'+CANDS.length+'</b> token được phép chọn.')+' Token vô lý " nấu": '+pct(d.q[7])+'. <span class="muted">(Kiểm tra: tổng xác suất = '+fmt(qsum,3)+')</span>';
+    sampleOut.innerHTML='';
+  }
+  function sampleOnce(q){var r=Math.random(),c=0;for(var i=0;i<q.length;i++){c+=q[i];if(r<c)return i}for(i=q.length-1;i>=0;i--)if(q[i]>0)return i;return 0}
+  document.getElementById('sampleBtn').addEventListener('click',function(){
+    if(!curDist)return; var html='', counts={};
+    for(var k=0;k<12;k++){var i=sampleOnce(curDist.q);counts[i]=(counts[i]||0)+1;html+='<span>'+esc(CANDS[i][0].replace(/ /g,'␣'))+'</span>'}
+    var summary=Object.keys(counts).sort(function(a,b){return counts[b]-counts[a]}).map(function(i){return esc(CANDS[i][0].trim())+' ×'+counts[i]}).join(', ');
+    sampleOut.innerHTML=html+'<p class="muted" style="width:100%;margin:6px 0 0;font-size:14px">Đếm: '+summary+'. Bấm lại sẽ ra dãy khác (trừ khi T = 0).</p>';
+  });
+  [].forEach.call(document.querySelectorAll('[data-preset]'),function(b){b.addEventListener('click',function(){tS.value=b.dataset.preset;renderDist()})});
+  tS.addEventListener('input',renderDist); pS.addEventListener('input',renderDist);
+  renderDist();
+
+  // ---------- Token / cost / latency calculator ----------
+  var SEGS=['sys','tools','hist','docs','q','out'], SEGN={sys:'System',tools:'Tool',hist:'Lịch sử',docs:'Tài liệu',q:'Câu hỏi',out:'Output'};
+  var calcIn=document.getElementById('calcInputs'), bar=document.getElementById('ctxBar'), mix=document.getElementById('ctxMix'), calcOut=document.getElementById('calcOut'), calcNote=document.getElementById('calcNote');
+  function val(k){var el=calcIn.querySelector('[data-c="'+k+'"]');var v=parseFloat(el.value);return isFinite(v)&&v>=0?v:0}
+  function renderCalc(){
+    var v={};SEGS.concat(['win','pin','pout','req','ttft','speed']).forEach(function(k){v[k]=val(k)});
+    var inTok=v.sys+v.tools+v.hist+v.docs+v.q, total=inTok+v.out, win=v.win||1;
+    var scale=Math.max(win,total);
+    bar.innerHTML=SEGS.map(function(k){return '<span class="seg-'+k+'" style="width:'+(v[k]/scale*100).toFixed(3)+'%" title="'+SEGN[k]+': '+fmt(v[k],0)+' token"></span>'}).join('');
+    mix.innerHTML=total>0?SEGS.map(function(k){return '<span class="seg-'+k+'" style="width:'+(v[k]/total*100).toFixed(3)+'%" title="'+SEGN[k]+': '+fmt(v[k]/total*100,1)+'%"></span>'}).join(''):'';
+    var costIn=inTok*v.pin/1e6, costOut=v.out*v.pout/1e6, cost=costIn+costOut;
+    var speed=v.speed>0?v.speed:1, lat=v.ttft+v.out/speed;
+    var biggest=SEGS.slice().sort(function(a,b){return v[b]-v[a]})[0];
+    calcOut.innerHTML=
+      '<div class="card"><b>'+fmt(inTok,0)+' + '+fmt(v.out,0)+'</b><span>input + output token</span></div>'+
+      '<div class="card"><b>'+fmt(total/win*100,2)+'%</b><span>context window đã dùng</span></div>'+
+      '<div class="card"><b>$'+fmt(cost,5)+'</b><span>mỗi request (input $'+fmt(costIn,5)+' · output $'+fmt(costOut,5)+')</span></div>'+
+      '<div class="card"><b>$'+fmt(cost*v.req,2)+'</b><span>mỗi ngày · ≈ $'+fmt(cost*v.req*30,2)+' / 30 ngày</span></div>'+
+      '<div class="card"><b>'+fmt(lat,1)+' giây</b><span>độ trễ ước tính = TTFT + output ÷ tốc độ</span></div>';
+    var note='';
+    if(inTok>win)note='<div class="callout bad" style="margin:10px 0 0"><b>Input vượt context window.</b> API sẽ từ chối request với lỗi 400 "prompt is too long".<sup class="cite"><a href="#src-11">[11]</a></sup></div>';
+    else if(total>win)note='<div class="callout warn" style="margin:10px 0 0"><b>Input + output vượt context window.</b> Ở Claude 4.5 trở đi, API vẫn nhận request nhưng sẽ dừng sinh khi chạm giới hạn (<code>stop_reason: model_context_window_exceeded</code>); model cũ hơn trả lỗi ngay. Giảm input hoặc output.<sup class="cite"><a href="#src-11">[11]</a></sup></div>';
+    else note='<div class="callout" style="margin:10px 0 0">Phần chiếm nhiều token nhất: <b>'+SEGN[biggest]+'</b> ('+fmt(v[biggest],0)+' token). Phần output chiếm '+(cost>0?fmt(costOut/cost*100,0):'0')+'% chi phí dù chỉ là '+(total>0?fmt(v.out/total*100,1):'0')+'% số token.</div>';
+    calcNote.innerHTML=note;
+  }
+  calcIn.addEventListener('input',renderCalc); calcIn.addEventListener('change',renderCalc);
+  renderCalc();
+
+  // ---------- Glossary ----------
+  var G={tok:'Token',model:'Model & huấn luyện',gen:'Sinh & sampling',ctx:'Context',lim:'Giới hạn & lỗi',ops:'Chi phí & đo lường'};
+  var T=[
+    ['token','tok','Token','','Đơn vị nhỏ nhất model xử lý: có thể là từ, phần của từ, ký tự hoặc byte.','"nhân viên" có thể là 2 token; một từ hiếm có thể thành 4–5 token.',['tokenizer','token-id','context-window'],[1]],
+    ['tokenizer','tok','Tokenizer','bộ tách token','Bộ cắt văn bản thành token và đổi mỗi token thành số. Mỗi họ model có tokenizer riêng, nên cùng văn bản có thể ra số token khác nhau.','Claude từ bản 4.7 dùng tokenizer mới sinh nhiều hơn khoảng 30% token cho cùng văn bản.',['bpe','vocab','token'],[1,3]],
+    ['bpe','tok','BPE','Byte Pair Encoding','Thuật toán tách subword: mảnh hay gặp được gộp thành 1 token, từ hiếm tách thành nhiều mảnh. Bản cấp byte xử lý được mọi văn bản.','"Unbelievably" → "Un" + "believ" + "ably".',['tokenizer','vocab'],[2,3]],
+    ['vocab','tok','Vocabulary','từ điển token','Tập hợp mọi token mà tokenizer biết, mỗi token gắn một ID cố định. Được học từ dữ liệu.','Ngôn ngữ ít xuất hiện trong dữ liệu học thường bị tách vụn hơn.',['bpe','token-id'],[4]],
+    ['token-id','tok','Token ID','','Số nguyên đại diện cho một token. Model chỉ nhận và trả ra dãy số này.','[8812, 311, 9025] (minh họa).',['token','embedding'],[3]],
+    ['llm','model','LLM','Large Language Model','Mô hình ngôn ngữ nhiều tham số, huấn luyện trên lượng văn bản rất lớn, sinh văn bản bằng cách dự đoán token tiếp theo.','Claude, GPT, Gemini.',['transformer','pretraining','next-token'],[1]],
+    ['parameter','model','Tham số / trọng số','parameters, weights','Các con số bên trong model được điều chỉnh khi huấn luyện. Cố định khi bạn gọi API.','GPT-3 có 175 tỷ tham số.',['llm','pretraining'],[9]],
+    ['transformer','model','Transformer','','Kiến trúc mạng dựa hoàn toàn vào attention, chồng nhiều lớp giống nhau. Nền tảng của LLM hiện nay.','',['attention','embedding'],[5]],
+    ['attention','model','Attention','cơ chế chú ý','Mỗi token tính trọng số (qua softmax) trên các token khác rồi lấy tổng có trọng số thông tin của chúng. n token tạo n² cặp quan hệ.','"Nó" chú ý nhiều tới "Hợp đồng" để hiểu "Nó" là gì.',['transformer','context-rot'],[5,6]],
+    ['embedding','model','Embedding (token)','','Vector số mà model học được cho mỗi token, là đầu vào của các lớp Transformer.','Khác embedding model dùng trong RAG, nhưng cùng ý tưởng "chữ → vector".',['token-id','transformer'],[5]],
+    ['pretraining','model','Pretraining','tiền huấn luyện','Huấn luyện trên kho văn bản lớn không nhãn để dự đoán từ tiếp theo. Tạo ra base model.','',['base-model','cutoff','next-token'],[1]],
+    ['base-model','model','Base model','','Model chỉ qua pretraining: viết tiếp văn bản giỏi nhưng không giỏi trả lời câu hỏi hay làm theo hướng dẫn.','Hỏi "Thủ đô Pháp?" có thể nhận về thêm vài câu hỏi khác thay vì câu trả lời.',['pretraining','post-training'],[1]],
+    ['post-training','model','Post-training','hậu huấn luyện','Các bước huấn luyện sau pretraining để model hữu ích và làm theo hướng dẫn, gồm SFT và RLHF.','',['sft','rlhf','base-model'],[1,10]],
+    ['sft','model','Instruction tuning (SFT)','supervised fine-tuning','Huấn luyện tiếp trên các cặp "yêu cầu → câu trả lời mẫu" do người viết.','',['post-training','rlhf','fine-tuning'],[10]],
+    ['rlhf','model','RLHF','Reinforcement Learning from Human Feedback','Người chấm xếp hạng nhiều câu trả lời; học tăng cường đẩy model về phía câu được xếp hạng cao.','InstructGPT 1,3 tỷ tham số qua RLHF được ưa hơn GPT-3 175 tỷ.',['post-training','sft'],[1,10]],
+    ['fine-tuning','model','Fine-tuning','','Huấn luyện thêm một model đã pretrain trên dữ liệu riêng để thích nghi lĩnh vực, task hoặc văn phong.','',['sft','post-training'],[1]],
+    ['icl','model','In-context learning','học trong ngữ cảnh, few-shot','Model làm được task mới nhờ vài ví dụ viết ngay trong prompt, không cần cập nhật trọng số.','Đưa 3 email mẫu đã phân loại rồi nhờ phân loại email thứ 4.',['context-window','pretraining'],[9]],
+    ['next-token','gen','Dự đoán token tiếp theo','next-token prediction','Việc duy nhất model làm ở mỗi bước: tính xác suất cho mọi token có thể đứng tiếp theo.','',['autoregressive','logits','softmax'],[1,7]],
+    ['autoregressive','gen','Tự hồi quy','autoregressive','Sinh từng token, mỗi token dựa trên các token trước đó, rồi nối vào và lặp lại.','',['next-token','max-tokens'],[7,9]],
+    ['logits','gen','Logit','','Điểm thô model cho từng token ứng viên, trước khi đổi thành xác suất.','" giao" 3,0; " nấu" −2,5 (minh họa ở mục 6).',['softmax','temperature'],[7]],
+    ['softmax','gen','Softmax','','Hàm đổi các logit thành xác suất dương có tổng bằng 1. Temperature chia logit trước khi đưa vào softmax.','',['logits','temperature'],[5,7]],
+    ['greedy','gen','Greedy decoding','','Luôn chọn token có xác suất cao nhất. Hợp câu trả lời ngắn; với văn bản dài, tự do thì dễ nhạt và lặp lại.','',['temperature','sampling'],[7,8]],
+    ['top-k','gen','Top-k','','Chỉ giữ k token có xác suất cao nhất, chuẩn hóa lại rồi chọn.','top-k = 3 ở mô phỏng mục 6 chỉ còn "giao", "xử", "vận".',['top-p','sampling'],[7]],
+    ['thinking','gen','Thinking','suy nghĩ trước khi trả lời','Model sinh phần nháp (khối thinking) trước câu trả lời. Token thinking tính tiền như output và nằm trong max_tokens.','Opus 5.5 bật adaptive thinking sẵn; effort quyết định nghĩ sâu hay nông.',['autoregressive','max-tokens','latency'],[11,14,21]],
+    ['sampling','gen','Sampling','lấy mẫu','Chọn token ngẫu nhiên theo phân phối xác suất. Nguồn tạo ra sự đa dạng giữa các lần chạy.','',['temperature','top-p','nondeterminism'],[7]],
+    ['temperature','gen','Temperature','nhiệt độ','Tham số làm phân phối nhọn (thấp) hoặc phẳng (cao). T tiến về 0 giống greedy. Một số model mới yêu cầu bỏ tham số này.','Trích xuất dữ liệu: thấp; viết slogan: cao hơn.',['softmax','top-p','greedy'],[1,7,15]],
+    ['top-p','gen','Top-p','nucleus sampling','Chỉ giữ tập token nhỏ nhất có tổng xác suất vượt p, chuẩn hóa lại rồi chọn. Cắt phần đuôi kém tin cậy.','top-p = 0,9 bỏ các token ở phần đuôi chiếm không quá 10% xác suất.',['temperature','sampling'],[7,8]],
+    ['nondeterminism','gen','Không tất định','nondeterminism','Cùng input nhưng output khác nhau. Do sampling, và cả do hạ tầng suy luận (phụ thuộc kích thước batch) kể cả khi temperature 0.','',['sampling','temperature'],[1,16]],
+    ['context-window','ctx','Context window','cửa sổ ngữ cảnh','Toàn bộ văn bản model tham chiếu khi sinh, tính cả câu trả lời. Là "bộ nhớ làm việc", khác dữ liệu huấn luyện.','Claude: 1 triệu hoặc 200 nghìn token tùy model.',['max-tokens','context-rot','token'],[11]],
+    ['max-tokens','ctx','max_tokens','','Trần số token output cho một request, tính cả token thinking. Chạm trần thì câu trả lời bị cắt, stop_reason = max_tokens.','',['context-window','autoregressive','thinking'],[20,21]],
+    ['lost-middle','ctx','Lost in the Middle','','Model thường dùng tốt thông tin ở đầu hoặc cuối context, kém hơn khi thông tin nằm ở giữa.','Đặt chỉ dẫn quan trọng ở đầu hoặc cuối prompt.',['context-rot','context-window'],[12]],
+    ['context-rot','ctx','Context rot','','Độ chính xác và khả năng nhớ lại giảm khi số token trong context tăng.','Báo cáo Chroma thử 18 model: hiệu năng giảm khi input dài ra.',['lost-middle','attention'],[6,11,13]],
+    ['context-eng','ctx','Context engineering','','Chọn và sắp xếp tập token nhỏ nhất nhưng giàu tín hiệu nhất đưa vào context.','Xem trang Context engineering.',['context-rot','context-window'],[6]],
+    ['cutoff','lim','Knowledge cutoff','','Mốc thời gian của dữ liệu huấn luyện. Anthropic công bố cả reliable knowledge cutoff và training data cutoff.','Sự kiện sau mốc này cần đưa vào context.',['pretraining','hallucination'],[14]],
+    ['hallucination','lim','Hallucination','ảo giác, bịa','Nội dung nghe trôi chảy nhưng sai hoặc không có căn cứ.','Bịa ngày giao hàng khi prompt thiếu dữ liệu đơn.',['cutoff','grounding'],[17,18]],
+    ['grounding','lim','Grounding','bám nguồn','Neo câu trả lời vào bằng chứng được đưa vào context, thay vì trí nhớ của model. RAG làm việc này; hiệu quả phụ thuộc chất lượng tài liệu truy xuất được.','Prompt dặn: chỉ trả lời theo dữ liệu đơn hàng bên dưới, không có thì nói không biết.',['hallucination','context-window'],[1]],
+    ['usage','ops','usage','','Trường trong response báo số input và output token đã dùng. Dùng để tính tiền và theo dõi.','',['input-output','context-window'],[11,20]],
+    ['input-output','ops','Giá input / output','','Giá tính theo triệu token, input và output riêng. Trong bảng giá Claude (2026-11-17), output gấp 5 lần input.','$4 input / $20 output mỗi triệu token.',['usage','prompt-cache'],[14]],
+    ['prompt-cache','ops','Prompt caching','','Tái sử dụng phần đầu prompt giống hệt giữa các request; token đọc từ cache rẻ hơn nhiều và có thể giúp token đầu nhanh hơn (hãy đo TTFT khi có và không có cache).','Đặt lời dặn, ví dụ và định nghĩa tool cố định lên đầu.',['input-output','ttft'],[14,19]],
+    ['ttft','ops','TTFT','time to first token','Thời gian từ lúc gửi request tới khi có token đầu tiên. Prompt dài có thể làm TTFT tăng.','',['latency','prompt-cache'],[1,19]],
+    ['latency','ops','Latency','độ trễ','Thời gian từ lúc gửi prompt tới khi nhận đủ câu trả lời. Phụ thuộc kích thước model, phần cứng, mạng, độ dài prompt, độ dài câu trả lời và mức thinking.','',['ttft','autoregressive','thinking'],[1,14]]
+  ];
+  var byId={};T.forEach(function(t){byId[t[0]]=t});
+  var grid=document.getElementById('glossGrid'), chips=document.getElementById('glossChips'), search=document.getElementById('glossSearch'), activeG='all';
+  function fold(s){return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d')}
+  function renderGloss(){
+    var q=fold(search.value.trim()); grid.innerHTML='';var n=0;
+    T.forEach(function(t){
+      if(activeG!=='all'&&t[1]!==activeG)return;
+      var hay=fold(t[2]+' '+t[3]+' '+t[4]+' '+t[5]); if(q&&hay.indexOf(q)<0)return; n++;
+      var d=document.createElement('div');d.className='card term';d.id='term-'+t[0];
+      var rel=t[6].filter(function(r){return byId[r]}).map(function(r){return '<a href="#term-'+r+'" data-goto="'+r+'">'+esc(byId[r][2])+'</a>'}).join(', ');
+      // t[7]: optional list of source numbers (integers only), rendered as citation links to #src-N
+      var cs=(t[7]||[]).filter(function(n){return n===(n|0)&&document.getElementById('src-'+n)}).map(function(n){return '<a href="#src-'+n+'">['+n+']</a>'}).join('');if(cs)cs='<sup class="cite">'+cs+'</sup>';
+      d.innerHTML='<span class="tag">'+G[t[1]]+'</span><h4>'+esc(t[2])+(t[3]?' <span class="en">· '+esc(t[3])+'</span>':'')+'</h4><p>'+esc(t[4])+(t[5]?'':cs)+'</p>'+(t[5]?'<p class="ex">Ví dụ: '+esc(t[5])+cs+'</p>':'')+(rel?'<div class="rel">Liên quan: '+rel+'</div>':'');
+      grid.appendChild(d);
+    });
+    if(!n)grid.innerHTML='<p class="muted">Không có khái niệm khớp.</p>';
+  }
+  var all=document.createElement('button');all.className='chip on';all.textContent='Tất cả ('+T.length+')';all.dataset.g='all';chips.appendChild(all);
+  Object.keys(G).forEach(function(k){var b=document.createElement('button');b.className='chip';b.dataset.g=k;b.textContent=G[k];chips.appendChild(b)});
+  chips.addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;activeG=b.dataset.g;[].forEach.call(chips.children,function(c){c.classList.toggle('on',c===b)});renderGloss()});
+  search.addEventListener('input',renderGloss);
+  grid.addEventListener('click',function(e){var a=e.target.closest('a[data-goto]');if(!a)return;e.preventDefault();
+    if(!document.getElementById('term-'+a.dataset.goto)){activeG='all';search.value='';[].forEach.call(chips.children,function(c){c.classList.toggle('on',c.dataset.g==='all')});renderGloss()}
+    var t=document.getElementById('term-'+a.dataset.goto);t.scrollIntoView({behavior:'smooth',block:'center'});t.style.outline='2px solid var(--accent)';setTimeout(function(){t.style.outline=''},1500)});
+  renderGloss();
+
+  // ---------- Checklist persistence ----------
+  [].forEach.call(document.querySelectorAll('input[data-k]'),function(cb){
+    cb.checked=safeGet('llmf-'+cb.dataset.k)==='1';
+    cb.addEventListener('change',function(){safeSet('llmf-'+cb.dataset.k,cb.checked?'1':'0')});
+  });
+
+  // ---------- Active TOC ----------
+  var links=[].slice.call(document.querySelectorAll('#toc a'));
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(l){var on=l.getAttribute('href')==='#'+e.target.id;l.classList.toggle('active',on);if(on){var nav=l.parentNode;nav.scrollLeft=l.offsetLeft-nav.offsetLeft-(nav.clientWidth-l.offsetWidth)/2}})}})},{rootMargin:'-40% 0px -55% 0px'});
+    document.querySelectorAll('main section').forEach(function(s){io.observe(s)});
+  }
+})();
+</script>
+</body>
+</html>

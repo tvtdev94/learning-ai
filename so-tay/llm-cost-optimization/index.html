@@ -1,0 +1,1002 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tối ưu chi phí LLM: caching, định tuyến model, batch và đo lường</title>
+<!-- pwa -->
+<link rel="manifest" href="../../manifest.webmanifest">
+<meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15171a" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" sizes="32x32" href="../../icons/favicon-32.png">
+<link rel="apple-touch-icon" href="../../icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sổ tay">
+<script>if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('../../sw.js').catch(function(){})})</script>
+<meta name="description" content="Học tối ưu chi phí LLM cho RAG và AI agent: hóa đơn token gồm gì, prompt caching, semantic cache, cắt context, định tuyến model, batch, giới hạn output, đo chi phí mỗi việc thành công.">
+<script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+:root{
+  --bg:#f7f6f2; --surface:#ffffff; --surface-2:#f0eee8; --text:#1f2328; --muted:#5b6370;
+  --border:#dcd8cf; --accent:#2559b8; --accent-soft:#e3ecfc; --ok:#16703d; --ok-soft:#e1f3e8;
+  --warn:#8f4c0a; --warn-soft:#fbeedd; --bad:#a82f2f; --bad-soft:#fae3e3;
+  --p1:#2559b8; --p2:#7440b8; --p3:#16703d; --p4:#8f4c0a; --p2-soft:#efe6fa;
+  --code-bg:#f0eee8; --shadow:0 1px 2px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04); --on-accent:#ffffff; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+    --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+    --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+    --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --p2-soft:#2c2340; --code-bg:#252930; --shadow:none; --on-accent:#15171a; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+  --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+  --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+  --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --p2-soft:#2c2340; --code-bg:#252930; --shadow:none; --on-accent:#15171a; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+a{color:var(--accent)}
+header.top{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
+.top-inner{max-width:1100px;margin:0 auto;padding:10px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.brand{font-weight:700;white-space:nowrap}
+.home{white-space:nowrap;text-decoration:none;color:var(--text);border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:4px 10px;font-size:14px}
+.home:hover{border-color:var(--accent);color:var(--accent)}
+nav.toc{display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin;flex:1}
+nav.toc a{white-space:nowrap;text-decoration:none;color:var(--muted);padding:4px 10px;border-radius:999px;font-size:14px}
+nav.toc a:hover,nav.toc a.active{background:var(--accent-soft);color:var(--accent)}
+button{font:inherit;cursor:pointer}
+button:disabled{opacity:.45;cursor:default}
+.theme-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:4px 10px;font-size:14px}
+main{max-width:1100px;margin:0 auto;padding:16px}
+section{padding:28px 0;border-bottom:1px solid var(--border);scroll-margin-top:64px}
+section:last-child{border-bottom:none}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.2;margin:16px 0 8px}
+h2{font-size:clamp(22px,3.5vw,28px);margin:0 0 12px}
+h3{font-size:18px;margin:20px 0 8px}
+p{margin:8px 0}
+.lead{font-size:18px;color:var(--muted);max-width:760px}
+.muted{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 10px 10px 0;margin:12px 0}
+.callout.ok{border-color:var(--ok);background:var(--ok-soft)}
+.callout.warn{border-color:var(--warn);background:var(--warn-soft)}
+.callout.bad{border-color:var(--bad);background:var(--bad-soft)}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);margin-right:4px}
+.tag.p1{background:var(--accent-soft);color:var(--p1)}
+.tag.p2{background:var(--p2-soft);color:var(--p2)}
+.tag.p3{background:var(--ok-soft);color:var(--p3)}
+.tag.p4{background:var(--warn-soft);color:var(--p4)}
+.tag.bad{background:var(--bad-soft);color:var(--bad)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+th{background:var(--surface-2);font-weight:600}
+td.num,th.num{text-align:right;white-space:nowrap}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.mono,code{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:14px}
+code{background:var(--code-bg);padding:1px 5px;border-radius:5px;overflow-wrap:anywhere}
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-word;margin:8px 0;font-size:14px;line-height:1.55}
+/* Vietnamese text renders poorly in many monospace fonts (detached diacritics), so blocks with Vietnamese use the body font */
+pre.pt{font-family:inherit;font-size:15px}
+svg text{fill:var(--text);font-family:inherit}
+.diagram{width:100%;height:auto;display:block}
+.svgbox{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;overflow-x:auto}
+.svgbox svg{min-width:640px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:6px 0}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px;border:2px solid}
+/* Glossary */
+.gloss-tools{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+.gloss-tools input{flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
+.chip{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:999px;padding:4px 12px;font-size:14px}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.term h4{margin:0 0 4px;font-size:16px}
+.term .en{font-weight:400;color:var(--muted);font-size:14px}
+.term p{margin:4px 0;font-size:15px}
+.term .ex{font-size:14px;color:var(--muted)}
+.term .rel{font-size:13px;margin-top:6px}
+.term .rel a{font-size:13px}
+/* Stepper */
+.stepper{display:grid;grid-template-columns:250px 1fr;gap:12px}
+.stepper>div{min-width:0}
+@media (max-width:720px){.stepper{grid-template-columns:1fr}}
+.steps{display:flex;flex-direction:column;gap:6px}
+@media (max-width:720px){.steps{flex-direction:row;overflow-x:auto}}
+.steps button{text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px;white-space:nowrap}
+.steps button .n{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--surface-2);text-align:center;line-height:22px;font-size:12px;margin-right:6px}
+.steps button.on{border-color:var(--accent);background:var(--accent-soft)}
+.steps button.on .n{background:var(--accent);color:var(--on-accent)}
+.step-nav{display:flex;gap:8px;margin-top:12px}
+.step-nav button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 14px}
+.msg{border:1px solid var(--border);border-left:5px solid var(--border);border-radius:10px;padding:8px 12px;margin:8px 0;background:var(--surface)}
+.msg.a{border-left-color:var(--p1)} .msg.b{border-left-color:var(--p3)} .msg.c{border-left-color:var(--p4)} .msg.d{border-left-color:var(--bad)}
+.msg pre{margin:6px 0 2px}
+.cost-line{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;background:var(--surface-2);border-radius:8px;padding:6px 10px;margin:8px 0;font-size:15px}
+.cost-line b{font-size:18px}
+/* Calculator */
+.qt-row{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+.qt-row button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 12px;font-size:14px;text-align:left}
+.qt-row button.on{border-color:var(--accent);background:var(--accent-soft);color:var(--text)}
+.qt-label{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-top:10px}
+.sliders{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:4px 24px}
+.sl{display:grid;grid-template-columns:1fr auto;gap:0 10px;align-items:baseline;margin:6px 0}
+.sl label{font-size:15px}
+.sl output{font-weight:700;white-space:nowrap}
+.sl input[type=range]{grid-column:1/-1;width:100%;height:40px;margin:0;accent-color:var(--accent)}
+.sl .hint{grid-column:1/-1;font-size:13px;color:var(--muted);margin-top:-6px}
+.sbar-row{margin:10px 0}
+.sbar-row .lbl{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:15px}
+.sbar-wrap{background:var(--surface-2);border-radius:6px;height:24px;margin-top:4px}
+.sbar{display:flex;height:24px;border-radius:6px;overflow:hidden;min-width:2px;transition:width .25s}
+.sbar i{display:block;height:100%}
+.seg-pre{background:var(--p1)} .seg-dyn{background:var(--p2)} .seg-out{background:var(--p4)}
+.bar{height:14px;border-radius:7px;background:var(--surface-2);overflow:hidden;margin:6px 0 2px}
+.bar i{display:block;height:100%;background:var(--accent)}
+.big{font-size:28px;font-weight:700}
+details{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0 14px;margin:8px 0}
+details summary{cursor:pointer;font-weight:600;padding:10px 0;min-height:40px}
+details[open]{padding-bottom:10px}
+.check{display:flex;gap:8px;align-items:flex-start;padding:6px 0}
+.check input{margin-top:6px;width:20px;height:20px;flex:none}
+footer{max-width:1100px;margin:0 auto;padding:24px 16px;color:var(--muted);font-size:14px}
+.kpi{display:flex;gap:10px;flex-wrap:wrap}
+.kpi .card{flex:1;min-width:160px}
+.kpi b{display:block;font-size:20px}
+.card>h4:first-child,.card>.tag+h4{margin-top:4px}
+.card h4{margin-bottom:6px}
+.ok-t{color:var(--ok);font-weight:700} .bad-t{color:var(--bad);font-weight:700} .warn-t{color:var(--warn);font-weight:700}
+.m-only{display:none}
+.formula{font-size:17px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin:10px 0;line-height:1.8}
+.formula b{white-space:nowrap}
+/* Citations */
+sup.cite{font-size:max(11px,.72em);line-height:0;margin-left:1px;white-space:nowrap}
+sup.cite a{text-decoration:none;font-weight:600;padding:10px 3px;margin:-10px 0}
+sup.cite a:hover{text-decoration:underline}
+sup.cite a+a{margin-left:2px}
+ol.sources{padding-left:1.6em;margin:8px 0}
+ol.sources li{margin:0 0 10px;font-size:15px;overflow-wrap:anywhere;scroll-margin-top:64px}
+ol.sources li:target{background:var(--accent-soft);border-radius:6px}
+ol.sources .acc{color:var(--muted);font-size:14px}
+.vflow .box,.vflow .node,.vflow .ar{display:block}
+.vflow .ph{font-weight:700;font-size:14px;margin:4px 0 8px}
+.vflow .ph1{color:var(--p1)} .vflow .ph2{color:var(--p3)} .vflow .ph3{color:var(--p2)} .vflow .ph4{color:var(--p4)} .vflow .ph5{color:var(--bad)}
+.vflow .node{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px}
+.vflow .node b{display:block}
+.vflow .node span{font-size:13px;color:var(--muted)}
+.vflow .node.r{border:2px solid var(--p1)} .vflow .node.a{border:2px solid var(--p2)} .vflow .node.g{border:2px solid var(--p3)} .vflow .node.o{border:2px solid var(--p4)} .vflow .node.x{border:2px solid var(--bad)}
+.vflow .ar{text-align:center;color:var(--muted);font-size:13px;line-height:1.3;padding:4px 0}
+.vflow .ar.skip{color:var(--ok);font-weight:600}
+.vflow .ar.up{color:var(--bad);font-weight:600}
+.vflow .box{border-radius:12px;padding:10px;margin-bottom:10px}
+.vflow .box1{background:var(--accent-soft)} .vflow .box2{background:var(--ok-soft)} .vflow .box3{background:var(--p2-soft)} .vflow .box4{background:var(--warn-soft)} .vflow .box5{background:var(--bad-soft)}
+.vflow .note{font-size:13px;color:var(--muted);margin-top:6px}
+/* Desktop SVG diagrams (viewBox 1000 wide) only from 1081px so their small labels render at ~11px or larger */
+@media (max-width:1080px){.d-only{display:none}.m-only{display:block}.vflow{max-width:560px;margin:0 auto}}
+@media (max-width:600px){
+  .brand{display:none} body{font-size:15px}
+  .theme-btn .lbl,.home .lbl{display:none}
+  main{padding:12px 16px}
+  section{padding:22px 0}
+  .card{padding:14px}
+  table.stack thead{display:none}
+  table.stack,table.stack tbody,table.stack tr,table.stack td{display:block;width:100%}
+  table.stack tr{border-bottom:1px solid var(--border);padding:8px 0}
+  table.stack tr:last-child{border-bottom:none}
+  table.stack td{border:none;padding:3px 12px}
+  table.stack td.num{text-align:left}
+  table.stack td[data-label]::before{content:attr(data-label);display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  table.stack td:first-child{font-size:16px}
+  table.stack td:first-child::before{display:none}
+  .home,.theme-btn,nav.toc a,.chip,.step-nav button,.steps button,.qt-row button{min-height:40px}
+  .home,.theme-btn,nav.toc a{display:inline-flex;align-items:center}
+  .home,.theme-btn{flex:none;min-width:40px;justify-content:center}
+  pre,pre.pt,.term .ex{font-size:15px}
+  .vflow .node span{font-size:15px}
+  .vflow .ar,.vflow .note{font-size:14px}
+  .term .rel a{font-size:14px;padding:10px 2px}
+  .legend,.sl .hint{font-size:14px}
+  .formula{font-size:16px}
+  .sliders{grid-template-columns:1fr}
+}
+/* cite-tap */
+/* Same tap area for citation links on every page: at least 40px high and 24px wide.
+   Negative vertical margins keep line spacing unchanged. */
+sup.cite a{display:inline-block;box-sizing:border-box;min-width:24px;line-height:1;padding:15px 3px;margin-top:-15px;margin-bottom:-15px;text-align:center}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <a class="home" href="../" aria-label="Về trang tất cả chủ đề">←<span class="lbl"> Chủ đề</span></a>
+    <span class="brand">Tối ưu chi phí LLM</span>
+    <nav class="toc" id="toc">
+      <a href="#tong-quan">1. Tổng quan</a>
+      <a href="#flow">2. Flow</a>
+      <a href="#vi-du">3. Ví dụ từng bước</a>
+      <a href="#may-tinh">4. Máy tính chi phí</a>
+      <a href="#khai-niem">5. Khái niệm</a>
+      <a href="#quan-he">6. Mối quan hệ</a>
+      <a href="#so-sanh">7. So sánh</a>
+      <a href="#loi">8. Lỗi &amp; chẩn đoán</a>
+      <a href="#danh-gia">9. Đánh giá</a>
+      <a href="#lo-trinh">10. Lộ trình</a>
+      <a href="#nguon">Nguồn</a>
+    </nav>
+    <button class="theme-btn" id="themeBtn" aria-label="Đổi giao diện sáng/tối">◐<span class="lbl"> Giao diện</span></button>
+  </div>
+</header>
+
+<main>
+
+<!-- 1. TỔNG QUAN -->
+<section id="tong-quan">
+  <h1>Tối ưu chi phí LLM</h1>
+  <p class="lead">Mỗi lần gọi LLM, bạn trả tiền theo <b>token</b>: token đưa vào, token model viết ra, và một số loại token đặc biệt như token đọc từ cache. Tối ưu chi phí là làm cho một việc (một câu trả lời đúng, một ticket được giải quyết) tốn ít token hơn hoặc dùng token rẻ hơn, <b>mà chất lượng không giảm</b>.</p>
+  <p class="muted">Nên đọc sau <a href="../llm-fundamentals/">Cách LLM hoạt động</a> (token, context window) và <a href="../context-engineering/">Context engineering</a>. Trang này dùng nhiều tới <a href="../llm-evaluation/">Đánh giá LLM</a>, vì không đo chất lượng thì không biết cắt chi phí có làm hỏng gì không.</p>
+  <div class="callout warn"><b>Về giá trong trang này.</b> Giá và mức giảm đổi thường xuyên. Mọi con số giá đều chép từ trang giá chính thức, kèm ngày truy cập 2026-11-17. Hãy mở lại trang giá trước khi tính cho dự án thật. Các con số trong ví dụ và máy tính là <b>minh họa</b>.</div>
+
+  <h3>Hóa đơn được tính thế nào?</h3>
+  <div class="formula">Chi phí một việc = <b>số lần gọi model</b> × ( <b>token vào</b> × giá vào + <b>token ra</b> × giá ra )</div>
+  <p>Giá vào và giá ra khác nhau. Trong bảng giá Anthropic ngày 2026-11-17, token ra đắt gấp 5 lần token vào ở các model ví dụ. Chẳng hạn Claude Sonnet 5.5 là 2 USD cho mỗi triệu token vào (MTok) và 10 USD/MTok cho token ra.<sup class="cite"><a href="#src-2">[2]</a></sup> Token vào lại chia thành nhiều mức giá: token thường, token <i>ghi</i> vào cache (đắt hơn một chút), và token <i>đọc</i> từ cache (rẻ hơn nhiều).<sup class="cite"><a href="#src-1">[1]</a><a href="#src-2">[2]</a></sup></p>
+
+  <h3>Vì sao RAG và agent dễ đốt tiền?</h3>
+  <div class="grid g3">
+    <div class="card"><span class="tag bad">Số lần gọi</span><h4>Agent gọi model nhiều vòng</h4><p>Anthropic đo được agent thường dùng khoảng <b>4 lần</b> token so với chat, còn hệ multi-agent khoảng <b>15 lần</b>. Họ khuyên chỉ dùng multi-agent khi giá trị của việc đủ cao để trả cho phần hiệu năng tăng thêm.<sup class="cite"><a href="#src-7">[7]</a></sup> Xem <a href="../multi-agent-agentic-rag/">Multi-agent và agentic RAG</a>.</p></div>
+    <div class="card"><span class="tag bad">Token vào</span><h4>Context phình to mỗi vòng</h4><p>Mỗi vòng agent gửi lại system prompt, định nghĩa tool, lịch sử và kết quả tool. RAG thêm các đoạn tài liệu. Khai báo tool cũng tốn token ẩn ở mọi request: bảng giá ghi 286 token system prompt cho tool use ở Sonnet 5.5, và bộ tool điều khiển máy tính (computer toolset) mặc định thêm khoảng 4.500 token.<sup class="cite"><a href="#src-2">[2]</a></sup> Càng nhiều tool, định nghĩa càng dài, càng tốn. Xem <a href="../tool-calling-structured-output/">Tool calling</a> và <a href="../model-context-protocol/">MCP</a>.</p></div>
+    <div class="card"><span class="tag bad">Token ra ẩn</span><h4>Model "nghĩ" cũng tính tiền</h4><p>Token suy luận (reasoning, thinking) không hiện ra nhưng vẫn tính như token ra.<sup class="cite"><a href="#src-8">[8]</a><a href="#src-9">[9]</a></sup> Với Claude, bạn trả cho toàn bộ phần nghĩ, không phải bản tóm tắt hiện trong response.<sup class="cite"><a href="#src-9">[9]</a></sup></p></div>
+  </div>
+  <p>Thêm hai điểm dễ quên. Đổi sang model mới có thể làm cùng một văn bản ra nhiều token hơn: Anthropic nói tokenizer của Claude 4.7 trở đi ra nhiều hơn khoảng 30% token cho cùng văn bản.<sup class="cite"><a href="#src-2">[2]</a></sup> Ngôn ngữ cũng ảnh hưởng: cùng một nội dung dịch sang ngôn ngữ khác có thể dài hơn tới 15 lần về số token ở một số trường hợp.<sup class="cite"><a href="#src-21">[21]</a></sup> Vì vậy hãy đo bằng chính văn bản tiếng Việt của bạn, đừng ước lượng theo số chữ.</p>
+
+  <h3>Sáu cần gạt chi phí</h3>
+  <p>Các nhà cung cấp và các nghiên cứu đều xoay quanh vài ý giống nhau: gửi ít token hơn, viết ra ít token hơn, gọi ít lần hơn, chọn model nhỏ hơn khi đủ, dùng Batch cho việc không gấp.<sup class="cite"><a href="#src-25">[25]</a></sup> Hướng dẫn tối ưu độ trễ của OpenAI thêm một ý: đừng mặc định dùng LLM.<sup class="cite"><a href="#src-18">[18]</a></sup> Ví dụ: tra trạng thái hồ sơ là một truy vấn cơ sở dữ liệu thường, không cần model. Trang này gom lại thành sáu cần gạt, đánh số 1–6 và dùng cùng số đó ở mục 6 và mục 7.</p>
+  <div class="grid g3">
+    <div class="card"><span class="tag p1">Cần gạt 1</span><h4>Dùng lại phần lặp lại</h4><p><b>Prompt caching</b>: phần đầu prompt giống nhau giữa các request được đọc lại với giá thấp. <b>Semantic cache</b>: trả lại câu trả lời cũ cho câu hỏi giống nghĩa, không gọi model.</p></div>
+    <div class="card"><span class="tag p1">Cần gạt 2</span><h4>Gửi ít token hơn</h4><p>Lấy ít đoạn tài liệu hơn, rút gọn lịch sử, cho tool trả kết quả gọn, nén prompt.<sup class="cite"><a href="#src-16">[16]</a><a href="#src-17">[17]</a></sup></p></div>
+    <div class="card"><span class="tag p1">Cần gạt 3</span><h4>Chọn model vừa đủ</h4><p>Câu dễ cho model nhỏ, câu khó cho model lớn. Làm bằng router hoặc cascade.<sup class="cite"><a href="#src-2">[2]</a><a href="#src-10">[10]</a><a href="#src-11">[11]</a></sup></p></div>
+    <div class="card"><span class="tag p1">Cần gạt 4</span><h4>Chậm hơn cho rẻ hơn</h4><p>Việc không cần trả lời ngay thì gửi qua Batch API, giảm 50% giá.<sup class="cite"><a href="#src-5">[5]</a><a href="#src-6">[6]</a></sup></p></div>
+    <div class="card"><span class="tag p1">Cần gạt 5</span><h4>Viết ra ít token hơn</h4><p>Giới hạn <code>max_tokens</code>, giảm mức effort suy luận cho việc dễ, yêu cầu câu trả lời ngắn.<sup class="cite"><a href="#src-8">[8]</a><a href="#src-9">[9]</a></sup></p></div>
+    <div class="card"><span class="tag p3">Cần gạt 6</span><h4>Đo và đặt chốt chặn</h4><p>Ghi số token mỗi lượt, tính chi phí mỗi việc thành công, đặt trần chi tiêu và cảnh báo.<sup class="cite"><a href="#src-20">[20]</a><a href="#src-22">[22]</a></sup></p></div>
+  </div>
+  <div class="callout ok"><b>Nguyên tắc nền: đặt tiêu chí chất lượng trước, rồi mới cắt.</b> Hướng dẫn chọn model của OpenAI khuyên chọn tiêu chí chấp nhận trước khi so sánh model, rồi giữ cấu hình nhẹ nhất vẫn đạt chuẩn chất lượng.<sup class="cite"><a href="#src-24">[24]</a></sup> Một thay đổi làm rẻ mỗi request nhưng làm tăng số câu sai có thể làm <i>tổng</i> chi phí tăng. Mục 9 có ví dụ tính.</div>
+</section>
+
+<!-- 2. FLOW -->
+<section id="flow">
+  <h2>2. Flow: một request đi qua các điểm quyết định chi phí</h2>
+  <p>Sơ đồ dưới là một thiết kế thường gặp cho trợ lý RAG hoặc agent. Không phải hệ nào cũng cần đủ các bước. Màu cho biết bước đó giảm chi phí bằng cách nào.</p>
+  <div class="legend"><span><i style="border-color:var(--p3);background:var(--ok-soft)"></i>Bỏ hẳn lần gọi model</span><span><i style="border-color:var(--p2);background:var(--p2-soft)"></i>Giảm giá mỗi token</span><span><i style="border-color:var(--p1);background:var(--accent-soft)"></i>Giảm số token</span><span><i style="border-color:var(--p4);background:var(--warn-soft)"></i>Đo và chặn</span></div>
+
+  <div class="vflow m-only" role="group" aria-label="Các điểm quyết định chi phí (dạng dọc)">
+    <div class="node"><b>Yêu cầu của người dùng</b><span>ví dụ: "Hợp đồng của tôi có chi trả nha khoa không?"</span></div>
+    <div class="ar">↓</div>
+    <div class="node g" style="background:var(--ok-soft)"><b>① Cache ở tầng ứng dụng</b><span>câu hỏi giống hệt hoặc giống nghĩa đã có câu trả lời? Chỉ dùng cho câu hỏi không phụ thuộc người hỏi.</span></div>
+    <div class="ar skip">↳ trúng: trả lời ngay, không gọi model</div>
+    <div class="ar">↓ trượt</div>
+    <div class="node a" style="background:var(--p2-soft)"><b>② Router chọn model</b><span>câu dễ → model nhỏ · câu khó → model lớn · hoặc cascade: thử model nhỏ trước, không đạt thì gọi model lớn</span></div>
+    <div class="ar">↓</div>
+    <div class="node r" style="background:var(--accent-soft)"><b>③ Lắp context</b><span>phần ổn định (tools, system prompt, chính sách chung) đặt ở đầu để trúng prompt cache · phần thay đổi (lịch sử, tài liệu RAG, câu hỏi) đã được cắt gọn</span></div>
+    <div class="ar">↓</div>
+    <div class="node a" style="background:var(--p2-soft)"><b>④ Gọi model</b><span>cần trả lời ngay → gọi thường · không gấp → Batch API (giảm 50%) · tiền tố đọc từ cache tính giá thấp</span></div>
+    <div class="ar">↓</div>
+    <div class="node r" style="background:var(--accent-soft)"><b>⑤ Giới hạn output</b><span><code>max_tokens</code>, mức effort suy luận, yêu cầu trả lời ngắn</span></div>
+    <div class="ar">↓</div>
+    <div class="node"><b>Câu trả lời</b><span>lưu vào cache ứng dụng nếu câu hỏi đủ chung</span></div>
+    <div class="ar">⋮</div>
+    <div class="node o" style="background:var(--warn-soft)"><b>⑥ Đo và chặn (xuyên suốt)</b><span>ghi usage từng lượt · chi phí mỗi việc thành công · giới hạn số vòng agent · trần chi tiêu và cảnh báo</span></div>
+  </div>
+
+  <div class="svgbox d-only">
+  <svg class="diagram" viewBox="0 0 1000 330" role="img" aria-label="Flow: yêu cầu, cache ứng dụng, router, lắp context, gọi model, giới hạn output, câu trả lời, cùng lớp đo và chặn xuyên suốt">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+      <marker id="arrOk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ok)"/></marker>
+    </defs>
+    <path d="M203 98 L203 52 L925 52 L925 96" fill="none" stroke="var(--ok)" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrOk)"/>
+    <text x="564" y="42" text-anchor="middle" font-size="14" font-weight="600" style="fill:var(--ok)">trúng cache ứng dụng: trả lời ngay, không gọi model</text>
+    <text x="273" y="94" text-anchor="middle" font-size="13" style="fill:var(--muted)">trượt</text>
+    <g font-size="15">
+      <rect x="4" y="100" width="118" height="110" rx="10" fill="var(--surface)" stroke="var(--border)" stroke-width="2"/>
+      <text x="63" y="140" text-anchor="middle" font-weight="600">Yêu cầu</text>
+      <text x="63" y="164" text-anchor="middle" font-size="13" style="fill:var(--muted)">câu hỏi</text>
+      <text x="63" y="182" text-anchor="middle" font-size="13" style="fill:var(--muted)">của người dùng</text>
+
+      <rect x="144" y="100" width="118" height="110" rx="10" fill="var(--ok-soft)" stroke="var(--p3)" stroke-width="2"/>
+      <text x="203" y="130" text-anchor="middle" font-weight="600">① Cache</text>
+      <text x="203" y="150" text-anchor="middle" font-weight="600">ứng dụng</text>
+      <text x="203" y="174" text-anchor="middle" font-size="13" style="fill:var(--muted)">giống hệt hoặc</text>
+      <text x="203" y="192" text-anchor="middle" font-size="13" style="fill:var(--muted)">giống nghĩa?</text>
+
+      <rect x="284" y="100" width="118" height="110" rx="10" fill="var(--p2-soft)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="343" y="130" text-anchor="middle" font-weight="600">② Router</text>
+      <text x="343" y="156" text-anchor="middle" font-size="13" style="fill:var(--muted)">dễ → model nhỏ</text>
+      <text x="343" y="174" text-anchor="middle" font-size="13" style="fill:var(--muted)">khó → model lớn</text>
+      <text x="343" y="192" text-anchor="middle" font-size="13" style="fill:var(--muted)">hoặc cascade</text>
+
+      <rect x="424" y="100" width="118" height="110" rx="10" fill="var(--accent-soft)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="483" y="130" text-anchor="middle" font-weight="600">③ Lắp</text>
+      <text x="483" y="150" text-anchor="middle" font-weight="600">context</text>
+      <text x="483" y="174" text-anchor="middle" font-size="13" style="fill:var(--muted)">tĩnh đặt đầu,</text>
+      <text x="483" y="192" text-anchor="middle" font-size="13" style="fill:var(--muted)">động cắt gọn</text>
+
+      <rect x="564" y="100" width="118" height="110" rx="10" fill="var(--p2-soft)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="623" y="130" text-anchor="middle" font-weight="600">④ Gọi</text>
+      <text x="623" y="150" text-anchor="middle" font-weight="600">model</text>
+      <text x="623" y="174" text-anchor="middle" font-size="13" style="fill:var(--muted)">đọc cache tiền tố</text>
+      <text x="623" y="192" text-anchor="middle" font-size="13" style="fill:var(--muted)">gấp? hay batch</text>
+
+      <rect x="704" y="100" width="118" height="110" rx="10" fill="var(--accent-soft)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="763" y="130" text-anchor="middle" font-weight="600">⑤ Giới hạn</text>
+      <text x="763" y="150" text-anchor="middle" font-weight="600">output</text>
+      <text x="763" y="174" text-anchor="middle" font-size="13" style="fill:var(--muted)">max_tokens,</text>
+      <text x="763" y="192" text-anchor="middle" font-size="13" style="fill:var(--muted)">effort, ngắn gọn</text>
+
+      <rect x="866" y="100" width="118" height="110" rx="10" fill="var(--surface)" stroke="var(--border)" stroke-width="2"/>
+      <text x="925" y="140" text-anchor="middle" font-weight="600">Câu trả lời</text>
+      <text x="925" y="164" text-anchor="middle" font-size="13" style="fill:var(--muted)">lưu cache nếu</text>
+      <text x="925" y="182" text-anchor="middle" font-size="13" style="fill:var(--muted)">câu hỏi đủ chung</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="2" fill="none" marker-end="url(#arr)">
+      <path d="M122 155 L142 155"/><path d="M262 155 L282 155"/><path d="M402 155 L422 155"/><path d="M542 155 L562 155"/><path d="M682 155 L702 155"/><path d="M822 155 L864 155"/>
+    </g>
+    <rect x="4" y="262" width="980" height="56" rx="10" fill="var(--warn-soft)" stroke="var(--p4)" stroke-width="2"/>
+    <text x="494" y="287" text-anchor="middle" font-size="15" font-weight="600">⑥ Đo và chặn, xuyên suốt mọi bước</text>
+    <text x="494" y="308" text-anchor="middle" font-size="13" style="fill:var(--muted)">ghi usage từng lượt · chi phí mỗi việc thành công · giới hạn số vòng agent · trần chi tiêu và cảnh báo</text>
+    <g stroke="var(--p4)" stroke-width="1.5" stroke-dasharray="3 4">
+      <path d="M203 212 L203 260"/><path d="M343 212 L343 260"/><path d="M483 212 L483 260"/><path d="M623 212 L623 260"/><path d="M763 212 L763 260"/>
+    </g>
+  </svg>
+  </div>
+
+  <div class="callout"><b>Với agent, bước ③ đến ⑤ lặp lại sau mỗi lần gọi tool.</b> Mỗi vòng gửi lại toàn bộ context đã có, nên bạn trả tiền lại cho phần đó ở mỗi vòng. Mục 4 có ô tính riêng cho vòng lặp agent.</div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h4>Hai loại cache khác nhau</h4><p><b>Prompt caching</b> (bước ③④) do nhà cung cấp làm: model vẫn chạy và vẫn sinh câu trả lời mới, chỉ phần đầu prompt được tính giá đọc cache. Caching không ảnh hưởng tới output: câu trả lời giống hệt khi không dùng cache.<sup class="cite"><a href="#src-1">[1]</a></sup></p><p><b>Cache ứng dụng</b> (bước ①) do bạn làm: trả lại câu trả lời đã lưu, không gọi model.<sup class="cite"><a href="#src-12">[12]</a></sup> Tiết kiệm nhiều hơn nhưng có rủi ro trả nhầm.</p></div>
+    <div class="card"><h4>Vì sao phần tĩnh phải đặt đầu?</h4><p>Prompt cache khớp theo <b>tiền tố</b>: chỉ trúng khi toàn bộ phần đầu giống hệt.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-3">[3]</a></sup> Trên Anthropic, thứ tự là tools → system → messages, và thay đổi ở một tầng làm hỏng tầng đó cùng mọi tầng sau.<sup class="cite"><a href="#src-1">[1]</a></sup> OpenAI và Google cùng khuyên đặt phần ổn định, phần lớn dùng chung lên đầu prompt.<sup class="cite"><a href="#src-3">[3]</a><a href="#src-4">[4]</a></sup></p></div>
+  </div>
+</section>
+
+<!-- 3. VÍ DỤ -->
+<section id="vi-du">
+  <h2>3. Ví dụ đi qua từng bước</h2>
+  <p><b>Tình huống:</b> một công ty bảo hiểm chạy trợ lý chăm sóc khách hàng. Trợ lý dùng RAG trên điều khoản hợp đồng và có tool tra hợp đồng của khách. Cuối tháng, hóa đơn API cao hơn dự kiến. Nhóm kỹ thuật đi từng bước dưới đây.</p>
+  <p class="muted">Số token trong ví dụ là <b>minh họa</b>. Giá dùng bảng giá Anthropic ngày 2026-11-17 (Sonnet 5.5 cho model lớn, Haiku 5.5 cho model nhỏ)<sup class="cite"><a href="#src-2">[2]</a></sup>. Số tiền do JavaScript tính từ hai thứ đó.</p>
+  <div class="stepper">
+    <div class="steps" id="steps" role="group" aria-label="Các bước ví dụ"></div>
+    <div>
+      <div class="card" id="stepBody" aria-live="polite"></div>
+      <div class="step-nav"><button id="prevStep">← Trước</button><button id="nextStep">Tiếp →</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. MÁY TÍNH -->
+<section id="may-tinh">
+  <h2>4. Máy tính chi phí tháng</h2>
+  <p>Kéo các thanh để xem từng cần gạt đóng góp bao nhiêu. Máy tính so sánh <b>trước tối ưu</b> (mọi request vào model lớn, không cache, gọi thường) với <b>sau tối ưu</b> (bật các cần gạt bên dưới).</p>
+  <div class="callout warn">Mọi kết quả là <b>minh họa</b>. Giá model lấy từ trang giá Anthropic ngày 2026-11-17.<sup class="cite"><a href="#src-2">[2]</a></sup> Các tỷ lệ "trúng cache", "chuyển sang model nhỏ", "cắt context" là giả định do bạn chọn. Chúng chỉ đúng nếu eval (chạy bộ test cố định để đo chất lượng) xác nhận chất lượng không giảm.</div>
+  <div class="card">
+    <div class="qt-label">Model lớn (giá USD/MTok, truy cập 2026-11-17)</div>
+    <div class="qt-row" id="bigModel"></div>
+    <p class="muted" id="priceNote" style="font-size:14px;margin-top:0"></p>
+    <div class="qt-label">Lưu lượng và kích thước một request</div>
+    <div class="sliders">
+      <div class="sl"><label for="cReq">Số request mỗi ngày</label><output id="oReq"></output><input type="range" id="cReq" min="500" max="50000" step="500" value="5000"></div>
+      <div class="sl"><label for="cPre">Token tiền tố ổn định</label><output id="oPre"></output><input type="range" id="cPre" min="0" max="20000" step="250" value="6000"><span class="hint">tools + system prompt + chính sách chung, giống hệt mọi request</span></div>
+      <div class="sl"><label for="cDyn">Token phần thay đổi</label><output id="oDyn"></output><input type="range" id="cDyn" min="500" max="20000" step="250" value="5000"><span class="hint">lịch sử + đoạn tài liệu RAG + câu hỏi</span></div>
+      <div class="sl"><label for="cOut">Token ra (gồm cả phần suy luận)</label><output id="oOut"></output><input type="range" id="cOut" min="100" max="3000" step="50" value="500"></div>
+    </div>
+    <div class="qt-label">Các cần gạt</div>
+    <div class="sliders">
+      <div class="sl"><label for="cTrim">Cắt phần thay đổi</label><output id="oTrim"></output><input type="range" id="cTrim" min="0" max="70" step="5" value="30"><span class="hint">rerank giữ ít đoạn hơn, rút gọn lịch sử</span></div>
+      <div class="sl"><label for="cHit">Tỷ lệ request trúng prompt cache</label><output id="oHit"></output><input type="range" id="cHit" min="0" max="100" step="5" value="80"><span class="hint">lần trượt phải ghi cache (TTL 5 phút: 1,25× giá vào)</span></div>
+      <div class="sl"><label for="cSmall">Chuyển sang model nhỏ (Haiku 5.5)</label><output id="oSmall"></output><input type="range" id="cSmall" min="0" max="90" step="5" value="40"></div>
+      <div class="sl"><label for="cBatch">Phần việc gửi qua Batch (−50%)</label><output id="oBatch"></output><input type="range" id="cBatch" min="0" max="80" step="5" value="20"></div>
+    </div>
+    <div class="kpi" id="calcKpi" style="margin-top:12px"></div>
+    <div class="legend" style="margin-top:12px"><span><i style="border-color:var(--p1);background:var(--p1)"></i>Tiền tố ổn định</span><span><i style="border-color:var(--p2);background:var(--p2)"></i>Phần thay đổi</span><span><i style="border-color:var(--p4);background:var(--p4)"></i>Token ra</span></div>
+    <div id="calcBars"></div>
+    <p id="calcNote" class="muted" style="font-size:15px"></p>
+    <h4 style="margin-top:16px">Bật lần lượt từng cần gạt</h4>
+    <div class="table-wrap"><table class="stack" id="calcSteps"><thead><tr><th>Bước</th><th class="num">Chi phí tháng (USD)</th><th class="num">Giảm so với bước trước</th><th class="num">Còn lại so với ban đầu</th></tr></thead><tbody></tbody></table></div>
+    <details><summary>Máy tính giả định những gì?</summary>
+      <ul>
+        <li>Một tháng = 30 ngày. Giá USD/MTok lấy từ trang giá Anthropic ngày 2026-11-17: ghi cache 5 phút = 1,25× giá vào; đọc cache 0,05× ở Opus 5.5 và Sonnet 5.5, 0,1× ở Haiku 5.5.<sup class="cite"><a href="#src-2">[2]</a></sup></li>
+        <li>Mỗi request trượt cache sẽ ghi lại tiền tố. Thực tế số lần ghi phụ thuộc lưu lượng và TTL (cache sống 5 phút, mỗi lần đọc làm mới miễn phí).<sup class="cite"><a href="#src-1">[1]</a></sup></li>
+        <li>Nếu tiền tố ngắn hơn 512 token thì không cache được. Đây là ngưỡng tối thiểu của ba model này, và API không báo lỗi khi prompt dưới ngưỡng.<sup class="cite"><a href="#src-1">[1]</a></sup></li>
+        <li>Model nhỏ có cache riêng, máy tính giả định cùng tỷ lệ trúng. Phần batch áp cùng tỷ lệ trúng cache. Thực tế, trong batch, cache chỉ trúng theo kiểu best-effort (cố gắng, không bảo đảm).<sup class="cite"><a href="#src-1">[1]</a></sup> Giảm 50% của batch cộng dồn với hệ số cache.<sup class="cite"><a href="#src-2">[2]</a></sup></li>
+        <li>Router không tốn chi phí, và không tính lần gọi thứ hai của cascade. Cột "Giảm so với bước trước" phụ thuộc thứ tự bật cần gạt: đổi thứ tự thì phần đóng góp của từng cần gạt đổi theo, nhưng kết quả cuối giữ nguyên.</li>
+        <li>Không tính phí tool, tìm kiếm web, embedding, hạ tầng vector DB, hay chi phí người xử lý khi trợ lý trả lời sai.</li>
+      </ul>
+    </details>
+  </div>
+
+  <h3>Vòng lặp agent: tổng token vào tăng nhanh hơn số vòng</h3>
+  <p>Mỗi vòng, agent gửi lại toàn bộ context đã có, cộng thêm phần mới (kết quả tool, lượt trả lời trước). Nên tổng token vào của cả phiên tăng nhanh hơn số vòng. Prompt caching giúp nhiều ở đây: Anthropic có chế độ caching tự động, đặt điểm cache ở khối cuối và dời nó theo hội thoại.<sup class="cite"><a href="#src-1">[1]</a></sup> Phần đã gửi ở vòng trước được đọc từ cache, chỉ phần mới phải ghi.</p>
+  <div class="card">
+    <p class="muted" style="margin-top:0">Minh họa: context đầu 8.000 token; mỗi vòng thêm 1.500 token; mỗi vòng ra 300 token; Sonnet 5.5, giá ngày 2026-11-17.<sup class="cite"><a href="#src-2">[2]</a></sup> Giả định các vòng cách nhau dưới 5 phút để cache còn sống.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <div class="sl"><label for="cLoop">Số vòng gọi model trong một phiên</label><output id="oLoop"></output><input type="range" id="cLoop" min="1" max="30" step="1" value="10"></div>
+    <div class="kpi" id="loopKpi"></div>
+  </div>
+</section>
+
+<!-- 5. KHÁI NIỆM -->
+<section id="khai-niem">
+  <h2>5. Từ điển khái niệm</h2>
+  <p>Mỗi thẻ có định nghĩa ngắn và liên kết sang khái niệm liên quan. Lọc theo nhóm hoặc gõ để tìm (gõ không dấu cũng được).</p>
+  <div class="gloss-tools">
+    <input id="glossSearch" type="search" placeholder="Tìm… (vd: cache, dinh tuyen)" aria-label="Tìm khái niệm">
+  </div>
+  <div class="gloss-tools" id="glossChips"></div>
+  <div class="grid g3" id="glossGrid"></div>
+</section>
+
+<!-- 6. MỐI QUAN HỆ -->
+<section id="quan-he">
+  <h2>6. Bản đồ mối quan hệ</h2>
+  <p>Chi phí của một việc phụ thuộc bốn thứ: số lần gọi, token vào, token ra, và giá mỗi token. Mỗi cần gạt tác động vào một trong bốn thứ đó. Riêng vòng lặp agent kéo số lần gọi <b>lên</b>. Đánh giá chất lượng là chốt chặn cho mọi cần gạt.</p>
+  <div class="legend"><span><i style="border-color:var(--p1);background:var(--accent-soft)"></i>Cần gạt giảm chi phí</span><span><i style="border-color:var(--p2);background:var(--p2-soft)"></i>Yếu tố tạo ra chi phí</span><span><i style="border-color:var(--bad);background:var(--bad-soft)"></i>Làm chi phí tăng</span><span><i style="border-color:var(--p3);background:var(--ok-soft)"></i>Chốt chặn chất lượng</span></div>
+
+  <div class="vflow m-only" role="group" aria-label="Bản đồ mối quan hệ (dạng dọc)">
+    <div class="box box3">
+      <div class="ph ph3">SỐ LẦN GỌI MODEL</div>
+      <div class="node r"><b>1 · Semantic cache, exact cache</b><span>trả lại câu trả lời cũ → bớt lần gọi</span></div>
+      <div style="height:8px"></div>
+      <div class="node x"><b>Vòng lặp agent, multi-agent</b><span>làm <b style="display:inline;color:var(--bad)">tăng</b> số lần gọi: khoảng 4× (agent) đến 15× (multi-agent) token so với chat<sup class="cite"><a href="#src-7">[7]</a></sup> → cần giới hạn số vòng</span></div>
+    </div>
+    <div class="box box3">
+      <div class="ph ph3">TOKEN VÀO</div>
+      <div class="node r"><b>2 · Cắt context, compaction, nén prompt, tool trả kết quả gọn</b><span>ít chunk RAG hơn, lịch sử ngắn hơn</span></div>
+    </div>
+    <div class="box box3">
+      <div class="ph ph3">TOKEN RA (KỂ CẢ SUY LUẬN)</div>
+      <div class="node r"><b>5 · Effort, max_tokens, yêu cầu trả lời ngắn</b><span>token ra đắt hơn token vào</span></div>
+    </div>
+    <div class="box box3">
+      <div class="ph ph3">GIÁ MỖI TOKEN</div>
+      <div class="node r"><b>1 · Prompt caching</b><span>tiền tố đọc từ cache tính giá thấp</span></div>
+      <div class="gap" style="height:8px"></div>
+      <div class="node r"><b>3 · Router, cascade</b><span>câu dễ sang model rẻ</span></div>
+      <div class="gap" style="height:8px"></div>
+      <div class="node r"><b>4 · Batch, Flex</b><span>rẻ hơn, đổi lại chậm hơn</span></div>
+    </div>
+    <div class="ar">↓ cả bốn cộng lại</div>
+    <div class="node" style="border:2px solid var(--text)"><b>Chi phí mỗi việc thành công</b><span>tổng chi phí ÷ số việc làm đúng</span></div>
+    <div class="ar">↑ chặn mức cắt</div>
+    <div class="node g" style="background:var(--ok-soft)"><b>Đánh giá chất lượng</b><span>bộ test cố định, chạy lại sau mỗi lần cắt</span></div>
+  </div>
+
+  <div class="svgbox d-only">
+  <svg class="diagram" viewBox="0 0 1000 430" role="img" aria-label="Bản đồ: các cần gạt 1 đến 5 tác động lên số lần gọi, token vào, token ra, giá mỗi token; vòng lặp agent làm tăng số lần gọi; tất cả dẫn tới chi phí mỗi việc thành công, được đánh giá chất lượng chặn lại">
+    <defs>
+      <marker id="arrM" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+      <marker id="arrB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--bad)"/></marker>
+      <marker id="arrG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--ok)"/></marker>
+    </defs>
+    <g font-size="15">
+      <rect x="8" y="14" width="150" height="72" rx="10" fill="var(--accent-soft)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="83" y="44" text-anchor="middle" font-weight="600" font-size="14">1 · Semantic cache</text><text x="83" y="66" text-anchor="middle" font-size="13" style="fill:var(--muted)">trả lời lại câu cũ</text>
+      <rect x="175" y="14" width="150" height="72" rx="10" fill="var(--accent-soft)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="250" y="44" text-anchor="middle" font-weight="600" font-size="14">2 · Cắt context</text><text x="250" y="66" text-anchor="middle" font-size="13" style="fill:var(--muted)">top-k, compaction</text>
+      <rect x="342" y="14" width="150" height="72" rx="10" fill="var(--accent-soft)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="417" y="44" text-anchor="middle" font-weight="600" font-size="14">5 · Bớt token ra</text><text x="417" y="66" text-anchor="middle" font-size="13" style="fill:var(--muted)">effort, max_tokens</text>
+      <rect x="509" y="14" width="150" height="72" rx="10" fill="var(--accent-soft)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="584" y="44" text-anchor="middle" font-weight="600" font-size="14">1 · Prompt caching</text><text x="584" y="66" text-anchor="middle" font-size="13" style="fill:var(--muted)">tiền tố ổn định</text>
+      <rect x="676" y="14" width="150" height="72" rx="10" fill="var(--accent-soft)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="751" y="44" text-anchor="middle" font-weight="600" font-size="14">3 · Router, cascade</text><text x="751" y="66" text-anchor="middle" font-size="13" style="fill:var(--muted)">câu dễ → model rẻ</text>
+      <rect x="843" y="14" width="150" height="72" rx="10" fill="var(--accent-soft)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="918" y="44" text-anchor="middle" font-weight="600" font-size="14">4 · Batch, Flex</text><text x="918" y="66" text-anchor="middle" font-size="13" style="fill:var(--muted)">rẻ hơn, chậm hơn</text>
+
+      <rect x="20" y="168" width="200" height="66" rx="10" fill="var(--p2-soft)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="120" y="207" text-anchor="middle" font-weight="600">Số lần gọi model</text>
+      <rect x="270" y="168" width="200" height="66" rx="10" fill="var(--p2-soft)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="370" y="207" text-anchor="middle" font-weight="600">Token vào</text>
+      <rect x="520" y="168" width="200" height="66" rx="10" fill="var(--p2-soft)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="620" y="198" text-anchor="middle" font-weight="600">Token ra</text><text x="620" y="219" text-anchor="middle" font-size="13" style="fill:var(--muted)">kể cả token suy luận</text>
+      <rect x="770" y="168" width="200" height="66" rx="10" fill="var(--p2-soft)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="870" y="207" text-anchor="middle" font-weight="600">Giá mỗi token</text>
+
+      <rect x="20" y="318" width="200" height="72" rx="10" fill="var(--bad-soft)" stroke="var(--bad)" stroke-width="2"/>
+      <text x="120" y="348" text-anchor="middle" font-weight="600">Agent, multi-agent</text><text x="120" y="370" text-anchor="middle" font-size="13" style="fill:var(--muted)">token ~4× đến ~15× chat</text>
+      <rect x="330" y="314" width="340" height="80" rx="10" fill="var(--surface)" stroke="var(--text)" stroke-width="2"/>
+      <text x="500" y="348" text-anchor="middle" font-weight="700" font-size="16">Chi phí mỗi việc thành công</text><text x="500" y="372" text-anchor="middle" font-size="13" style="fill:var(--muted)">tổng chi phí ÷ số việc làm đúng</text>
+      <rect x="776" y="318" width="220" height="72" rx="10" fill="var(--ok-soft)" stroke="var(--p3)" stroke-width="2"/>
+      <text x="886" y="348" text-anchor="middle" font-weight="600">Đánh giá chất lượng</text><text x="886" y="370" text-anchor="middle" font-size="13" style="fill:var(--muted)">bộ test cố định</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="2" fill="none" marker-end="url(#arrM)">
+      <path d="M83 86 L112 166"/><path d="M250 86 L352 166"/><path d="M417 86 L600 166"/><path d="M584 86 L840 166"/><path d="M751 86 L862 166"/><path d="M918 86 L885 166"/>
+      <path d="M170 234 L360 312"/><path d="M370 234 L450 312"/><path d="M620 234 L560 312"/><path d="M850 234 L660 314"/>
+    </g>
+    <path d="M120 316 L120 236" stroke="var(--bad)" stroke-width="2" fill="none" marker-end="url(#arrB)"/>
+    <text x="128" y="290" font-size="13" font-weight="600" style="fill:var(--bad)">nhiều vòng gọi hơn</text>
+    <path d="M774 354 L672 354" stroke="var(--ok)" stroke-width="2" fill="none" stroke-dasharray="6 4" marker-end="url(#arrG)"/>
+    <text x="723" y="342" text-anchor="middle" font-size="13" font-weight="600" style="fill:var(--ok)">chặn mức cắt</text>
+    <text x="280" y="128" text-anchor="end" font-size="13" style="fill:var(--muted)">bớt token</text>
+    <text x="90" y="128" text-anchor="end" font-size="13" style="fill:var(--muted)">bớt lần gọi</text>
+    <text x="705" y="105" text-anchor="middle" font-size="13" style="fill:var(--muted)">giá thấp hơn</text>
+  </svg>
+  </div>
+  <p class="muted">Trang <a href="../context-engineering/">Context engineering</a> nói kỹ về cắt context, còn <a href="../reranking/">Reranking</a> nói về chọn ít đoạn tài liệu mà vẫn đúng. Về đo lường trong vận hành, xem <a href="../llm-observability/">LLM observability</a>.</p>
+</section>
+
+<!-- 7. SO SÁNH -->
+<section id="so-sanh">
+  <h2>7. So sánh và đánh đổi</h2>
+  <h3>Các cần gạt</h3>
+  <p class="muted">Số ở đầu mỗi dòng là số cần gạt ở mục 1. Cần gạt 6 (đo và chặn) nằm ở mục 9.</p>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Cần gạt</th><th>Giảm cái gì</th><th>Đánh đổi</th><th>Hợp khi</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag p1">1</span> <b>Prompt caching</b></td><td>Giá phần tiền tố. Anthropic: đọc cache bằng 0,1× giá vào ở phần lớn model, 0,05× ở Opus 5.5 và Sonnet 5.5, 0,025× ở Fable và Mythos 5.1–5.2 (2026-11-17).<sup class="cite"><a href="#src-2">[2]</a></sup> OpenAI: giảm tới 95%.<sup class="cite"><a href="#src-3">[3]</a></sup></td><td>Lần ghi đắt hơn giá vào thường; cache hết hạn nếu lâu không dùng; phải giữ tiền tố giống hệt.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-3">[3]</a></sup></td><td>System prompt, định nghĩa tool, tài liệu dài được dùng lại nhiều lần trong vài phút.</td></tr>
+      <tr><td><span class="tag p1">2</span> <b>Cắt context</b></td><td>Số token vào: ít chunk RAG hơn, lịch sử ngắn hơn, kết quả tool gọn hơn.<sup class="cite"><a href="#src-16">[16]</a><a href="#src-17">[17]</a></sup></td><td>Cắt quá tay thì mất thông tin cần để trả lời đúng.</td><td>RAG lấy nhiều đoạn; agent chạy nhiều vòng với kết quả tool lớn.</td></tr>
+      <tr><td><span class="tag p1">2</span> <b>Nén prompt</b></td><td>Số token vào. LLMLingua nén tới 20 lần mà ít giảm chất lượng trên bốn bộ dữ liệu thử của họ.<sup class="cite"><a href="#src-15">[15]</a></sup></td><td>Thêm một bước xử lý; kết quả trên bộ thử chưa chắc đúng với tài liệu của bạn.</td><td>Prompt rất dài nhưng ít khi lặp lại (nên không hưởng lợi từ cache).</td></tr>
+      <tr><td><span class="tag p1">3</span> <b>Router, cascade</b></td><td>Giá trung bình mỗi request. FrugalGPT: tới 98% trên bộ thử;<sup class="cite"><a href="#src-10">[10]</a></sup> RouteLLM: hơn 2 lần trong một số trường hợp.<sup class="cite"><a href="#src-11">[11]</a></sup></td><td>Định tuyến sai làm giảm chất lượng; cascade thêm độ trễ ở ca khó vì gọi hai lần.</td><td>Lưu lượng có nhiều câu dễ, lặp lại kiểu FAQ.</td></tr>
+      <tr><td><span class="tag p1">4</span> <b>Batch API</b></td><td>50% cả token vào và ra.<sup class="cite"><a href="#src-2">[2]</a><a href="#src-5">[5]</a></sup></td><td>Kết quả có thể trễ tới 24 giờ; request chưa xong khi hết hạn bị hủy.<sup class="cite"><a href="#src-5">[5]</a><a href="#src-6">[6]</a></sup></td><td>Eval, phân loại dữ liệu lớn, embedding kho tài liệu.<sup class="cite"><a href="#src-5">[5]</a></sup></td></tr>
+      <tr><td><span class="tag p1">4</span> <b>Flex (OpenAI)</b></td><td>Giá như Batch, nhưng gọi như request thường.<sup class="cite"><a href="#src-23">[23]</a></sup></td><td>Chậm hơn, đôi khi trả lỗi 429 do thiếu tài nguyên (không tính phí); đang beta, ít model hỗ trợ.<sup class="cite"><a href="#src-23">[23]</a></sup></td><td>Việc ưu tiên thấp: eval, làm giàu dữ liệu, tác vụ bất đồng bộ.<sup class="cite"><a href="#src-23">[23]</a></sup></td></tr>
+      <tr><td><span class="tag p1">1</span> <b>Semantic cache</b></td><td>Số lần gọi model.</td><td>Trúng nhầm: ngưỡng tương đồng cố định không bảo đảm tỷ lệ lỗi;<sup class="cite"><a href="#src-13">[13]</a></sup> câu hỏi phụ thuộc ngữ cảnh dễ trúng nhầm.<sup class="cite"><a href="#src-14">[14]</a></sup></td><td>Câu hỏi chung, lặp lại, không phụ thuộc người hỏi hay quyền truy cập.</td></tr>
+      <tr><td><span class="tag p1">5</span> <b>Effort, max_tokens</b></td><td>Token ra. Effort thấp ưu tiên tốc độ và ít token.<sup class="cite"><a href="#src-8">[8]</a></sup></td><td>Câu khó có thể trả lời kém hơn. <code>max_tokens</code> quá thấp làm câu trả lời bị cắt.<sup class="cite"><a href="#src-9">[9]</a></sup></td><td>Việc đơn giản: phân loại, trích xuất, trả lời FAQ.</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="callout warn"><b>Chiều ngược lại: trả thêm để nhanh hơn.</b> Anthropic có Fast mode: tốc độ sinh token ra cao hơn tới 2,5 lần, với giá cao hơn. Ví dụ ngày 2026-11-17, Opus 5.5 ở Fast mode là 8 USD/MTok vào và 40 USD/MTok ra, gấp đôi giá thường (4 và 20). Fast mode không dùng được với Batch API.<sup class="cite"><a href="#src-2">[2]</a></sup> Chỉ bật cho luồng mà người dùng thật sự cần nhanh.</div>
+
+  <h3>Prompt caching ở ba nhà cung cấp</h3>
+  <p class="muted">Chỉ ghi những gì trang tài liệu chính thức nói, truy cập 2026-11-17. Ô "không nêu" nghĩa là trang đã mở không có thông tin đó.</p>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Nhà cung cấp</th><th>Bật thế nào</th><th>Giá ghi và đọc</th><th>Thời gian sống</th><th>Ngưỡng tối thiểu</th></tr></thead>
+    <tbody>
+      <tr><td><b>Anthropic</b></td><td>Đánh dấu <code>cache_control</code> (tối đa 4 breakpoint), hoặc một trường ở cấp request để tự động dời breakpoint theo hội thoại.<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>Ghi 1,25× (5 phút) hoặc 2× (1 giờ); đọc 0,1× ở phần lớn model, thấp hơn ở một số model.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-2">[2]</a></sup></td><td>Mặc định 5 phút, làm mới miễn phí mỗi lần dùng; có lựa chọn 1 giờ.<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>Tùy model, từ 512 tới 4.096 token. Dưới ngưỡng thì không cache, không báo lỗi.<sup class="cite"><a href="#src-1">[1]</a></sup></td></tr>
+      <tr><td><b>OpenAI</b></td><td>Bật mặc định trên các model hỗ trợ.<sup class="cite"><a href="#src-3">[3]</a></sup></td><td>Giảm tới 95% cho phần đọc. Từ GPT-5.6, ghi cache tính 1,25× giá vào (vòng đời mặc định 30 phút), 2,5× nếu chọn tối thiểu 12 giờ.<sup class="cite"><a href="#src-3">[3]</a></sup></td><td>GPT-5.6 trở đi: tối thiểu 30 phút (mặc định) hoặc 12 giờ. Model cũ hơn: khoảng 5–10 phút không dùng, tối đa 1 giờ; hoặc tới 24 giờ ở chế độ <code>24h</code>.<sup class="cite"><a href="#src-3">[3]</a></sup></td><td>1.024 token với GPT-5.6 trở đi.<sup class="cite"><a href="#src-3">[3]</a></sup></td></tr>
+      <tr><td><b>Google Gemini</b></td><td>Implicit caching bật mặc định từ Gemini 2.5; tự trả lại phần tiết kiệm khi trúng.<sup class="cite"><a href="#src-4">[4]</a></sup></td><td>Không nêu mức cụ thể trên trang đã mở.</td><td>Không nêu. Google khuyên gửi các request cùng tiền tố gần nhau về thời gian.<sup class="cite"><a href="#src-4">[4]</a></sup></td><td>2.048 hoặc 4.096 token tùy model.<sup class="cite"><a href="#src-4">[4]</a></sup></td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout">Điểm chung của cả ba: <b>tiền tố phải giống hệt</b> và nên đặt phần ổn định lên đầu.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-3">[3]</a><a href="#src-4">[4]</a></sup> Trúng cache cũng không phải lúc nào cũng xảy ra. OpenAI nói rõ không bảo đảm trúng.<sup class="cite"><a href="#src-3">[3]</a></sup> Google chỉ đưa cách "tăng khả năng" trúng.<sup class="cite"><a href="#src-4">[4]</a></sup> Với Anthropic, request gửi song song chỉ dùng được cache sau khi response đầu tiên bắt đầu, còn request trong batch thì trúng theo kiểu best-effort (cố gắng, không bảo đảm).<sup class="cite"><a href="#src-1">[1]</a></sup> Cache không chia sẻ giữa các tổ chức. Trên Claude API, cache còn tách theo workspace.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-3">[3]</a></sup> Vì vậy không có chuyện "đọc được" prompt của công ty khác qua cache của nhà cung cấp. Nhưng cache ứng dụng do bạn tự làm thì phải tự tách theo người dùng (xem mục 8).</div>
+
+  <h3>Prompt cache hay semantic cache?</h3>
+  <div class="grid g2">
+    <div class="card"><span class="tag p1">Prompt cache</span><h4>An toàn về nội dung, tiết kiệm phần đầu</h4><p>Model vẫn đọc câu hỏi mới và sinh câu trả lời mới. Câu trả lời giống hệt khi không dùng cache.<sup class="cite"><a href="#src-1">[1]</a></sup> Chỉ giảm giá phần tiền tố, không giảm token ra.</p></div>
+    <div class="card"><span class="tag p4">Semantic cache</span><h4>Tiết kiệm cả lần gọi, nhưng có thể trả nhầm</h4><p>GPTCache tự nói có thể gặp false positive khi trúng cache, tức là trả câu trả lời cho một câu hỏi không thực sự khớp.<sup class="cite"><a href="#src-12">[12]</a></sup> vCache đề xuất học ngưỡng riêng cho từng prompt đã lưu, để giữ tỷ lệ lỗi dưới mức người dùng đặt ra.<sup class="cite"><a href="#src-13">[13]</a></sup> MeanCache cho biết khoảng 31% truy vấn là truy vấn lặp lại, nhưng phần tóm tắt bài báo không nêu số liệu này lấy từ đâu.<sup class="cite"><a href="#src-14">[14]</a></sup></p></div>
+  </div>
+</section>
+
+<!-- 8. LỖI -->
+<section id="loi">
+  <h2>8. Lỗi thường gặp và cách chẩn đoán</h2>
+  <p>Mỗi thẻ có triệu chứng bạn sẽ thấy trên hóa đơn hoặc trong log, nguyên nhân hay gặp, và cách kiểm.</p>
+  <div class="grid g2">
+    <div class="card"><span class="tag bad">Triệu chứng</span><h4>Đã bật caching mà token đọc cache vẫn bằng 0</h4>
+      <p><b>Nguyên nhân hay gặp:</b></p>
+      <ul>
+        <li>Tiền tố ngắn hơn ngưỡng tối thiểu. API vẫn chạy bình thường, không báo lỗi.<sup class="cite"><a href="#src-1">[1]</a></sup></li>
+        <li>Có thứ thay đổi trong phần đầu prompt: ngày giờ, mã request, tên người dùng đặt trong system prompt.</li>
+        <li>Định nghĩa tool đổi hoặc đổi thứ tự. Trên Anthropic, đổi định nghĩa tool làm hỏng toàn bộ cache; OpenAI cũng khuyên giữ nguyên định nghĩa, thứ tự và schema của tool.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-3">[3]</a></sup></li>
+        <li>Thứ tự key trong các khối <code>tool_use</code> gửi lại không ổn định. Một số ngôn ngữ (ví dụ Swift, Go) đảo thứ tự key khi tạo JSON.<sup class="cite"><a href="#src-1">[1]</a></sup></li>
+        <li>Đổi mức effort hoặc cấu hình thinking giữa các request.<sup class="cite"><a href="#src-9">[9]</a></sup></li>
+        <li>Lưu lượng thưa, khoảng cách giữa hai request dài hơn thời gian sống của cache.<sup class="cite"><a href="#src-1">[1]</a></sup></li>
+      </ul>
+      <p><b>Cách kiểm:</b> xem <code>cache_read_input_tokens</code> và <code>cache_creation_input_tokens</code> (Anthropic) hoặc <code>cached_tokens</code> (OpenAI) trong mỗi response.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-3">[3]</a></sup> Lần ghi cứ lặp lại mà không có lần đọc nghĩa là tiền tố đang thay đổi.</p></div>
+    <div class="card"><span class="tag bad">Triệu chứng</span><h4>Hóa đơn tăng vọt sau khi chuyển từ chatbot sang agent</h4>
+      <p><b>Nguyên nhân:</b> agent gọi model nhiều vòng, mỗi vòng gửi lại toàn bộ context. Mức khoảng 4 lần token so với chat là bình thường.<sup class="cite"><a href="#src-7">[7]</a></sup> Một tool trả về hàng chục nghìn token mỗi lần sẽ làm mọi vòng sau đắt thêm.</p>
+      <p><b>Cách kiểm:</b> đếm số vòng và số token mỗi vòng trên từng việc. Đặt giới hạn số vòng. <code>max_tokens</code> chỉ chặn từng request, không chặn chi phí cả vòng lặp.<sup class="cite"><a href="#src-9">[9]</a></sup> Cho tool trả kết quả gọn, có phân trang và lọc. Claude Code mặc định giới hạn kết quả tool ở 25.000 token.<sup class="cite"><a href="#src-16">[16]</a></sup></p></div>
+    <div class="card"><span class="tag bad">Triệu chứng</span><h4>Bị tính tiền mà không có câu trả lời</h4>
+      <p><b>Nguyên nhân:</b> model suy luận dùng hết giới hạn output trước khi kịp viết câu trả lời. OpenAI nói khi đó response có trạng thái <code>incomplete</code>, và bạn vẫn trả tiền cho token vào và token suy luận.<sup class="cite"><a href="#src-8">[8]</a></sup></p>
+      <p><b>Cách kiểm:</b> theo dõi tỷ lệ response bị cắt và số token suy luận (<code>thinking_tokens</code>, <code>reasoning_tokens</code>).<sup class="cite"><a href="#src-8">[8]</a><a href="#src-9">[9]</a></sup> Nếu câu bị cắt là câu cần suy luận thì nâng giới hạn. Nếu là câu dễ bị "nghĩ quá" thì giảm effort.<sup class="cite"><a href="#src-9">[9]</a></sup></p></div>
+    <div class="card"><span class="tag bad">Triệu chứng</span><h4>Đổi sang model mới, giá mỗi MTok như cũ mà hóa đơn vẫn tăng</h4>
+      <p><b>Nguyên nhân:</b> tokenizer mới cắt cùng văn bản ra nhiều token hơn. Anthropic nói tokenizer của Claude 4.7 trở đi ra nhiều hơn khoảng 30% token, tùy nội dung.<sup class="cite"><a href="#src-2">[2]</a></sup> Model mới cũng có thể nghĩ nhiều hơn ở mức effort mặc định.</p>
+      <p><b>Cách kiểm:</b> chạy cùng bộ prompt mẫu (bằng tiếng Việt) trên model cũ và model mới, so số token vào, token ra và token suy luận, chứ không chỉ so giá niêm yết.</p></div>
+    <div class="card"><span class="tag bad">Triệu chứng</span><h4>Semantic cache trả lời sai, hoặc trả lời theo dữ liệu của người khác</h4>
+      <p><b>Nguyên nhân:</b> câu hỏi giống nghĩa nhưng phụ thuộc ngữ cảnh. Ví dụ "còn hợp đồng kia thì sao?".<sup class="cite"><a href="#src-14">[14]</a></sup> Ngưỡng tương đồng cố định không kiểm soát được tỷ lệ lỗi.<sup class="cite"><a href="#src-13">[13]</a></sup> Với RAG doanh nghiệp còn có rủi ro nặng hơn: câu trả lời của người có quyền xem tài liệu A bị trả lại cho người không có quyền.</p>
+      <p><b>Cách kiểm:</b> chỉ cache câu hỏi chung, không chứa dữ liệu riêng. Gắn khóa cache theo tenant (khách hàng hoặc đơn vị dùng chung hệ thống) và nhóm quyền. Lấy mẫu các lần trúng cache để người chấm kiểm.</p></div>
+    <div class="card"><span class="tag bad">Triệu chứng</span><h4>Chi phí mỗi request giảm, nhưng số ticket chuyển cho người xử lý tăng</h4>
+      <p><b>Nguyên nhân:</b> router đẩy câu khó sang model nhỏ, hoặc cắt context làm mất đoạn tài liệu cần. Tiết kiệm ở API bị ăn mất bởi chi phí làm lại.</p>
+      <p><b>Cách kiểm:</b> đo <b>chi phí mỗi việc thành công</b> trên bộ test cố định, trước và sau mỗi thay đổi (mục 9). Lặp lại phép so trên nhiều loại việc tiêu biểu.<sup class="cite"><a href="#src-24">[24]</a></sup></p></div>
+    <div class="card"><span class="tag warn">Triệu chứng</span><h4>Giá nhảy bậc khi prompt dài, hoặc khi chọn vùng xử lý</h4>
+      <p><b>Nguyên nhân:</b> một số model có giá theo độ dài prompt. Ví dụ Haiku 5.5 tính giá cao hơn cho prompt trên 100.000 token, kể cả khi một phần là cache hit. Chọn xử lý chỉ trong Mỹ (<code>inference_geo: "us"</code>) nhân 1,1× mọi loại token trên các model Claude 4.6 trở đi.<sup class="cite"><a href="#src-2">[2]</a></sup></p>
+      <p><b>Cách kiểm:</b> đọc kỹ phần "long context" và "data residency" trên trang giá. Đặt cảnh báo khi prompt vượt ngưỡng.</p></div>
+    <div class="card"><span class="tag warn">Triệu chứng</span><h4>Batch về trễ hoặc thiếu kết quả</h4>
+      <p><b>Nguyên nhân:</b> batch có thể mất tới 24 giờ. Request chưa xong khi hết hạn bị hủy.<sup class="cite"><a href="#src-5">[5]</a><a href="#src-6">[6]</a></sup> Với Anthropic, request hết hạn không tính phí.<sup class="cite"><a href="#src-6">[6]</a></sup> Với OpenAI, request đã xong vẫn tính phí.<sup class="cite"><a href="#src-5">[5]</a></sup></p>
+      <p><b>Cách kiểm:</b> chỉ đưa vào batch việc chịu được trễ một ngày. Có bước gửi lại các request bị hủy. Khi nhiều request dùng chung tài liệu dài, Anthropic gợi ý dùng cache 1 giờ, vì batch thường chạy lâu hơn 5 phút.<sup class="cite"><a href="#src-6">[6]</a></sup></p></div>
+  </div>
+</section>
+
+<!-- 9. ĐÁNH GIÁ -->
+<section id="danh-gia">
+  <h2>9. Đánh giá và đo lường</h2>
+  <p>Tối ưu chi phí là một vòng: đo hiện trạng, đổi một thứ, chạy lại eval, so chi phí và chất lượng. Không đo thì không biết thay đổi có làm hỏng gì không. Xem thêm <a href="../llm-evaluation/">Đánh giá LLM</a>.</p>
+  <h3>Chỉ số nên theo dõi</h3>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Chỉ số</th><th>Tính thế nào</th><th>Lấy dữ liệu từ đâu</th></tr></thead>
+    <tbody>
+      <tr><td><b>Chi phí mỗi việc thành công</b></td><td>Tổng chi phí (cả lần thử lại, cả các vòng agent) ÷ số việc làm đúng</td><td>Usage từng lượt, ghép với kết quả eval hoặc phản hồi người dùng</td></tr>
+      <tr><td><b>Tỷ lệ token đọc từ cache</b></td><td>Token đọc cache ÷ tổng token vào. Anthropic: tổng token vào = token đọc cache + token ghi cache + token vào thường.<sup class="cite"><a href="#src-1">[1]</a></sup></td><td><code>cache_read_input_tokens</code>, <code>cache_creation_input_tokens</code>, <code>input_tokens</code>;<sup class="cite"><a href="#src-1">[1]</a></sup> OpenAI: <code>cached_tokens</code><sup class="cite"><a href="#src-3">[3]</a></sup></td></tr>
+      <tr><td><b>Phần token ra dành cho suy luận</b></td><td>Token suy luận ÷ token ra</td><td><code>output_tokens_details.thinking_tokens</code> (Claude), <code>reasoning_tokens</code> (OpenAI)<sup class="cite"><a href="#src-8">[8]</a><a href="#src-9">[9]</a></sup></td></tr>
+      <tr><td><b>Số vòng và token mỗi việc</b></td><td>Số lần gọi model và tổng token cho một việc của agent</td><td>Log hoặc trace của từng phiên agent</td></tr>
+      <tr><td><b>Chi phí theo tính năng, nhóm, môi trường</b></td><td>Cộng chi phí theo workspace, API key, model</td><td>Usage and Cost Analytics API của Anthropic chia theo workspace, API key, model, service tier (tầng dịch vụ).<sup class="cite"><a href="#src-22">[22]</a></sup></td></tr>
+      <tr><td><b>Chất lượng và độ trễ</b></td><td>Điểm eval trên bộ test cố định; độ trễ p95 (95% request nhanh hơn mức này)</td><td>Bộ eval của bạn. Batch và Flex đổi giá rẻ lấy độ trễ cao hơn.<sup class="cite"><a href="#src-5">[5]</a><a href="#src-23">[23]</a></sup></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Ví dụ: rẻ mỗi request chưa chắc rẻ mỗi việc</h3>
+  <p class="muted">Ba cấu hình cho trợ lý chăm sóc khách hàng ở mục 3. Mọi con số là <b>minh họa</b>, JavaScript tính các cột còn lại. Giả định mỗi ticket trợ lý trả lời sai sẽ chuyển cho nhân viên, tốn 0,40 USD công xử lý.</p>
+  <div class="table-wrap"><table class="stack" id="evalTable"><thead><tr><th>Cấu hình</th><th class="num">Chi phí API mỗi ticket</th><th class="num">Tỷ lệ trả lời đúng</th><th class="num">Chi phí API mỗi ticket đúng</th><th class="num">Tổng chi phí mỗi ticket (cả công người)</th></tr></thead><tbody></tbody></table></div>
+  <div class="kpi" id="evalKpi" style="margin-top:10px"></div>
+  <p>Bài học: cấu hình B rẻ nhất trên API nhưng đắt nhất khi tính cả công người xử lý. Cấu hình C giữ chất lượng gần như A nhờ chỉ chuyển câu dễ sang model nhỏ và có bước kiểm.</p>
+
+  <h3>Chốt chặn chi phí</h3>
+  <div class="grid g3">
+    <div class="card"><h4>Trần chi tiêu theo workspace</h4><p>Anthropic cho đặt trần chi tiêu hằng tháng cho từng workspace, và email cảnh báo khi chạm mức bạn chọn (nếu Anthropic thu tiền trực tiếp). Không đặt được trần cho Default Workspace.<sup class="cite"><a href="#src-20">[20]</a></sup></p></div>
+    <div class="card"><h4>Tách dự án và môi trường</h4><p>Dùng workspace để tách dự án, môi trường hoặc nhóm.<sup class="cite"><a href="#src-20">[20]</a></sup> Như vậy một thí nghiệm ở môi trường dev không ăn vào ngân sách production, và hóa đơn chia được theo tính năng.</p></div>
+    <div class="card"><h4>Đừng quên chi phí ngoài model chính</h4><p>Embedding cũng tính theo token vào.<sup class="cite"><a href="#src-19">[19]</a></sup> Giảm số chiều embedding làm vector nhỏ hơn, đổi lại mất một chút độ chính xác.<sup class="cite"><a href="#src-19">[19]</a></sup> Embedding cả kho tài liệu là việc hợp với Batch.<sup class="cite"><a href="#src-5">[5]</a></sup> Lúc trả lời, RAG còn tốn thêm cho embedding câu hỏi và cho reranker (nếu có), ở mỗi request. Xem <a href="../embedding-performance/">Hiệu năng embedding</a> và <a href="../reranking/">Reranking</a>.</p></div>
+  </div>
+</section>
+
+<!-- 10. LỘ TRÌNH -->
+<section id="lo-trinh">
+  <h2>10. Lộ trình tự học 2 tuần (không cần code)</h2>
+  <p class="muted">Khoảng 3–4 giờ mỗi tuần. Bạn có thể làm trên bảng tính với số liệu từ hóa đơn hoặc log thật. Các ô đã đánh dấu được lưu trong trình duyệt của bạn.</p>
+  <div class="grid g3">
+    <div class="card"><span class="tag p1">Tuần 1</span><h4>Bóc hóa đơn</h4><p>Đọc mục 1–4.</p>
+      <label class="check"><input type="checkbox" data-k="w1a"><span>Chọn một luồng thật (trợ lý, agent, job phân loại). Ghi lại một lượt điển hình gồm những phần nào: tools, system prompt, lịch sử, tài liệu RAG, câu hỏi, token ra, token suy luận.</span></label>
+      <label class="check"><input type="checkbox" data-k="w1b"><span>Đánh dấu phần nào giống hệt giữa các request (ứng viên cho prompt cache), phần nào cắt được, việc nào không cần trả lời ngay (ứng viên cho batch).</span></label>
+      <label class="check"><input type="checkbox" data-k="w1c"><span>Nhập số của bạn vào máy tính ở mục 4. Ghi lại cần gạt nào đóng góp nhiều nhất.</span></label>
+    </div>
+    <div class="card"><span class="tag p1">Tuần 2</span><h4>Đo và chốt chặn</h4><p>Đọc mục 5–9.</p>
+      <label class="check"><input type="checkbox" data-k="w2a"><span>Viết tiêu chí chấp nhận (ví dụ: tỷ lệ đúng không giảm quá 1 điểm %) và bộ 30–50 câu test trước khi đổi bất cứ thứ gì.</span></label>
+      <label class="check"><input type="checkbox" data-k="w2b"><span>Thiết kế bảng theo dõi: chi phí mỗi việc thành công, tỷ lệ token đọc cache, phần token suy luận, số vòng agent.</span></label>
+      <label class="check"><input type="checkbox" data-k="w2c"><span>Đề xuất trần chi tiêu và mức cảnh báo cho từng môi trường; giới hạn số vòng cho agent.</span></label>
+    </div>
+    <div class="card"><span class="tag p1">Mở rộng</span><h4>Đọc tài liệu gốc</h4><p>Đọc các phần chính.</p>
+      <label class="check"><input type="checkbox" data-k="w3a"><span>Tài liệu prompt caching của nhà cung cấp bạn dùng<sup class="cite"><a href="#src-1">[1]</a><a href="#src-3">[3]</a><a href="#src-4">[4]</a></sup>: ghi lại ngưỡng tối thiểu, thời gian sống, giá ghi và đọc.</span></label>
+      <label class="check"><input type="checkbox" data-k="w3b"><span>Phần tóm tắt FrugalGPT<sup class="cite"><a href="#src-10">[10]</a></sup> và RouteLLM<sup class="cite"><a href="#src-11">[11]</a></sup>: router và cascade khác nhau ở đâu.</span></label>
+      <label class="check"><input type="checkbox" data-k="w3c"><span>Bài multi-agent của Anthropic<sup class="cite"><a href="#src-7">[7]</a></sup>: khi nào token tăng thêm là xứng đáng.</span></label>
+    </div>
+  </div>
+
+  <h3>Câu hỏi tự kiểm tra</h3>
+  <details><summary>1. Vì sao đặt ngày giờ hiện tại ở đầu system prompt làm tốn tiền?</summary><p>Prompt cache chỉ trúng khi phần đầu prompt giống hệt.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-3">[3]</a></sup> Ngày giờ đổi liên tục nên mọi request có tiền tố khác nhau, cache không bao giờ trúng, mà lần ghi cache còn đắt hơn giá vào thường. Nếu cần ngày giờ, đặt nó ở cuối prompt, sau phần ổn định.</p></details>
+  <details><summary>2. Prompt caching có làm câu trả lời "cũ" đi không?</summary><p>Không. Model vẫn đọc câu hỏi mới và sinh câu trả lời mới. Anthropic nói caching không ảnh hưởng tới output: câu trả lời giống hệt khi không dùng cache.<sup class="cite"><a href="#src-1">[1]</a></sup> Semantic cache thì khác: nó trả lại câu trả lời đã lưu.</p></details>
+  <details><summary>3. Với Anthropic, cache 1 giờ hòa vốn sau mấy lần đọc?</summary><p>Theo trang giá ngày 2026-11-17: ghi cache 1 giờ tốn 2× giá vào, hòa vốn sau hai lần đọc; ghi cache 5 phút tốn 1,25×, hòa vốn sau một lần đọc.<sup class="cite"><a href="#src-2">[2]</a></sup></p></details>
+  <details><summary>4. Đặt max_tokens thấp có giới hạn được chi phí của cả một phiên agent không?</summary><p>Không. <code>max_tokens</code> chặn token ra của từng request. Trong vòng lặp tool, mỗi request có giới hạn riêng, nên nó không chặn tổng chi phí cả lượt.<sup class="cite"><a href="#src-9">[9]</a></sup> Cần thêm giới hạn số vòng và trần chi tiêu.</p></details>
+  <details><summary>5. Router và cascade khác nhau thế nào?</summary><p>Router chọn model <i>trước</i> khi gọi, dựa trên câu hỏi.<sup class="cite"><a href="#src-11">[11]</a></sup> Cascade gọi model rẻ trước, kiểm câu trả lời, không đạt thì mới gọi model đắt hơn.<sup class="cite"><a href="#src-10">[10]</a></sup> Cascade tốn thêm một lần gọi và thêm độ trễ ở các ca khó.</p></details>
+  <details><summary>6. Việc nào nên đưa qua Batch API, việc nào không?</summary><p>Nên: chạy eval, phân loại tập dữ liệu lớn, embedding kho tài liệu.<sup class="cite"><a href="#src-5">[5]</a></sup> Không nên: việc người dùng đang chờ, vì batch có thể mất tới 24 giờ.<sup class="cite"><a href="#src-5">[5]</a><a href="#src-6">[6]</a></sup></p></details>
+</section>
+
+<!-- NGUỒN -->
+<section id="nguon">
+  <h2>Nguồn tham khảo</h2>
+  <p class="muted">Các khẳng định trong trang được đối chiếu với các nguồn dưới đây. Số trong ngoặc vuông ở thân bài trỏ tới mục tương ứng. Mọi nguồn được mở và kiểm lại nội dung ngày 2026-11-17. Tài liệu và trang giá của nhà cung cấp được cập nhật thường xuyên, nên giá, tên model và tên tính năng có thể đã đổi.</p>
+  <ol class="sources">
+    <li id="src-1">Anthropic. <i>Prompt caching</i>. Claude Platform Docs. Tài liệu cập nhật liên tục, không ghi năm. <a href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching" target="_blank" rel="noopener">platform.claude.com/docs/en/build-with-claude/prompt-caching</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-2">Anthropic. <i>Pricing</i>. Claude Platform Docs. Tài liệu cập nhật liên tục, không ghi năm. <a href="https://platform.claude.com/docs/en/about-claude/pricing" target="_blank" rel="noopener">platform.claude.com/docs/en/about-claude/pricing</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-3">OpenAI. <i>Prompt caching</i>. OpenAI API Docs. Không ghi năm. <a href="https://developers.openai.com/api/docs/guides/prompt-caching" target="_blank" rel="noopener">developers.openai.com/api/docs/guides/prompt-caching</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-4">Google. <i>Context caching</i>. Gemini API Docs (Google AI Studio). Không ghi năm. <a href="https://aistudio.google.com/docs/caching" target="_blank" rel="noopener">aistudio.google.com/docs/caching</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-5">OpenAI. <i>Batch API</i>. OpenAI API Docs. Không ghi năm. <a href="https://developers.openai.com/api/docs/guides/batch" target="_blank" rel="noopener">developers.openai.com/api/docs/guides/batch</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-6">Anthropic. <i>Batch processing</i>. Claude Platform Docs. Không ghi năm. <a href="https://platform.claude.com/docs/en/build-with-claude/batch-processing" target="_blank" rel="noopener">platform.claude.com/docs/en/build-with-claude/batch-processing</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-7">Anthropic Engineering. <i>How we built our multi-agent research system</i>. 2025-06-13. <a href="https://www.anthropic.com/engineering/multi-agent-research-system" target="_blank" rel="noopener">anthropic.com/engineering/multi-agent-research-system</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-8">OpenAI. <i>Reasoning models</i>. OpenAI API Docs. Không ghi năm. <a href="https://developers.openai.com/api/docs/guides/reasoning" target="_blank" rel="noopener">developers.openai.com/api/docs/guides/reasoning</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-9">Anthropic. <i>Steering thinking</i> (effort, chi phí và giá của thinking). Claude Platform Docs. Không ghi năm. <a href="https://platform.claude.com/docs/en/build-with-claude/thinking-steering-and-cost" target="_blank" rel="noopener">platform.claude.com/docs/en/build-with-claude/thinking-steering-and-cost</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-10">Lingjiao Chen, Matei Zaharia, James Zou. <i>FrugalGPT: How to Use Large Language Models While Reducing Cost and Improving Performance</i>. arXiv:2305.05176, 2023. <a href="https://arxiv.org/abs/2305.05176" target="_blank" rel="noopener">arxiv.org/abs/2305.05176</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-11">Isaac Ong và cộng sự. <i>RouteLLM: Learning to Route LLMs with Preference Data</i>. arXiv:2406.18665, 2024. <a href="https://arxiv.org/abs/2406.18665" target="_blank" rel="noopener">arxiv.org/abs/2406.18665</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-12">Zilliz. <i>GPTCache</i> (README, giấy phép MIT). GitHub. <a href="https://github.com/zilliztech/GPTCache" target="_blank" rel="noopener">github.com/zilliztech/GPTCache</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-13">Luis Gaspar Schroeder và cộng sự. <i>vCache: Verified Semantic Prompt Caching</i>. arXiv:2502.03771, 2025; ICLR 2026. <a href="https://arxiv.org/abs/2502.03771" target="_blank" rel="noopener">arxiv.org/abs/2502.03771</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-14">Waris Gill và cộng sự. <i>MeanCache: User-Centric Semantic Caching for LLM Web Services</i>. IPDPS 2025. arXiv:2403.02694. <a href="https://arxiv.org/abs/2403.02694" target="_blank" rel="noopener">arxiv.org/abs/2403.02694</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-15">Huiqiang Jiang và cộng sự. <i>LLMLingua: Compressing Prompts for Accelerated Inference of Large Language Models</i>. EMNLP 2023. arXiv:2310.05736. <a href="https://arxiv.org/abs/2310.05736" target="_blank" rel="noopener">arxiv.org/abs/2310.05736</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-16">Anthropic Engineering. <i>Writing effective tools for agents — with agents</i>. 2025-09-11. <a href="https://www.anthropic.com/engineering/writing-tools-for-agents" target="_blank" rel="noopener">anthropic.com/engineering/writing-tools-for-agents</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-17">Anthropic Engineering. <i>Effective context engineering for AI agents</i>. 2025-09-29. <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank" rel="noopener">anthropic.com/engineering/effective-context-engineering-for-ai-agents</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-18">OpenAI. <i>Latency optimization</i>. OpenAI API Docs. Không ghi năm. <a href="https://developers.openai.com/api/docs/guides/latency-optimization" target="_blank" rel="noopener">developers.openai.com/api/docs/guides/latency-optimization</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-19">OpenAI. <i>Vector embeddings</i>. OpenAI API Docs. Không ghi năm. <a href="https://developers.openai.com/api/docs/guides/embeddings" target="_blank" rel="noopener">developers.openai.com/api/docs/guides/embeddings</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-20">Anthropic. <i>Workspaces</i>. Claude Platform Docs. Không ghi năm. <a href="https://platform.claude.com/docs/en/manage-claude/workspaces" target="_blank" rel="noopener">platform.claude.com/docs/en/manage-claude/workspaces</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-21">Aleksandar Petrov, Emanuele La Malfa, Philip H.S. Torr, Adel Bibi. <i>Language Model Tokenizers Introduce Unfairness Between Languages</i>. NeurIPS 2023. arXiv:2305.15425. <a href="https://arxiv.org/abs/2305.15425" target="_blank" rel="noopener">arxiv.org/abs/2305.15425</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-22">Anthropic. <i>Usage and Cost Analytics API</i> (beta). Claude Platform Docs. Không ghi năm. <a href="https://platform.claude.com/docs/en/manage-claude/usage-cost-analytics-api" target="_blank" rel="noopener">platform.claude.com/docs/en/manage-claude/usage-cost-analytics-api</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-23">OpenAI. <i>Flex processing</i> (beta). OpenAI API Docs. Không ghi năm. <a href="https://developers.openai.com/api/docs/guides/flex-processing" target="_blank" rel="noopener">developers.openai.com/api/docs/guides/flex-processing</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-24">OpenAI. <i>Model selection</i>. OpenAI API Docs. Không ghi năm. <a href="https://developers.openai.com/api/docs/guides/model-selection" target="_blank" rel="noopener">developers.openai.com/api/docs/guides/model-selection</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+    <li id="src-25">OpenAI. <i>Cost optimization</i>. OpenAI API Docs. Không ghi năm. <a href="https://developers.openai.com/api/docs/guides/cost-optimization" target="_blank" rel="noopener">developers.openai.com/api/docs/guides/cost-optimization</a> <span class="acc">(truy cập 2026-11-17)</span></li>
+  </ol>
+</section>
+
+</main>
+<footer>Trang học về tối ưu chi phí LLM cho RAG và AI agent. Giá trích từ trang giá chính thức, truy cập 2026-11-17; số liệu trong ví dụ và máy tính là minh họa. <a href="../">Về danh sách chủ đề</a>.</footer>
+
+<script>
+(function(){
+  // ---------- Theme ----------
+  var root=document.documentElement;
+  function safeGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+  function safeSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  var saved=safeGet('rag-theme'); if(saved) root.setAttribute('data-theme',saved);
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme');
+    if(!cur){cur=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+    var next=cur==='dark'?'light':'dark'; root.setAttribute('data-theme',next); safeSet('rag-theme',next);
+  });
+
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function cite(){return '<sup class="cite">'+[].map.call(arguments,function(n){return '<a href="#src-'+n+'">['+n+']</a>'}).join('')+'</sup>'}
+  function num(x,d){return x.toLocaleString('vi-VN',{maximumFractionDigits:d===undefined?1:d,minimumFractionDigits:d===undefined?0:d})}
+  function tok(x){return x.toLocaleString('vi-VN',{maximumFractionDigits:0})}
+  function usd(x,d){return num(x,d===undefined?2:d)+' USD'}
+
+  // ---------- Stacked tables on phones: give each cell its column name ----------
+  function labelTables(root){
+    [].forEach.call(root.querySelectorAll('table.stack'),function(t){
+      var heads=[].map.call(t.querySelectorAll('thead th'),function(th){return th.textContent});
+      [].forEach.call(t.querySelectorAll('tbody tr'),function(tr){[].forEach.call(tr.children,function(td,i){if(heads[i])td.setAttribute('data-label',heads[i])})});
+    });
+  }
+
+  // ---------- Prices (USD per million tokens), Anthropic pricing page, accessed 2026-11-17 ----------
+  // in = base input, w5 = 5-minute cache write, hit = cache hit/refresh, out = output
+  var PRICES={
+    opus:{n:'Opus 5.5',in:4,w5:5,hit:0.20,out:20,rd:'0,05×'},
+    sonnet:{n:'Sonnet 5.5',in:2,w5:2.5,hit:0.10,out:10,rd:'0,05×'},
+    haiku:{n:'Haiku 5.5',in:0.10,w5:0.125,hit:0.01,out:0.50,rd:'0,1×'}
+  };
+  var MIN_CACHE=512; // minimum cacheable prompt length for these three models
+  // Cost of one request in USD. pre = stable prefix tokens, dyn = changing tokens, out = output tokens.
+  // hit = share of requests that read the prefix from cache (0..1); null = caching off.
+  function reqCost(p,pre,dyn,out,hit){
+    var preCost;
+    if(hit===null||pre<MIN_CACHE){preCost=pre*p.in}
+    else{preCost=pre*(hit*p.hit+(1-hit)*p.w5)}
+    return {pre:preCost/1e6,dyn:dyn*p.in/1e6,out:out*p.out/1e6};
+  }
+  function tot(c){return c.pre+c.dyn+c.out}
+  // Price per MTok: 2 decimals, or 3 when the price needs it (0,125)
+  function pf(x){return num(x,Math.round(x*100)===x*100?2:3)}
+
+  // ---------- Stepper example ----------
+  var S=PRICES.sonnet, H=PRICES.haiku;
+  // Illustrative token counts for one customer-support turn
+  var PRE=6000, HIST=1500, CHUNK=400, NCH=8, Q=100, OUT=450, THINK=200;
+  var DYN0=HIST+NCH*CHUNK+Q;             // 4.800
+  var HIST2=600, NCH2=3, DYN2=HIST2+NCH2*CHUNK+Q; // 1.900
+  var OUT2=250;
+  var c0=reqCost(S,PRE,DYN0,OUT,null), c3hit=reqCost(S,PRE,DYN0,OUT,1), c3miss=reqCost(S,PRE,DYN0,OUT,0);
+  var c4=reqCost(S,PRE,DYN2,OUT,1), c5=reqCost(H,PRE,DYN2,OUT,1), c6=reqCost(S,PRE,DYN2,OUT2,1);
+  function CL(label,c,extra){return '<div class="cost-line"><span>'+label+'</span><b>'+usd(tot(c),4)+'</b><span class="muted">vào '+usd(c.pre+c.dyn,4)+' · ra '+usd(c.out,4)+'</span>'+(extra?'<span class="muted">'+extra+'</span>':'')+'</div>'}
+  function M(cls,label,body){return '<div class="msg '+cls+'"><b>'+label+'</b>'+body+'</div>'}
+  function UL(items){return '<ul style="margin:4px 0;padding-left:1.2em">'+items.map(function(x){return '<li>'+x+'</li>'}).join('')+'</ul>'}
+  var STEPS=[
+    {t:'Bóc một lượt hỏi',h:'<h4 style="margin-top:0">Bước 1. Một lượt hỏi gồm những gì?</h4>'+
+      '<p>Khách hỏi: "Hợp đồng của tôi có chi trả nha khoa không?". Nhóm mở log một lượt điển hình và đếm token (minh họa):</p>'+
+      UL(['<b>Tiền tố</b>: định nghĩa tool, system prompt và chính sách chung: '+tok(PRE)+' token. Giống hệt ở mọi request.',
+          '<b>Lịch sử hội thoại</b>: '+tok(HIST)+' token.',
+          '<b>Tài liệu RAG</b>: '+NCH+' đoạn × '+tok(CHUNK)+' = '+tok(NCH*CHUNK)+' token.',
+          '<b>Câu hỏi</b>: '+tok(Q)+' token.',
+          '<b>Token ra</b>: '+tok(OUT)+', trong đó '+tok(THINK)+' token suy luận không hiện ra nhưng vẫn tính như token ra.'+cite(9)])+
+      CL('Một lượt trên Sonnet 5.5:',c0)+
+      '<p>Tổng token vào là '+tok(PRE+DYN0)+'. Phần vào chiếm '+num((c0.pre+c0.dyn)/tot(c0)*100,0)+'% chi phí, dù token ra đắt gấp 5 lần mỗi token.'+cite(2)+' Lý do: số token vào lớn hơn nhiều. Khai báo tool cũng thêm token ẩn: bảng giá ghi 286 token system prompt cho tool use ở Sonnet 5.5.'+cite(2)+'</p>'},
+    {t:'Đặt thước đo trước',h:'<h4 style="margin-top:0">Bước 2. Đặt thước đo trước khi cắt</h4>'+
+      M('b','Tiêu chí chấp nhận','<p>Chọn tiêu chí trước khi so sánh cấu hình, rồi giữ cấu hình nhẹ nhất vẫn đạt chuẩn.'+cite(24)+' Ở đây: tỷ lệ trả lời đúng trên bộ 50 ticket mẫu không giảm quá 1 điểm %.</p>')+
+      M('a','Ghi usage mỗi lượt','<p>Lưu các trường <code>input_tokens</code>, <code>cache_creation_input_tokens</code>, <code>cache_read_input_tokens</code>, <code>output_tokens</code> và <code>thinking_tokens</code> cùng mã ticket.'+cite(1,9)+'</p>')+
+      M('c','Chỉ số chính','<p>Chi phí mỗi ticket <b>được giải quyết đúng</b>, không phải chi phí mỗi request. Mục 9 cho thấy vì sao.</p>')},
+    {t:'Sắp prompt để cache',h:'<h4 style="margin-top:0">Bước 3. Sắp lại prompt để trúng prompt cache</h4>'+
+      '<p>Nhóm phát hiện system prompt có dòng "Thời gian hiện tại: …" ở đầu. Vì thế không request nào có tiền tố giống nhau. Họ chuyển dòng đó xuống cuối, và giữ thứ tự tools → system → messages cố định.'+cite(1)+'</p>'+
+      '<pre class="pt">[tools] → [system + chính sách chung]  ← cache đến đây\n[lịch sử] → [tài liệu RAG] → [câu hỏi] → [thời gian hiện tại]</pre>'+
+      CL('Trúng cache:',c3hit,'tiền tố tính '+S.rd+' giá vào')+
+      CL('Trượt cache (phải ghi):',c3miss,'tiền tố tính 1,25× giá vào')+
+      '<p>Cache 5 phút hòa vốn sau một lần đọc.'+cite(2)+' Mỗi lần dùng làm mới miễn phí thời gian sống.'+cite(1)+' Vì vậy trợ lý có khách hỏi liên tục sẽ trúng cache phần lớn thời gian.</p>'+
+      '<div class="callout warn" style="margin:8px 0">Kiểm: thứ tự key trong các khối <code>tool_use</code> gửi lại phải ổn định, vì một số ngôn ngữ đảo thứ tự key và làm vỡ cache.'+cite(1)+'</div>'},
+    {t:'Cắt phần thay đổi',h:'<h4 style="margin-top:0">Bước 4. Cắt phần thay đổi</h4>'+
+      UL(['Lấy '+NCH+' đoạn rồi <a href="../reranking/">rerank</a>, chỉ giữ '+NCH2+' đoạn tốt nhất: '+tok(NCH*CHUNK)+' → '+tok(NCH2*CHUNK)+' token.',
+          'Lịch sử dài thì tóm tắt (compaction); kết quả tool cũ thì xóa. Anthropic gọi xóa kết quả tool là cách compaction nhẹ và an toàn nhất.'+cite(17)+' Lịch sử: '+tok(HIST)+' → '+tok(HIST2)+' token.',
+          'Tool tra hợp đồng trả về các trường cần, không trả cả hồ sơ. Anthropic thấy chế độ trả lời "concise" dùng khoảng 1/3 token.'+cite(16)])+
+      CL('Trúng cache, phần thay đổi '+tok(DYN0)+' → '+tok(DYN2)+' token:',c4)+
+      '<p class="muted">Chạy lại bộ 50 ticket: nếu tỷ lệ đúng giảm, có thể đã cắt mất đoạn cần. Khi đó tăng số đoạn giữ lại.</p>'},
+    {t:'Định tuyến model',h:'<h4 style="margin-top:0">Bước 5. Câu dễ cho model nhỏ</h4>'+
+      '<p>Phân nhóm ticket: hỏi giờ làm việc, cách nộp hồ sơ, tra trạng thái là câu dễ. Khiếu nại, diễn giải điều khoản loại trừ là câu khó. Anthropic gợi ý Haiku cho việc đơn giản, Sonnet cho phần lớn việc chạy thật (production workload).'+cite(2)+'</p>'+
+      CL('Câu dễ trên Haiku 5.5 (trúng cache):',c5,'≈ '+usd(tot(c5)*1000,2)+' cho 1.000 lượt, so với '+usd(tot(c4)*1000,2)+' trên Sonnet 5.5')+
+      M('a','Router','<p>Bộ phân loại chọn model trước khi gọi. RouteLLM học việc này từ dữ liệu con người chấm câu trả lời nào tốt hơn (human preference data).'+cite(11)+'</p>')+
+      M('c','Cascade','<p>Gọi model nhỏ trước, có bước kiểm câu trả lời, không đạt thì gọi model lớn. Đây là ý của FrugalGPT.'+cite(10)+' Cách này tốn thêm một lần gọi ở ca khó.</p>')+
+      '<p class="muted">Model nhỏ có cache riêng, nên lần đầu gọi model nhỏ cũng phải ghi cache.</p>'},
+    {t:'Bớt token ra',h:'<h4 style="margin-top:0">Bước 6. Giới hạn token ra và token suy luận</h4>'+
+      UL(['Với câu dễ, giảm mức effort. Anthropic khuyên giảm effort trước khi dùng lời nhắc "đừng nghĩ nhiều".'+cite(9),
+          'Giữ effort cố định trong một hội thoại. Đổi effort giữa các request có thể làm hỏng prompt cache.'+cite(9),
+          'Yêu cầu trả lời ngắn, đúng trọng tâm. Hướng dẫn tối ưu độ trễ của OpenAI có nguyên tắc "Generate fewer tokens"; hướng dẫn tối ưu chi phí khuyên tối ưu cho output ngắn hơn.'+cite(18,25),
+          'Đặt <code>max_tokens</code> đủ chỗ cho cả phần nghĩ lẫn câu trả lời. Đặt thấp quá thì câu trả lời bị cắt.'+cite(9)])+
+      CL('Model lớn, token ra '+tok(OUT)+' → '+tok(OUT2)+':',c6)},
+    {t:'Việc không gấp → batch',h:'<h4 style="margin-top:0">Bước 7. Việc không gấp thì gửi batch</h4>'+
+      '<p>Ngoài trợ lý trực tuyến, nhóm còn hai việc chạy nền: phân loại 200.000 ticket cũ theo chủ đề, và chạy bộ eval mỗi đêm. Cả hai không cần trả lời ngay.</p>'+
+      UL(['Batch API giảm 50% cả token vào và ra.'+cite(2,5),
+          'Anthropic: phần lớn batch xong dưới 1 giờ, nhưng có thể tới 24 giờ; mỗi batch tối đa 100.000 request hoặc 256 MB.'+cite(6),
+          'Các request dùng chung tài liệu dài nên dùng cache 1 giờ, vì batch thường chạy lâu hơn 5 phút.'+cite(6)])},
+    {t:'Chốt chặn',h:'<h4 style="margin-top:0">Bước 8. Đặt chốt chặn</h4>'+
+      UL(['Tách workspace cho dev và production. Đặt trần chi tiêu tháng và email cảnh báo.'+cite(20),
+          'Giới hạn số vòng tool của agent. <code>max_tokens</code> không chặn được tổng chi phí cả vòng lặp.'+cite(9),
+          'Báo cáo chi phí theo workspace, API key và model mỗi tuần.'+cite(22),
+          'Mỗi khi đổi model, chạy lại cả bộ eval lẫn bảng đếm token. Tokenizer mới có thể làm cùng văn bản ra nhiều token hơn.'+cite(2)])+
+      '<div class="cost-line"><span>Lượt câu khó, từ bước 1 đến bước 6:</span><b>'+usd(tot(c0),4)+' → '+usd(tot(c6),4)+'</b><span class="muted">giảm '+num((1-tot(c6)/tot(c0))*100,0)+'% (minh họa, khi trúng cache)</span></div>'}
+  ];
+  var stepsEl=document.getElementById('steps'), bodyEl=document.getElementById('stepBody'), cur=0;
+  STEPS.forEach(function(s,i){var b=document.createElement('button');b.innerHTML='<span class="n">'+(i+1)+'</span>'+s.t;b.addEventListener('click',function(){show(i)});stepsEl.appendChild(b)});
+  function keepTop(){var t=bodyEl.getBoundingClientRect().top;if(t<70)window.scrollBy(0,t-80)}
+  function show(i){cur=i;bodyEl.innerHTML=STEPS[i].h;
+    [].forEach.call(stepsEl.children,function(b,j){b.classList.toggle('on',j===i);b.setAttribute('aria-current',j===i?'step':'false')});
+    var on=stepsEl.children[i]; if(stepsEl.scrollWidth>stepsEl.clientWidth){stepsEl.scrollLeft=on.offsetLeft-stepsEl.offsetLeft-(stepsEl.clientWidth-on.offsetWidth)/2}
+    document.getElementById('prevStep').disabled=i===0;document.getElementById('nextStep').disabled=i===STEPS.length-1}
+  document.getElementById('prevStep').addEventListener('click',function(){if(cur>0){show(cur-1);keepTop()}});
+  document.getElementById('nextStep').addEventListener('click',function(){if(cur<STEPS.length-1){show(cur+1);keepTop()}});
+  show(0);
+
+  // ---------- Monthly cost calculator (illustrative) ----------
+  var big='sonnet';
+  var bigEl=document.getElementById('bigModel');
+  ['opus','sonnet'].forEach(function(k){var p=PRICES[k];var b=document.createElement('button');b.dataset.k=k;b.textContent=p.n+': vào '+pf(p.in)+' · ra '+pf(p.out);bigEl.appendChild(b)});
+  bigEl.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;big=b.dataset.k;renderCalc()});
+  var ids=['Req','Pre','Dyn','Out','Trim','Hit','Small','Batch'];
+  var inp={};ids.forEach(function(k){inp[k]=document.getElementById('c'+k);inp[k].addEventListener('input',renderCalc)});
+  function v(k){return +inp[k].value}
+  function mix(a,b,w){return {pre:a.pre*(1-w)+b.pre*w,dyn:a.dyn*(1-w)+b.dyn*w,out:a.out*(1-w)+b.out*w}}
+  function scale(c,f){return {pre:c.pre*f,dyn:c.dyn*f,out:c.out*f}}
+  function bar(label,c,base){
+    var t=tot(c), w=base>0?t/base*100:0;
+    function seg(x,cls){return t>0?'<i class="'+cls+'" style="width:'+(x/t*100)+'%"></i>':''}
+    return '<div class="sbar-row"><div class="lbl"><span>'+label+'</span><b>'+usd(t)+' / tháng</b></div><div class="sbar-wrap"><div class="sbar" style="width:'+Math.max(w,0.5)+'%">'+seg(c.pre,'seg-pre')+seg(c.dyn,'seg-dyn')+seg(c.out,'seg-out')+'</div></div></div>';
+  }
+  function renderCalc(){
+    [].forEach.call(bigEl.children,function(b){var on=b.dataset.k===big;b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)});
+    var B=PRICES[big];
+    document.getElementById('priceNote').innerHTML='Đã chọn '+B.n+': vào '+pf(B.in)+', ghi cache 5 phút '+pf(B.w5)+', đọc cache '+pf(B.hit)+' ('+B.rd+'), ra '+pf(B.out)+'. Model nhỏ Haiku 5.5 (prompt ≤ 100.000 token): vào '+pf(H.in)+', ghi '+pf(H.w5)+', đọc '+pf(H.hit)+', ra '+pf(H.out)+'. Đơn vị USD/MTok.'+cite(2);
+    var req=v('Req'), pre=v('Pre'), dyn=v('Dyn'), out=v('Out'), trim=v('Trim')/100, hit=v('Hit')/100, small=v('Small')/100, batch=v('Batch')/100;
+    document.getElementById('oReq').textContent=tok(req);
+    document.getElementById('oPre').textContent=tok(pre);
+    document.getElementById('oDyn').textContent=tok(dyn);
+    document.getElementById('oOut').textContent=tok(out);
+    document.getElementById('oTrim').textContent='−'+num(trim*100,0)+'%';
+    document.getElementById('oHit').textContent=num(hit*100,0)+'%';
+    document.getElementById('oSmall').textContent=num(small*100,0)+'%';
+    document.getElementById('oBatch').textContent=num(batch*100,0)+'%';
+    var month=req*30, dyn2=dyn*(1-trim);
+    // Levers switched on one after another: trim -> prompt cache -> routing -> batch
+    var s0=reqCost(B,pre,dyn,out,null);
+    var s1=reqCost(B,pre,dyn2,out,null);
+    var s2=reqCost(B,pre,dyn2,out,hit);
+    var s3=mix(s2,reqCost(H,pre,dyn2,out,hit),small);
+    var s4=scale(s3,1-0.5*batch);
+    var M0=scale(s0,month), M4=scale(s4,month), base=tot(M0);
+    var saved=base>0?(1-tot(M4)/base)*100:0;
+    document.getElementById('calcKpi').innerHTML=
+      '<div class="card"><span class="muted">Trước tối ưu</span><b>'+usd(base)+'</b><span class="muted">'+usd(tot(s0),4)+' mỗi request</span></div>'+
+      '<div class="card"><span class="muted">Sau tối ưu</span><b>'+usd(tot(M4))+'</b><span class="muted">'+usd(tot(s4),4)+' mỗi request</span></div>'+
+      '<div class="card"><span class="muted">Giảm (minh họa)</span><b class="ok-t">'+num(saved,1)+'%</b><span class="muted">'+tok(month)+' request / tháng</span></div>';
+    document.getElementById('calcBars').innerHTML=bar('Trước tối ưu',M0,base)+bar('Sau tối ưu',M4,base);
+    var notes=[];
+    notes.push('Trước tối ưu, token ra chiếm '+num(base>0?M0.out/base*100:0,0)+'% chi phí, phần vào chiếm '+num(base>0?(M0.pre+M0.dyn)/base*100:0,0)+'%.');
+    if(pre<MIN_CACHE&&pre>0)notes.push('<span class="warn-t">Tiền tố '+tok(pre)+' token ngắn hơn ngưỡng '+tok(MIN_CACHE)+' token: không cache được, API cũng không báo lỗi.</span>'+cite(1));
+    else if(pre===0)notes.push('Không có tiền tố ổn định nên prompt caching không có gì để cache.');
+    else if(hit*B.hit+(1-hit)*B.w5>B.in)notes.push('<span class="warn-t">Tỷ lệ trúng '+num(hit*100,0)+'% quá thấp: vì mỗi lần trượt phải ghi cache với giá 1,25×, phần tiền tố trên '+B.n+' đang đắt hơn so với không bật cache.</span>');
+    document.getElementById('calcNote').innerHTML=notes.join(' ');
+    var rows=[['Ban đầu: model lớn, không cache, gọi thường',s0],['+ Cắt phần thay đổi '+num(trim*100,0)+'%',s1],['+ Prompt caching, trúng '+num(hit*100,0)+'%',s2],['+ '+num(small*100,0)+'% request sang Haiku 5.5',s3],['+ '+num(batch*100,0)+'% việc qua Batch',s4]];
+    var tb=document.querySelector('#calcSteps tbody');tb.innerHTML='';
+    rows.forEach(function(r,i){
+      var m=tot(r[1])*month, prev=i?tot(rows[i-1][1])*month:m;
+      var d=prev>0?(1-m/prev)*100:0;
+      tb.insertAdjacentHTML('beforeend','<tr><td>'+esc(r[0])+'</td><td class="num">'+num(m,2)+'</td><td class="num">'+(i?(Math.abs(d)<0.05?'0%':d>0?'−'+num(d,1)+'%':'<span class="bad-t">+'+num(-d,1)+'%</span>'):'–')+'</td><td class="num">'+num(base>0?m/base*100:0,1)+'%</td></tr>');
+    });
+    labelTables(document.getElementById('calcSteps').parentNode);
+  }
+  renderCalc();
+
+  // ---------- Agent loop (illustrative): context grows each round ----------
+  var L0=8000, LADD=1500, LOUT=300, loopEl=document.getElementById('cLoop');
+  function renderLoop(){
+    var n=+loopEl.value, inNo=0, wr=0, rd=0;
+    for(var k=1;k<=n;k++){var ctx=L0+LADD*(k-1); inNo+=ctx; if(k===1){wr+=L0}else{rd+=ctx-LADD; wr+=LADD}}
+    var out=n*LOUT*S.out/1e6, noCache=inNo*S.in/1e6+out, withCache=wr*S.w5/1e6+rd*S.hit/1e6+out;
+    document.getElementById('oLoop').textContent=tok(n);
+    document.getElementById('loopKpi').innerHTML=
+      '<div class="card"><span class="muted">Tổng token vào cả phiên</span><b>'+tok(inNo)+'</b><span class="muted">gấp '+num(inNo/L0,1)+' lần context đầu; vòng cuối gửi '+tok(L0+LADD*(n-1))+'</span></div>'+
+      '<div class="card"><span class="muted">Không cache</span><b>'+usd(noCache,4)+'</b><span class="muted">mỗi phiên</span></div>'+
+      '<div class="card"><span class="muted">Có prompt caching</span><b class="'+(withCache<noCache?'ok-t':'warn-t')+'">'+usd(withCache,4)+'</b><span class="muted">ghi '+tok(wr)+' token, đọc '+tok(rd)+' token'+(withCache<noCache?'; rẻ hơn '+num(noCache/withCache,1)+' lần':'; đắt hơn vì chỉ ghi cache mà chưa có lần đọc nào')+'</span></div>';
+  }
+  loopEl.addEventListener('input',renderLoop); renderLoop();
+
+  // ---------- Glossary ----------
+  var G={tok:'Token & giá',cache:'Cache',model:'Model & định tuyến',ctx:'Context & output',ops:'Vận hành & đo'};
+  // [id, group, name, english, definition, example, related ids, source numbers]
+  var T=[
+    ['token','tok','Token','','Đơn vị model đọc và viết. Giá API tính theo số token, thường ghi theo triệu token.','Cùng một ý, viết bằng tiếng Việt và tiếng Anh có thể ra số token khác nhau.',['mtok','tokenizer','langgap'],[2]],
+    ['mtok','tok','MTok','million tokens','Một triệu token. Bảng giá ghi USD cho mỗi MTok.','Giá 2 USD/MTok nghĩa là 1.000 token tốn 0,002 USD.',['token','inout'],[2]],
+    ['inout','tok','Token vào và token ra','input / output tokens','Hai mức giá riêng. Ở các model trong bảng giá Anthropic (2026-11-17), token ra đắt gấp 5 lần token vào.','Sonnet 5.5: 2 USD/MTok vào, 10 USD/MTok ra.',['reasoning','maxtok'],[2]],
+    ['tokenizer','tok','Tokenizer','','Bộ cắt văn bản thành token. Mỗi họ model có bộ riêng, nên đổi model có thể đổi số token của cùng văn bản.','Anthropic nói tokenizer của Claude 4.7 trở đi ra nhiều hơn khoảng 30% token cho cùng văn bản.',['token','langgap'],[2]],
+    ['langgap','tok','Chênh lệch token giữa ngôn ngữ','tokenization disparity','Cùng nội dung ở ngôn ngữ khác có thể dài hơn nhiều token, nên tốn tiền hơn khi gọi API.','Petrov và cộng sự đo được mức chênh tới 15 lần ở một số trường hợp.',['tokenizer'],[21]],
+    ['reasoning','tok','Token suy luận','reasoning / thinking tokens','Token model dùng để "nghĩ" trước khi trả lời. Không hiện ra, chiếm chỗ trong context, và tính như token ra.','Với Claude, bạn trả cho toàn bộ phần nghĩ, không phải bản tóm tắt hiện ra.',['effort','maxtok','inout'],[8,9]],
+    ['toolover','tok','Token ẩn của tool','tool overhead','Khai báo tool thêm token vào mọi request: định nghĩa tool và một system prompt riêng cho tool use.','Bảng giá Anthropic ghi 286 token system prompt cho tool use ở Sonnet 5.5.',['prefix'],[2]],
+    ['longctx','tok','Giá theo độ dài prompt','long context pricing','Một số model tính giá cao hơn khi prompt vượt một ngưỡng.','Haiku 5.5 có giá riêng cho prompt trên 100.000 token, kể cả khi một phần prompt là cache hit.',['inout'],[2]],
+    ['prefixcache','cache','Prompt caching','','Nhà cung cấp lưu phần đầu prompt đã xử lý. Request sau có cùng phần đầu thì phần đó tính giá đọc cache, rẻ hơn nhiều.','Anthropic: đọc cache 0,1× giá vào ở phần lớn model, 0,05× ở Opus 5.5 và Sonnet 5.5, 0,025× ở Fable và Mythos 5.1–5.2 (2026-11-17).',['prefix','cachewrite','ttl','hitrate','implicit'],[1,2,3]],
+    ['prefix','cache','Tiền tố ổn định','stable prefix','Phần đầu prompt giống hệt giữa các request: tools, system prompt, tài liệu dùng chung. Phải khớp 100% mới trúng cache.','Đặt ngày giờ ở đầu system prompt làm mọi request có tiền tố khác nhau.',['prefixcache','breakpoint'],[1,3]],
+    ['breakpoint','cache','Cache breakpoint','cache_control','Dấu "cache đến đây" trên Anthropic. Tối đa 4 điểm. Có chế độ tự động dời điểm này theo hội thoại.','',['prefix','prefixcache'],[1]],
+    ['cachewrite','cache','Phí ghi cache','cache write','Lần đầu lưu tiền tố vào cache tốn hơn giá vào thường.','Anthropic (2026-11-17): 1,25× (TTL 5 phút) hoặc 2× (1 giờ), hòa vốn sau 1 và 2 lần đọc.',['ttl','prefixcache'],[2]],
+    ['ttl','cache','TTL','time to live','Thời gian cache còn sống. Hết hạn thì request sau phải ghi lại.','Anthropic: mặc định 5 phút, mỗi lần dùng làm mới miễn phí; có lựa chọn 1 giờ.',['cachewrite'],[1]],
+    ['hitrate','cache','Tỷ lệ token đọc cache','cache hit rate','Số token vào đọc từ cache chia cho tổng token vào. Chỉ số chính để biết caching có chạy.','Anthropic: cache_read_input_tokens; OpenAI: cached_tokens.',['prefixcache','usage'],[1,3]],
+    ['implicit','cache','Cache tự động','implicit / automatic caching','Nhà cung cấp tự cache, không cần khai báo. Vẫn cần tiền tố ổn định mới trúng.','OpenAI bật mặc định; Gemini bật mặc định từ bản 2.5.',['prefixcache'],[3,4]],
+    ['semcache','cache','Semantic cache','','Cache ở tầng ứng dụng: dùng embedding tìm câu hỏi cũ giống nghĩa rồi trả lại câu trả lời đã lưu, không gọi model.','"Đổi mật khẩu thế nào" và "quên mật khẩu làm sao" có thể dùng chung một câu trả lời.',['falsehit','exactcache'],[12,13]],
+    ['exactcache','cache','Exact-match cache','','Chỉ trả lại câu trả lời khi câu hỏi giống hệt từng ký tự. An toàn hơn semantic cache nhưng ít trúng hơn.','',['semcache'],[12]],
+    ['falsehit','cache','Trúng nhầm','false hit','Semantic cache trả câu trả lời của một câu hỏi thực ra khác ý. Ngưỡng tương đồng cố định không bảo đảm tỷ lệ lỗi.','"Còn hợp đồng kia thì sao?" phụ thuộc ngữ cảnh nên dễ trúng nhầm.',['semcache'],[13,14]],
+    ['tiering','model','Chọn model vừa đủ','model tiering','Dùng model nhỏ cho việc đơn giản, model lớn cho việc khó.','Anthropic gợi ý Haiku cho việc đơn giản, Sonnet cho phần lớn việc chạy thật (production workload), Opus cho suy luận phức tạp nhất.',['router','cascade'],[2,24]],
+    ['router','model','Router','LLM routing','Định tuyến: một bộ phân loại chọn model cho từng request trước khi gọi.','RouteLLM học từ dữ liệu con người chấm câu trả lời nào tốt hơn, để chọn giữa model mạnh và model yếu.',['cascade','tiering'],[11]],
+    ['cascade','model','Cascade','LLM cascade','Gọi model rẻ trước; nếu câu trả lời không qua bước kiểm thì gọi model đắt hơn.','FrugalGPT báo mức giảm chi phí tới 98% trên bộ thử của họ.',['router','tiering'],[10]],
+    ['effort','model','Mức effort','reasoning effort','Tham số điều chỉnh model nghĩ nhiều hay ít. Effort thấp: nhanh hơn, ít token hơn.','Đổi effort giữa các request có thể làm hỏng prompt cache.',['reasoning','maxtok'],[8,9]],
+    ['batch','model','Batch API','','Gửi nhiều request một lần, nhận kết quả trong vòng 24 giờ, giảm 50% giá (Anthropic và OpenAI, 2026-11-17).','Chạy eval hằng đêm, phân loại kho ticket cũ.',['flex'],[5,6]],
+    ['fastmode','model','Fast mode','','Chế độ của Anthropic cho token ra nhanh hơn tới 2,5 lần, với giá cao hơn. Không dùng được với Batch API.','Opus 5.5 ở Fast mode: 8 USD/MTok vào, 40 USD/MTok ra (2026-11-17), gấp đôi giá thường.',['batch','tiering'],[2]],
+    ['nollm','model','Không dùng LLM khi không cần','don\'t default to an LLM','Việc làm được bằng code, truy vấn hoặc luật cố định thì không cần gọi model.','Tra trạng thái hồ sơ bằng truy vấn cơ sở dữ liệu thường.',['router','tiering'],[18]],
+    ['flex','model','Flex processing','','Tầng dịch vụ của OpenAI: giá như Batch nhưng gọi như request thường; đổi lại chậm hơn và đôi khi báo thiếu tài nguyên.','',['batch'],[23]],
+    ['ctxtrim','ctx','Cắt context','context trimming','Chỉ đưa vào những token mang tín hiệu cao: ít đoạn tài liệu hơn, lịch sử ngắn hơn.','Lấy 8 đoạn rồi rerank, giữ 3 đoạn.',['compaction','compress','concise'],[17,18]],
+    ['compaction','ctx','Compaction','','Tóm tắt hội thoại sắp đầy context rồi bắt đầu context mới với bản tóm tắt. Nhẹ nhất là xóa kết quả tool cũ.','',['ctxtrim'],[17]],
+    ['compress','ctx','Nén prompt','prompt compression','Dùng model nhỏ bỏ bớt các token ít thông tin trong prompt.','LLMLingua nén tới 20 lần mà ít giảm chất lượng trên bốn bộ dữ liệu thử.',['ctxtrim'],[15]],
+    ['concise','ctx','Kết quả tool gọn','concise tool responses','Tool chỉ trả các trường cần, có phân trang và lọc, để không đổ hàng chục nghìn token vào context.','Anthropic: chế độ concise dùng khoảng 1/3 token.',['ctxtrim'],[16]],
+    ['maxtok','ctx','max_tokens','','Trần cứng cho token ra của một request, tính cả phần nghĩ. Không chặn tổng chi phí của cả vòng lặp agent.','',['reasoning','effort','loopcap'],[9]],
+    ['usage','ops','Trường usage','','Phần trong mỗi response ghi số token từng loại. Đây là dữ liệu gốc cho mọi phép tính chi phí.','Anthropic: tổng token vào = token đọc cache + token ghi cache + input_tokens.',['hitrate','costper'],[1]],
+    ['costper','ops','Chi phí mỗi việc thành công','cost per successful task','Tổng chi phí (cả lần làm lại) chia cho số việc làm đúng. Nên đo cái này thay vì chỉ đo chi phí mỗi request.','Model rẻ mà hay sai có thể đắt hơn khi tính cả công người xử lý lại.',['usage','attrib'],[]],
+    ['spendlimit','ops','Trần chi tiêu','spend limit','Mức chi tối đa mỗi tháng cho một workspace, kèm email cảnh báo khi chạm mức bạn chọn.','Tách workspace dev và production để thí nghiệm không ăn ngân sách production.',['attrib'],[20]],
+    ['attrib','ops','Phân bổ chi phí','cost attribution','Chia chi phí theo workspace, API key, model để biết tiền đi về đâu.','',['spendlimit','usage'],[22]],
+    ['loopcap','ops','Giới hạn vòng agent','','Số bước tối đa cho một phiên agent. Cần thiết vì max_tokens chỉ chặn từng request.','Agent dùng khoảng 4 lần token so với chat; multi-agent khoảng 15 lần.',['maxtok'],[7,9]]
+  ];
+  var byId={};T.forEach(function(t){byId[t[0]]=t});
+  var grid=document.getElementById('glossGrid'), chips=document.getElementById('glossChips'), search=document.getElementById('glossSearch'), activeG='all';
+  function fold(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d')}
+  function renderGloss(){
+    var q=fold(search.value.trim()); grid.innerHTML='';var n=0;
+    T.forEach(function(t){
+      if(activeG!=='all'&&t[1]!==activeG)return;
+      var hay=fold(t[2]+' '+t[3]+' '+t[4]+' '+t[5]+' '+G[t[1]]); if(q&&hay.indexOf(q)<0)return; n++;
+      var d=document.createElement('div');d.className='card term';d.id='term-'+t[0];
+      var rel=t[6].filter(function(r){return byId[r]}).map(function(r){return '<a href="#term-'+r+'" data-goto="'+r+'">'+esc(byId[r][2])+'</a>'}).join(', ');
+      var cs=(t[7]||[]).filter(function(n){return document.getElementById('src-'+n)}).map(function(n){return '<a href="#src-'+n+'">['+n+']</a>'}).join('');if(cs)cs='<sup class="cite">'+cs+'</sup>';
+      d.innerHTML='<span class="tag">'+G[t[1]]+'</span><h4>'+esc(t[2])+(t[3]?' <span class="en">· '+esc(t[3])+'</span>':'')+'</h4><p>'+esc(t[4])+(t[5]?'':cs)+'</p>'+(t[5]?'<p class="ex">Ví dụ: '+esc(t[5])+cs+'</p>':'')+(rel?'<div class="rel">Liên quan: '+rel+'</div>':'');
+      grid.appendChild(d);
+    });
+    if(!n)grid.innerHTML='<p class="muted">Không có khái niệm khớp.</p>';
+  }
+  var all=document.createElement('button');all.className='chip';all.textContent='Tất cả ('+T.length+')';all.dataset.g='all';chips.appendChild(all);
+  Object.keys(G).forEach(function(k){var b=document.createElement('button');b.className='chip';b.dataset.g=k;b.textContent=G[k];chips.appendChild(b)});
+  function setChip(g){activeG=g;[].forEach.call(chips.children,function(c){var v=c.dataset.g===g;c.classList.toggle('on',v);c.setAttribute('aria-pressed',v)})}
+  setChip('all');
+  chips.addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;setChip(b.dataset.g);renderGloss()});
+  search.addEventListener('input',renderGloss);
+  grid.addEventListener('click',function(e){var a=e.target.closest('a[data-goto]');if(!a)return;e.preventDefault();
+    if(!document.getElementById('term-'+a.dataset.goto)){setChip('all');search.value='';renderGloss()}
+    var t=document.getElementById('term-'+a.dataset.goto);t.scrollIntoView({behavior:'smooth',block:'center'});t.style.outline='2px solid var(--accent)';setTimeout(function(){t.style.outline=''},1500)});
+  renderGloss();
+
+  // ---------- Cost per successful ticket (illustrative) ----------
+  var HUMAN=0.40; // illustrative cost of a human handling one wrongly answered ticket, USD
+  // [id, name, API cost per ticket USD, share answered correctly]
+  var EV=[
+    ['A','Mọi ticket vào model lớn, đã bật prompt caching',0.015,0.92],
+    ['B','Mọi ticket vào model nhỏ, không kiểm',0.002,0.74],
+    ['C','Router: câu dễ sang model nhỏ, có bước kiểm, không đạt thì gọi model lớn',0.007,0.91]
+  ];
+  function ev(r){return {api:r[2],succ:r[3],perOk:r[2]/r[3],total:r[2]+(1-r[3])*HUMAN}}
+  var etb=document.querySelector('#evalTable tbody');
+  var best=null;
+  EV.forEach(function(r){var e=ev(r);if(!best||e.total<best.e.total)best={r:r,e:e};
+    etb.insertAdjacentHTML('beforeend','<tr><td><b>'+r[0]+'</b> '+esc(r[1])+'</td><td class="num">'+usd(e.api,3)+'</td><td class="num">'+num(e.succ*100,0)+'%</td><td class="num">'+usd(e.perOk,4)+'</td><td class="num"><b>'+usd(e.total,4)+'</b></td></tr>')});
+  var eA=ev(EV[0]), eB=ev(EV[1]), eC=ev(EV[2]);
+  document.getElementById('evalKpi').innerHTML=
+    '<div class="card"><span class="muted">B so với A: chi phí API</span><b class="ok-t">−'+num((1-eB.api/eA.api)*100,0)+'%</b><span class="muted">'+usd(eA.api,3)+' → '+usd(eB.api,3)+'</span></div>'+
+    '<div class="card"><span class="muted">B so với A: tổng chi phí mỗi ticket</span><b class="bad-t">+'+num((eB.total/eA.total-1)*100,0)+'%</b><span class="muted">'+usd(eA.total,4)+' → '+usd(eB.total,4)+'</span></div>'+
+    '<div class="card"><span class="muted">Rẻ nhất khi tính cả công người</span><b class="ok-t">Cấu hình '+best.r[0]+'</b><span class="muted">'+usd(best.e.total,4)+' mỗi ticket</span></div>';
+  labelTables(document);
+
+  // ---------- Checklist persistence (topic-specific prefix) ----------
+  [].forEach.call(document.querySelectorAll('input[data-k]'),function(cb){
+    cb.checked=safeGet('lco-'+cb.dataset.k)==='1';
+    cb.addEventListener('change',function(){safeSet('lco-'+cb.dataset.k,cb.checked?'1':'0')});
+  });
+
+  // ---------- Active TOC ----------
+  var links=[].slice.call(document.querySelectorAll('#toc a'));
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(l){var on=l.getAttribute('href')==='#'+e.target.id;l.classList.toggle('active',on);if(on){var nav=l.parentNode;nav.scrollLeft=l.offsetLeft-nav.offsetLeft-(nav.clientWidth-l.offsetWidth)/2}})}})},{rootMargin:'-40% 0px -55% 0px'});
+    document.querySelectorAll('main section').forEach(function(s){io.observe(s)});
+  }
+})();
+</script>
+</body>
+</html>

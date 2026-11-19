@@ -1,19 +1,22 @@
 # Tiến trình Sổ tay (trước đây là learning-ai)
 
-Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng để làm tiếp trên máy khác.
+Cập nhật lần cuối: 2026-11-19 (Asia/Saigon). File này dùng để làm tiếp trên máy khác.
 
 - Site: https://tvtdev94.github.io/ (tên hiển thị "Sổ tay": ghi chép AI, lập trình và cuộc sống).
 - Repo: https://github.com/tvtdev94/tvtdev94.github.io (public). Nhánh `main`, GitHub Pages build từ thư mục gốc.
-- Đổi tên 2026-11-19: repo `learning-ai` thành `tvtdev94.github.io`, site từ `/learning-ai/` lên gốc domain. Thư mục `learning-ai/` trong repo chỉ chứa trang chuyển hướng cho link cũ (mỗi bài đã publish trước ngày đổi tên một trang) và một `sw.js` tự gỡ service worker cũ. Bài mới không cần thêm gì vào đó. Thư mục trên máy vẫn tên `learning-ai`.
-- Trang gốc `/` là trang giới thiệu cá nhân (ảnh `images/avatar.png` lấy từ avatar GitHub, email, WhatsApp, GitHub, Facebook). Danh sách bài nằm ở `/so-tay/` (`so-tay/index.html`), chia nhóm bằng trường `group` trong `TOPICS`: `ai` (mặc định), `code`, `life`. Nút về của mỗi bài trỏ `../so-tay/`.
+- Đổi tên 2026-11-19: repo `learning-ai` thành `tvtdev94.github.io`, site từ `/learning-ai/` lên gốc domain. Thư mục `learning-ai/` trong repo chỉ chứa trang chuyển hướng cho link cũ (mỗi bài đã publish trước ngày đổi tên một trang) và một `sw.js` tự gỡ service worker cũ. Bài mới không cần thêm gì vào đó. Thư mục trên máy đổi thành `tvtdev94.github.io`.
+- Dọn cấu trúc 2026-11-19: các bài chuyển từ gốc (`/rag/`) vào `/so-tay/<slug>/`. Link gốc cũ được `404.html` chuyển hướng theo một danh sách cố định 29 slug (danh sách không bao giờ thêm, vì bài mới chưa từng nằm ở gốc). Trang chuyển hướng trong `learning-ai/` trỏ thẳng tới `/so-tay/<slug>/`.
+- Trang gốc `/` là trang giới thiệu cá nhân (ảnh `images/avatar.png` lấy từ avatar GitHub, email, WhatsApp, GitHub, Facebook). Danh sách bài nằm ở `/so-tay/` (`so-tay/index.html`), chia nhóm bằng trường `group` trong `TOPICS`: `ai` (mặc định), `code`, `life`. Nút về của mỗi bài trỏ `../` (tức `/so-tay/`). Ngoài ra có `/cv/` (CV song ngữ, còn placeholder) và `/products/` (trang sản phẩm song ngữ: mcgram, dbread).
 
 ## Cấu trúc repo
 
 | Đường dẫn | Là gì | Có lên site không |
 |---|---|---|
 | `index.html` | Trang giới thiệu cá nhân | Có |
-| `so-tay/index.html` | Danh sách bài, gồm các thẻ lấy từ mảng `TOPICS` | Có |
-| `<slug>/index.html` | Mỗi chủ đề là một file tự chứa, không dùng CDN | Có, trừ các thư mục nằm trong `exclude` của `_config.yml` |
+| `cv/index.html`, `products/index.html` | CV và trang sản phẩm, song ngữ Việt/Anh | Có |
+| `so-tay/index.html` | Danh sách bài, gồm các thẻ lấy từ mảng `TOPICS` (`href` tính từ `so-tay/`, ví dụ `rag/`) | Có |
+| `so-tay/<slug>/index.html` | Mỗi chủ đề là một file tự chứa, không dùng CDN. Asset gốc dùng `../../` (`../../icons/`, `../../sw.js`), bài khác dùng `../<slug>/` | Có, trừ các thư mục nằm trong `exclude` của `_config.yml` |
+| `404.html` | Trang 404, kèm chuyển hướng link bài cũ ở gốc sang `/so-tay/` | Có |
 | `_config.yml` | Danh sách bản nháp chưa được publish | Không |
 | `_work/topic-session-brief.md` | **Brief chuẩn** cho mỗi phiên làm một chủ đề: thiết kế, nghiên cứu, review, test, dọn dẹp | Không, vì Jekyll bỏ qua thư mục `_*` |
 | `_work/notes/research-*-sources.md` | Ghi chú nguồn, mỗi dòng: khẳng định → URL → câu trích | Không |
@@ -21,7 +24,7 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 | `_work/notes/researcher-261114-2030-next-ai-topics.md` | Danh sách 14 chủ đề đề xuất, có nguồn và thứ tự học | Không |
 | `PROGRESS.md` | File này | Không |
 | `manifest.webmanifest`, `sw.js`, `icons/` | PWA: cài site như app điện thoại, đọc offline các trang đã mở. Đổi `CACHE` trong `sw.js` nếu cần xóa cache cũ | Có |
-| `_work/add-pwa-head.py` | Gắn thẻ PWA vào `<head>` của trang; chạy lại an toàn | Không |
+| `_work/add-pwa-head.py` | Gắn thẻ PWA vào `<head>` của trang, tự tính `../` theo độ sâu; từ chối thư mục bài nằm ở gốc repo; chạy lại an toàn | Không |
 
 ## Quy trình đã thống nhất với người dùng
 
@@ -33,8 +36,8 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 6. **Dễ đọc trên điện thoại** là ưu tiên hàng đầu. Trên mobile, sơ đồ dùng bản dọc `.m-only`, bảng dùng `table.stack`.
 7. **Dọn dẹp khi xong:** dừng http.server, đóng tab Orca, xóa file tạm.
 8. **Publish:**
-   - Bỏ slug khỏi `exclude` trong `_config.yml` và thêm thẻ vào `TOPICS` trong `so-tay/index.html`. Kiểm nút về của trang trỏ `../so-tay/`.
-   - Chạy `python3 _work/add-pwa-head.py <slug>/index.html` để gắn thẻ PWA (manifest, icon, service worker).
+   - Trang nằm ở `so-tay/<slug>/index.html`. Bỏ `so-tay/<slug>/` khỏi `exclude` trong `_config.yml` và thêm thẻ vào `TOPICS` trong `so-tay/index.html` với `href:'<slug>/'`. Kiểm nút về của trang trỏ `../`.
+   - Chạy `python3 _work/add-pwa-head.py so-tay/<slug>/index.html` để gắn thẻ PWA (manifest, icon, service worker).
    - Commit theo conventional commits, rồi push.
    - Chờ Pages build, kiểm link thật bằng Orca ở 390px.
    - Gửi link qua Telegram.
@@ -104,14 +107,14 @@ Bảng port (8781–8794) và phạm vi nội dung của từng chủ đề nằ
 
 ## Việc chung còn tồn đọng
 
-1. **Màu chế độ sáng toàn site: đã xong (2026-11-16).** `reranking`, `governance`, `knowledge-base`, `hybrid-search` và trang chủ `index.html` đã dùng token màu của `rag/index.html`; `ai-agent` và `embedding-performance` đã đậm sẵn. Đo bằng Orca ở 390px, cả sáng và tối: 0 chữ dưới 4.5:1 trên cả 7 trang. Trang mới phải chép token màu từ `rag/index.html`.
-2. **Link nội bộ trỏ tới trang chưa publish**, ví dụ `../harness/` và `../llm-cost-optimization/`. Chúng sẽ hết 404 khi các trang đó được publish. Có thể quét bằng: `rg -o 'href="\.\./[a-z-]+/' */index.html`.
-3. **Vùng bấm số trích dẫn `[N]`: đã xong (2026-11-17).** Mọi trang có khối CSS `/* cite-tap */` giống nhau ở cuối `<style>`: cao ≥ 40px, rộng ≥ 24px, margin âm nên không đổi khoảng cách dòng. Đo bằng Orca ở 390px, sáng và tối: 22/22 trang đạt. Trang mới phải chép khối này từ `rag/index.html`.
+1. **Màu chế độ sáng toàn site: đã xong (2026-11-16).** `reranking`, `governance`, `knowledge-base`, `hybrid-search` và trang chủ `index.html` đã dùng token màu của `rag/index.html`; `ai-agent` và `embedding-performance` đã đậm sẵn. Đo bằng Orca ở 390px, cả sáng và tối: 0 chữ dưới 4.5:1 trên cả 7 trang. Trang mới phải chép token màu từ `so-tay/rag/index.html`.
+2. **Link nội bộ trỏ tới trang chưa publish**, ví dụ `../harness/` và `../llm-cost-optimization/`. Chúng sẽ hết 404 khi các trang đó được publish. Có thể quét bằng: `rg -o 'href="\.\./[a-z-]+/' so-tay/*/index.html`.
+3. **Vùng bấm số trích dẫn `[N]`: đã xong (2026-11-17).** Mọi trang có khối CSS `/* cite-tap */` giống nhau ở cuối `<style>`: cao ≥ 40px, rộng ≥ 24px, margin âm nên không đổi khoảng cách dòng. Đo bằng Orca ở 390px, sáng và tối: 22/22 trang đạt. Trang mới phải chép khối này từ `so-tay/rag/index.html`.
 4. Key localStorage cho theme là `rag-theme`, **dùng chung toàn site**. Đừng đổi tên key này.
 
 ## Thiết lập trên máy mới
 
-1. `git clone https://github.com/tvtdev94/tvtdev94.github.io.git learning-ai`
+1. `git clone https://github.com/tvtdev94/tvtdev94.github.io.git`
 2. Mở Claude Code tại thư mục repo. Đọc `PROGRESS.md` và `_work/topic-session-brief.md`.
 3. Kiểm tra các công cụ sau trên máy mới (**chưa kiểm**, vì chúng là cài đặt riêng của máy cũ):
    - Agent `kongming` dùng để review.

@@ -1,6 +1,7 @@
 # GitHub Pages (Jekyll) build settings.
 # Folders starting with "_" (like _work/) are never published.
 # Unfinished topic drafts live in the repo but stay off the site until done:
-# when a topic is finished, remove it from this list and add its card to index.html.
+# topics live in so-tay/<slug>/ (list drafts as "so-tay/<slug>/"); when one is finished,
+# remove it from this list and add its card to TOPICS in so-tay/index.html.
 exclude:
   - PROGRESS.md

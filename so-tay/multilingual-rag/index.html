@@ -1,0 +1,1144 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAG đa ngôn ngữ: tài liệu, câu hỏi và câu trả lời khác ngôn ngữ</title>
+<!-- pwa -->
+<link rel="manifest" href="../../manifest.webmanifest">
+<meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15171a" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" sizes="32x32" href="../../icons/favicon-32.png">
+<link rel="apple-touch-icon" href="../../icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sổ tay">
+<script>if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('../../sw.js').catch(function(){})})</script>
+<script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+:root{
+  --bg:#f7f6f2; --surface:#ffffff; --surface-2:#f0eee8; --text:#1f2328; --muted:#5b6370;
+  --border:#dcd8cf; --accent:#2559b8; --accent-soft:#e3ecfc; --ok:#16703d; --ok-soft:#e1f3e8;
+  --warn:#8f4c0a; --warn-soft:#fbeedd; --bad:#a82f2f; --bad-soft:#fae3e3;
+  --p1:#2559b8; --p2:#7440b8; --p3:#16703d; --p4:#8f4c0a;
+  --code-bg:#f0eee8; --shadow:0 1px 2px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04); --on-accent:#ffffff; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+    --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+    --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+    --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --code-bg:#252930; --shadow:none; --on-accent:#15171a; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+  --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+  --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+  --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --code-bg:#252930; --shadow:none; --on-accent:#15171a; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+a{color:var(--accent)}
+header.top{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
+.top-inner{max-width:1100px;margin:0 auto;padding:10px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.brand{font-weight:700;white-space:nowrap}
+.home{white-space:nowrap;text-decoration:none;color:var(--text);border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:4px 10px;font-size:14px}
+.home:hover{border-color:var(--accent);color:var(--accent)}
+nav.toc{display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin;flex:1}
+nav.toc a{white-space:nowrap;text-decoration:none;color:var(--muted);padding:4px 10px;border-radius:999px;font-size:14px}
+nav.toc a:hover,nav.toc a.active{background:var(--accent-soft);color:var(--accent)}
+button{font:inherit;cursor:pointer}
+.theme-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:4px 10px;font-size:14px}
+main{max-width:1100px;margin:0 auto;padding:16px}
+section{padding:28px 0;border-bottom:1px solid var(--border);scroll-margin-top:64px}
+section:last-child{border-bottom:none}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.2;margin:16px 0 8px}
+h2{font-size:clamp(22px,3.5vw,28px);margin:0 0 12px}
+h3{font-size:18px;margin:20px 0 8px}
+p{margin:8px 0}
+.lead{font-size:18px;color:var(--muted);max-width:760px}
+.muted{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 10px 10px 0;margin:12px 0}
+.callout.ok{border-color:var(--ok);background:var(--ok-soft)}
+.callout.warn{border-color:var(--warn);background:var(--warn-soft)}
+.callout.bad{border-color:var(--bad);background:var(--bad-soft)}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);margin-right:4px}
+.tag.p1{background:var(--accent-soft);color:var(--p1)}
+.tag.p2{background:var(--surface-2);color:var(--p2)}
+.tag.p3{background:var(--ok-soft);color:var(--p3)}
+.tag.p4{background:var(--warn-soft);color:var(--p4)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+th{background:var(--surface-2);font-weight:600}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.mono,code{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:14px}
+code{background:var(--code-bg);padding:1px 5px;border-radius:5px}
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-word;margin:8px 0;font-size:14px;line-height:1.55}
+svg text{fill:var(--text);font-family:inherit}
+.diagram{width:100%;height:auto;display:block}
+.svgbox{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;overflow-x:auto}
+.svgbox svg{min-width:640px}
+/* Glossary */
+.gloss-tools{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+.gloss-tools input{flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
+.chip{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:999px;padding:4px 12px;font-size:14px}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.term h4{margin:0 0 4px;font-size:16px}
+.term .en{font-weight:400;color:var(--muted);font-size:14px}
+.term p{margin:4px 0;font-size:15px}
+.term .ex{font-size:14px;color:var(--muted)}
+.term .rel{font-size:13px;margin-top:6px}
+.term .rel a{font-size:13px}
+/* Stepper */
+.stepper{display:grid;grid-template-columns:240px 1fr;gap:12px}
+.stepper>div{min-width:0}
+@media (max-width:720px){.stepper{grid-template-columns:minmax(0,1fr)}}
+.steps{display:flex;flex-direction:column;gap:6px}
+@media (max-width:720px){.steps{flex-direction:row;overflow-x:auto}}
+.steps button{text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px;white-space:nowrap}
+.steps button .n{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--surface-2);text-align:center;line-height:22px;font-size:12px;margin-right:6px}
+.steps button.on{border-color:var(--accent);background:var(--accent-soft)}
+.steps button.on .n{background:var(--accent);color:var(--on-accent)}
+.step-nav{display:flex;gap:8px;margin-top:12px}
+.step-nav button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 14px}
+.chunk{border:1px dashed var(--border);border-radius:8px;padding:8px 10px;margin:6px 0;font-size:14px;background:var(--surface)}
+.chunk.hit{border-style:solid;border-color:var(--ok);background:var(--ok-soft)}
+.chunk .id{font-weight:700;font-size:12px;color:var(--muted)}
+.chunk .trl{display:block;margin-top:4px;color:var(--muted)}
+.chunk .trl.badtr{color:var(--bad)}
+/* Language badges: EN blue, DE purple, VI green, translation step orange */
+.lg{display:inline-block;font-size:12px;font-weight:700;padding:1px 7px;border-radius:999px;margin-right:4px;vertical-align:1px}
+.lg.en{background:var(--accent-soft);color:var(--p1)}
+.lg.de{background:var(--surface-2);color:var(--p2);border:1px solid var(--border)}
+.lg.vi{background:var(--ok-soft);color:var(--p3)}
+.lg.tr{background:var(--warn-soft);color:var(--p4)}
+details{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin:8px 0}
+details summary{cursor:pointer;font-weight:600}
+details[open] summary{margin-bottom:6px}
+.check{display:flex;gap:8px;align-items:flex-start;padding:6px 0}
+.check input{margin-top:6px}
+footer{max-width:1100px;margin:0 auto;padding:24px 16px;color:var(--muted);font-size:14px}
+.kpi{display:flex;gap:10px;flex-wrap:wrap}
+.kpi .card{flex:1;min-width:140px;padding:10px 12px}
+.kpi b{display:block;font-size:20px}
+.kpi span{font-size:13px;color:var(--muted)}
+.card>h4:first-child,.card>.tag+h4{margin-top:4px}
+.card h4{margin-bottom:6px}
+.m-only{display:none}
+/* Simulation */
+.sim{display:grid;grid-template-columns:300px minmax(0,1fr);gap:12px}
+@media (max-width:860px){.sim{grid-template-columns:minmax(0,1fr)}}
+.sim-ctl>h4{margin:10px 0 6px;font-size:15px}
+.sim-ctl>h4:first-child{margin-top:0}
+.qbtns{display:flex;flex-direction:column;gap:6px}
+.qbtns button{text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px}
+.qbtns button.on{border-color:var(--p4);background:var(--warn-soft)}
+.archbtns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.archbtns button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:8px 8px;font-size:14px;text-align:left}
+.archbtns button.on{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);font-weight:600}
+.toggle{display:flex;gap:8px;align-items:flex-start;margin-top:10px;font-size:15px}
+.toggle input{margin-top:6px;width:18px;height:18px}
+.trbox{font-size:14px;background:var(--surface-2);border-radius:8px;padding:8px 10px;margin:8px 0}
+.trbox div{margin:2px 0}
+.star{color:var(--ok);font-weight:700}
+.lists{font-size:14px}
+.lists ol{margin:4px 0 8px;padding-left:22px}
+/* Calculator */
+.calc{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin:8px 0 12px}
+.calc label{display:flex;flex-direction:column;gap:4px;font-size:14px;font-weight:600}
+.calc label .hint{font-weight:400;color:var(--muted);font-size:13px}
+.calc input[type=number]{font:inherit;font-size:16px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);width:100%}
+.barrow{display:grid;grid-template-columns:150px minmax(0,1fr) 110px;gap:8px;align-items:center;margin:6px 0;font-size:14px}
+.barrow .track{height:16px;background:var(--surface-2);border-radius:5px;overflow:hidden}
+.barrow .track span{display:block;height:100%;border-radius:5px}
+.barrow .val{text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:600px){.barrow{grid-template-columns:96px minmax(0,1fr) 88px;font-size:14px}}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+/* Citations */
+sup.cite{font-size:max(11px,.72em);line-height:0;margin-left:1px;white-space:nowrap}
+sup.cite a{text-decoration:none;font-weight:600;padding:10px 3px;margin:-10px 0}
+sup.cite a:hover{text-decoration:underline}
+sup.cite a+a{margin-left:2px}
+ol.sources{padding-left:1.6em;margin:8px 0}
+ol.sources li{margin:0 0 10px;font-size:15px;overflow-wrap:anywhere;scroll-margin-top:64px}
+ol.sources li:target{background:var(--accent-soft);border-radius:6px}
+ol.sources .acc{color:var(--muted);font-size:14px;white-space:nowrap}
+.vflow .box,.vflow .node,.vflow .ar{display:block}
+.vflow .ph{font-weight:700;font-size:14px;margin:4px 0 8px}
+.vflow .ph1{color:var(--p1)} .vflow .ph2{color:var(--p3)} .vflow .ph3{color:var(--p2)} .vflow .ph4{color:var(--p4)}
+.vflow .node{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px}
+.vflow .node b{display:block}
+.vflow .node span{font-size:13px;color:var(--muted)}
+.vflow .node.tr{background:var(--warn-soft);border:2px solid var(--p4)}
+.vflow .node.v{border:2px solid var(--p2)} .vflow .node.g{border:2px solid var(--p3)} .vflow .node.l{border:2px solid var(--p1)}
+.vflow .ar{text-align:center;color:var(--muted);font-size:13px;line-height:1.3;padding:4px 0}
+.vflow .box{border-radius:12px;padding:10px;margin-bottom:10px;background:var(--surface-2)}
+.vflow .box1{background:var(--accent-soft)} .vflow .box2{background:var(--ok-soft)}
+.vflow .note{font-size:13px;color:var(--muted);margin-top:6px}
+.vflow .sub{font-size:13px;font-weight:700;color:var(--muted);margin:8px 0 4px;text-transform:uppercase;letter-spacing:.03em}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;margin:8px 0}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:4px}
+/* Desktop SVG diagrams (viewBox 1000 wide) only from 1081px so their 11-unit labels render at 11px or larger */
+@media (max-width:1080px){.d-only{display:none}.m-only{display:block}.vflow{max-width:560px;margin:0 auto}}
+@media (max-width:600px){
+  .brand{display:none} body{font-size:15px}
+  .theme-btn .lbl,.home .lbl{display:none}
+  main{padding:12px 16px}
+  section{padding:22px 0}
+  .card{padding:14px}
+  table.stack thead{display:none}
+  table.stack,table.stack tbody,table.stack tr,table.stack td{display:block;width:100%}
+  table.stack tr{border-bottom:1px solid var(--border);padding:8px 0}
+  table.stack tr:last-child{border-bottom:none}
+  table.stack td{border:none;padding:3px 12px}
+  table.stack td[data-label]::before{content:attr(data-label);display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  table.stack td:first-child{font-size:16px}
+  table.stack td:first-child::before{display:none}
+  .home,.theme-btn,nav.toc a,.chip,.step-nav button,.qbtns button,.steps button,.archbtns button{min-height:40px}
+  .home,.theme-btn,nav.toc a{display:inline-flex;align-items:center}
+  .home,.theme-btn{min-width:40px;justify-content:center}
+  pre,pre.mono,.term .ex{font-size:15px}
+  .vflow .node span{font-size:14px}
+  .term .rel a{font-size:14px;padding:12px 2px;display:inline-block;min-width:40px;text-align:center}
+  details summary{min-height:40px;padding:8px 0}
+  .toggle input,.check input{width:20px;height:20px}
+  .lg{font-size:12px}
+  .chunk{font-size:15px}
+  .toggle{min-height:40px}
+}
+/* cite-tap */
+/* Same tap area for citation links on every page: at least 40px high and 24px wide.
+   Negative vertical margins keep line spacing unchanged. */
+sup.cite a{display:inline-block;box-sizing:border-box;min-width:24px;line-height:1;padding:15px 3px;margin-top:-15px;margin-bottom:-15px;text-align:center}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <a class="home" href="../" aria-label="Về trang tất cả chủ đề">←<span class="lbl"> Chủ đề</span></a>
+    <span class="brand">RAG đa ngôn ngữ</span>
+    <nav class="toc" id="toc">
+      <a href="#tong-quan">1. Tổng quan</a>
+      <a href="#flow">2. Kiến trúc</a>
+      <a href="#vi-du">3. Ví dụ từng bước</a>
+      <a href="#mo-phong">4. Mô phỏng</a>
+      <a href="#tieng-viet">5. Từ khóa &amp; tiếng Việt</a>
+      <a href="#sinh">6. Trả lời đúng ngôn ngữ</a>
+      <a href="#dich">7. Dịch &amp; xử lý lỗi</a>
+      <a href="#khai-niem">8. Khái niệm</a>
+      <a href="#quan-he">9. Mối quan hệ</a>
+      <a href="#so-sanh">10. So sánh</a>
+      <a href="#loi">11. Lỗi &amp; chẩn đoán</a>
+      <a href="#danh-gia">12. Đánh giá</a>
+      <a href="#lo-trinh">13. Lộ trình</a>
+      <a href="#nguon">Nguồn</a>
+    </nav>
+    <button class="theme-btn" id="themeBtn" aria-label="Đổi giao diện sáng/tối">◐<span class="lbl"> Giao diện</span></button>
+  </div>
+</header>
+
+<main>
+
+<!-- 1. TỔNG QUAN -->
+<section id="tong-quan">
+  <h1>RAG đa ngôn ngữ: khi tài liệu, câu hỏi và câu trả lời không cùng một ngôn ngữ</h1>
+  <p class="lead">Trong doanh nghiệp, chính sách có thể viết bằng tiếng Anh và tiếng Đức, nhân viên lại hỏi bằng tiếng Việt và muốn đọc câu trả lời bằng tiếng Việt. Trang này giải thích các cách thiết kế RAG cho tình huống đó, mỗi cách tốn gì, và hỏng ở đâu.</p>
+  <p class="muted">Nếu chưa quen RAG, hãy đọc <a href="../rag/">RAG cơ bản</a> trước. Trang này giả định bạn đã biết chunk, embedding, top-k và BM25.</p>
+
+  <h3>Ba trục ngôn ngữ</h3>
+  <p>Một hệ RAG đa ngôn ngữ phải trả lời ba câu hỏi riêng. Mỗi câu hỏi là một "trục" có thể khác nhau:</p>
+  <div class="grid g3">
+    <div class="card"><span class="tag p1">Trục 1</span><h4>Ngôn ngữ tài liệu</h4><p>Kho có thể trộn nhiều ngôn ngữ, đôi khi trong cùng một đoạn (tiếng Việt chen thuật ngữ tiếng Anh). Một chính sách có thể có bản gốc tiếng Đức và bản dịch tiếng Anh.</p></div>
+    <div class="card"><span class="tag p1">Trục 2</span><h4>Ngôn ngữ câu hỏi</h4><p>Người dùng hỏi bằng ngôn ngữ của họ, thường ngắn, có khi gõ không dấu hoặc lẫn tiếng Anh: "phụ cấp ăn khi đi business trip".</p></div>
+    <div class="card"><span class="tag p1">Trục 3</span><h4>Ngôn ngữ câu trả lời</h4><p>Thường là ngôn ngữ của người dùng. Nhưng trích dẫn có thể cần giữ nguyên văn bản gốc, nhất là với điều khoản pháp lý.</p></div>
+  </div>
+  <p>Hai khái niệm hay gặp trong tài liệu nghiên cứu: <b>cross-lingual retrieval</b> (CLIR) là câu hỏi một ngôn ngữ, tài liệu ngôn ngữ khác; <b>multilingual retrieval</b> là tên chung cho tìm kiếm ở nhiều ngôn ngữ, gồm ba tình huống khác nhau. (1) Tìm <i>trong cùng một ngôn ngữ</i>, lặp lại cho nhiều ngôn ngữ: MIRACL đo kiểu này ở 18 ngôn ngữ, không có tiếng Việt.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-3">[3]</a></sup> (2) Tìm <i>khác ngôn ngữ</i>: MKQA có câu hỏi song song ở 26 ngôn ngữ, có tiếng Việt; bài BGE-M3 dùng nó để đo câu hỏi 25 ngôn ngữ tìm trong Wikipedia tiếng Anh.<sup class="cite"><a href="#src-2">[2]</a><a href="#src-3">[3]</a></sup> (3) Tìm trong <i>một kho trộn nhiều ngôn ngữ</i>: đúng tình huống doanh nghiệp; một nghiên cứu RAG đa ngôn ngữ có thử kiểu kho này.<sup class="cite"><a href="#src-4">[4]</a></sup></p>
+
+  <h3>Bốn cách thiết kế chính</h3>
+  <div class="grid g4">
+    <div class="card"><span class="tag p4">A</span><h4>Dịch rồi mới embed</h4><p>Dịch mọi chunk sang một ngôn ngữ trung gian (pivot, thường là tiếng Anh) trước khi embed. Câu hỏi cũng dịch sang pivot, xử lý bằng pivot, rồi dịch câu trả lời ngược lại.</p></div>
+    <div class="card"><span class="tag p2">B</span><h4>Embedding đa ngôn ngữ</h4><p>Một embedding model đặt câu cùng nghĩa ở nhiều ngôn ngữ gần nhau trong một không gian vector chung. Không dịch gì lúc nạp kho.</p></div>
+    <div class="card"><span class="tag p1">C</span><h4>Chỉ dịch câu hỏi</h4><p>Giữ tài liệu nguyên ngôn ngữ, chỉ dịch câu hỏi sang ngôn ngữ của tài liệu rồi tìm trong từng ngôn ngữ.</p></div>
+    <div class="card"><span class="tag p3">D</span><h4>Kết hợp</h4><p>Ví dụ: nhánh vector đa ngôn ngữ dùng câu hỏi gốc, nhánh BM25 dùng câu hỏi đã dịch, rồi trộn kết quả. Đây là hybrid search áp vào bài toán nhiều ngôn ngữ.</p></div>
+  </div>
+  <div class="callout"><b>Ý chính của cả trang:</b> chỗ nào có <b>một lần gọi dịch</b>, chỗ đó có thêm chi phí, độ trễ và một nguồn lỗi mới (sai thuật ngữ, sai số, sai tên riêng). Chỗ nào <b>không dịch</b>, bạn phụ thuộc vào việc model hiểu được nhiều ngôn ngữ. Chọn kiến trúc là chọn đặt rủi ro ở đâu, rồi đo trên dữ liệu của chính bạn.</div>
+</section>
+
+<!-- 2. FLOW -->
+<section id="flow">
+  <h2>2. Bốn kiến trúc và chỗ chúng gọi dịch</h2>
+  <p>Mỗi hàng là một kiến trúc. Bên trái là việc làm <b>lúc nạp kho</b> (chạy một lần, hoặc khi tài liệu đổi). Bên phải là việc làm <b>lúc hỏi</b> (mỗi câu hỏi). Ô màu cam là một lần gọi dịch.</p>
+  <div class="legend"><span><i style="background:var(--warn-soft);border:2px solid var(--p4)"></i>một lần gọi dịch</span><span><i style="background:var(--surface);border:2px solid var(--p2)"></i>embedding / tìm kiếm</span><span><i style="background:var(--surface);border:2px solid var(--p3)"></i>LLM viết câu trả lời</span></div>
+
+  <div class="vflow m-only" aria-label="Bốn kiến trúc RAG đa ngôn ngữ (dạng dọc)">
+    <div class="box">
+      <div class="ph ph4">A · Dịch rồi embed (pivot tiếng Anh)</div>
+      <div class="sub">Lúc nạp kho</div>
+      <div class="node"><b>Chunk tiếng Đức, tiếng Việt</b><span>giữ cả bản gốc</span></div>
+      <div class="ar">↓</div>
+      <div class="node tr"><b>Dịch sang tiếng Anh</b><span>mọi chunk không phải tiếng Anh</span></div>
+      <div class="ar">↓</div>
+      <div class="node v"><b>Embed bản tiếng Anh</b><span>model tiếng Anh cũng dùng được</span></div>
+      <div class="sub">Lúc hỏi</div>
+      <div class="node"><b>Câu hỏi tiếng Việt</b></div>
+      <div class="ar">↓</div>
+      <div class="node tr"><b>Dịch câu hỏi sang tiếng Anh</b></div>
+      <div class="ar">↓</div>
+      <div class="node v"><b>Tìm + LLM xử lý bằng tiếng Anh</b></div>
+      <div class="ar">↓</div>
+      <div class="node tr"><b>Dịch câu trả lời sang tiếng Việt</b></div>
+      <div class="note">Gọi dịch: mọi chunk lúc nạp + 2 lần mỗi câu hỏi.</div>
+    </div>
+    <div class="box">
+      <div class="ph ph3">B · Embedding đa ngôn ngữ (không dịch)</div>
+      <div class="sub">Lúc nạp kho</div>
+      <div class="node"><b>Chunk gốc</b><span>tiếng Anh, Đức, Việt để nguyên</span></div>
+      <div class="ar">↓</div>
+      <div class="node v"><b>Embed bằng model đa ngôn ngữ</b><span>một không gian vector chung</span></div>
+      <div class="sub">Lúc hỏi</div>
+      <div class="node"><b>Câu hỏi tiếng Việt</b></div>
+      <div class="ar">↓</div>
+      <div class="node v"><b>Embed + tìm</b><span>tìm thẳng, không dịch</span></div>
+      <div class="ar">↓</div>
+      <div class="node g"><b>LLM trả lời bằng tiếng Việt</b><span>đọc chunk tiếng Anh, Đức</span></div>
+      <div class="note">Gọi dịch: 0.</div>
+    </div>
+    <div class="box">
+      <div class="ph ph1">C · Chỉ dịch câu hỏi</div>
+      <div class="sub">Lúc nạp kho</div>
+      <div class="node"><b>Chunk gốc</b></div>
+      <div class="ar">↓</div>
+      <div class="node v"><b>Index riêng từng ngôn ngữ</b><span>BM25 hoặc model đơn ngữ cho mỗi ngôn ngữ</span></div>
+      <div class="sub">Lúc hỏi</div>
+      <div class="node"><b>Câu hỏi tiếng Việt</b></div>
+      <div class="ar">↓</div>
+      <div class="node tr"><b>Dịch sang tiếng Anh và tiếng Đức</b><span>mỗi ngôn ngữ tài liệu một lần, chạy song song</span></div>
+      <div class="ar">↓</div>
+      <div class="node v"><b>Tìm trong từng index</b></div>
+      <div class="ar">↓</div>
+      <div class="node g"><b>Trộn (RRF) + LLM trả lời tiếng Việt</b></div>
+      <div class="note">Gọi dịch: 0 lúc nạp + 1 lần cho mỗi ngôn ngữ tài liệu, mỗi câu hỏi.</div>
+    </div>
+    <div class="box">
+      <div class="ph ph2">D · Kết hợp (vector đa ngôn ngữ + BM25)</div>
+      <div class="sub">Lúc nạp kho</div>
+      <div class="node"><b>Chunk gốc</b></div>
+      <div class="ar">↓</div>
+      <div class="node v"><b>Vector đa ngôn ngữ + BM25 theo từng ngôn ngữ</b></div>
+      <div class="sub">Lúc hỏi</div>
+      <div class="node"><b>Câu hỏi tiếng Việt</b></div>
+      <div class="ar">↓ chia hai nhánh</div>
+      <div class="node v"><b>Nhánh vector:</b><span>dùng thẳng câu hỏi tiếng Việt</span></div>
+      <div class="node tr" style="margin-top:6px"><b>Nhánh BM25:</b><span>dịch câu hỏi sang tiếng Anh, Đức</span></div>
+      <div class="ar">↓</div>
+      <div class="node g"><b>RRF + LLM trả lời tiếng Việt</b></div>
+      <div class="note">Gọi dịch: giống C, nhưng nếu dịch lỗi thì nhánh vector vẫn chạy.</div>
+    </div>
+  </div>
+  <div class="svgbox d-only">
+    <svg class="diagram" id="flowSvg" viewBox="0 0 1000 470" role="img" aria-label="Sơ đồ bốn kiến trúc RAG đa ngôn ngữ và chỗ gọi dịch"></svg>
+  </div>
+
+  <h3>Bằng chứng nói gì về chất lượng tìm kiếm?</h3>
+  <p class="muted">Vài từ dùng dưới đây: <b>dense</b> là tìm bằng vector; <b>sparse</b> là tìm theo từ khóa có trọng số (BM25 là một kiểu); <b>nDCG@20</b> là điểm chất lượng thứ hạng của 20 kết quả đầu, càng cao càng tốt; <b>RRF</b> là cách trộn danh sách theo thứ hạng (xem <a href="../hybrid-search/">Hybrid Search</a>); <b>analyzer</b> là bộ tách và chuẩn hóa chữ trước khi đưa vào index từ khóa.</p>
+  <div class="grid g2">
+    <div class="card"><h4>Tìm theo từ khóa yếu hẳn khi khác ngôn ngữ</h4><p>Trên MKQA (câu hỏi ở 25 ngôn ngữ, tìm đoạn đúng trong Wikipedia tiếng Anh), Recall@100 trung bình của BM25 là 39,9, của nhánh dense trong BGE-M3 là 75,1. Riêng câu hỏi tiếng Việt: BM25 46,6, BGE-M3 dense 76,6, mE5-large 75,4. Ở Recall@20, tiếng Việt: BM25 33,6, BGE-M3 dense 69,6; tiếng Nhật (khác hệ chữ với tiếng Anh): BM25 14,5, dense 67,0. Các tác giả giải thích: hai ngôn ngữ có rất ít từ chung.<sup class="cite"><a href="#src-3">[3]</a></sup></p><p class="muted">Recall@100 ở đây là tỷ lệ câu hỏi có đoạn đúng nằm trong 100 kết quả đầu. Phần BM25 còn tìm được thường nhờ chữ hai ngôn ngữ dùng chung như tên riêng, con số. RAG thật thường chỉ lấy 5–20 đoạn, nên hãy đo ở k nhỏ hơn trên dữ liệu của bạn.</p></div>
+    <div class="card"><h4>Embedding đa ngôn ngữ thường không cần dịch</h4><p>Một nghiên cứu RAG trên 13 ngôn ngữ thấy BGE-M3 tìm tốt hơn một model mạnh chỉ cho tiếng Anh dùng với câu hỏi đã dịch, và thêm bước dịch câu hỏi vào BGE-M3 gần như không đổi kết quả.<sup class="cite"><a href="#src-4">[4]</a></sup> Hai nghiên cứu năm 2025 cũng thấy dense retriever đa ngôn ngữ được lợi rất ít từ việc dịch tài liệu.<sup class="cite"><a href="#src-9">[9]</a><a href="#src-10">[10]</a></sup></p><p class="muted">Giới hạn: các thí nghiệm này chủ yếu trên Wikipedia hoặc bài báo khoa học. Tài liệu nội bộ nhiều thuật ngữ riêng có thể khác.<sup class="cite"><a href="#src-4">[4]</a></sup></p></div>
+    <div class="card"><h4>Dịch vẫn có ích cho tìm theo từ khóa</h4><p>Trên bộ tài liệu khoa học Anh–Pháp, dịch tài liệu thường hiệu quả hơn dịch câu hỏi, và BM25 trên tài liệu đã dịch vẫn cạnh tranh được trong khi chạy nhẹ hơn.<sup class="cite"><a href="#src-9">[9]</a></sup> Lý do dễ hiểu: BM25 cần chữ chung, và dịch tạo ra chữ chung.</p></div>
+    <div class="card"><h4>Kết hợp thường đứng đầu</h4><p>Ở TREC NeuCLIR 2022 (câu hỏi tiếng Anh, tài liệu tiếng Trung, Ba Tư, Nga), các đội dùng đủ cả dịch tài liệu, dịch câu hỏi và model không dịch. Tính trung bình, hệ kết hợp dense và sparse cho nDCG@20 tốt nhất. Hệ CLIR tốt nhất ngang hoặc nhỉnh hơn hệ tìm cùng ngôn ngữ dùng câu hỏi do người dịch.<sup class="cite"><a href="#src-8">[8]</a></sup></p></div>
+  </div>
+  <div class="callout warn"><b>Lưu ý về thiên lệch ngôn ngữ:</b> retriever đa ngôn ngữ có xu hướng ưu tiên tài liệu cùng ngôn ngữ với câu hỏi hoặc ngôn ngữ nhiều dữ liệu.<sup class="cite"><a href="#src-6">[6]</a></sup> LLM cũng vậy: khi tài liệu ở nhiều ngôn ngữ, nó hay dựa vào tài liệu cùng ngôn ngữ với câu hỏi.<sup class="cite"><a href="#src-7">[7]</a></sup> Với kho trộn tiếng Việt và tiếng Đức, một ghi chú tiếng Việt cũ có thể "thắng" chính sách tiếng Đức có hiệu lực. Mô phỏng ở mục 4 cho thấy hiện tượng này.</div>
+</section>
+
+<!-- 3. VÍ DỤ TỪNG BƯỚC -->
+<section id="vi-du">
+  <h2>3. Ví dụ đi qua từng bước</h2>
+  <p><b>Hansa Lotus Logistics</b> (tên hư cấu) có trụ sở ở Hamburg và văn phòng ở Đà Nẵng. Quy chế công tác phí viết bằng tiếng Đức, sổ tay cho nhân viên quốc tế viết bằng tiếng Anh. Nhân viên Đà Nẵng hỏi bằng tiếng Việt và cần câu trả lời tiếng Việt có trích nguồn. <span class="muted">Mọi tài liệu, con số và điểm số trong ví dụ là <b>minh họa</b>.</span></p>
+  <div class="stepper card">
+    <div class="steps" id="steps"></div>
+    <div>
+      <div id="stepBody"></div>
+      <div class="step-nav"><button id="prevStep">← Trước</button><button id="nextStep">Tiếp →</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. MÔ PHỎNG -->
+<section id="mo-phong">
+  <h2>4. Mô phỏng: đổi kiến trúc, xem tìm ra gì</h2>
+  <p>Kho đồ chơi gồm 12 chunk: 5 tiếng Anh, 4 tiếng Đức, 3 tiếng Việt. Chọn một câu hỏi tiếng Việt và một kiến trúc. JavaScript tính thật thứ hạng, recall@3 và số lần gọi dịch.</p>
+  <details><summary>Mô phỏng này tính như thế nào? (đọc nếu muốn hiểu con số)</summary>
+    <ul>
+      <li><b>"Vector" là đồ chơi:</b> mỗi chunk được gán sẵn vài "ý" không phụ thuộc ngôn ngữ (ăn, phụ cấp, đi công tác, mẫu đơn…). Điểm vector là cosine giữa tập ý của câu hỏi và của chunk. Trình duyệt không chạy embedding model thật.</li>
+      <li><b>Thiên lệch ngôn ngữ (B, D):</b> chunk khác ngôn ngữ với câu hỏi bị nhân điểm vector với 0,92, mô phỏng việc retriever ưu tiên ngôn ngữ của câu hỏi.<sup class="cite"><a href="#src-6">[6]</a></sup> Con số 0,92 là minh họa.</li>
+      <li><b>Lỗi dịch (A):</b> khi tắt glossary, hai chunk tiếng Đức bị dịch sai thuật ngữ nên mất một ý. Ở A mọi thứ đều là tiếng Anh nên không có hệ số 0,92. Phía câu hỏi, vector đồ chơi coi "food allowance" và "meal allowance" là cùng một ý, nên chỉ lỗi dịch tài liệu làm đổi điểm.</li>
+      <li><b>BM25 (C, D):</b> tính thật trên chữ của từng chunk, mỗi ngôn ngữ một index riêng, tách theo dấu cách và dấu câu, bỏ vài từ dừng. Câu hỏi được "dịch" bằng câu dịch soạn sẵn; tắt glossary thì bản dịch tiếng Đức dùng từ phổ thông thay vì thuật ngữ trong tài liệu.</li>
+      <li><b>Trộn:</b> C trộn danh sách của từng ngôn ngữ bằng RRF (k = 60). D trộn hai danh sách: vector và một danh sách BM25 gộp các ngôn ngữ theo điểm thô. Gộp kiểu này chỉ để mô phỏng gọn, vì ba index đồ chơi dùng cùng công thức và cỡ gần nhau. Ở hệ thật, đừng so điểm BM25 giữa các index; hãy trộn bằng RRF hoặc rerank.</li>
+      <li><b>Chi phí:</b> ký tự gửi đi dịch × 20 USD / 1 triệu ký tự (giá NMT niêm yết của Google Cloud Translation sau hạn mức miễn phí<sup class="cite"><a href="#src-16">[16]</a></sup>). Độ trễ 300 ms mỗi lượt dịch là minh họa.</li>
+    </ul>
+  </details>
+  <div class="sim card">
+    <div class="sim-ctl">
+      <h4>Câu hỏi (tiếng Việt)</h4>
+      <div class="qbtns" id="simQ"></div>
+      <h4>Kiến trúc</h4>
+      <div class="archbtns" id="simA"></div>
+      <label class="toggle"><input type="checkbox" id="simG"><span>Bật glossary: ép bản dịch dùng đúng thuật ngữ của công ty</span></label>
+    </div>
+    <div id="simOut" aria-live="polite"></div>
+  </div>
+
+  <h3>Máy tính chi phí dịch: dịch cả kho hay chỉ dịch câu hỏi?</h3>
+  <p>Đổi số theo hệ thống của bạn. Kết quả là <b>minh họa</b>: chỉ tính phí dịch máy theo ký tự, chưa tính hạn mức miễn phí, giá embedding hay giá LLM. Nhà cung cấp dịch máy thường tính cả dấu cách và tính riêng cho mỗi ngôn ngữ đích.<sup class="cite"><a href="#src-16">[16]</a></sup></p>
+  <div class="card">
+    <div class="calc">
+      <label>Số chunk trong kho<input type="number" id="cN" min="0" step="1000" value="200000"></label>
+      <label>% chunk không phải tiếng pivot<span class="hint">phần phải dịch ở kiến trúc A</span><input type="number" id="cP" min="0" max="100" step="5" value="60"></label>
+      <label>Ký tự trung bình mỗi chunk<input type="number" id="cC" min="0" step="100" value="1200"></label>
+      <label>% kho đổi mỗi tháng<span class="hint">phải dịch lại ở A</span><input type="number" id="cU" min="0" max="100" step="1" value="5"></label>
+      <label>Câu hỏi mỗi tháng<input type="number" id="cQ" min="0" step="1000" value="30000"></label>
+      <label>Ký tự mỗi câu hỏi<input type="number" id="cQc" min="0" step="10" value="80"></label>
+      <label>Ký tự mỗi câu trả lời<span class="hint">A dịch câu trả lời về tiếng Việt</span><input type="number" id="cAc" min="0" step="50" value="900"></label>
+      <label>Số ngôn ngữ tài liệu cần dịch câu hỏi sang<span class="hint">C và D</span><input type="number" id="cL" min="0" max="20" step="1" value="2"></label>
+      <label>Giá dịch (USD / 1 triệu ký tự)<span class="hint">mặc định: giá NMT niêm yết của Google</span><input type="number" id="cPr" min="0" step="1" value="20"></label>
+      <label>Độ trễ mỗi lượt dịch (ms)<span class="hint">minh họa, tự đo</span><input type="number" id="cLat" min="0" step="50" value="300"></label>
+    </div>
+    <label class="toggle"><input type="checkbox" id="cAdirect"><span>Ở A, cho LLM trả lời thẳng tiếng Việt từ chunk tiếng Anh (bỏ bước dịch câu trả lời)</span></label>
+    <div id="calcOut" aria-live="polite"></div>
+  </div>
+  <div class="callout"><b>Đọc kết quả:</b> A tốn một khoản lớn lúc nạp và mỗi lần kho đổi. Với cấu hình mặc định, phần dịch <i>câu trả lời</i> còn tốn hơn phần dịch kho hằng tháng, vì câu trả lời dài hơn câu hỏi nhiều lần. C và D chỉ dịch câu hỏi ngắn, nên rẻ, nhưng mỗi câu hỏi chờ thêm một lượt dịch. B không tốn phí dịch, đổi lại bạn phải chọn và đo embedding model đa ngôn ngữ cẩn thận (xem <a href="../embedding-performance/">Embedding Performance</a>).</div>
+</section>
+
+<!-- 5. TIẾNG VIỆT & TỪ KHÓA -->
+<section id="tieng-viet">
+  <h2>5. Tìm theo từ khóa khi có nhiều ngôn ngữ, và chuyện riêng của tiếng Việt</h2>
+  <p>Trang <a href="../hybrid-search/">Hybrid Search</a> đã giải thích BM25, cách tách từ và bỏ dấu cho tiếng Việt. Ở đây chỉ bàn phần mới xuất hiện khi kho có nhiều ngôn ngữ.</p>
+  <div class="grid g2">
+    <div class="card"><span class="tag p4">Quy tắc 1</span><h4>Mỗi ngôn ngữ một cách tách chữ</h4><p>Dấu cách trong tiếng Việt ngăn cách âm tiết chứ không ngăn cách từ; tiếng Nhật và tiếng Trung không có dấu cách giữa các từ.<sup class="cite"><a href="#src-24">[24]</a></sup> Tiếng Đức hay ghép từ dài: Elasticsearch có bộ tách từ ghép dành cho các ngôn ngữ gốc German, ví dụ tách "Kaffeetasse" thêm thành "Kaffee" và "tasse".<sup class="cite"><a href="#src-26">[26]</a></sup> Với tiếng Nhật, một cách là cắt chuỗi thành cặp hai ký tự liền nhau (bigram).<sup class="cite"><a href="#src-27">[27]</a></sup> Danh sách analyzer dựng sẵn của Elasticsearch không có analyzer tiếng Nhật riêng, chỉ có <code>cjk</code>;<sup class="cite"><a href="#src-25">[25]</a></sup> muốn phân tích tiếng Nhật kỹ hơn thì cài plugin kuromoji (tích hợp module kuromoji của Lucene) trên mọi node.<sup class="cite"><a href="#src-34">[34]</a></sup></p><p class="muted">Hệ quả: lưu mỗi ngôn ngữ vào một trường hoặc index riêng với analyzer riêng, dựa vào nhãn ngôn ngữ của chunk. Elasticsearch có sẵn analyzer cho tiếng Đức nhưng không có analyzer tiếng Việt dựng sẵn,<sup class="cite"><a href="#src-25">[25]</a></sup> nên tiếng Việt thường cần một bộ tách từ riêng, ví dụ RDRsegmenter.<sup class="cite"><a href="#src-32">[32]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Quy tắc 2</span><h4>Bỏ dấu cũng theo từng ngôn ngữ</h4><p>Người dùng Việt hay gõ không dấu. Bộ lọc ASCII folding đổi "à" thành "a" và có tùy chọn giữ cả token gốc.<sup class="cite"><a href="#src-29">[29]</a></sup> Nhưng nếu tự viết hàm bỏ dấu bằng cách tách dấu (NFD) rồi xóa dấu, chữ "đ" sẽ còn nguyên, vì theo bảng Unicode "đ" không tách ra được, còn "ệ" thì tách được.<sup class="cite"><a href="#src-30">[30]</a></sup></p><p class="muted">Tiếng Đức có quy ước khác: bộ chuẩn hóa tiếng Đức của Lucene đổi "ß" thành "ss", "ä" thành "a", và cả cách viết "ae" thành "a".<sup class="cite"><a href="#src-28">[28]</a></sup> Áp một luật bỏ dấu chung cho cả kho dễ làm hỏng ngôn ngữ này để sửa ngôn ngữ kia.</p><p class="muted">ASCII folding chỉ giúp nhánh từ khóa. Câu không dấu còn đi vào embedding model và bước dịch câu hỏi; trang này chưa có nguồn đo ảnh hưởng đó cho tiếng Việt, nên hãy tự đo. Một cách là cho LLM khôi phục dấu ở bước viết lại câu hỏi (xem <a href="../query-transformation/">Query Transformation</a>), và golden set nên có nhóm câu không dấu cho từng kiến trúc.</p></div>
+    <div class="card"><span class="tag p4">Quy tắc 3</span><h4>BM25 không vượt được rào ngôn ngữ</h4><p>Câu hỏi tiếng Việt và đoạn tiếng Đức gần như không có token chung, nên BM25 chỉ còn khớp được tên riêng, con số, mã như "RK-12". Trên MKQA, BM25 kém dense retriever rất xa ở bài toán khác ngôn ngữ.<sup class="cite"><a href="#src-3">[3]</a></sup> Muốn có nhánh BM25 thì phải dịch câu hỏi (kiến trúc C, D) hoặc dịch tài liệu (A).</p><p class="muted">Nhánh BM25 vẫn đáng giữ vì nó bắt được mã và số mà vector hay bỏ lỡ. Xem câu hỏi "Mẫu RK-12" trong mô phỏng ở mục 4.</p></div>
+    <div class="card"><span class="tag p4">Quy tắc 4</span><h4>Văn bản trộn tiếng Việt và tiếng Anh</h4><p>Tài liệu kỹ thuật tiếng Việt thường chen thuật ngữ tiếng Anh: "lỗi timeout khi gọi API thanh toán". Bộ nhận diện ngôn ngữ làm việc kém với đoạn ngắn và đoạn trộn ngôn ngữ: thư viện Lingua ghi rằng chế độ nhận nhiều ngôn ngữ trong một đoạn vẫn đang thử nghiệm, và cụm càng ngắn càng kém chính xác.<sup class="cite"><a href="#src-22">[22]</a></sup></p><p class="muted">Gợi ý (cần tự kiểm trên dữ liệu): gắn nhãn ngôn ngữ chính cho chunk, nhưng đừng dịch hay tách vụn các token kiểu mã lỗi, tên API, tên sản phẩm. Đưa cả dạng tiếng Anh và tiếng Việt của thuật ngữ vào glossary và golden set.</p></div>
+  </div>
+
+  <h3>Token: cùng nội dung, khác ngôn ngữ, khác chi phí</h3>
+  <p>LLM và embedding model tính giới hạn và tiền theo token (xem <a href="../llm-fundamentals/">LLM Fundamentals</a>). Đo trên cùng một bộ câu đã dịch sang 200 ngôn ngữ, tokenizer cl100k_base (của ChatGPT và GPT-4, năm 2023) cần số token gấp khoảng 1,58 lần tiếng Anh cho tiếng Đức, 2,30 lần cho tiếng Nhật và 2,45 lần cho tiếng Việt.<sup class="cite"><a href="#src-23">[23]</a></sup> Tokenizer đa ngôn ngữ chênh ít hơn nhiều: cùng bài báo đo tokenizer của XLM-R, tiếng Việt chỉ khoảng 1,18 lần và tiếng Nhật 1,11 lần.<sup class="cite"><a href="#src-23">[23]</a></sup> BGE-M3 dùng chính tokenizer của XLM-R.<sup class="cite"><a href="#src-3">[3]</a></sup> Vì vậy hãy đếm bằng tokenizer của từng model, đừng dùng một hệ số chung.</p>
+  <div class="grid g3">
+    <div class="card"><h4>Chi phí LLM</h4><p>Nếu dùng LLM để dịch hoặc để trả lời bằng tiếng Việt, phần đầu ra tiếng Việt có thể tốn nhiều token hơn bản tiếng Anh cùng nội dung. Tokenizer mới có thể khác số trên, nên hãy đếm bằng tokenizer bạn thật sự dùng.</p></div>
+    <div class="card"><h4>Cỡ chunk</h4><p>Nếu cắt chunk theo token cho cả kho, chunk tiếng Việt chứa ít nội dung hơn chunk tiếng Anh cùng cỡ. Mức chênh tùy tokenizer: khoảng 1,2 lần với XLM-R, 2,45 lần với cl100k_base. Có thể đặt cỡ chunk theo ký tự hoặc theo cấu trúc (xem <a href="../document-parsing-chunking/">Document Parsing &amp; Chunking</a>).</p></div>
+    <div class="card"><h4>Giới hạn đầu vào</h4><p>Embedding model có giới hạn độ dài đầu vào, ví dụ BGE-M3 nhận tối đa 8.192 token.<sup class="cite"><a href="#src-3">[3]</a></sup> Với tokenizer XLM-R của nó, tiếng Việt chỉ tốn khoảng 1,18 lần token so với tiếng Anh,<sup class="cite"><a href="#src-23">[23]</a></sup> nên giới hạn này ít khi là vấn đề với chunk cỡ thông thường. Với model dùng tokenizer kiểu cl100k_base, phần thiệt lớn hơn nhiều.</p></div>
+  </div>
+</section>
+
+<!-- 6. SINH CÂU TRẢ LỜI -->
+<section id="sinh">
+  <h2>6. Trả lời đúng ngôn ngữ, giữ đúng trích dẫn</h2>
+  <p>Tìm đúng đoạn mới là nửa đường. Khi LLM đọc đoạn tiếng Anh và tiếng Đức để trả lời câu hỏi tiếng Việt, có năm chỗ hay hỏng.</p>
+
+  <h3>6.1 Trôi ngôn ngữ (language drift)</h3>
+  <p>Trong một nghiên cứu RAG đa ngôn ngữ, với prompt mặc định và tài liệu tiếng Anh, một model trả lời bằng tiếng Anh cho khoảng 50% câu hỏi không phải tiếng Anh.<sup class="cite"><a href="#src-4">[4]</a></sup> Một bộ đánh giá riêng cho hiện tượng này (có tiếng Việt) chia ra hai dạng: <b>cấp dòng</b>, khi vài dòng viết sai ngôn ngữ, và <b>cấp từ</b>, khi chen lẻ tẻ từ hoặc cụm của ngôn ngữ khác. Kể cả model mạnh nhất cũng không luôn trả lời đúng ngôn ngữ; prompt phức tạp và temperature (nhiệt độ sampling) cao làm tình trạng nặng hơn.<sup class="cite"><a href="#src-5">[5]</a></sup></p>
+  <div class="grid g2">
+    <div class="card"><h4>Cách giảm</h4>
+      <ul>
+        <li><b>Ghi rõ ngôn ngữ đích trong system prompt</b>, lấy từ cài đặt của người dùng thay vì để model tự đoán.<sup class="cite"><a href="#src-31">[31]</a></sup></li>
+        <li>Nghiên cứu trên đạt tỷ lệ đúng ngôn ngữ trên 95% ở hầu hết trường hợp khi vừa dịch system prompt sang ngôn ngữ người dùng vừa ghi rõ tên ngôn ngữ. Chỉ ghi rõ ngôn ngữ mà giữ prompt tiếng Anh thì đỡ nhiều nhưng chưa gần 100%.<sup class="cite"><a href="#src-4">[4]</a></sup> Nghiên cứu đó không có tiếng Việt, nên hãy tự đo.</li>
+        <li>Giữ nhiệt độ thấp; vài ví dụ mẫu (few-shot) bằng tiếng Việt cũng giúp một phần.<sup class="cite"><a href="#src-5">[5]</a></sup></li>
+      </ul>
+    </div>
+    <div class="card"><h4>Kiểm lại sau khi sinh</h4>
+      <p>Chạy bộ nhận diện ngôn ngữ lên câu trả lời. fastText có model nhận được 176 ngôn ngữ, bản nén chưa đến 1 MB.<sup class="cite"><a href="#src-21">[21]</a></sup> Nghiên cứu ở trên cũng dùng fastText để đo, và chỉ tính câu trả lời dài hơn 20 ký tự.<sup class="cite"><a href="#src-4">[4]</a></sup></p>
+      <p class="muted">Với câu rất ngắn hoặc trộn thuật ngữ tiếng Anh, kết quả nhận diện kém tin cậy.<sup class="cite"><a href="#src-22">[22]</a></sup> Nếu sai ngôn ngữ: sinh lại với chỉ dẫn mạnh hơn, hoặc dịch câu trả lời, và ghi log để đếm tỷ lệ.</p>
+    </div>
+  </div>
+
+  <h3>6.2 Trích dẫn: giữ bản gốc hay bản dịch?</h3>
+  <p>Một thiết kế an toàn cho tài liệu chính sách và pháp lý: phần giải thích viết bằng tiếng Việt, phần trích dẫn giữ <b>nguyên văn bản gốc</b> trong ngoặc kép, kèm một dòng dịch nghĩa ghi rõ là bản dịch. Lý do:</p>
+  <ul>
+    <li>Người dùng (hoặc bộ phận pháp chế) kiểm được nguyên văn, không phải tin vào một bản dịch không ai duyệt.</li>
+    <li>Hệ thống kiểm tự động được: chuỗi trích dẫn phải xuất hiện y nguyên trong chunk được trích. Bản dịch thì không so được như vậy.</li>
+    <li>Dịch máy có thể bịa, bỏ sót hoặc thêm ý; một nghiên cứu năm 2023 trên model dịch đa ngôn ngữ mã mở (họ M2M-100) ghi nhận tỷ lệ ảo giác trên 10% ở một số hướng dịch, nhất là cặp ít dữ liệu.<sup class="cite"><a href="#src-18">[18]</a></sup></li>
+  </ul>
+  <p class="muted">Đây là khuyến nghị thiết kế, không phải quy định. Với câu hỏi đời thường (giờ mở cửa căng tin), chỉ cần câu trả lời tiếng Việt và đường dẫn tới đoạn gốc.</p>
+
+  <h3>6.3 Tên riêng, con số, đơn vị</h3>
+  <div class="grid g3">
+    <div class="card"><h4>Con số đổi nghĩa theo quy ước</h4><p>Tiếng Đức và tiếng Việt dùng dấu phẩy thập phân và dấu chấm ngăn nghìn; tiếng Anh dùng ngược lại.<sup class="cite"><a href="#src-20">[20]</a></sup> "1.500 EUR" trong tài liệu tiếng Đức là một nghìn rưỡi, nhưng có thể bị hiểu thành 1,5 EUR. Bộ phân loại lỗi dịch MQM xếp loại này vào nhóm "quy ước địa phương".<sup class="cite"><a href="#src-19">[19]</a></sup></p></div>
+    <div class="card"><h4>Tên riêng bị viết khác</h4><p>Tên người, tên tổ chức có thể bị phiên âm khác hoặc bị giữ tiếng Anh. Nghiên cứu RAG đa ngôn ngữ thấy dặn model "viết tên riêng bằng ngôn ngữ người dùng" chỉ giúp một phần.<sup class="cite"><a href="#src-4">[4]</a></sup> Với tên sản phẩm, tên công ty: giữ nguyên, không dịch.</p></div>
+    <div class="card"><h4>Kiểm bằng máy</h4><p>Gợi ý: trích mọi con số và đơn vị trong câu trả lời, đối chiếu với các chunk được trích. Số nào không có trong nguồn thì gắn cờ. Việc này rẻ và bắt được loại lỗi nguy hiểm nhất.</p><p class="muted">Đừng so chuỗi thô. Chuẩn hóa số theo quy ước của ngôn ngữ chunk (nhãn ngôn ngữ cho biết "1.500" là 1500 hay 1,5), so giá trị số chính xác, còn đơn vị thì so qua bảng tương đương lấy từ glossary (ngày, days, Tage).</p></div>
+  </div>
+
+  <h3>6.4 Khi tài liệu ở hai ngôn ngữ nói khác nhau</h3>
+  <p>LLM có xu hướng tin tài liệu cùng ngôn ngữ với câu hỏi; khi không có, nó nghiêng về ngôn ngữ nhiều dữ liệu.<sup class="cite"><a href="#src-7">[7]</a></sup> Nếu bản tiếng Anh là bản dịch tiện dụng còn bản tiếng Đức mới có hiệu lực, hãy ghi điều đó vào <b>metadata</b> (ví dụ <code>authoritative: true</code>, ngày hiệu lực), đưa metadata vào prompt, và dặn model nêu rõ khi hai bản lệch nhau thay vì tự chọn.</p>
+
+  <h3>6.5 Dịch đầu ra có cấu trúc theo từng trường</h3>
+  <p>Nếu hệ thống trả JSON (ví dụ <code>{"title", "summary", "policy_id", "amount"}</code>), chỉ dịch các trường chữ dành cho người đọc. Không dịch khóa, giá trị enum, mã, số tiền, ngày. Dịch vụ dịch máy có cơ chế giữ phần không dịch: DeepL nhận thẻ XML/HTML và danh sách thẻ bỏ qua;<sup class="cite"><a href="#src-11">[11]</a></sup> Azure Translator giữ nguyên nội dung có <code>class="notranslate"</code> khi dịch HTML.<sup class="cite"><a href="#src-17">[17]</a></sup> Sau khi dịch, kiểm lại JSON theo schema như mọi đầu ra khác (xem <a href="../tool-calling-structured-output/">Tool Calling &amp; Structured Output</a>).</p>
+</section>
+
+<!-- 7. DỊCH -->
+<section id="dich">
+  <h2>7. Dịch máy hay LLM, glossary, và xử lý khi dịch lỗi</h2>
+  <h3>7.1 Dịch vụ dịch máy làm được gì (theo tài liệu của họ)</h3>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Dịch vụ</th><th>Glossary / thuật ngữ</th><th>Điều chỉnh khác</th><th>Lưu ý theo tài liệu</th></tr></thead>
+    <tbody>
+      <tr><td><b>DeepL API</b></td><td>Glossary gồm các từ điển, mỗi từ điển ánh xạ cụm nguồn sang cụm đích cho một cặp ngôn ngữ; hỗ trợ mọi ngôn ngữ của DeepL trừ tiếng Thái.<sup class="cite"><a href="#src-13">[13]</a></sup></td><td>Tham số <code>formality</code> (trang trọng hơn hoặc thân mật hơn) chỉ có ở một số ngôn ngữ đích; tham số <code>context</code> cho thêm ngữ cảnh mà không bị dịch và không tính phí.<sup class="cite"><a href="#src-11">[11]</a></sup></td><td>Tiếng Việt được thêm vào năm 2025.<sup class="cite"><a href="#src-14">[14]</a></sup> Đặt <code>formality</code> cho ngôn ngữ không hỗ trợ sẽ lỗi, trừ khi dùng <code>prefer_more</code> hoặc <code>prefer_less</code>.<sup class="cite"><a href="#src-11">[11]</a></sup> Kiểm tiếng Việt có hỗ trợ formality chưa bằng endpoint danh sách ngôn ngữ.</td></tr>
+      <tr><td><b>Google Cloud Translation (Advanced)</b></td><td>Glossary là "từ điển riêng" để dịch thuật ngữ nhất quán; có loại một chiều và loại tập từ tương đương nhiều ngôn ngữ.<sup class="cite"><a href="#src-15">[15]</a></sup></td><td>Có cả model NMT và Translation LLM; cả hai dùng được với glossary.<sup class="cite"><a href="#src-15">[15]</a></sup></td><td>Glossary mặc định phân biệt hoa thường.<sup class="cite"><a href="#src-15">[15]</a></sup> Giá NMT niêm yết 20 USD / 1 triệu ký tự sau 500.000 ký tự miễn phí mỗi tháng; Translation LLM 10 USD / 1 triệu ký tự vào và 10 USD / 1 triệu ký tự ra.<sup class="cite"><a href="#src-16">[16]</a></sup></td></tr>
+      <tr><td><b>Azure Translator</b></td><td>Custom Translator qua tham số <code>category</code>; "dynamic dictionary" chèn bản dịch cho từng cụm, nhưng tài liệu chỉ coi là an toàn với tên riêng.<sup class="cite"><a href="#src-17">[17]</a></sup></td><td>Xử lý từ ngữ thô tục (giữ, đánh dấu, xóa); trả về ngôn ngữ phát hiện được kèm điểm tin cậy.<sup class="cite"><a href="#src-17">[17]</a></sup></td><td>Tài liệu nhắc trường hợp một cặp ngôn ngữ phải dịch nối qua ngôn ngữ trung gian; khi dùng model tùy biến, mọi chặng phải cùng category.<sup class="cite"><a href="#src-17">[17]</a></sup> Trang giá hiển thị giá động; hãy xem trực tiếp.</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted">Bảng chỉ ghi điều tài liệu chính thức nói vào ngày truy cập. Danh sách ngôn ngữ, tính năng và giá thay đổi thường xuyên.</p>
+  <p>Hai điều nên cân nhắc trước khi chọn. Gửi tài liệu nội bộ cho dịch vụ bên ngoài là một quyết định về dữ liệu (xem <a href="../governance/">AI Governance</a>). Và dịch từng chunk rời làm mất ngữ cảnh của cả tài liệu, nên thuật ngữ dễ thiếu nhất quán giữa các chunk; tham số <code>context</code> của DeepL là một cách đưa thêm ngữ cảnh mà không bị tính phí.<sup class="cite"><a href="#src-11">[11]</a></sup></p>
+
+  <h3>7.2 Dịch máy chuyên dụng hay để LLM dịch?</h3>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Tiêu chí</th><th>Dịch vụ dịch máy</th><th>LLM tự dịch</th></tr></thead>
+    <tbody>
+      <tr><td>Cách tính tiền</td><td>Theo ký tự gửi đi, mỗi ngôn ngữ đích tính riêng.<sup class="cite"><a href="#src-16">[16]</a></sup></td><td>Theo token vào và ra; tiếng Việt có thể tốn nhiều token hơn tiếng Anh.<sup class="cite"><a href="#src-23">[23]</a></sup></td></tr>
+      <tr><td>Thuật ngữ</td><td>Glossary là tính năng có sẵn, khớp theo cụm từ đã khai báo.<sup class="cite"><a href="#src-13">[13]</a><a href="#src-15">[15]</a></sup> Khớp chuỗi có thể trượt, ví dụ glossary của Google mặc định phân biệt hoa thường,<sup class="cite"><a href="#src-15">[15]</a></sup> nên vẫn phải kiểm trên golden set.</td><td>Đưa bảng thuật ngữ vào prompt; model thường làm theo nhưng không có gì bảo đảm, phải kiểm.</td></tr>
+      <tr><td>Kiểu lỗi đặc trưng</td><td>Đo trên model dịch đa ngôn ngữ mã mở (M2M-100, 2023): ảo giác hay gặp hơn ở cặp ít dữ liệu và khi dịch từ tiếng Anh ra.<sup class="cite"><a href="#src-18">[18]</a></sup> Các nguồn của trang này không có số đo tương ứng cho DeepL, Google hay Azure.</td><td>Đo trên ChatGPT (2023), lỗi khác hẳn: dịch sang nhầm ngôn ngữ, viết thêm, hoặc không chịu dịch.<sup class="cite"><a href="#src-18">[18]</a></sup></td></tr>
+      <tr><td>Giữ cấu trúc</td><td>Có chế độ HTML/XML, thẻ không dịch.<sup class="cite"><a href="#src-11">[11]</a><a href="#src-17">[17]</a></sup></td><td>Dùng structured output; vẫn phải kiểm schema.</td></tr>
+      <tr><td>Hợp khi</td><td>Khối lượng lớn, cần nhất quán, cần dự toán chi phí.</td><td>Cần hiểu ngữ cảnh rộng, giọng văn, hoặc gộp dịch với tóm tắt trong một bước.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout"><b>Gộp bước:</b> ở kiến trúc B và D, LLM đọc chunk tiếng Đức và viết thẳng câu trả lời tiếng Việt. Đó cũng là một lần "dịch" do LLM làm, chỉ là không tách thành bước riêng. Vì vậy các kiểm tra ở mục 6 (số, tên riêng, trích dẫn) vẫn cần.</div>
+
+  <h3>7.3 Glossary: một bảng thuật ngữ, ba chỗ dùng</h3>
+  <p>Glossary là bảng ánh xạ thuật ngữ có kiểm soát, ví dụ "phụ cấp ăn" ↔ "meal allowance" ↔ "Verpflegungsmehraufwand". Một bảng dùng được cho ba việc:</p>
+  <div class="grid g3">
+    <div class="card"><span class="tag p4">Dịch</span><p>Nạp vào dịch vụ dịch máy hoặc vào prompt để bản dịch câu hỏi dùng đúng chữ có trong tài liệu, giúp nhánh BM25 khớp.</p></div>
+    <div class="card"><span class="tag p4">Tìm</span><p>Mở rộng câu hỏi: thêm các dạng tương đương của thuật ngữ trước khi tìm (xem <a href="../query-transformation/">Query Transformation</a>).</p></div>
+    <div class="card"><span class="tag p4">Đánh giá</span><p>Mỗi thuật ngữ là một mục kiểm: câu trả lời có dùng đúng thuật ngữ đã duyệt không. MQM gọi lỗi này là lỗi thuật ngữ: dùng từ không khớp chuẩn của ngành hoặc tổ chức.<sup class="cite"><a href="#src-19">[19]</a></sup></p></div>
+  </div>
+  <p class="muted">Ai giữ bảng? Nên có người hiểu nghiệp vụ và biết ngôn ngữ duyệt (nhân sự, pháp chế), có phiên bản, và đưa phiên bản glossary vào khóa cache bản dịch để đổi glossary thì dịch lại đúng phần bị ảnh hưởng.</p>
+
+  <h3>7.4 Dịch lỗi giữa chừng: thử lại hay dừng?</h3>
+  <p>Một lần gọi dịch có thể lỗi. Câu hỏi quan trọng: lỗi đó <b>tạm thời</b> (thử lại sẽ được) hay <b>vĩnh viễn</b> (thử lại vô ích, phải sửa)? Tài liệu DeepL phân loại khá rõ:<sup class="cite"><a href="#src-12">[12]</a></sup></p>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Mã lỗi</th><th>Nghĩa</th><th>Loại</th><th>Nên làm</th></tr></thead>
+    <tbody>
+      <tr><td><b>429, 529</b></td><td>Gửi quá nhiều yêu cầu trong thời gian ngắn.</td><td>Tạm thời</td><td>Thử lại với backoff lũy thừa và jitter; ưu tiên thời gian chờ trong header <code>Retry-After</code> nếu có.<sup class="cite"><a href="#src-12">[12]</a></sup></td></tr>
+      <tr><td><b>5xx</b> (500, 503, 504)</td><td>Lỗi tạm thời phía dịch vụ.</td><td>Tạm thời</td><td>Thử lại với backoff. Azure cũng ghi 503 là "thử lại".<sup class="cite"><a href="#src-12">[12]</a><a href="#src-17">[17]</a></sup></td></tr>
+      <tr><td><b>456</b> (DeepL)</td><td>Vượt hạn mức sử dụng.</td><td>Vĩnh viễn đến khi đổi hạn mức</td><td>Dừng thử lại, báo động. DeepL viết: coi 456 là điều kiện dừng.<sup class="cite"><a href="#src-12">[12]</a></sup> Azure dùng 403 cho trường hợp dùng hết lượt dùng thử.<sup class="cite"><a href="#src-17">[17]</a></sup></td></tr>
+      <tr><td><b>Không có mã</b> (timeout, đứt mạng)</td><td>Không nhận được phản hồi.</td><td>Thường là tạm thời</td><td>Gợi ý: thử lại có giới hạn số lần, trong ngân sách độ trễ hoặc thời gian của job.</td></tr>
+      <tr><td><b>400, 403, 413</b></td><td>Yêu cầu sai, sai quyền, hoặc gói quá lớn.</td><td>Vĩnh viễn</td><td>Sửa yêu cầu. Ví dụ glossary không có từ điển cho cặp ngôn ngữ đó trả 400; gói quá 128 KiB trả 413, phải chia nhỏ.<sup class="cite"><a href="#src-11">[11]</a><a href="#src-12">[12]</a></sup></td></tr>
+    </tbody>
+  </table></div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h4>Lỗi lúc nạp kho (kiến trúc A)</h4><ul>
+      <li>Tách "dịch" thành một bước riêng có trạng thái: <i>đã parse → chờ dịch → đã dịch → đã embed</i>. Dịch lỗi thì chỉ thử lại bước dịch, không parse hay OCR lại (thường là bước đắt nhất, xem <a href="../document-parsing-chunking/">Document Parsing</a>).</li>
+      <li>Cache bản dịch theo khóa (hash văn bản gốc + ngôn ngữ đích + phiên bản glossary). Chạy lại không trả tiền hai lần.</li>
+      <li>Lỗi vĩnh viễn: đưa chunk vào hàng chờ xử lý tay, ghi rõ lý do. Tạm thời vẫn index bản gốc (nếu có vector đa ngôn ngữ) để chunk không biến mất khỏi kết quả.</li>
+    </ul></div>
+    <div class="card"><h4>Lỗi lúc hỏi (kiến trúc C, D, A)</h4><ul>
+      <li>Câu hỏi có ngân sách độ trễ: thử lại một hai lần là hết. Ở D, nếu dịch câu hỏi lỗi, vẫn chạy nhánh vector với câu hỏi gốc và ghi log "thiếu nhánh BM25".</li>
+      <li>Ở A, không có đường lui tốt: dịch câu hỏi lỗi thì không tìm được. Đây là một lý do nên có nhánh không cần dịch.</li>
+      <li>Dùng một hệ dịch dự phòng khác loại: nghiên cứu về ảo giác khi dịch thấy dự phòng bằng model khác hẳn cải thiện chất lượng rõ, còn model giống nhau thì hay lặp lại cùng lỗi.<sup class="cite"><a href="#src-18">[18]</a></sup></li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- 8. KHÁI NIỆM -->
+<section id="khai-niem">
+  <h2>8. Từ điển khái niệm</h2>
+  <p>Mỗi thẻ có định nghĩa ngắn, ví dụ và liên kết sang khái niệm liên quan. Lọc theo nhóm hoặc gõ để tìm (gõ không dấu cũng được).</p>
+  <div class="gloss-tools">
+    <input id="glossSearch" type="search" placeholder="Tìm khái niệm… (vd: pivot, glossary, drift)">
+  </div>
+  <div class="gloss-tools" id="glossChips"></div>
+  <div class="grid g3" id="glossGrid"></div>
+</section>
+
+<!-- 9. MỐI QUAN HỆ -->
+<section id="quan-he">
+  <h2>9. Bản đồ mối quan hệ</h2>
+  <p>Ba trục ngôn ngữ ở bên trái. Mọi thành phần còn lại tồn tại để nối các trục đó: nhận diện ngôn ngữ, dịch, tìm kiếm, sinh và kiểm tra.</p>
+  <div class="vflow m-only" aria-label="Bản đồ quan hệ (dạng dọc)">
+    <div class="box box1">
+      <div class="ph ph1">Ba trục ngôn ngữ</div>
+      <div class="node l"><b>Ngôn ngữ tài liệu</b><span>→ được gắn nhãn bởi <b style="display:inline">nhận diện ngôn ngữ</b> → quyết định analyzer BM25 nào dùng</span></div>
+      <div style="height:8px"></div>
+      <div class="node l"><b>Ngôn ngữ câu hỏi</b><span>→ quyết định có cần <b style="display:inline">dịch câu hỏi</b> cho nhánh BM25 không</span></div>
+      <div style="height:8px"></div>
+      <div class="node l"><b>Ngôn ngữ trả lời</b><span>→ ghi rõ trong system prompt của LLM</span></div>
+    </div>
+    <div class="box">
+      <div class="ph ph4">Dịch</div>
+      <div class="node"><b>Glossary</b><span>ép thuật ngữ</span></div>
+      <div class="ar">↓ dùng bởi</div>
+      <div class="node tr"><b>Dịch (máy hoặc LLM)</b><span>tạo câu hỏi đã dịch cho BM25 (C, D) hoặc dịch cả kho (A)</span></div>
+    </div>
+    <div class="box">
+      <div class="ph ph3">Tìm và trả lời</div>
+      <div class="node v"><b>Embedding đa ngôn ngữ</b><span>câu hỏi gốc ↔ chunk gốc, không gian chung</span></div>
+      <div class="node v" style="margin-top:6px"><b>BM25 theo ngôn ngữ</b><span>câu hỏi đã dịch ↔ chunk cùng ngôn ngữ</span></div>
+      <div class="ar">↓ cả hai đưa vào</div>
+      <div class="node v"><b>Trộn (RRF), có thể rerank</b><span>ra top-k chunk gốc</span></div>
+      <div class="ar">↓</div>
+      <div class="node g"><b>LLM sinh câu trả lời</b><span>tiếng Việt, trích nguyên văn</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>Kiểm tra đầu ra</b><span>đúng ngôn ngữ, số khớp nguồn, trích dẫn có thật</span></div>
+    </div>
+    <div class="node" style="border:1px dashed var(--bad);background:var(--bad-soft)"><b>Đánh giá theo ngôn ngữ</b><span>golden set cho từng cặp ngôn ngữ; người duyệt thuật ngữ bổ sung lại glossary</span></div>
+  </div>
+  <div class="svgbox d-only">
+    <svg class="diagram" id="mapSvg" viewBox="0 0 1000 560" role="img" aria-label="Bản đồ quan hệ giữa các khái niệm RAG đa ngôn ngữ"></svg>
+  </div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h4>Quan hệ phụ thuộc quan trọng nhất</h4><ul>
+      <li><b>Nhãn ngôn ngữ của chunk quyết định</b> analyzer BM25 và việc có cần dịch hay không. Gắn nhãn sai thì BM25 tách chữ sai.</li>
+      <li><b>Glossary quyết định</b> câu hỏi đã dịch có trùng chữ với tài liệu không. Thiếu glossary, nhánh BM25 dịch đúng nghĩa mà vẫn trượt.</li>
+      <li><b>Embedding model quyết định</b> câu hỏi tiếng Việt có "gặp" được đoạn tiếng Đức không, và thiên lệch ngôn ngữ nặng hay nhẹ.<sup class="cite"><a href="#src-6">[6]</a></sup></li>
+      <li><b>System prompt quyết định</b> câu trả lời ra đúng ngôn ngữ hay trôi sang tiếng Anh.<sup class="cite"><a href="#src-4">[4]</a></sup></li>
+    </ul></div>
+    <div class="card"><h4>Đánh đổi xuyên suốt</h4><ul>
+      <li><b>Dịch nhiều ↔ dịch ít:</b> BM25 khớp tốt hơn, bỏ được thiên lệch ngôn ngữ ↔ rẻ, nhanh, ít nguồn lỗi.</li>
+      <li><b>Dịch lúc nạp ↔ dịch lúc hỏi:</b> trả một lần, câu hỏi nhanh ↔ không tốn khi kho đổi, nhưng mỗi câu hỏi chờ thêm.</li>
+      <li><b>Trích nguyên văn ↔ trích bản dịch:</b> kiểm được, an toàn pháp lý ↔ dễ đọc hơn với người không biết ngôn ngữ gốc.</li>
+    </ul></div>
+  </div>
+</section>
+
+<!-- 10. SO SÁNH -->
+<section id="so-sanh">
+  <h2>10. So sánh bốn kiến trúc</h2>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Kiến trúc</th><th>Gọi dịch</th><th>Lưu trữ</th><th>Mạnh</th><th>Yếu</th><th>Hợp khi</th></tr></thead>
+    <tbody>
+      <tr><td><b>A · Dịch rồi embed</b></td><td>Mọi chunk không phải pivot lúc nạp, dịch lại khi kho đổi; 2 lần mỗi câu hỏi (câu hỏi, câu trả lời).</td><td>Hai bản văn bản cho mỗi chunk phải dịch (bản gốc để trích, bản dịch để tìm); một vector mỗi chunk. Dịch lại khi đổi glossary hay đổi dịch vụ.</td><td>Dùng được model và công cụ chỉ mạnh tiếng Anh; BM25 chạy trên một ngôn ngữ; không có thiên lệch ngôn ngữ trong lúc tìm.</td><td>Đắt khi kho lớn; lỗi dịch "đóng băng" vào index; cần lưu cả bản gốc để trích dẫn; dịch câu hỏi lỗi là không tìm được.</td><td>Kho nhỏ, ít đổi; ngôn ngữ tài liệu mà model đa ngôn ngữ kém; đã có bản dịch người làm.</td></tr>
+      <tr><td><b>B · Embedding đa ngôn ngữ</b></td><td>Không.</td><td>Một bản văn bản, một vector mỗi chunk. Đổi embedding model thì embed lại cả kho.</td><td>Đơn giản, rẻ, nhanh; nghiên cứu cho thấy thường ngang hoặc hơn dịch câu hỏi.<sup class="cite"><a href="#src-4">[4]</a><a href="#src-9">[9]</a></sup></td><td>Thiên lệch về ngôn ngữ câu hỏi;<sup class="cite"><a href="#src-6">[6]</a></sup> yếu với mã, số, thuật ngữ hiếm; phụ thuộc hoàn toàn vào một model.</td><td>Điểm khởi đầu mặc định cho phần lớn hệ thống; dùng để làm mốc so sánh.</td></tr>
+      <tr><td><b>C · Chỉ dịch câu hỏi</b></td><td>Mỗi câu hỏi, mỗi ngôn ngữ tài liệu một lần.</td><td>Một bản văn bản; một index từ khóa (hoặc model đơn ngữ) cho mỗi ngôn ngữ, mỗi index một analyzer.</td><td>Rẻ (câu hỏi ngắn); index giữ nguyên; thêm ngôn ngữ mới không phải dịch lại kho.</td><td>Câu hỏi ngắn dễ dịch sai thuật ngữ; trộn nhiều danh sách theo ngôn ngữ khó, vì điểm giữa các index không so được (RRF hoặc reranker giúp được phần này).</td><td>Đã có hạ tầng BM25 tốt theo từng ngôn ngữ; ít ngôn ngữ tài liệu.</td></tr>
+      <tr><td><b>D · Kết hợp</b></td><td>Như C (chỉ cho nhánh BM25).</td><td>Nhiều nhất: vector cho mọi chunk cộng index từ khóa theo từng ngôn ngữ, phải giữ đồng bộ.</td><td>Nhánh vector bắt nghĩa, nhánh BM25 bắt mã và thuật ngữ; dịch lỗi vẫn còn nhánh vector; hybrid dẫn đầu trung bình ở NeuCLIR 2022.<sup class="cite"><a href="#src-8">[8]</a></sup></td><td>Hai hệ tìm kiếm phải vận hành; nhiều nút chỉnh hơn (RRF, glossary, analyzer). Nhánh BM25 dịch sai thuật ngữ có thể kéo kết quả xuống, vì RRF thưởng chunk có mặt ở cả hai nhánh; trong mô phỏng ở mục 4 (câu hỏi đầu tiên, tắt glossary) đoạn đúng tụt hẳn xuống.</td><td>Kho doanh nghiệp nhiều mã, số hiệu, thuật ngữ; cần độ bền khi dịch vụ dịch lỗi.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h4>Thêm bước rerank đa ngôn ngữ</h4><p>Dù chọn kiến trúc nào, sau bước trộn có thể thêm một reranker đa ngôn ngữ (cross-encoder). Nó đọc từng cặp (câu hỏi gốc, chunk gốc) và chấm lại trên cùng một thang điểm, nên so được chunk tiếng Đức với ghi chú tiếng Việt, việc mà điểm BM25 của các index riêng không làm được. Một nghiên cứu RAG đa ngôn ngữ dùng BGE-M3 để tìm và bge-reranker-v2-m3 để xếp lại, và thấy retriever, reranker đa ngôn ngữ có sẵn làm khá tốt cả khi câu hỏi và tài liệu khác ngôn ngữ lẫn khi kho trộn nhiều ngôn ngữ.<sup class="cite"><a href="#src-4">[4]</a></sup></p><p class="muted">Reranker có bớt được thiên lệch ngôn ngữ hay không thì các nguồn ở đây chưa đo: hãy đo theo từng cặp ngôn ngữ. Cách chọn N và k: xem <a href="../reranking/">Reranking</a>.</p></div>
+    <div class="card"><h4>Chọn embedding model đa ngôn ngữ (B, D)</h4><ul><li>Model có được huấn luyện trên đúng các ngôn ngữ của bạn (Việt, Anh, Đức, Nhật…) không?</li><li>Giới hạn đầu vào bao nhiêu token, và tokenizer tính tiếng Việt tốn bao nhiêu (mục 5)?</li><li>Có điểm công bố theo từng ngôn ngữ không? MKQA có tiếng Việt, MIRACL thì không.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-3">[3]</a></sup></li><li>Đã đo trên golden set của chính bạn, tách theo cặp ngôn ngữ chưa (mục 12)?</li></ul><p class="muted">Dùng nhầm model chỉ mạnh tiếng Anh không gây lỗi nào: hệ vẫn chạy, chỉ tìm kém ở các cặp vượt ngôn ngữ. Chỉ golden set theo cặp mới lộ ra. So sánh model kỹ hơn: <a href="../embedding-performance/">Embedding Performance</a>.</p></div>
+  </div>
+  <div class="callout"><b>Quy tắc dễ nhớ:</b> bắt đầu bằng B, đo theo từng cặp ngôn ngữ. Thấy trượt ở mã, số, thuật ngữ thì thêm nhánh BM25 với câu hỏi đã dịch và glossary (thành D). Chỉ cân nhắc A khi model đa ngôn ngữ thật sự kém với ngôn ngữ tài liệu của bạn, và tính kỹ chi phí ở mục 4.</div>
+</section>
+
+<!-- 11. LỖI -->
+<section id="loi">
+  <h2>11. Lỗi thường gặp và cách chẩn đoán</h2>
+  <div class="grid g2">
+    <div class="card"><h4>Cây chẩn đoán</h4><ol>
+      <li><b>Câu hỏi và chunk có nhãn ngôn ngữ đúng không?</b><br><span class="muted">Sai → BM25 dùng sai analyzer, glossary chọn sai cặp ngôn ngữ. Kiểm bộ nhận diện trên câu ngắn và đoạn trộn.</span></li>
+      <li><b>Đoạn đúng có trong top-k không, xét riêng từng cặp ngôn ngữ?</b><br><span class="muted">Không, nhưng cùng câu hỏi viết bằng ngôn ngữ của tài liệu thì tìm ra → lỗi vượt ngôn ngữ: thử model đa ngôn ngữ khác, thêm nhánh BM25 với câu hỏi đã dịch.</span></li>
+      <li><b>Nếu có dịch: bản dịch dùng đúng thuật ngữ trong tài liệu không?</b><br><span class="muted">Không → bổ sung glossary, đưa phiên bản glossary vào cache.</span></li>
+      <li><b>Đoạn đúng đã vào prompt mà câu trả lời vẫn sai?</b><br><span class="muted">Xem trả lời sai ngôn ngữ, sai số, sai tên riêng, hay chọn nhầm bản không có hiệu lực.</span></li>
+    </ol></div>
+    <div class="card"><h4>Bảng triệu chứng</h4>
+      <div class="table-wrap"><table class="stack">
+        <thead><tr><th>Triệu chứng</th><th>Nguyên nhân thường gặp</th></tr></thead>
+        <tbody>
+          <tr><td>Hỏi tiếng Việt, đáp tiếng Anh</td><td>Prompt không ghi rõ ngôn ngữ đích; chunk toàn tiếng Anh kéo model theo.<sup class="cite"><a href="#src-4">[4]</a></sup></td></tr>
+          <tr><td>Câu trả lời chen từ tiếng Anh, tiếng Đức</td><td>Trôi ngôn ngữ cấp từ; nhiệt độ cao, prompt phức tạp.<sup class="cite"><a href="#src-5">[5]</a></sup> Có khi là chủ ý (thuật ngữ gốc), cần quy ước rõ.</td></tr>
+          <tr><td>Luôn ra ghi chú tiếng Việt, bỏ qua chính sách tiếng Đức</td><td>Thiên lệch ngôn ngữ của retriever hoặc LLM.<sup class="cite"><a href="#src-6">[6]</a><a href="#src-7">[7]</a></sup> Thêm nhánh BM25 đã dịch, metadata "có hiệu lực".</td></tr>
+          <tr><td>Recall thấp ở mọi cặp vượt ngôn ngữ, cặp cùng ngôn ngữ vẫn ổn, không có lỗi nào được báo</td><td>Embedding model chỉ mạnh tiếng Anh hoặc không được huấn luyện trên ngôn ngữ đó. So bằng golden set theo cặp.</td></tr>
+          <tr><td>BM25 trả rỗng với câu hỏi tiếng Việt trên kho tiếng Đức</td><td>Không có token chung; chưa dịch câu hỏi.<sup class="cite"><a href="#src-3">[3]</a></sup></td></tr>
+          <tr><td>Dịch câu hỏi rồi vẫn trượt</td><td>Bản dịch dùng từ phổ thông, tài liệu dùng thuật ngữ khác; thiếu glossary.</td></tr>
+          <tr><td>Số tiền lệch nghìn lần</td><td>Nhầm quy ước dấu thập phân giữa các ngôn ngữ.<sup class="cite"><a href="#src-20">[20]</a></sup></td></tr>
+          <tr><td>Gõ "phu cap an" không ra gì</td><td>Index chỉ có bản có dấu; hoặc hàm bỏ dấu tự viết bỏ sót "đ".<sup class="cite"><a href="#src-30">[30]</a></sup></td></tr>
+          <tr><td>Hóa đơn dịch hoặc token cao bất ngờ</td><td>Dịch lại cả kho mỗi lần nạp vì không cache; dịch câu trả lời dài; tiếng Việt tốn token hơn dự tính.<sup class="cite"><a href="#src-23">[23]</a></sup></td></tr>
+          <tr><td>Job nạp kho chạy lại từ đầu khi dịch lỗi</td><td>Dịch không tách thành bước riêng có trạng thái; thử lại cả lỗi vĩnh viễn.<sup class="cite"><a href="#src-12">[12]</a></sup></td></tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+</section>
+
+<!-- 12. ĐÁNH GIÁ -->
+<section id="danh-gia">
+  <h2>12. Đánh giá và đo lường</h2>
+  <p>Nguyên tắc chung về golden set, metric và LLM-as-judge có ở <a href="../llm-evaluation/">LLM Evaluation</a>. Với RAG đa ngôn ngữ, điểm khác là <b>mọi con số phải tách theo cặp ngôn ngữ</b>. Một con số trung bình chung sẽ che mất việc cặp Việt–Đức hỏng trong khi cặp Việt–Anh ổn.</p>
+  <h3>Golden set theo từng cặp ngôn ngữ</h3>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Câu hỏi</th><th>Cặp ngôn ngữ</th><th>Chunk đúng</th><th>Phải có trong câu trả lời</th></tr></thead>
+    <tbody>
+      <tr><td>Đi công tác ở Đức được phụ cấp ăn bao nhiêu một ngày?</td><td>vi → de</td><td>Reisekostenrichtlinie §5</td><td>"28 EUR", trích nguyên văn tiếng Đức, thuật ngữ "phụ cấp ăn"</td></tr>
+      <tr><td>Hóa đơn công tác nộp trong bao lâu?</td><td>vi → en</td><td>Travel Policy §4.5</td><td>"30 ngày"</td></tr>
+      <tr><td>phu cap an o Duc</td><td>vi (không dấu) → de</td><td>Reisekostenrichtlinie §5</td><td>như câu 1</td></tr>
+      <tr><td>Mẫu RK-12 dùng để làm gì?</td><td>vi → de, có mã</td><td>Reisekostenrichtlinie (mẫu RK-12)</td><td>mã "RK-12" giữ nguyên</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted">Mẹo: lấy câu hỏi thật của nhân viên, gắn nhãn cặp ngôn ngữ và loại (có mã, không dấu, trộn Việt–Anh). Nếu chỉ có câu hỏi tiếng Anh, đừng dịch máy rồi dùng luôn: nhờ người bản ngữ viết lại, vì câu hỏi dịch máy thường "sạch" hơn câu người thật gõ.</p>
+
+  <h3>Các metric nên có</h3>
+  <div class="grid g2">
+    <div class="card"><span class="tag p1">Tìm kiếm</span><h4>Cross-lingual recall@k</h4><p>Như recall@k thường, nhưng tính riêng cho mỗi cặp (vi→en, vi→de, vi→vi). Bài BGE-M3 báo cáo Recall@100 và Recall@20 trên MKQA theo từng ngôn ngữ câu hỏi.<sup class="cite"><a href="#src-3">[3]</a></sup> Với RAG, đo ở k bạn thật sự đưa vào prompt.</p><p class="muted">Thêm một phép so sánh: cùng câu hỏi viết bằng ngôn ngữ của tài liệu. Khoảng cách giữa hai con số là cái giá của việc vượt ngôn ngữ.</p></div>
+    <div class="card"><span class="tag p3">Câu trả lời</span><h4>Tỷ lệ đúng ngôn ngữ</h4><p>Phần trăm câu trả lời viết đúng ngôn ngữ đích, đo bằng bộ nhận diện ngôn ngữ (nghiên cứu dùng fastText, bỏ câu dưới 20 ký tự).<sup class="cite"><a href="#src-4">[4]</a></sup> Có thể tách cấp dòng và cấp từ như bộ đánh giá language confusion.<sup class="cite"><a href="#src-5">[5]</a></sup></p></div>
+    <div class="card"><span class="tag p3">Câu trả lời</span><h4>Khớp tên riêng và con số</h4><p>So khớp từng từ phạt oan tên riêng viết khác. Nghiên cứu RAG đa ngôn ngữ đề xuất đo recall theo n-gram ký tự: "sofia kovalevskaia" so với "sofya kovalevskaya" được 0 theo từ nhưng 69,2% theo 3-gram ký tự.<sup class="cite"><a href="#src-4">[4]</a></sup> Con số và mã thì nên khớp chính xác.</p></div>
+    <div class="card"><span class="tag p4">Người duyệt</span><h4>Duyệt thuật ngữ và bản dịch</h4><p>Cho người hiểu nghiệp vụ chấm một mẫu câu trả lời theo vài nhóm lỗi của MQM: thuật ngữ, độ chính xác (thêm, bớt, dịch sai), quy ước địa phương.<sup class="cite"><a href="#src-19">[19]</a></sup> Lỗi thuật ngữ tìm thấy thì đưa ngược vào glossary.</p></div>
+  </div>
+
+  <h3>Đọc một bảng kết quả (số minh họa)</h3>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Cặp ngôn ngữ</th><th>Recall@5 · B</th><th>Recall@5 · D</th><th>Đúng ngôn ngữ</th><th>Số khớp nguồn</th></tr></thead>
+    <tbody>
+      <tr><td>vi → vi</td><td>0,92</td><td>0,93</td><td>99%</td><td>98%</td></tr>
+      <tr><td>vi → en</td><td>0,85</td><td>0,88</td><td>94%</td><td>97%</td></tr>
+      <tr><td>vi → de</td><td>0,71</td><td>0,84</td><td>91%</td><td>90%</td></tr>
+      <tr><td>vi → de, câu có mã</td><td>0,48</td><td>0,81</td><td>92%</td><td>95%</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout"><b>Đọc thế nào:</b> trung bình chung trông ổn, nhưng cặp Việt–Đức, nhất là câu có mã, kém hẳn ở B và được D cứu. "Đúng ngôn ngữ" 91% nghĩa là cứ 11 câu trả lời thì gần 1 câu sai ngôn ngữ: sửa system prompt trước khi đổi model. Đây là số minh họa để tập đọc bảng, không phải kết quả đo thật.</div>
+</section>
+
+<!-- 13. LỘ TRÌNH -->
+<section id="lo-trinh">
+  <h2>13. Lộ trình tự học 2 tuần (không cần code)</h2>
+  <p class="muted">Khoảng 4 giờ mỗi tuần. Các ô đã đánh dấu được lưu trong trình duyệt của bạn.</p>
+  <div class="grid g2">
+    <div class="card"><span class="tag p1">Tuần 1</span><h4>Kiến trúc, tìm kiếm, chi phí</h4><p>Đọc mục 1–5, chơi mô phỏng ở mục 4.</p>
+      <label class="check"><input type="checkbox" data-k="w1a"><span>Vẽ lại bốn kiến trúc, đánh dấu chỗ gọi dịch, không nhìn trang.</span></label>
+      <label class="check"><input type="checkbox" data-k="w1b"><span>Trong mô phỏng, tìm một câu hỏi mà B thua D và giải thích vì sao.</span></label>
+      <label class="check"><input type="checkbox" data-k="w1c"><span>Nhập số liệu kho của bạn vào máy tính chi phí; ghi lại kiến trúc rẻ nhất và đắt nhất.</span></label>
+    </div>
+    <div class="card"><span class="tag p1">Tuần 2</span><h4>Sinh câu trả lời, dịch, đánh giá</h4><p>Đọc mục 6–12.</p>
+      <label class="check"><input type="checkbox" data-k="w2a"><span>Dán một đoạn chính sách tiếng Anh vào ChatGPT hoặc Claude, hỏi bằng tiếng Việt, lần đầu không dặn ngôn ngữ, lần sau dặn rõ trong system prompt. So sánh.</span></label>
+      <label class="check"><input type="checkbox" data-k="w2b"><span>Lập glossary 10 thuật ngữ Việt–Anh của phòng ban bạn.</span></label>
+      <label class="check"><input type="checkbox" data-k="w2c"><span>Viết 12 câu hỏi golden set chia đủ ba cặp ngôn ngữ, có câu không dấu và câu có mã.</span></label>
+    </div>
+  </div>
+
+  <h3>Tự kiểm tra: trả lời được là đã nắm cốt lõi</h3>
+  <details><summary>1. Ba trục ngôn ngữ là gì, và vì sao phải tách chúng ra?</summary>
+    <p>Ngôn ngữ tài liệu, ngôn ngữ câu hỏi, ngôn ngữ câu trả lời. Mỗi trục hỏng theo cách riêng và có cách sửa riêng: tài liệu cần nhãn ngôn ngữ và analyzer đúng, câu hỏi cần vượt được rào ngôn ngữ khi tìm, câu trả lời cần ghi rõ ngôn ngữ đích và kiểm sau khi sinh.</p></details>
+  <details><summary>2. Vì sao BM25 kém hẳn khi câu hỏi tiếng Việt, tài liệu tiếng Đức?</summary>
+    <p>BM25 chỉ chấm điểm token trùng nhau. Hai ngôn ngữ hầu như không có token chung, trừ tên riêng, số và mã.<sup class="cite"><a href="#src-3">[3]</a></sup> Muốn dùng BM25 thì phải dịch câu hỏi hoặc dịch tài liệu.</p></details>
+  <details><summary>3. Kiến trúc A tốn ở đâu nhiều nhất?</summary>
+    <p>Dịch cả kho lúc nạp, dịch lại phần kho thay đổi, và dịch câu trả lời mỗi lần hỏi. Với cấu hình mặc định ở mục 4, phần dịch câu trả lời hằng tháng còn tốn hơn phần dịch lại kho.</p></details>
+  <details><summary>4. Bật glossary giúp nhánh BM25 thế nào?</summary>
+    <p>Bản dịch câu hỏi dùng đúng chữ có trong tài liệu, ví dụ "Verpflegungsmehraufwand" thay vì "Essenszulage", nên BM25 khớp được. Không có glossary, bản dịch đúng nghĩa vẫn có thể trượt vì khác chữ.</p></details>
+  <details><summary>5. Làm sao để câu trả lời ra tiếng Việt ổn định?</summary>
+    <p>Ghi rõ ngôn ngữ đích trong system prompt, lấy từ cài đặt người dùng;<sup class="cite"><a href="#src-31">[31]</a></sup> viết system prompt bằng tiếng Việt nếu có người kiểm được bản prompt;<sup class="cite"><a href="#src-4">[4]</a></sup> giữ nhiệt độ thấp;<sup class="cite"><a href="#src-5">[5]</a></sup> kiểm câu trả lời bằng bộ nhận diện ngôn ngữ và đo tỷ lệ đúng ngôn ngữ.</p></details>
+  <details><summary>6. Dịch vụ dịch trả lỗi 429 và 456. Xử lý khác nhau thế nào?</summary>
+    <p>429 là tạm thời: thử lại với backoff lũy thừa, jitter, tôn trọng <code>Retry-After</code>. 456 của DeepL là vượt hạn mức: thử lại vô ích cho tới khi đổi hạn mức, nên dừng và báo động.<sup class="cite"><a href="#src-12">[12]</a></sup></p></details>
+  <details><summary>7. Vì sao nên trích nguyên văn bản gốc thay vì chỉ đưa bản dịch?</summary>
+    <p>Nguyên văn kiểm được bằng máy (chuỗi phải có trong chunk) và bằng người; bản dịch có thể sai, thiếu hoặc thêm ý.<sup class="cite"><a href="#src-18">[18]</a></sup> Với điều khoản có hiệu lực pháp lý, người đọc cần thấy chính văn bản đó.</p></details>
+  <details><summary>8. Tại sao phải tách mọi con số đánh giá theo cặp ngôn ngữ?</summary>
+    <p>Vì các cặp hỏng khác nhau. Trung bình chung có thể đẹp trong khi một cặp (vd. Việt–Đức, câu có mã) rất tệ, và đó thường là chỗ người dùng thật gặp lỗi.</p></details>
+</section>
+
+<!-- NGUỒN -->
+<section id="nguon">
+  <h2>Nguồn tham khảo</h2>
+  <p class="muted">Các khẳng định kỹ thuật trong trang được đối chiếu với những nguồn dưới đây. Số trong ngoặc vuông ở thân bài trỏ tới mục tương ứng. Tất cả truy cập ngày 2026-11-19.</p>
+  <ol class="sources">
+    <li id="src-1">Zhang, X. và cộng sự. <i>MIRACL: A Multilingual Retrieval Dataset Covering 18 Diverse Languages</i>. TACL, 2023. <a href="https://arxiv.org/abs/2210.09984" target="_blank" rel="noopener">arxiv.org/abs/2210.09984</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-2">Longpre, S.; Lu, Y.; Daiber, J. <i>MKQA: A Linguistically Diverse Benchmark for Multilingual Open Domain Question Answering</i>. TACL, 2021. <a href="https://arxiv.org/abs/2007.15207" target="_blank" rel="noopener">arxiv.org/abs/2007.15207</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-3">Chen, J. và cộng sự. <i>M3-Embedding (BGE-M3): Multi-Linguality, Multi-Functionality, Multi-Granularity Text Embeddings Through Self-Knowledge Distillation</i>. arXiv, 2024. <a href="https://arxiv.org/abs/2402.03216" target="_blank" rel="noopener">arxiv.org/abs/2402.03216</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-4">Chirkova, N. và cộng sự. <i>Retrieval-augmented generation in multilingual settings</i>. arXiv, 2024. <a href="https://arxiv.org/abs/2407.01463" target="_blank" rel="noopener">arxiv.org/abs/2407.01463</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-5">Marchisio, K. và cộng sự. <i>Understanding and Mitigating Language Confusion in LLMs</i>. EMNLP, 2024. <a href="https://arxiv.org/abs/2406.20052" target="_blank" rel="noopener">arxiv.org/abs/2406.20052</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-6">Park, J.; Lee, H. <i>Investigating Language Preference of Multilingual RAG Systems</i>. Findings of ACL, 2025. <a href="https://arxiv.org/abs/2502.11175" target="_blank" rel="noopener">arxiv.org/abs/2502.11175</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-7">Sharma, N.; Murray, K.; Xiao, Z. <i>Faux Polyglot: A Study on Information Disparity in Multilingual Large Language Models</i>. NAACL, 2025. <a href="https://arxiv.org/abs/2407.05502" target="_blank" rel="noopener">arxiv.org/abs/2407.05502</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-8">Lawrie, D. và cộng sự. <i>Overview of the TREC 2022 NeuCLIR Track</i>. TREC 2022 Proceedings, 2023. <a href="https://arxiv.org/abs/2304.12367" target="_blank" rel="noopener">arxiv.org/abs/2304.12367</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-9">Valentini, F.; Kozlowski, D.; Larivière, V. <i>CLIRudit: Cross-Lingual Information Retrieval of Scientific Documents</i>. arXiv, 2025. <a href="https://arxiv.org/abs/2504.16264" target="_blank" rel="noopener">arxiv.org/abs/2504.16264</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-10">Goworek, R.; Macmillan-Scott, O.; Özyiğit, E. B. <i>What Drives Cross-lingual Ranking? Retrieval Approaches with Multilingual Language Models</i>. arXiv, 2025. <a href="https://arxiv.org/abs/2511.19324" target="_blank" rel="noopener">arxiv.org/abs/2511.19324</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-11">DeepL. <i>Translate text</i> (API reference). <a href="https://developers.deepl.com/api-reference/translate" target="_blank" rel="noopener">developers.deepl.com/api-reference/translate</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-12">DeepL. <i>Error handling</i> (tài liệu). <a href="https://developers.deepl.com/docs/best-practices/error-handling" target="_blank" rel="noopener">developers.deepl.com/docs/best-practices/error-handling</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-13">DeepL. <i>Multilingual glossaries</i> (API reference). <a href="https://developers.deepl.com/api-reference/multilingual-glossaries" target="_blank" rel="noopener">developers.deepl.com/api-reference/multilingual-glossaries</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-14">DeepL. <i>Changelog</i>. <a href="https://developers.deepl.com/docs/resources/roadmap-and-release-notes" target="_blank" rel="noopener">developers.deepl.com/docs/resources/roadmap-and-release-notes</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-15">Google Cloud. <i>Create and use glossaries (Advanced)</i>. <a href="https://docs.cloud.google.com/translate/docs/advanced/glossary" target="_blank" rel="noopener">docs.cloud.google.com/translate/docs/advanced/glossary</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-16">Google Cloud. <i>Cloud Translation pricing</i>. <a href="https://cloud.google.com/translate/pricing" target="_blank" rel="noopener">cloud.google.com/translate/pricing</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-17">Microsoft. <i>Translator Translate Method (v3)</i>. <a href="https://learn.microsoft.com/en-us/azure/ai-services/translator/text-translation/reference/v3/translate" target="_blank" rel="noopener">learn.microsoft.com/…/translator/text-translation/reference/v3/translate</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-18">Guerreiro, N. M. và cộng sự. <i>Hallucinations in Large Multilingual Translation Models</i>. TACL, 2023. <a href="https://arxiv.org/abs/2303.16104" target="_blank" rel="noopener">arxiv.org/abs/2303.16104</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-19">MQM Council. <i>MQM Error Typology</i>. <a href="https://themqm.org/error-types-2/typology/" target="_blank" rel="noopener">themqm.org/error-types-2/typology</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-20">Wikipedia. <i>Decimal separator</i>. <a href="https://en.wikipedia.org/wiki/Decimal_separator" target="_blank" rel="noopener">en.wikipedia.org/wiki/Decimal_separator</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-21">fastText (Meta AI). <i>Language identification</i>. <a href="https://fasttext.cc/docs/en/language-identification.html" target="_blank" rel="noopener">fasttext.cc/docs/en/language-identification.html</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-22">Stahl, P. M. <i>Lingua for Python</i> (README). <a href="https://github.com/pemistahl/lingua-py" target="_blank" rel="noopener">github.com/pemistahl/lingua-py</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-23">Petrov, A. và cộng sự. <i>Language Model Tokenizers Introduce Unfairness Between Languages</i>. NeurIPS, 2023. <a href="https://arxiv.org/abs/2305.15425" target="_blank" rel="noopener">arxiv.org/abs/2305.15425</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-24">Wikipedia. <i>Text segmentation</i>. <a href="https://en.wikipedia.org/wiki/Text_segmentation" target="_blank" rel="noopener">en.wikipedia.org/wiki/Text_segmentation</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-25">Elastic. <i>Language analyzers</i> (tài liệu Elasticsearch). <a href="https://www.elastic.co/docs/reference/text-analysis/analysis-lang-analyzer" target="_blank" rel="noopener">elastic.co/docs/reference/text-analysis/analysis-lang-analyzer</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-26">Elastic. <i>Hyphenation decompounder token filter</i>. <a href="https://www.elastic.co/docs/reference/text-analysis/analysis-hyp-decomp-tokenfilter" target="_blank" rel="noopener">elastic.co/…/analysis-hyp-decomp-tokenfilter</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-27">Elastic. <i>CJK bigram token filter</i>. <a href="https://www.elastic.co/docs/reference/text-analysis/analysis-cjk-bigram-tokenfilter" target="_blank" rel="noopener">elastic.co/…/analysis-cjk-bigram-tokenfilter</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-28">Apache Lucene. <i>GermanNormalizationFilter</i> (Javadoc 9.0). <a href="https://lucene.apache.org/core/9_0_0/analysis/common/org/apache/lucene/analysis/de/GermanNormalizationFilter.html" target="_blank" rel="noopener">lucene.apache.org/…/GermanNormalizationFilter.html</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-29">Elastic. <i>ASCII folding token filter</i>. <a href="https://www.elastic.co/docs/reference/text-analysis/analysis-asciifolding-tokenfilter" target="_blank" rel="noopener">elastic.co/…/analysis-asciifolding-tokenfilter</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-30">Unicode Consortium. <i>UnicodeData.txt</i> (Unicode Character Database). <a href="https://www.unicode.org/Public/UCD/latest/ucd/UnicodeData.txt" target="_blank" rel="noopener">unicode.org/Public/UCD/latest/ucd/UnicodeData.txt</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-31">Anthropic. <i>Multilingual support</i> (tài liệu Claude). <a href="https://platform.claude.com/docs/en/build-with-claude/multilingual-support" target="_blank" rel="noopener">platform.claude.com/docs/en/build-with-claude/multilingual-support</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-32">Nguyen, D. Q. và cộng sự. <i>A Fast and Accurate Vietnamese Word Segmenter</i>. LREC, 2018. <a href="https://arxiv.org/abs/1709.06307" target="_blank" rel="noopener">arxiv.org/abs/1709.06307</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-33">Wang, L. và cộng sự. <i>Multilingual E5 Text Embeddings: A Technical Report</i>. arXiv, 2024. <a href="https://arxiv.org/abs/2402.05672" target="_blank" rel="noopener">arxiv.org/abs/2402.05672</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-34">Elastic. <i>Japanese (kuromoji) analysis plugin</i> (tài liệu Elasticsearch). <a href="https://www.elastic.co/docs/reference/elasticsearch/plugins/analysis-kuromoji" target="_blank" rel="noopener">elastic.co/docs/reference/elasticsearch/plugins/analysis-kuromoji</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+  </ol>
+</section>
+</main>
+
+<footer>
+  Tài liệu học RAG đa ngôn ngữ ở mức khái niệm. Công ty Hansa Lotus Logistics, các tài liệu mẫu, điểm số mô phỏng, độ trễ và bảng kết quả đánh giá là minh họa. Giá dịch máy lấy từ trang giá công khai ngày 2026-11-19 và có thể đã đổi.
+</footer>
+
+<script>
+(function(){
+  // ---------- Theme ----------
+  var root=document.documentElement;
+  function safeGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+  function safeSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  var saved=safeGet('rag-theme'); if(saved) root.setAttribute('data-theme',saved);
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme');
+    if(!cur){cur=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+    var next=cur==='dark'?'light':'dark'; root.setAttribute('data-theme',next); safeSet('rag-theme',next);
+  });
+
+  function cite(){var s='';for(var i=0;i<arguments.length;i++)s+='<a href="#src-'+arguments[i]+'">['+arguments[i]+']</a>';return '<sup class="cite">'+s+'</sup>'}
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function lg(l){return '<span class="lg '+l+'">'+l.toUpperCase()+'</span>'}
+  function fmt(n,d){return Number(n).toLocaleString('vi-VN',{minimumFractionDigits:d||0,maximumFractionDigits:d||0})}
+
+  // ---------- Stacked tables on phones: give each cell its column name ----------
+  function labelTables(root){
+    [].forEach.call(root.querySelectorAll('table.stack'),function(t){
+      var heads=[].map.call(t.querySelectorAll('thead th'),function(th){return th.textContent});
+      [].forEach.call(t.querySelectorAll('tbody tr'),function(tr){[].forEach.call(tr.children,function(td,i){if(heads[i])td.setAttribute('data-label',heads[i])})});
+    });
+  }
+  labelTables(document);
+
+  var NS='http://www.w3.org/2000/svg';
+  function el(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);return e}
+  var HALO='paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round';
+
+  // ---------- Flow diagram (desktop): four architecture rows ----------
+  (function(){
+    var svg=document.getElementById('flowSvg');
+    var defs=el('defs',{});var mk=el('marker',{id:'farr',viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:7,markerHeight:7,orient:'auto-start-reverse'});mk.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z',fill:'var(--muted)'}));defs.appendChild(mk);svg.appendChild(defs);
+    var ROWS=[
+      {n:'A · Dịch rồi embed',s:'pivot tiếng Anh',c:'var(--p4)',calls:'dịch: cả kho + 2/câu hỏi',
+       i:[{t:'Dịch → EN',s:'chunk DE, VI',tr:1},{t:'Embed bản EN',s:'giữ cả bản gốc',k:'v'}],
+       q:[{t:'Câu hỏi VI'},{t:'Dịch → EN',s:'câu hỏi',tr:1},{t:'Tìm + LLM',s:'xử lý bằng EN',k:'v'},{t:'Dịch → VI',s:'câu trả lời',tr:1}]},
+      {n:'B · Đa ngôn ngữ',s:'embedding chung, không dịch',c:'var(--p2)',calls:'dịch: 0',
+       i:[{t:'Chunk gốc',s:'EN, DE, VI'},{t:'Embed',s:'model đa ngôn ngữ',k:'v'}],
+       q:[{t:'Câu hỏi VI'},{t:'Embed + tìm',s:'không gian chung',k:'v'},{t:'LLM',s:'trả lời VI',k:'g'}]},
+      {n:'C · Chỉ dịch câu hỏi',s:'sang ngôn ngữ tài liệu',c:'var(--p1)',calls:'dịch: 1/ngôn ngữ/câu hỏi',
+       i:[{t:'Chunk gốc',s:'EN, DE, VI'},{t:'Index riêng',s:'từng ngôn ngữ',k:'v'}],
+       q:[{t:'Câu hỏi VI'},{t:'Dịch → EN, DE',s:'song song',tr:1},{t:'Tìm từng index',s:'BM25 / đơn ngữ',k:'v'},{t:'RRF + LLM',s:'trả lời VI',k:'g'}]},
+      {n:'D · Kết hợp',s:'vector + BM25',c:'var(--p3)',calls:'dịch: như C, có đường lui',
+       i:[{t:'Chunk gốc',s:'EN, DE, VI'},{t:'Vector + BM25',s:'theo từng ngôn ngữ',k:'v'}],
+       q:[{t:'Câu hỏi VI'},{t:'Dịch câu hỏi',s:'chỉ cho BM25',tr:1},{t:'Hai nhánh tìm',s:'vector chạy ngay',k:'v'},{t:'RRF + LLM',s:'trả lời VI',k:'g'}]}
+    ];
+    var top=58,RH=106,BH=56;
+    function txt(x,y,s,a){var t=el('text',a||{});t.setAttribute('x',x);t.setAttribute('y',y);t.textContent=s;return t}
+    svg.appendChild(txt(345,30,'LÚC NẠP KHO · một lần hoặc khi kho đổi',{'text-anchor':'middle','font-size':13,'font-weight':700,style:'fill:var(--muted)'}));
+    svg.appendChild(txt(742,30,'LÚC HỎI · mỗi câu hỏi',{'text-anchor':'middle','font-size':13,'font-weight':700,style:'fill:var(--muted)'}));
+    svg.appendChild(el('line',{x1:489,y1:44,x2:489,y2:top+RH*4-8,stroke:'var(--border)','stroke-width':2,'stroke-dasharray':'6 5'}));
+    function row(boxes,x0,x1,y){
+      var n=boxes.length,gap=26,w=(x1-x0-gap*(n-1))/n;
+      boxes.forEach(function(b,i){
+        var x=x0+i*(w+gap);
+        var st=b.tr?'var(--p4)':b.k==='v'?'var(--p2)':b.k==='g'?'var(--p3)':'var(--border)';
+        svg.appendChild(el('rect',{x:x,y:y,width:w,height:BH,rx:9,fill:b.tr?'var(--warn-soft)':'var(--surface)',stroke:st,'stroke-width':b.tr||b.k?2:1}));
+        svg.appendChild(txt(x+w/2,y+(b.s?23:33),b.t,{'text-anchor':'middle','font-size':13,'font-weight':600}));
+        if(b.s)svg.appendChild(txt(x+w/2,y+42,b.s,{'text-anchor':'middle','font-size':12,style:'fill:var(--muted)'}));
+        if(i<n-1)svg.appendChild(el('line',{x1:x+w+2,y1:y+BH/2,x2:x+w+gap-2,y2:y+BH/2,stroke:'var(--muted)','stroke-width':1.8,'marker-end':'url(#farr)'}));
+      });
+    }
+    ROWS.forEach(function(r,k){
+      var y=top+k*RH;
+      svg.appendChild(el('rect',{x:8,y:y-10,width:984,height:RH-14,rx:12,fill:'var(--surface-2)',stroke:'none'}));
+      svg.appendChild(el('rect',{x:8,y:y-10,width:6,height:RH-14,rx:3,fill:r.c}));
+      svg.appendChild(txt(24,y+14,r.n,{'font-size':14,'font-weight':700}));
+      svg.appendChild(txt(24,y+33,r.s,{'font-size':12,style:'fill:var(--muted)'}));
+      svg.appendChild(txt(24,y+52,r.calls,{'font-size':12,'font-weight':600,style:'fill:var(--p4)'}));
+      row(r.i,212,478,y);
+      row(r.q,500,986,y);
+    });
+  })();
+
+  // ---------- Stepper example ----------
+  var STEPS=[
+    {t:'Bối cảnh & ba trục',h:'<span class="tag p1">Chuẩn bị</span><h3>Bước 1 · Xác định ba trục ngôn ngữ</h3><p>Lan làm ở văn phòng Đà Nẵng, sắp sang Hamburg công tác 4 ngày. Lan hỏi trợ lý nội bộ:</p><pre>"Đi công tác ở Đức thì phụ cấp ăn mỗi ngày bao nhiêu, và hóa đơn phải nộp trong bao lâu?"</pre><div class="table-wrap"><table class="stack"><thead><tr><th>Trục</th><th>Ở ví dụ này</th></tr></thead><tbody><tr><td>Tài liệu</td><td>'+lg('de')+'Reisekostenrichtlinie (bản có hiệu lực) · '+lg('en')+'Travel &amp; Expense Policy (sổ tay cho nhân viên quốc tế)</td></tr><tr><td>Câu hỏi</td><td>'+lg('vi')+'tiếng Việt, ngôn ngữ lấy từ cài đặt tài khoản của Lan</td></tr><tr><td>Câu trả lời</td><td>'+lg('vi')+'tiếng Việt; trích dẫn giữ nguyên văn bản gốc</td></tr></tbody></table></div><p class="muted">Đội dự án chọn kiến trúc <b>D</b>: vector đa ngôn ngữ trên chunk gốc, cộng nhánh BM25 dùng câu hỏi đã dịch. Lý do: kho có nhiều mã mẫu đơn và thuật ngữ tiếng Đức (mục 10).</p>'},
+    {t:'Nạp kho, gắn nhãn',h:'<span class="tag p1">Nạp kho</span><h3>Bước 2 · Cắt chunk, gắn nhãn ngôn ngữ, giữ bản gốc</h3><p>Mỗi chunk lưu văn bản gốc, nhãn ngôn ngữ và metadata. Không dịch gì ở bước này, nên 0 lần gọi dịch.</p><div class="chunk">'+lg('de')+'<span class="id">de-rk-5 · Reisekostenrichtlinie §5 · authoritative: true</span><br>Für Verpflegungsmehraufwand bei Inlandsreisen gilt eine Pauschale von 28 EUR pro Kalendertag.</div><div class="chunk">'+lg('en')+'<span class="id">en-tp-4.2 · Travel Policy §4.2 · bản dịch tiện dụng</span><br>Meal allowance for business trips within Germany: EUR 28 per full calendar day.</div><div class="chunk">'+lg('en')+'<span class="id">en-tp-4.5 · Travel Policy §4.5</span><br>Expense receipts must be submitted within 30 days after the trip.</div><p>Nhãn ngôn ngữ quyết định analyzer cho BM25: chunk tiếng Đức đi vào trường dùng analyzer tiếng Đức (chuẩn hóa ß, ä…), chunk tiếng Anh vào analyzer tiếng Anh.'+cite(25,28)+'</p><p class="muted">Metadata <code>authoritative</code> sẽ được đưa vào prompt ở bước 5, để model biết bản nào có hiệu lực.</p>'},
+    {t:'Câu hỏi đến',h:'<span class="tag p3">Lúc hỏi</span><h3>Bước 3 · Xác định ngôn ngữ và dịch câu hỏi cho nhánh BM25</h3><p>Ngôn ngữ trả lời lấy từ <b>cài đặt tài khoản</b> (vi), không đoán từ câu chữ.'+cite(31)+' Bộ nhận diện ngôn ngữ vẫn chạy để ghi log, nhưng nó kém tin cậy với câu ngắn.'+cite(17,22)+'</p><p>Nhánh BM25 cần câu hỏi bằng ngôn ngữ tài liệu, nên hệ thống gọi dịch <b>2 lần song song</b> (sang EN và DE), có áp glossary:'+cite(11,15)+'</p><div class="trbox"><div>'+lg('tr')+'vi → '+lg('en')+'How much is the meal allowance per day on a business trip in Germany, and how long do I have to submit receipts?</div><div>'+lg('tr')+'vi → '+lg('de')+'Wie hoch ist der Verpflegungsmehraufwand pro Kalendertag bei einer Dienstreise in Deutschland, und bis wann muss ich Belege einreichen?</div></div><p class="muted">Glossary ép "phụ cấp ăn" thành "meal allowance" / "Verpflegungsmehraufwand", đúng chữ trong tài liệu. Không có glossary, bản dịch tiếng Đức có thể là "Essenszulage": đúng nghĩa nhưng không trùng chữ nào trong chunk de-rk-5.</p>'},
+    {t:'Tìm hai nhánh',h:'<span class="tag p3">Lúc hỏi</span><h3>Bước 4 · Nhánh vector và nhánh BM25, rồi trộn</h3><div class="grid g2"><div><b>Nhánh vector</b> <span class="muted">(câu hỏi tiếng Việt gốc)</span><ol><li>'+lg('en')+'en-tp-4.2</li><li>'+lg('de')+'de-rk-5</li><li>'+lg('vi')+'vi-hr-1 (ghi chú đề nghị công tác)</li><li>'+lg('en')+'en-tp-4.5</li></ol></div><div><b>Nhánh BM25</b> <span class="muted">(câu hỏi đã dịch)</span><ol><li>'+lg('de')+'de-rk-5 (khớp "Verpflegungsmehraufwand", "Kalendertag")</li><li>'+lg('en')+'en-tp-4.5 (khớp "submit", "receipts")</li><li>'+lg('en')+'en-tp-4.2 (khớp "meal allowance")</li></ol></div></div><p>Trộn bằng RRF, top-3 là <b>de-rk-5, en-tp-4.2, en-tp-4.5</b>. Ghi chú tiếng Việt vi-hr-1 cùng ngôn ngữ với câu hỏi nên đứng khá cao ở nhánh vector,'+cite(6)+' nhưng không có ở nhánh BM25 nên bị đẩy xuống.</p><p class="muted">Thứ tự trên là minh họa. Mô phỏng ở mục 4 tính thật các phép trộn này trên kho nhỏ.</p>'},
+    {t:'Ghép prompt',h:'<span class="tag p3">Lúc hỏi</span><h3>Bước 5 · System prompt ghi rõ ngôn ngữ và quy tắc trích dẫn</h3><p>System prompt viết bằng tiếng Việt và ghi rõ ngôn ngữ đích. Cách này cho tỷ lệ đúng ngôn ngữ cao nhất trong một nghiên cứu, nhưng cần người biết tiếng kiểm bản prompt.'+cite(4,31)+'</p><pre>Luôn trả lời bằng tiếng Việt, kể cả khi tài liệu là tiếng Anh hoặc tiếng Đức.\nChỉ dùng các đoạn bên dưới. Ghi mã đoạn sau mỗi ý, ví dụ [de-rk-5].\nKhi trích, chép NGUYÊN VĂN trong ngoặc kép, rồi thêm "(dịch: …)".\nGiữ nguyên con số, đơn vị, tên mẫu đơn. Không đổi dấu thập phân.\nNếu hai bản nói khác nhau, ưu tiên bản authoritative: true và nêu rõ chỗ lệch.\n\n[de-rk-5 · authoritative: true] Für Verpflegungsmehraufwand …\n[en-tp-4.2] Meal allowance for business trips within Germany …\n[en-tp-4.5] Expense receipts must be submitted within 30 days …</pre>'},
+    {t:'LLM trả lời',h:'<span class="tag p3">Lúc hỏi</span><h3>Bước 6 · Câu trả lời tiếng Việt, trích nguyên văn</h3><pre>Khi đi công tác trong nước Đức, bạn được phụ cấp ăn 28 EUR cho mỗi ngày theo lịch:\n"Für Verpflegungsmehraufwand bei Inlandsreisen gilt eine Pauschale von 28 EUR pro Kalendertag." (dịch: với chi phí ăn uống khi đi công tác trong nước, áp mức khoán 28 EUR mỗi ngày theo lịch) [de-rk-5]\nSổ tay tiếng Anh ghi cùng mức 28 EUR nhưng thêm điều kiện "per full calendar day" (mỗi ngày trọn); bản tiếng Đức có hiệu lực không ghi điều kiện này [en-tp-4.2].\n\nHóa đơn phải nộp trong vòng 30 ngày sau chuyến đi:\n"Expense receipts must be submitted within 30 days after the trip." [en-tp-4.5]</pre><div class="callout ok">LLM đọc chunk tiếng Đức và tiếng Anh, viết giải thích bằng tiếng Việt, giữ nguyên văn để người đọc kiểm được.</div><p class="muted">Câu trả lời nêu chỗ lệch vì prompt ở bước 5 yêu cầu: ưu tiên bản <code>authoritative: true</code> và nói rõ khi hai bản khác nhau. Lệch nhỏ kiểu "per full calendar day" so với "pro Kalendertag" là lý do nên trích nguyên văn bản có hiệu lực.</p>'},
+    {t:'Kiểm đầu ra',h:'<span class="tag p4">Kiểm tra</span><h3>Bước 7 · Kiểm câu trả lời trước khi gửi</h3><div class="table-wrap"><table class="stack"><thead><tr><th>Kiểm</th><th>Cách làm</th><th>Kết quả</th></tr></thead><tbody><tr><td>Đúng ngôn ngữ</td><td>Bộ nhận diện ngôn ngữ chạy trên phần giải thích, bỏ qua phần trong ngoặc kép.'+cite(21)+'</td><td>✅ vi</td></tr><tr><td>Trích dẫn có thật</td><td>Chuỗi trong ngoặc kép phải xuất hiện y nguyên trong chunk có mã đó.</td><td>✅ 3/3</td></tr><tr><td>Con số khớp nguồn</td><td>Lấy mọi số và đơn vị (28 EUR, 30 ngày), chuẩn hóa theo quy ước số của ngôn ngữ chunk, đổi đơn vị qua glossary (ngày ↔ days), rồi so với các chunk được trích.</td><td>✅ 2/2</td></tr><tr><td>Mã đoạn tồn tại</td><td>Mọi [mã] phải là chunk đã đưa vào prompt.</td><td>✅ 3/3</td></tr></tbody></table></div><p class="muted">Nếu sai ngôn ngữ: sinh lại với chỉ dẫn mạnh hơn; vẫn sai thì dịch câu trả lời và ghi log. Không để câu trả lời sai ngôn ngữ đi thẳng tới người dùng.</p>'},
+    {t:'Khi dịch lỗi',h:'<span class="tag p4">Sự cố</span><h3>Bước 8 · Dịch vụ dịch trả lỗi</h3><p>Giả sử lượt dịch vi → de trả <b>429</b> (quá nhiều yêu cầu). Đây là lỗi tạm thời: thử lại với backoff và jitter, ưu tiên <code>Retry-After</code>.'+cite(12)+' Câu hỏi có ngân sách độ trễ, nên sau 1 lần thử lại vẫn lỗi thì:</p><ul><li>Chạy tiếp với nhánh vector và nhánh BM25 tiếng Anh. Câu trả lời vẫn ra, chỉ thiếu một nhánh.</li><li>Ghi log <code>bm25_de: skipped (429)</code> để theo dõi tỷ lệ.</li></ul><p>Nếu lỗi là <b>456</b> (hết hạn mức) thì thử lại vô ích: dừng gọi dịch cho mọi câu hỏi, báo động cho đội vận hành.'+cite(12)+' Nếu là <b>400</b> do glossary không có cặp vi → de thì đó là lỗi cấu hình, phải sửa.'+cite(11)+'</p><div class="callout warn">Nếu công ty chọn kiến trúc A, cùng sự cố đó lúc nạp kho phải được xử lý khác: lưu kết quả parse, đánh dấu chunk "chờ dịch", chỉ thử lại bước dịch. Đừng OCR lại cả file chỉ vì bước dịch lỗi.</div>'},
+    {t:'Đo theo ngôn ngữ',h:'<span class="tag p1">Đánh giá</span><h3>Bước 9 · Golden set và người duyệt thuật ngữ</h3><p>Đội lấy 120 câu hỏi thật, chia theo cặp ngôn ngữ: 40 câu vi→de, 50 câu vi→en, 30 câu vi→vi. Đo recall@5 theo từng cặp, tỷ lệ đúng ngôn ngữ, tỷ lệ số khớp nguồn (mục 12).</p><p>Một chuyên viên nhân sự biết tiếng Đức chấm 30 câu trả lời theo nhóm lỗi MQM.'+cite(19)+' Chị phát hiện "Verpflegungsmehraufwand" lúc thì được giải thích là "phụ cấp ăn", lúc là "chi phí ăn uống phát sinh". Đội thêm quy ước vào glossary và vào system prompt, rồi chạy lại golden set.</p><div class="callout ok">Vòng lặp: đo → tìm lỗi theo cặp ngôn ngữ → sửa glossary, prompt hoặc nhánh tìm → đo lại.</div>'}
+  ];
+  var cur=0, stepsEl=document.getElementById('steps'), bodyEl=document.getElementById('stepBody');
+  STEPS.forEach(function(s,i){var b=document.createElement('button');b.innerHTML='<span class="n">'+(i+1)+'</span>'+s.t;b.addEventListener('click',function(){show(i)});stepsEl.appendChild(b)});
+  function show(i){cur=i;bodyEl.innerHTML=STEPS[i].h;labelTables(bodyEl);[].forEach.call(stepsEl.children,function(b,j){b.classList.toggle('on',j===i)});
+    document.getElementById('prevStep').disabled=i===0;var ab=stepsEl.children[i];if(stepsEl.scrollWidth>stepsEl.clientWidth){stepsEl.scrollLeft=ab.offsetLeft-stepsEl.offsetLeft-8}document.getElementById('nextStep').disabled=i===STEPS.length-1;}
+  document.getElementById('prevStep').addEventListener('click',function(){if(cur>0)show(cur-1)});
+  document.getElementById('nextStep').addEventListener('click',function(){if(cur<STEPS.length-1)show(cur+1)});
+  show(0);
+
+  // ---------- Retrieval simulation ----------
+  // c: language-independent "ideas" used by the toy vector model. mt: English pivot text (A); mtBad: same text when the glossary is off and the term is mistranslated, with the ideas that survive.
+  var CH=[
+    {id:'en1',l:'en',src:'Travel Policy §4.2',t:'Meal allowance for business trips within Germany: EUR 28 per full calendar day.',c:['meal','allowance','travel','germany','day']},
+    {id:'en2',l:'en',src:'Travel Policy §4.5',t:'Expense receipts must be submitted within 30 days after the trip.',c:['receipt','deadline','travel']},
+    {id:'en3',l:'en',src:'Travel Policy §3.1',t:'Business trips abroad require prior approval from your line manager.',c:['travel','abroad','approval']},
+    {id:'en4',l:'en',src:'HR Handbook §6.3',t:'Overtime is compensated with time off within the same quarter.',c:['overtime','compensation']},
+    {id:'en5',l:'en',src:'HR Handbook §8.1',t:'Use form HR-07 to request parental leave.',c:['form','leave']},
+    {id:'de1',l:'de',src:'BV Mobiles Arbeiten §3',t:'Mobiles Arbeiten im Ausland ist bis zu 10 Arbeitstage pro Kalenderjahr nach vorheriger Genehmigung zulässig.',c:['remote','abroad','limit','approval','day'],
+      mt:'Remote work abroad is permitted for up to 10 working days per calendar year with prior approval.',mtBad:{t:'Mobile working abroad is permitted for up to 10 working days per calendar year with prior approval.',c:['mobile','abroad','limit','approval','day'],why:'"Mobiles Arbeiten" bị dịch thành "mobile working", mất ý "làm việc từ xa"'}},
+    {id:'de2',l:'de',src:'Reisekostenrichtlinie §5',t:'Für Verpflegungsmehraufwand bei Inlandsreisen gilt eine Pauschale von 28 EUR pro Kalendertag.',c:['meal','allowance','travel','germany','day'],
+      mt:'For meal allowance on domestic trips, a flat rate of EUR 28 per calendar day applies.',mtBad:{t:'For additional catering expenses on domestic trips, a flat rate of EUR 28 per calendar day applies.',c:['catering','expense','travel','germany','day'],why:'"Verpflegungsmehraufwand" bị dịch thành "additional catering expenses", mất ý "phụ cấp ăn"'}},
+    {id:'de3',l:'de',src:'Arbeitszeitregelung §4',t:'Überstunden werden innerhalb des Quartals durch Freizeit ausgeglichen.',c:['overtime','compensation'],mt:'Overtime is compensated by time off within the quarter.'},
+    {id:'de4',l:'de',src:'Reisekostenrichtlinie §9',t:'Das Formular RK-12 ist für die Reisekostenabrechnung nach jeder Dienstreise zu verwenden.',c:['form','expense','travel','settlement'],mt:'Form RK-12 must be used for the travel expense report after every business trip.'},
+    {id:'vi1',l:'vi',src:'Ghi chú HR Đà Nẵng',t:'Đơn đề nghị đi công tác gửi qua cổng nội bộ trước ít nhất 5 ngày làm việc.',c:['travel','approval','deadline','form'],mt:'Business trip request forms go through the internal portal at least 5 working days in advance.'},
+    {id:'vi2',l:'vi',src:'Ghi chú HR Đà Nẵng',t:'Làm việc từ xa tại Việt Nam tối đa 2 ngày mỗi tuần.',c:['remote','limit','day'],mt:'Remote work in Vietnam is limited to 2 days per week.'},
+    {id:'vi3',l:'vi',src:'Ghi chú HR Đà Nẵng',t:'Mẫu đơn nghỉ phép HR-07 lấy tại phòng nhân sự.',c:['form','leave'],mt:'The HR-07 leave request form is available from the HR department.'}
+  ];
+  var QS=[
+    {q:'Đi công tác ở Đức được phụ cấp ăn bao nhiêu một ngày?',c:['travel','germany','meal','allowance','day'],rel:['en1','de2'],
+     en:{n:'How much is the food allowance per day on a business trip in Germany?',g:'How much is the meal allowance per day on a business trip in Germany?'},
+     de:{n:'Wie hoch ist die Essenszulage pro Tag bei einer Dienstreise in Deutschland?',g:'Wie hoch ist der Verpflegungsmehraufwand pro Kalendertag bei einer Dienstreise in Deutschland?'}},
+    {q:'Có được làm việc từ xa ở nước ngoài không, tối đa bao lâu?',c:['remote','abroad','limit'],rel:['de1'],
+     en:{n:'Can I work remotely abroad, and for how long at most?',g:'Can I work remotely abroad, and for how long at most?'},
+     de:{n:'Darf ich im Ausland im Homeoffice arbeiten, und wie lange maximal?',g:'Ist mobiles Arbeiten im Ausland erlaubt, und wie lange maximal?'}},
+    {q:'Làm thêm giờ được bù thế nào?',c:['overtime','compensation'],rel:['en4','de3'],
+     en:{n:'How is overtime compensated?',g:'How is overtime compensated?'},
+     de:{n:'Wie werden Überstunden ausgeglichen?',g:'Wie werden Überstunden ausgeglichen?'}},
+    {q:'Mẫu RK-12 dùng để làm gì?',c:['form'],rel:['de4'],
+     en:{n:'What is form RK-12 used for?',g:'What is form RK-12 used for?'},
+     de:{n:'Wofür wird das Formular RK-12 verwendet?',g:'Wofür wird das Formular RK-12 verwendet?'}}
+  ];
+  var ARCH=[{k:'A',n:'A · Dịch rồi embed'},{k:'B',n:'B · Đa ngôn ngữ'},{k:'C',n:'C · Dịch câu hỏi'},{k:'D',n:'D · Kết hợp'}];
+  var STOP={
+    en:['a','an','the','is','are','be','must','for','of','to','in','on','at','with','within','from','your','per','how','and','after','what','i','can','much','most','long'],
+    de:['der','die','das','des','den','dem','ein','eine','einer','ist','sind','wird','werden','für','bei','von','pro','im','in','bis','zu','nach','durch','innerhalb','wie','und','ich','darf','gilt','jeder'],
+    vi:['được','ở','bao','nhiêu','một','có','không','thế','nào','qua','trước','ít','nhất','của','từ','tại','mỗi','dùng','để','gì','lấy']
+  };
+  var LAMBDA=0.92, K1=1.2, B=0.75, RRFK=60, PRICE=20, LAT=300, ANS_CHARS=400;
+  function tok(s,l){return s.toLowerCase().normalize('NFC').split(/[^\p{L}\p{N}]+/u).filter(function(w){return w&&STOP[l].indexOf(w)<0})}
+  function cos(a,b){var n=0;a.forEach(function(x){if(b.indexOf(x)>=0)n++});return n?n/Math.sqrt(a.length*b.length):0}
+  function rank(arr){return arr.slice().sort(function(x,y){return y.s-x.s||x.i-y.i})}
+  CH.forEach(function(d,i){d.i=i;d.tk=tok(d.t,d.l)});
+  function bm25(l,qt){
+    var docs=CH.filter(function(d){return d.l===l}),N=docs.length,avg=docs.reduce(function(s,d){return s+d.tk.length},0)/N,uq=qt.filter(function(t,i){return qt.indexOf(t)===i});
+    var out=[];docs.forEach(function(d){var s=0;uq.forEach(function(t){var tf=d.tk.filter(function(x){return x===t}).length;if(!tf)return;var n=docs.filter(function(e){return e.tk.indexOf(t)>=0}).length;var idf=Math.log(1+(N-n+0.5)/(n+0.5));s+=idf*tf*(K1+1)/(tf+K1*(1-B+B*d.tk.length/avg))});if(s>0)out.push({d:d,s:s,i:d.i})});
+    return rank(out);
+  }
+  function rrf(lists){var m={};lists.forEach(function(L){L.forEach(function(r,k){var e=m[r.d.id]||(m[r.d.id]={d:r.d,s:0,i:r.d.i});e.s+=1/(RRFK+k+1)})});return rank(Object.keys(m).map(function(k){return m[k]}))}
+  function vecB(q){return rank(CH.map(function(d){return{d:d,s:cos(q.c,d.c)*(d.l==='vi'?1:LAMBDA),i:d.i}}).filter(function(r){return r.s>0}))}
+  function vecA(q,g){return rank(CH.map(function(d){var c=(!g&&d.mtBad)?d.mtBad.c:d.c;return{d:d,s:cos(q.c,c),i:d.i}}).filter(function(r){return r.s>0}))}
+  function bmLists(q,g){var en=q.en[g?'g':'n'],de=q.de[g?'g':'n'];return{en:bm25('en',tok(en,'en')),de:bm25('de',tok(de,'de')),vi:bm25('vi',tok(q.q,'vi')),enQ:en,deQ:de}}
+  function runSim(qi,a,g){
+    var q=QS[qi],res={lists:[],calls:{idx:0,q:0},chars:{idx:0,q:0},seq:0};
+    if(a==='A'){var top=vecA(q,g);res.final=top;res.lists.push(['Vector (mọi chunk đã dịch sang EN)',top,'s3']);
+      CH.forEach(function(d){if(d.l!=='en'){res.calls.idx++;res.chars.idx+=d.t.length}});res.calls.q=2;res.chars.q=q.q.length+ANS_CHARS;res.seq=2;res.enQ=q.en[g?'g':'n']}
+    else if(a==='B'){res.final=vecB(q);res.lists.push(['Vector đa ngôn ngữ (câu hỏi gốc)',res.final,'s3'])}
+    else{var L=bmLists(q,g);res.enQ=L.enQ;res.deQ=L.deQ;res.calls.q=2;res.chars.q=q.q.length*2;res.seq=1;
+      if(a==='C'){res.final=rrf([L.en,L.de,L.vi]);res.lists.push(['BM25 tiếng Anh (câu hỏi dịch)',L.en,'s3'],['BM25 tiếng Đức (câu hỏi dịch)',L.de,'s3'],['BM25 tiếng Việt (câu hỏi gốc)',L.vi,'s3'])}
+      else{var V=vecB(q),BM=rank(L.en.concat(L.de,L.vi));res.final=rrf([V,BM]);res.lists.push(['Vector đa ngôn ngữ',V,'s3'],['BM25 gộp các ngôn ngữ (theo điểm)',BM,'s3'])}
+      res.lists.push(['Sau khi trộn bằng RRF (k = 60)',res.final,'s4'])}
+    var top3=res.final.slice(0,3);res.top3=top3;
+    res.recall=q.rel.filter(function(id){return top3.some(function(r){return r.d.id===id})}).length/q.rel.length;
+    res.first=0;for(var k=0;k<res.final.length;k++){if(q.rel.indexOf(res.final[k].d.id)>=0){res.first=k+1;break}}
+    return res;
+  }
+  var S={q:0,a:'B',g:false};
+  var qEl=document.getElementById('simQ'),aEl=document.getElementById('simA'),gEl=document.getElementById('simG'),outEl=document.getElementById('simOut');
+  QS.forEach(function(q,i){var b=document.createElement('button');b.textContent='❓ '+q.q;b.addEventListener('click',function(){S.q=i;renderSim()});qEl.appendChild(b)});
+  ARCH.forEach(function(x){var b=document.createElement('button');b.textContent=x.n;b.dataset.k=x.k;b.addEventListener('click',function(){S.a=x.k;renderSim()});aEl.appendChild(b)});
+  gEl.addEventListener('change',function(){S.g=gEl.checked;renderSim()});
+  function chunkHtml(r,k,q,a,g){
+    var d=r.d,hit=q.rel.indexOf(d.id)>=0,dec=a==='B'?3:(a==='A'?3:4);
+    var h='<div class="chunk'+(hit?' hit':'')+'">'+lg(d.l)+'<span class="id">#'+(k+1)+' · '+d.id+' · '+esc(d.src)+' · điểm '+fmt(r.s,dec)+'</span>'+(hit?' <span class="star" aria-label="đoạn đúng">★ đoạn đúng</span>':'')+'<br>'+esc(d.t);
+    if(a==='A'&&d.l!=='en'){var bad=!g&&d.mtBad;h+='<span class="trl'+(bad?' badtr':'')+'">'+lg('tr')+'EN: '+esc(bad?d.mtBad.t:d.mt)+(bad?' ⚠ '+esc(d.mtBad.why):'')+'</span>'}
+    return h+'</div>';
+  }
+  function renderSim(){
+    [].forEach.call(qEl.children,function(b,i){b.classList.toggle('on',i===S.q)});
+    [].forEach.call(aEl.children,function(b){b.classList.toggle('on',b.dataset.k===S.a)});
+    var q=QS[S.q],r=runSim(S.q,S.a,S.g),h='';
+    h+='<div class="kpi"><div class="card"><span>recall@3</span><b class="num">'+fmt(r.recall,2)+'</b></div><div class="card"><span>hạng đoạn đúng đầu tiên</span><b class="num">'+(r.first?('#'+r.first):'không có')+'</b></div><div class="card"><span>gọi dịch lúc nạp</span><b class="num">'+r.calls.idx+'</b></div><div class="card"><span>gọi dịch mỗi câu hỏi</span><b class="num">'+r.calls.q+'</b></div></div>';
+    var costIdx=r.chars.idx*PRICE/1e6, cost1k=r.chars.q*1000*PRICE/1e6;
+    if(!r.calls.idx&&!r.calls.q)h+='<p class="muted" style="font-size:14px">Không gọi dịch: không tốn phí dịch, không phải chờ thêm lượt dịch nào.</p>';
+    else h+='<p class="muted" style="font-size:14px">Minh họa chi phí và độ trễ: lúc nạp dịch '+fmt(r.chars.idx)+' ký tự ≈ '+fmt(costIdx,4)+' USD; mỗi câu hỏi dịch '+fmt(r.chars.q)+' ký tự'+(S.a==='A'?' (gồm câu trả lời khoảng '+ANS_CHARS+' ký tự)':'')+' ≈ '+fmt(cost1k,2)+' USD cho 1.000 câu hỏi; chờ thêm khoảng '+fmt(r.seq*LAT)+' ms mỗi câu hỏi.</p>';
+    if(r.enQ){h+='<div class="trbox">'+(S.a==='A'?'<div>'+lg('tr')+'vi → '+lg('en')+esc(r.enQ)+'</div>':'<div>'+lg('tr')+'vi → '+lg('en')+esc(r.enQ)+'</div><div>'+lg('tr')+'vi → '+lg('de')+esc(r.deQ)+'</div>')+'</div>'}
+    h+='<h4 style="margin:10px 0 4px">Top-3 đưa vào prompt</h4>';
+    r.top3.forEach(function(x,k){h+=chunkHtml(x,k,q,S.a,S.g)});
+    if(!r.top3.length)h+='<p class="muted">Không tìm ra chunk nào.</p>';
+    h+='<div class="callout'+(r.recall<1||r.first>1?' warn':' ok')+'" style="margin:10px 0">'+note(q,r)+'</div>';
+    var r2=runSim(S.q,S.a,!S.g),sig=function(x){return x.final.map(function(y){return y.d.id+':'+y.s.toFixed(6)}).join(',')};
+    if(sig(r)===sig(r2))h+='<p class="muted" style="font-size:14px">'+(S.a==='B'?'B không gọi dịch nên bật hay tắt glossary không đổi kết quả.':'Ở câu hỏi và kiến trúc này, bật hay tắt glossary cho cùng kết quả.')+'</p>';
+    h+='<details class="lists"><summary>Xem danh sách của từng nhánh</summary>';
+    r.lists.forEach(function(L){h+='<div><b>'+L[0]+'</b>'+(L[1].length?'<ol>'+L[1].slice(0,5).map(function(x){return '<li>'+lg(x.d.l)+x.d.id+' · '+fmt(x.s,L[2]==='s4'?4:3)+(q.rel.indexOf(x.d.id)>=0?' <span class="star">★</span>':'')+'</li>'}).join('')+'</ol>':'<p class="muted">Danh sách rỗng: không có token nào khớp.</p>')+'</div>'});
+    h+='</details>';
+    outEl.innerHTML=h;
+  }
+  function note(q,r){
+    var a=S.a,g=S.g,i=S.q;
+    if(i===0&&a==='C'&&!g)return 'Bản dịch tiếng Đức dùng "Essenszulage", tài liệu dùng "Verpflegungsmehraufwand": BM25 tiếng Đức chỉ khớp chữ "Dienstreise" của chunk de4 (sai). de2 trượt. Bật glossary để sửa. Để ý thêm: mỗi danh sách ngôn ngữ đều có một suất đứng đầu khi trộn RRF, kể cả danh sách tiếng Việt chỉ khớp chữ chung chung.';
+    if(i===0&&a==='A'&&!g)return 'Bản dịch sai thuật ngữ làm de2 tụt điểm từ 1,000 xuống 0,600. Vẫn còn trong top-3 ở kho nhỏ này, nhưng ở kho thật hàng nghìn chunk thì mức tụt này có thể đủ để rơi khỏi top-k. Lỗi dịch nằm luôn trong index cho tới khi dịch lại.';
+    if(i===1&&a==='A'&&!g)return 'Do "Mobiles Arbeiten" bị dịch sai, chunk đúng de1 tụt xuống #2, sau ghi chú tiếng Việt vi2 (làm việc từ xa <i>tại Việt Nam</i>). LLM đọc vi2 đầu tiên có thể trả lời sai "tối đa 2 ngày mỗi tuần". Bật glossary để thấy de1 trở lại #1.';
+    if(i===0&&a==='D'&&!g)return 'Tệ hơn cả B: bản dịch tiếng Đức dùng "Essenszulage" nên nhánh BM25 không có de2, trong khi en2, vi1, vi2… có mặt ở cả hai nhánh và được RRF cộng hai lần. de2 chỉ có ở nhánh vector nên tụt xuống #'+(r.final.map(function(x){return x.d.id}).indexOf('de2')+1)+'. Bật glossary để de2 lên lại. Bài học: nhánh BM25 dịch sai thuật ngữ có thể kéo cả hệ kết hợp xuống.';
+    if(i===0&&a==='D'&&g)return 'Có glossary, nhánh BM25 tiếng Đức khớp "Verpflegungsmehraufwand" và "Kalendertag", nên de2 có mặt ở cả hai nhánh và lên #2. Tắt glossary để thấy de2 rơi khỏi top-3.';
+    if(i===1&&a==='B')return 'de1 vẫn đứng đầu, nhưng ghi chú tiếng Việt vi2 bám sát ngay sau vì cùng ngôn ngữ với câu hỏi (hệ số 0,92 cho chunk khác ngôn ngữ). Nếu thiên lệch mạnh hơn một chút (hệ số dưới khoảng 0,86 thay vì 0,92), vi2 sẽ vượt lên #1.';
+    if(i===1&&a==='D')return 'de1 và vi2 bằng điểm RRF: de1 đứng đầu nhánh vector, vi2 đứng đầu nhánh BM25 vì khớp "làm", "việc", "xa", "tối", "đa" của chính câu hỏi tiếng Việt. Thứ tự giữa hai chunk bằng điểm chỉ là thứ tự trong kho. Một ghi chú địa phương cùng ngôn ngữ dễ chen lên ngang tài liệu đúng.';
+    if(i===3&&a==='B')return 'Vector đồ chơi không hiểu mã "RK-12", chỉ thấy ý "mẫu đơn". Hai mẫu đơn khác (vi3 tiếng Việt, en5) và vi1 đứng trên, de4 rơi xuống #4. Chuyển sang D: nhánh BM25 khớp "formular", "rk", "12" và kéo de4 vào top-3.';
+    if(i===3&&a==='D')return 'Nhánh BM25 tiếng Đức khớp chính xác "RK-12" nên de4 vào top-3 dù nhánh vector xếp nó #4. Đây là lý do giữ nhánh từ khóa cho mã và số hiệu.';
+    if(i===3&&a==='A')return 'Ở A không có hệ số thiên lệch nên de4 lên ngang điểm vi1 (0,500) và vào #3 chỉ nhờ thứ tự trong kho, vẫn đứng sau hai mẫu đơn sai. Vector vẫn không hiểu mã; A không thay được nhánh từ khóa. Đổi lại A tốn 7 lượt dịch lúc nạp và 2 lượt mỗi câu hỏi.';
+    if(i===2)return 'Câu hỏi dễ: thuật ngữ phổ thông, mọi kiến trúc đều tìm ra cả hai bản tiếng Anh và tiếng Đức. Dùng làm mốc để so với các câu khó.';
+    if(a==='C')return 'Ở C, mỗi danh sách ngôn ngữ đóng góp đúng 1/61 cho chunk đứng đầu của nó, nên ba chunk đầu bằng điểm nhau và thứ tự giữa chúng chỉ là thứ tự trong kho. Trộn theo ngôn ngữ kiểu này cho mỗi ngôn ngữ một suất trong top-3, dù danh sách đó tốt hay kém.';
+    if(r.recall===1&&r.first===1)return 'Tìm đủ đoạn đúng, đoạn đúng đứng đầu. Thử đổi kiến trúc hoặc tắt glossary để so sánh.';
+    return 'So sánh với các kiến trúc khác: xem số lượt dịch và hạng của đoạn đúng thay đổi thế nào.';
+  }
+  renderSim();
+
+  // ---------- Cost calculator ----------
+  var CI=['cN','cP','cC','cU','cQ','cQc','cAc','cL','cPr','cLat'];
+  function val(id){var v=parseFloat(document.getElementById(id).value);return isFinite(v)&&v>=0?v:0}
+  function usd(x){return (x<10?fmt(x,2):fmt(x))+' USD'}
+  function calc(){
+    var N=val('cN'),P=Math.min(val('cP'),100)/100,C=val('cC'),U=Math.min(val('cU'),100)/100,Q=val('cQ'),Qc=val('cQc'),Ac=val('cAc'),L=val('cL'),Pr=val('cPr')/1e6,Lat=val('cLat'),direct=document.getElementById('cAdirect').checked;
+    var idx=N*P*C, aMon=idx*U+Q*(Qc+(direct?0:Ac)), cMon=Q*Qc*L;
+    var rows=[
+      {n:'A · Dịch rồi embed',c:'var(--p4)',idx:idx,mon:aMon,lat:(direct?1:2)*Lat,calls:direct?1:2},
+      {n:'B · Đa ngôn ngữ',c:'var(--p2)',idx:0,mon:0,lat:0,calls:0},
+      {n:'C · Dịch câu hỏi',c:'var(--p1)',idx:0,mon:cMon,lat:L>0?Lat:0,calls:L},
+      {n:'D · Kết hợp',c:'var(--p3)',idx:0,mon:cMon,lat:L>0?Lat:0,calls:L}
+    ];
+    rows.forEach(function(r){r.y1=(r.idx+12*r.mon)*Pr});
+    var max=Math.max.apply(null,rows.map(function(r){return r.y1}))||1;
+    var h='<div class="table-wrap" style="margin-top:8px"><table class="stack"><thead><tr><th>Kiến trúc</th><th>Ký tự dịch lúc nạp</th><th>Ký tự dịch mỗi tháng</th><th>Chi phí dịch năm đầu</th><th>Lượt dịch / câu hỏi</th><th>Chờ thêm mỗi câu hỏi</th></tr></thead><tbody>';
+    rows.forEach(function(r){h+='<tr><td><b>'+r.n+'</b></td><td class="num">'+fmt(r.idx)+' <span class="muted">('+usd(r.idx*Pr)+')</span></td><td class="num">'+fmt(r.mon)+' <span class="muted">('+usd(r.mon*Pr)+')</span></td><td class="num"><b>'+usd(r.y1)+'</b></td><td class="num">'+fmt(r.calls)+'</td><td class="num">≈ '+fmt(r.lat)+' ms</td></tr>'});
+    h+='</tbody></table></div><h4 style="margin:14px 0 4px">Chi phí dịch năm đầu (nạp + 12 tháng)</h4>';
+    rows.forEach(function(r){h+='<div class="barrow"><span>'+r.n+'</span><div class="track"><span style="width:'+(r.y1/max*100).toFixed(1)+'%;background:'+r.c+'"></span></div><span class="val">'+usd(r.y1)+'</span></div>'});
+    h+='<p class="muted" style="font-size:14px">C và D song song dịch sang '+fmt(L)+' ngôn ngữ nên chỉ chờ một lượt. A chờ '+(direct?'một lượt (dịch câu hỏi)':'hai lượt nối tiếp: dịch câu hỏi trước khi tìm, dịch câu trả lời sau khi sinh')+'. Văn bản lưu ở A tăng thêm khoảng '+fmt(P*100)+'% vì giữ cả bản gốc để trích dẫn.</p>';
+    document.getElementById('calcOut').innerHTML=h;labelTables(document.getElementById('calcOut'));
+  }
+  CI.forEach(function(id){document.getElementById(id).addEventListener('input',calc)});
+  document.getElementById('cAdirect').addEventListener('change',calc);
+  calc();
+
+  // ---------- Relationship map (desktop) ----------
+  (function(){
+    var svg=document.getElementById('mapSvg');
+    var defs=el('defs',{});var mk=el('marker',{id:'marr',viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:7,markerHeight:7,orient:'auto-start-reverse'});mk.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z',fill:'var(--muted)'}));defs.appendChild(mk);svg.appendChild(defs);
+    var N={
+      doc:{x:20,y:30,w:180,t:'Ngôn ngữ tài liệu',s:'EN, DE, VI…',st:'var(--p1)'},
+      qry:{x:20,y:250,w:180,t:'Ngôn ngữ câu hỏi',s:'thường là VI',st:'var(--p1)'},
+      ans:{x:20,y:470,w:180,t:'Ngôn ngữ trả lời',s:'theo cài đặt người dùng',st:'var(--p1)'},
+      lid:{x:270,y:140,w:190,t:'Nhận diện ngôn ngữ',s:'nhãn lang cho chunk, câu hỏi'},
+      mt:{x:270,y:330,w:190,t:'Dịch (máy hoặc LLM)',s:'câu hỏi, chunk, câu trả lời',st:'var(--p4)',f:'var(--warn-soft)'},
+      gl:{x:270,y:470,w:190,t:'Glossary',s:'thuật ngữ đã duyệt',st:'var(--p4)'},
+      emb:{x:540,y:30,w:190,t:'Embedding đa ngôn ngữ',s:'chunk gốc + câu hỏi gốc',st:'var(--p2)'},
+      bm:{x:540,y:180,w:190,t:'BM25 theo ngôn ngữ',s:'analyzer, tách từ, bỏ dấu',st:'var(--p2)'},
+      chk:{x:540,y:330,w:190,t:'Kiểm tra đầu ra',s:'ngôn ngữ, số, trích dẫn',st:'var(--border)'},
+      hy:{x:790,y:105,w:190,t:'Trộn (RRF) + rerank',s:'top-k chunk gốc',st:'var(--p2)'},
+      llm:{x:790,y:250,w:190,t:'LLM sinh câu trả lời',s:'trích nguyên văn',st:'var(--p3)'},
+      ev:{x:790,y:470,w:190,t:'Đánh giá theo ngôn ngữ',s:'recall@k, đúng ngôn ngữ',st:'var(--bad)',f:'var(--bad-soft)',dash:1}
+    },H=56;
+    Object.keys(N).forEach(function(k){var n=N[k];
+      svg.appendChild(el('rect',{x:n.x,y:n.y,width:n.w,height:H,rx:10,fill:n.f||'var(--surface)',stroke:n.st||'var(--border)','stroke-width':n.st&&n.st!=='var(--border)'?2:1,'stroke-dasharray':n.dash?'5 4':'none'}));
+      var t=el('text',{x:n.x+n.w/2,y:n.y+24,'text-anchor':'middle','font-size':14,'font-weight':600});t.textContent=n.t;svg.appendChild(t);
+      var s=el('text',{x:n.x+n.w/2,y:n.y+43,'text-anchor':'middle','font-size':12,style:'fill:var(--muted)'});s.textContent=n.s;svg.appendChild(s);
+    });
+    // [path, label, label x, label y, dashed]
+    var E=[
+      ['M200 58 L538 58','embed bản gốc (B, D)',300,50],
+      ['M110 86 C 110 130, 200 168, 268 168','gắn nhãn chunk',150,126],
+      ['M200 278 C 250 278, 330 240, 330 198','nhận diện',212,236],
+      ['M460 168 C 500 168, 500 208, 538 208','chọn analyzer',466,154],
+      ['M200 290 C 240 300, 240 358, 268 358','dịch câu hỏi',150,338],
+      ['M365 470 L365 388','ép thuật ngữ',374,432],
+      ['M440 330 C 470 280, 500 250, 560 238','câu hỏi đã dịch (C, D)',466,288],
+      ['M730 58 C 760 58, 770 120, 788 125','',0,0],
+      ['M730 208 C 760 208, 770 150, 788 145','',0,0],
+      ['M885 161 L885 248','top-k chunk gốc',893,210],
+      ['M790 290 C 760 300, 760 350, 732 355','câu trả lời',680,318],
+      ['M200 492 L240 445 L900 445 L900 308','ghi rõ trong system prompt',480,438],
+      ['M635 386 C 640 440, 760 470, 788 488','',0,0],
+      ['M788 510 L462 510','người duyệt bổ sung thuật ngữ',520,503,1]
+    ];
+    E.forEach(function(e){svg.appendChild(el('path',{d:e[0],fill:'none',stroke:'var(--muted)','stroke-width':1.8,'marker-end':'url(#marr)','stroke-dasharray':e[4]?'5 4':'none'}));
+      if(e[1]){var t=el('text',{x:e[2],y:e[3],'font-size':12,style:'fill:var(--muted);'+HALO});t.textContent=e[1];svg.appendChild(t)}});
+  })();
+
+  // ---------- Glossary ----------
+  var G={ax:'Trục & kiến trúc',ret:'Tìm kiếm',txt:'Văn bản & tiếng Việt',mt:'Dịch',gen:'Sinh câu trả lời',ev:'Đánh giá'};
+  var T=[
+    ['axes','ax','Ba trục ngôn ngữ','language axes','Ngôn ngữ tài liệu, ngôn ngữ câu hỏi và ngôn ngữ câu trả lời. Ba trục có thể khác nhau và hỏng theo cách khác nhau.','Tài liệu tiếng Đức, câu hỏi tiếng Việt, câu trả lời tiếng Việt kèm trích dẫn tiếng Đức.',['clir','pivot','target-lang']],
+    ['clir','ax','Cross-lingual retrieval','CLIR','Tìm tài liệu ở ngôn ngữ khác với ngôn ngữ câu hỏi. MKQA (có tiếng Việt) thường được dùng để đo bài toán này.','Câu hỏi tiếng Việt tìm đoạn trong Wikipedia tiếng Anh.',['mlir','xl-recall','shared-space'],[2,3]],
+    ['mlir','ax','Multilingual retrieval','kho nhiều ngôn ngữ','Tên chung cho tìm kiếm ở nhiều ngôn ngữ: tìm trong cùng ngôn ngữ ở nhiều ngôn ngữ (MIRACL, 18 ngôn ngữ, không có tiếng Việt), tìm khác ngôn ngữ (CLIR), hoặc tìm trong một kho trộn nhiều ngôn ngữ.','Kho có cả chính sách tiếng Anh, tiếng Đức và ghi chú tiếng Việt.',['clir','lang-pref'],[1]],
+    ['pivot','ax','Pivot language','ngôn ngữ trung gian','Một ngôn ngữ chung (thường là tiếng Anh) mà mọi thứ được dịch sang để xử lý. Tài liệu Azure Translator cũng nhắc trường hợp một cặp phải dịch nối qua ngôn ngữ trung gian.','Kiến trúc A dịch mọi chunk sang tiếng Anh.',['tte','llm-mt'],[17]],
+    ['tte','ax','Translate-then-embed','dịch tài liệu','Dịch chunk sang pivot trước khi embed (kiến trúc A). Dịch tài liệu giúp BM25 nhiều, nhưng ít giúp dense retriever đa ngôn ngữ.','Dịch 120.000 chunk tiếng Đức sang tiếng Anh một lần.',['pivot','qt','mle'],[9,10]],
+    ['qt','ax','Query translation','dịch câu hỏi','Chỉ dịch câu hỏi sang ngôn ngữ tài liệu (kiến trúc C) hoặc cho nhánh BM25 (D). Câu hỏi ngắn nên rẻ, nhưng dễ dịch sai thuật ngữ.','"phụ cấp ăn" → "Verpflegungsmehraufwand" nhờ glossary.',['glossary','per-lang-index'],[4,9]],
+    ['mle','ax','Multilingual embedding','embedding đa ngôn ngữ','Embedding model đặt câu cùng nghĩa ở nhiều ngôn ngữ gần nhau. BGE-M3 hỗ trợ hơn 100 ngôn ngữ; Multilingual E5 có ba cỡ small, base, large.','Câu hỏi tiếng Việt tìm thẳng đoạn tiếng Đức, không dịch.',['shared-space','lang-pref'],[3,33]],
+    ['hybrid-ml','ax','Kiến trúc kết hợp','hybrid đa ngôn ngữ','Nhánh vector đa ngôn ngữ cộng nhánh BM25 dùng câu hỏi đã dịch, trộn bằng RRF (kiến trúc D). Hệ kết hợp dense và sparse dẫn đầu trung bình ở NeuCLIR 2022.','Vector bắt nghĩa, BM25 bắt mã "RK-12".',['rrf','mle','qt'],[8]],
+    ['shared-space','ret','Không gian vector chung','shared embedding space','Vector của mọi ngôn ngữ nằm trong cùng một không gian, nên so được trực tiếp câu hỏi tiếng Việt với đoạn tiếng Đức.','',['mle','lang-pref']],
+    ['lang-pref','ret','Thiên lệch ngôn ngữ','language preference','Retriever ưu tiên tài liệu cùng ngôn ngữ câu hỏi hoặc ngôn ngữ nhiều dữ liệu; LLM cũng hay tin tài liệu cùng ngôn ngữ câu hỏi hơn.','Ghi chú tiếng Việt cũ thắng chính sách tiếng Đức có hiệu lực.',['shared-space','authority'],[6,7]],
+    ['lexical-gap','ret','Không có từ chung','lexical gap','Câu hỏi và tài liệu khác ngôn ngữ gần như không có token trùng, nên BM25 chỉ khớp được tên riêng, số, mã. Trên MKQA, BM25 kém dense retriever rất xa.','',['qt','per-lang-index'],[3]],
+    ['per-lang-index','ret','Index theo ngôn ngữ','per-language index','Mỗi ngôn ngữ một trường hoặc index với analyzer riêng (tách từ, chuẩn hóa, từ dừng). Điểm BM25 giữa các index không so trực tiếp được.','Trường text_de dùng analyzer tiếng Đức.',['word-seg','rrf','lang-id'],[25]],
+    ['rrf','ret','Reciprocal Rank Fusion','RRF','Trộn nhiều danh sách xếp hạng bằng cách cộng 1/(k + thứ hạng). Hợp để trộn danh sách mà điểm không so được với nhau.','Trộn vector với BM25, hoặc BM25 tiếng Anh với BM25 tiếng Đức.',['hybrid-ml','per-lang-index','rerank-ml']],
+    ['rerank-ml','ret','Reranker đa ngôn ngữ','multilingual reranker','Model cross-encoder đọc từng cặp (câu hỏi, chunk), kể cả khi khác ngôn ngữ, và chấm lại trên cùng một thang điểm sau bước trộn.','bge-reranker-v2-m3 xếp lại top-20 gồm chunk tiếng Anh, Đức, Việt.',['rrf','per-lang-index','lang-pref'],[4]],
+    ['authority','ret','Bản có hiệu lực','authoritative version','Metadata đánh dấu bản nào có giá trị khi một tài liệu có nhiều ngôn ngữ. Đưa vào prompt để model ưu tiên và nêu chỗ lệch.','authoritative: true cho bản tiếng Đức.',['lang-pref','quote-orig']],
+    ['lang-id','txt','Nhận diện ngôn ngữ','language identification','Đoán ngôn ngữ của một đoạn chữ. fastText có model 176 ngôn ngữ; độ chính xác giảm với cụm ngắn và đoạn trộn ngôn ngữ.','"VPN lỗi" quá ngắn để đoán chắc.',['code-switch','target-lang','crl'],[21,22]],
+    ['code-switch','txt','Trộn ngôn ngữ','code-switching','Một đoạn dùng xen hai ngôn ngữ. Hay gặp trong tài liệu kỹ thuật tiếng Việt; cũng là một dạng lỗi khi model trả lời chen ngôn ngữ khác.','"lỗi timeout khi gọi API thanh toán".',['lang-id','drift'],[4,22]],
+    ['word-seg','txt','Tách từ','word segmentation','Chia chuỗi chữ thành từ. Dấu cách tiếng Việt ngăn âm tiết chứ không ngăn từ; tiếng Nhật không có dấu cách giữa từ.','"mật khẩu" là một từ hai âm tiết.',['per-lang-index','decompound'],[24,32]],
+    ['fold','txt','Bỏ dấu','accent folding','Đổi chữ có dấu thành không dấu để người gõ không dấu vẫn tìm ra. Hàm tự viết bằng NFD có thể bỏ sót "đ"; tiếng Đức có quy ước riêng (ß → ss).','Giữ cả token gốc và token bỏ dấu.',['per-lang-index','nfc'],[28,29,30]],
+    ['nfc','txt','Chuẩn hóa Unicode','NFC / NFD','Một chữ có dấu có thể lưu dựng sẵn hoặc tổ hợp; cần chuẩn hóa về một dạng trước khi so chữ.','"ệ" tách được thành "ẹ" + dấu mũ; "đ" thì không.',['fold'],[30]],
+    ['decompound','txt','Tách từ ghép','decompounding','Tách từ ghép dài của tiếng Đức thành các phần để BM25 khớp được từng phần.','"Kaffeetasse" → "Kaffee", "tasse".',['word-seg'],[26]],
+    ['token-premium','txt','Chênh lệch token theo ngôn ngữ','tokenizer premium','Cùng nội dung, mỗi ngôn ngữ cần số token khác nhau. Với tokenizer cl100k_base, tiếng Việt khoảng 2,45 lần tiếng Anh; với tokenizer XLM-R (BGE-M3 dùng) chỉ khoảng 1,18 lần.','Dịch bằng LLM sang tiếng Việt tốn token ra nhiều hơn.',['llm-mt'],[23,3]],
+    ['nmt','mt','Dịch máy chuyên dụng','NMT service','Dịch vụ như DeepL, Google Cloud Translation, Azure Translator. Tính tiền theo ký tự, có glossary, có chế độ giữ thẻ HTML/XML.','Google niêm yết 20 USD / 1 triệu ký tự cho NMT.',['glossary','tag-keep','llm-mt'],[11,15,16,17]],
+    ['llm-mt','mt','Dịch bằng LLM','LLM translation','Dùng LLM để dịch. Hiểu ngữ cảnh rộng hơn; lỗi đặc trưng là dịch sang nhầm ngôn ngữ, viết thêm, hoặc không dịch.','Gộp dịch và tóm tắt trong một lần gọi.',['nmt','mt-halluc','token-premium'],[18]],
+    ['glossary','mt','Glossary','bảng thuật ngữ','Bảng ánh xạ thuật ngữ đã duyệt giữa các ngôn ngữ, dùng khi dịch, khi mở rộng câu hỏi và khi đánh giá. Glossary của Google mặc định phân biệt hoa thường.','"phụ cấp ăn" ↔ "meal allowance" ↔ "Verpflegungsmehraufwand".',['qt','mqm','nmt'],[13,15]],
+    ['formality','mt','Mức trang trọng','formality','Tùy chọn của DeepL để bản dịch trang trọng hơn hoặc thân mật hơn; chỉ có ở một số ngôn ngữ đích, đặt sai sẽ lỗi trừ khi dùng prefer_more hoặc prefer_less.','',['nmt'],[11]],
+    ['tag-keep','mt','Giữ phần không dịch','tag handling / notranslate','Đánh dấu phần không được dịch: DeepL nhận danh sách thẻ bỏ qua; Azure giữ nội dung có class="notranslate".','Giữ nguyên khóa JSON, mã, số tiền.',['field-tr','nmt'],[11,17]],
+    ['mt-halluc','mt','Ảo giác khi dịch','MT hallucination','Bản dịch chứa nội dung không có trong bản gốc hoặc lệch hẳn nghĩa. Hay gặp hơn ở cặp ít dữ liệu; dự phòng bằng một hệ dịch khác loại giúp nhiều.','',['llm-mt','quote-orig','retry'],[18]],
+    ['locale','mt','Quy ước địa phương','locale conventions','Cách viết số, ngày, tiền tệ theo từng nơi. Tiếng Đức và tiếng Việt dùng dấu phẩy thập phân, tiếng Anh dùng dấu chấm.','"1.500 EUR" trong tài liệu tiếng Đức là một nghìn rưỡi.',['mqm','num-check'],[19,20]],
+    ['retry','mt','Lỗi tạm thời và lỗi vĩnh viễn','retryable vs permanent','Lỗi tạm thời (429, 5xx) thử lại với backoff và jitter; lỗi vĩnh viễn (400, 403, 456 hết hạn mức) phải dừng và sửa.','DeepL: coi 456 là điều kiện dừng.',['mt-halluc'],[12,17]],
+    ['drift','gen','Trôi ngôn ngữ','language confusion / drift','Model trả lời sai ngôn ngữ, toàn bộ, từng dòng hoặc chen từ. Prompt phức tạp và nhiệt độ cao làm nặng hơn.','Hỏi tiếng Việt, đáp tiếng Anh vì tài liệu toàn tiếng Anh.',['target-lang','crl','code-switch'],[4,5]],
+    ['target-lang','gen','Ghi rõ ngôn ngữ đích','target language','Nêu ngôn ngữ trả lời trong system prompt, lấy từ cài đặt người dùng thay vì để model đoán.','"Luôn trả lời bằng tiếng Việt, kể cả khi tài liệu là tiếng Đức."',['drift','lang-id'],[31,4]],
+    ['quote-orig','gen','Trích nguyên văn kèm bản dịch','original-language quote','Giữ câu trích bằng ngôn ngữ gốc trong ngoặc kép, thêm dòng dịch nghĩa. Kiểm tự động được và an toàn hơn với điều khoản pháp lý.','"…28 EUR pro Kalendertag." (dịch: …)',['authority','num-check'],[18]],
+    ['field-tr','gen','Dịch theo từng trường','field-by-field translation','Với đầu ra JSON, chỉ dịch trường chữ cho người đọc; giữ nguyên khóa, enum, mã, số; kiểm schema sau khi dịch.','Dịch "summary", không dịch "policy_id".',['tag-keep'],[11,17]],
+    ['num-check','gen','Kiểm số và tên riêng','numeric / entity check','Đối chiếu mọi con số, đơn vị, mã trong câu trả lời với chunk được trích; gắn cờ số không có nguồn.','28 EUR phải có trong de-rk-5.',['locale','char-ngram']],
+    ['golden-lang','ev','Golden set theo cặp ngôn ngữ','per-language golden set','Bộ câu hỏi chuẩn gắn nhãn cặp ngôn ngữ (vi→de, vi→en…) và loại câu (có mã, không dấu), để tách số liệu theo cặp.','40 câu vi→de, 50 câu vi→en.',['xl-recall','crl']],
+    ['xl-recall','ev','Cross-lingual recall@k','','recall@k tính riêng cho từng cặp ngôn ngữ câu hỏi và tài liệu. Bài BGE-M3 báo cáo Recall@100 và Recall@20 trên MKQA theo từng ngôn ngữ câu hỏi.','Recall@5 của vi→de so với de→de.',['golden-lang','clir'],[3]],
+    ['crl','ev','Tỷ lệ đúng ngôn ngữ','correct language rate','Phần trăm câu trả lời viết đúng ngôn ngữ đích, đo bằng bộ nhận diện ngôn ngữ.','91% nghĩa là gần 1/11 câu sai ngôn ngữ.',['drift','lang-id'],[4,5]],
+    ['char-ngram','ev','Recall theo n-gram ký tự','character n-gram recall','So khớp theo cụm vài ký tự để không phạt oan tên riêng viết khác: "sofia kovalevskaia" và "sofya kovalevskaya" được 69,2% theo 3-gram.','',['num-check','crl'],[4]],
+    ['mqm','ev','MQM','Multidimensional Quality Metrics','Bộ phân loại lỗi dịch: thuật ngữ, độ chính xác (thêm, bớt, dịch sai), quy ước địa phương, văn phong… Dùng làm khung cho người duyệt.','Người duyệt gắn lỗi "thuật ngữ" cho "chi phí ăn uống phát sinh".',['glossary','locale'],[19]]
+  ];
+  var byId={};T.forEach(function(t){byId[t[0]]=t});
+  var grid=document.getElementById('glossGrid'), chips=document.getElementById('glossChips'), search=document.getElementById('glossSearch'), activeG='all';
+  function fold(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d')}
+  function renderGloss(){
+    var q=fold(search.value.trim()); grid.innerHTML='';var n=0;
+    T.forEach(function(t){
+      if(activeG!=='all'&&t[1]!==activeG)return;
+      var hay=fold(t[2]+' '+t[3]+' '+t[4]+' '+t[5]); if(q&&hay.indexOf(q)<0)return; n++;
+      var d=document.createElement('div');d.className='card term';d.id='term-'+t[0];
+      var rel=t[6].filter(function(r){return byId[r]}).map(function(r){return '<a href="#term-'+r+'" data-goto="'+r+'">'+esc(byId[r][2])+'</a>'}).join(', ');
+      // t[7]: optional list of source numbers (integers only), rendered as citation links to #src-N at the end of the card text
+      var cs=(t[7]||[]).filter(function(n){return n===(n|0)&&document.getElementById('src-'+n)}).map(function(n){return '<a href="#src-'+n+'">['+n+']</a>'}).join('');if(cs)cs='<sup class="cite">'+cs+'</sup>';
+      d.innerHTML='<span class="tag">'+G[t[1]]+'</span><h4>'+esc(t[2])+(t[3]?' <span class="en">· '+esc(t[3])+'</span>':'')+'</h4><p>'+esc(t[4])+(t[5]?'':cs)+'</p>'+(t[5]?'<p class="ex">Ví dụ: '+esc(t[5])+cs+'</p>':'')+(rel?'<div class="rel">Liên quan: '+rel+'</div>':'');
+      grid.appendChild(d);
+    });
+    if(!n)grid.innerHTML='<p class="muted">Không có khái niệm khớp.</p>';
+  }
+  var all=document.createElement('button');all.className='chip on';all.textContent='Tất cả ('+T.length+')';all.dataset.g='all';chips.appendChild(all);
+  Object.keys(G).forEach(function(k){var b=document.createElement('button');b.className='chip';b.dataset.g=k;b.textContent=G[k];chips.appendChild(b)});
+  chips.addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;activeG=b.dataset.g;[].forEach.call(chips.children,function(c){c.classList.toggle('on',c===b)});renderGloss()});
+  search.addEventListener('input',renderGloss);
+  grid.addEventListener('click',function(e){var a=e.target.closest('a[data-goto]');if(!a)return;e.preventDefault();
+    if(!document.getElementById('term-'+a.dataset.goto)){activeG='all';search.value='';[].forEach.call(chips.children,function(c){c.classList.toggle('on',c.dataset.g==='all')});renderGloss()}
+    var t=document.getElementById('term-'+a.dataset.goto);t.scrollIntoView({behavior:'smooth',block:'center'});t.style.outline='2px solid var(--accent)';setTimeout(function(){t.style.outline=''},1500)});
+  renderGloss();
+
+  // ---------- Checklist persistence ----------
+  [].forEach.call(document.querySelectorAll('input[data-k]'),function(cb){
+    cb.checked=safeGet('mlrag-'+cb.dataset.k)==='1';
+    cb.addEventListener('change',function(){safeSet('mlrag-'+cb.dataset.k,cb.checked?'1':'0')});
+  });
+
+  // ---------- Active TOC ----------
+  var links=[].slice.call(document.querySelectorAll('#toc a'));
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(l){var on=l.getAttribute('href')==='#'+e.target.id;l.classList.toggle('active',on);if(on){var nav=l.parentNode;nav.scrollLeft=l.offsetLeft-nav.offsetLeft-(nav.clientWidth-l.offsetWidth)/2}})}})},{rootMargin:'-40% 0px -55% 0px'});
+    document.querySelectorAll('main section').forEach(function(s){io.observe(s)});
+  }
+})();
+</script>
+</body>
+</html>
