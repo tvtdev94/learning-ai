@@ -65,7 +65,7 @@
 :is(.season,.fx) .lixi{-webkit-mask:none;mask:none;border-radius:2px;background:linear-gradient(#c41e1e 0 34%,#ffcf3f 34% 46%,#c41e1e 46%)}
 :is(.season,.fx) .fly{-webkit-mask:none;mask:none;border-radius:50%;background:var(--fly);box-shadow:0 0 8px 3px var(--fly)}
 .season .fall{animation:fall var(--t) linear var(--d) infinite,sway var(--s) ease-in-out var(--d) infinite alternate,flip var(--s) linear var(--d) infinite}
-.season .rise{animation:rise var(--t) linear var(--d) infinite,sway var(--s) ease-in-out var(--d) infinite alternate}
+.season .rise{animation:float-up var(--t) linear var(--d) infinite,sway var(--s) ease-in-out var(--d) infinite alternate}
 .season .fly{animation:drift var(--t) ease-in-out var(--d) infinite alternate,glint var(--s) ease-in-out var(--d) infinite}
 .season .bfly{animation:drift var(--t) ease-in-out var(--d) infinite alternate,flap .35s ease-in-out infinite alternate}
 .season .bat{animation:drift var(--t) ease-in-out var(--d) infinite alternate,flap .2s ease-in-out infinite alternate}
@@ -93,7 +93,7 @@
 :root[data-theme="light"] .season .moon{box-shadow:0 0 0 2px #e0a82e,0 0 40px 12px rgba(224,168,46,.3)}
 
 @keyframes fall{from{translate:0 -8vh}to{translate:var(--dx) 108vh}}
-@keyframes rise{from{translate:0 108vh}to{translate:var(--dx) -14vh}}
+@keyframes float-up{from{translate:0 108vh}to{translate:var(--dx) -14vh}}
 @keyframes sway{from{transform:translateX(calc(var(--w) * -1))}to{transform:translateX(var(--w))}}
 @keyframes flip{from{rotate:0deg}to{rotate:var(--r)}}
 @keyframes drift{from{translate:0 0}to{translate:var(--dx) var(--dy)}}
