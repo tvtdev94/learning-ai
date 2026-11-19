@@ -10,6 +10,10 @@
   :root[data-season="noel"]{--bg:light-dark(#eef8f1,#05160e);--surface:light-dark(#ffffff,#0d281b);--line:light-dark(#d9dfea,#1f4a34);--accent:light-dark(#c0182d,#ff6b7a);--accent-2:light-dark(#13784a,#4fd18b);--star:light-dark(#9a6400,#ffd166)}
   :root[data-season="tet"]{--bg:light-dark(#fff0ea,#1d0606);--surface:light-dark(#ffffff,#301010);--line:light-dark(#d9dfea,#552020);--accent:light-dark(#c41e1e,#ff6b5e);--accent-2:light-dark(#946800,#ffcf3f);--star:light-dark(#946800,#ffcf3f)}
   :root[data-season="trungthu"]{--bg:light-dark(#fff7e4,#0e0b26);--surface:light-dark(#ffffff,#1c183c);--line:light-dark(#d9dfea,#352f63);--accent:light-dark(#9a5b00,#ffc857);--accent-2:light-dark(#c2410c,#ff7a45);--star:light-dark(#8a6200,#ffe9a8)}
+  :root[data-season="quockhanh"]{--bg:light-dark(#fff3ec,#220303);--surface:light-dark(#ffffff,#360808);--line:light-dark(#d9dfea,#5e1414);--accent:light-dark(#c8102e,#ff5a4f);--accent-2:light-dark(#8f6a00,#ffe14a);--star:light-dark(#8f6a00,#ffe14a)}
+  :root[data-season="halloween"]{--bg:light-dark(#fbf1e8,#120a1c);--surface:light-dark(#ffffff,#21142e);--line:light-dark(#d9dfea,#3d2852);--accent:light-dark(#b93d06,#ff8a2a);--accent-2:light-dark(#6b2fa0,#b98cff);--star:light-dark(#8a5a00,#ffb347)}
+  :root[data-season="valentine"]{--bg:light-dark(#fff0f2,#1f070d);--surface:light-dark(#ffffff,#33101c);--line:light-dark(#d9dfea,#57203a);--accent:light-dark(#c8102e,#ff6b86);--accent-2:light-dark(#a3456a,#ffc2d1);--star:light-dark(#9a5300,#ffd6a5)}
+  :root[data-season="birthday"]{--bg:light-dark(#f5f2ff,#100c24);--surface:light-dark(#ffffff,#1d1840);--line:light-dark(#d9dfea,#352d63);--accent:light-dark(#6d28d9,#c4a5ff);--accent-2:light-dark(#0f766e,#5eead4);--star:light-dark(#a16207,#fde047)}
   :root[data-season]:not([data-season="off"]){--focus:var(--accent);--mark:color-mix(in srgb,var(--accent) 22%,transparent);--bg-glow:color-mix(in srgb,var(--accent) 28%,transparent)}
   body{transition:background-color .6s}
 }
@@ -23,6 +27,8 @@
   --leaf1:#e0782f;--leaf2:#c94a24;--leaf3:#e3a83c;--fly:light-dark(#a88a00,#e3f56b);
   --lamp:#e5483a;--gold:light-dark(#c99400,#ffd166);--sea:light-dark(#2aa89b,#44d7c8);
   --grass:light-dark(#5aa469,#3f8f52);--fw1:light-dark(#d99a00,#ffcf3f);--fw2:light-dark(#d62828,#ff6b5e);--fw3:light-dark(#d63a7a,#ff9ec4);--fw4:light-dark(#e07a00,#fff3c4);--bark:light-dark(#6b4a2f,#8a6a4a);--pine:light-dark(#1f7a4a,#2e9a5e);
+  --pump:#f07a1a;--pump2:#c95510;--bat:light-dark(#3d2456,#a77fe0);--heart1:light-dark(#d6204e,#ff4d6d);--heart2:light-dark(#f06292,#ff9eb5);--heart3:light-dark(#e8a0a0,#ffe1d6);
+  --cf1:light-dark(#e11d48,#fb7185);--cf2:light-dark(#7c3aed,#a78bfa);--cf3:light-dark(#0d9488,#2dd4bf);--cf4:light-dark(#d97706,#fbbf24);--cf5:light-dark(#2563eb,#60a5fa);--cake:light-dark(#f2c9a0,#c9925e);--icing:light-dark(#fdf6ff,#fbe7ff);
   --m-petal:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 24'%3E%3Cpath d='M10 24C2 17 1 8 7 1l3 3 3-3c6 7 5 16-3 23z'/%3E%3C/svg%3E");
   --m-maple:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1l2 4.5 3-1.5-1 5 4.5-1.5-2 4 3.5 1.5-6 3.5 1 2.5-4.5-1V24h-1v-5.5l-4.5 1 1-2.5-6-3.5 3.5-1.5-2-4L8 9.5l-1-5 3 1.5z'/%3E%3C/svg%3E");
   --m-oval:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1C5 7 4 15 11.5 22.5V24h1v-1.5C20 15 19 7 12 1z'/%3E%3C/svg%3E");
@@ -30,6 +36,10 @@
   --m-flower:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-12 -12 24 24'%3E%3Cellipse id='p' cy='-6' rx='4.6' ry='6'/%3E%3Cuse href='%23p' transform='rotate(72)'/%3E%3Cuse href='%23p' transform='rotate(144)'/%3E%3Cuse href='%23p' transform='rotate(216)'/%3E%3Cuse href='%23p' transform='rotate(288)'/%3E%3C/svg%3E");
   --m-star:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-12 -12 24 24'%3E%3Cpath d='M0-10l3 6.2 6.6.9-4.8 4.6 1.2 6.6L0 5.1l-6 3.2 1.2-6.6-4.8-4.6 6.6-.9z'/%3E%3Ccircle r='11' fill='none' stroke='%23000' stroke-width='1'/%3E%3C/svg%3E");
   --m-spark:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 0c1 8 4 11 12 12-8 1-11 4-12 12-1-8-4-11-12-12 8-1 11-4 12-12z'/%3E%3C/svg%3E");
+  --m-gstar:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-11 -11 22 22'%3E%3Cpath d='M0-11L2.5-3.4H10.5L4 1.3 6.5 8.9 0 4.2-6.5 8.9-4 1.3-10.5-3.4H-2.5z'/%3E%3C/svg%3E");
+  --m-heart:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 22'%3E%3Cpath d='M12 21.5C5 16 0 11.6 0 6.6 0 3 2.8 0 6.4 0c2.3 0 4.3 1.2 5.6 3.1C13.3 1.2 15.3 0 17.6 0 21.2 0 24 3 24 6.6c0 5-5 9.4-12 14.9z'/%3E%3C/svg%3E");
+  --m-bat:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-16 -8 32 16'%3E%3Cpath id='h' d='M0-3L1.6-7 2.6-3.4C5-4 10-6 15.5-5.5 13-3.5 12.5-1 13 1.5 11 .2 9 .2 7.8 1.8 6.8.4 5 .4 4 2 3.2 3.6 1.5 5.5 0 6z'/%3E%3Cuse href='%23h' transform='scale(-1 1)'/%3E%3C/svg%3E");
+  --m-balloon:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 34'%3E%3Cpath d='M10 0C4.5 0 1 4.3 1 9.5 1 15 5.5 20 9 21.5L8 23h4l-1-1.5C14.5 20 19 15 19 9.5 19 4.3 15.5 0 10 0z'/%3E%3Cpath d='M10 23q-2 4 0 6t0 5' stroke='%23000' fill='none'/%3E%3C/svg%3E");
   --m-bfly:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 20'%3E%3Cpath d='M12 8C9 2 3 0 1 3c-2 4 3 7 8 7-5 1-7 6-4 8 3 2 6-3 7-7 1 4 4 9 7 7 3-2 1-7-4-8 5 0 10-3 8-7-2-3-8-1-11 5z'/%3E%3C/svg%3E")}
 :root[data-season]:not([data-season="off"]) .season{background:radial-gradient(80% 60% at 10% 100%,color-mix(in srgb,var(--accent-2) 26%,transparent),transparent 72%),radial-gradient(60% 45% at 95% 100%,color-mix(in srgb,var(--accent) 18%,transparent),transparent 70%)}
 
@@ -44,12 +54,21 @@
 :is(.season,.fx) .spark{--m:var(--m-spark);background:var(--gold)}
 :is(.season,.fx) .star{--m:var(--m-star);background:radial-gradient(circle,#ffe680 0 24%,var(--c) 52%)}
 :is(.season,.fx) .bfly{--m:var(--m-bfly)}
+:is(.season,.fx) .gstar{--m:var(--m-gstar)}
+:is(.season,.fx) .heart{--m:var(--m-heart)}
+:is(.season,.fx) .bat{--m:var(--m-bat)}
+:is(.season,.fx) .balloon{--m:var(--m-balloon);background:radial-gradient(circle at 34% 20%,rgba(255,255,255,.5) 0 5%,transparent 13%),var(--c)}
+:is(.season,.fx) .confetti{-webkit-mask:none;mask:none;border-radius:1px}
+:root[data-season="halloween"] :is(.season,.fx){--fly:light-dark(#d9620b,#ffa040)}
+/* National Day fireworks burst only in the flag's red and gold */
+:root[data-season="quockhanh"] :is(.season,.fx){--fw3:light-dark(#c99400,#ffff66);--fw4:light-dark(#b8121b,#ff8a7a)}
 :is(.season,.fx) .lixi{-webkit-mask:none;mask:none;border-radius:2px;background:linear-gradient(#c41e1e 0 34%,#ffcf3f 34% 46%,#c41e1e 46%)}
 :is(.season,.fx) .fly{-webkit-mask:none;mask:none;border-radius:50%;background:var(--fly);box-shadow:0 0 8px 3px var(--fly)}
 .season .fall{animation:fall var(--t) linear var(--d) infinite,sway var(--s) ease-in-out var(--d) infinite alternate,flip var(--s) linear var(--d) infinite}
 .season .rise{animation:rise var(--t) linear var(--d) infinite,sway var(--s) ease-in-out var(--d) infinite alternate}
 .season .fly{animation:drift var(--t) ease-in-out var(--d) infinite alternate,glint var(--s) ease-in-out var(--d) infinite}
 .season .bfly{animation:drift var(--t) ease-in-out var(--d) infinite alternate,flap .35s ease-in-out infinite alternate}
+.season .bat{animation:drift var(--t) ease-in-out var(--d) infinite alternate,flap .2s ease-in-out infinite alternate}
 .season .spark{animation:fall var(--t) linear var(--d) infinite,glint var(--s) ease-in-out var(--d) infinite}
 
 /* Tết fireworks: a rocket climbs, then sparks burst out and fall away (season.js) */
@@ -66,6 +85,9 @@
 @media (max-width:959px){.season .corner{opacity:.45}}
 .season .wave{animation:wave var(--t) linear infinite}
 .season .bulb{animation:glint 1.6s ease-in-out infinite}
+.season .glow{animation:flicker 2.4s ease-in-out infinite}
+.season .flag{transform-box:fill-box;transform-origin:0 50%;animation:flutter 2.6s ease-in-out infinite alternate}
+.season .ground.bunt{top:0;bottom:auto;height:44px}
 .season .moon{position:absolute;top:max(68px,8%);left:max(3%,calc(50vw - 600px));width:clamp(44px,11vw,110px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 40% 38%,#fff8de,#f6d77c 70%);box-shadow:0 0 50px 18px rgba(246,215,124,.35);opacity:.9}
 :root[data-theme="light"] .season .moon{box-shadow:0 0 0 2px #e0a82e,0 0 40px 12px rgba(224,168,46,.3)}
 
@@ -77,6 +99,8 @@
 @keyframes glint{0%,100%{opacity:.15}50%{opacity:1}}
 @keyframes flap{from{scale:1 1}to{scale:.35 1}}
 @keyframes wave{to{translate:200px 0}}
+@keyframes flicker{0%,100%{opacity:1}40%{opacity:.65}55%{opacity:.9}70%{opacity:.7}}
+@keyframes flutter{from{transform:skewY(-2.5deg) scaleX(.97)}to{transform:skewY(2deg) scaleX(1)}}
 @keyframes swing{from{rotate:-4deg}to{rotate:4deg}}
 
 /* footer: one small button that opens a grid of looks */
@@ -84,10 +108,15 @@
 .look-btn{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--muted);font:inherit;font-size:14px;cursor:pointer;transition:border-color .2s,color .2s}
 .look-btn:hover,.look-btn[aria-expanded="true"]{border-color:var(--accent);color:var(--text)}
 .look-btn[hidden]{display:none}
-.look-panel{position:absolute;z-index:10;bottom:calc(100% + 8px);left:50%;translate:-50% 0;width:max-content;max-width:calc(100vw - 24px);display:grid;grid-template-columns:repeat(3,92px);gap:6px;padding:8px;border:1px solid var(--line);border-radius:16px;background:var(--surface);box-shadow:0 12px 32px rgba(0,0,0,.28)}
+.look-panel{position:absolute;z-index:10;bottom:calc(100% + 8px);left:50%;translate:-50% 0;width:max-content;max-width:calc(100vw - 24px);display:grid;grid-template-columns:repeat(4,minmax(0,84px));gap:6px;padding:8px;border:1px solid var(--line);border-radius:16px;background:var(--surface);box-shadow:0 12px 32px rgba(0,0,0,.28)}
 .look-panel[hidden]{display:none}
+/* phones: the panel sits as a sheet along the bottom of the screen, so it never runs off the side */
+@media (max-width:600px){.look-panel{position:fixed;left:12px;right:12px;bottom:12px;translate:none;width:auto;max-width:none;grid-template-columns:repeat(4,minmax(0,1fr))}}
 .look-panel button{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:56px;padding:6px 4px;border:1px solid transparent;border-radius:10px;background:none;color:var(--muted);font:inherit;font-size:12px;line-height:1.25;cursor:pointer}
 .look-panel button span{font-size:20px;line-height:1.2}
+/* auto and default share the first row, as wide buttons */
+.look-panel [data-k="auto"],.look-panel [data-k="off"]{grid-column:span 2;flex-direction:row;justify-content:center;gap:6px;min-height:40px}
+.look-panel [data-k="auto"] span,.look-panel [data-k="off"] span{font-size:16px}
 .look-panel button:hover{background:var(--surface-2);color:var(--text)}
 .look-panel button[aria-pressed="true"]{border-color:var(--accent);background:var(--mark);color:var(--text);font-weight:700}
 

@@ -1,5 +1,5 @@
 // Homepage profile: theme toggle, typed role line, avatar ripple, language switch, mouse parallax.
-import {greeting} from './season.js';
+import {greetings} from './season.js';
 var root=document.documentElement;
 var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -23,13 +23,15 @@ var ROLES={
   vi:[full,'Xây dựng AgentKit','Giải pháp tăng hiệu quả và năng suất AI','Xây hệ thống AI','Học RAG và agent','Viết Sổ tay học tập'],
   en:['Software developer','Building AgentKit','Solutions for AI efficiency and productivity','Building AI systems','Learning RAG and agents','Writing a learning notebook']
 },lang='vi';
-// The role list for the current language, led by the occasion greeting when there is one.
-function roles(l){var g=greeting(l||lang);return g?[g].concat(ROLES[l||lang]):ROLES[l||lang]}
+// The role list for the current language, led by any occasion greetings.
+function roles(l){return greetings(l||lang).concat(ROLES[l||lang])}
+// Split into what the eye sees as one character, so emoji such as flags stay whole while typed.
+var seg=window.Intl&&Intl.Segmenter?new Intl.Segmenter():null;
+function chars(t){return seg?Array.from(seg.segment(t),function(x){return x.segment}):Array.from(t)}
 function typeRole(delay){
   clearTimeout(typeTimer);typed.textContent='';var r=0,n=0,back=false;
   function step(){
-    // Array.from keeps emoji whole while they are typed and erased.
-    var list=roles(),w=Array.from(list[r%list.length]);
+    var list=roles(),w=chars(list[r%list.length]);
     if(!back){typed.textContent=w.slice(0,++n).join('');if(n<w.length){typeTimer=setTimeout(step,70);return}back=true;typeTimer=setTimeout(step,1900);return}
     typed.textContent=w.slice(0,--n).join('');if(n>0){typeTimer=setTimeout(step,35);return}
     back=false;r=(r+1)%list.length;typeTimer=setTimeout(step,320);
