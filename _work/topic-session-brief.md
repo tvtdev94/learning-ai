@@ -3,7 +3,7 @@
 Status: active · Ngày: 2026-11-14 · Timezone: Asia/Bangkok · Mọi đường dẫn trong file này tính từ gốc repo `learning-ai`.
 
 ## Mục tiêu
-Tạo MỘT trang HTML học một chủ đề AI cho site https://tvtdev94.github.io/learning-ai/ (repo này). Nội dung lấy từ nghiên cứu web và có evidence. Trang phải qua kongming review, test bằng Orca browser (đặc biệt chart), dễ đọc trên điện thoại. Xong thì tự dọn dẹp.
+Tạo MỘT trang HTML học một chủ đề AI cho site https://tvtdev94.github.io/ (repo này, tên hiển thị "Sổ tay"). Nội dung lấy từ nghiên cứu web và có evidence. Trang phải qua kongming review, test bằng Orca browser (đặc biệt chart), dễ đọc trên điện thoại. Xong thì tự dọn dẹp.
 
 ## Người học
 - Biết code nhưng mới với LLM. Mục tiêu là xây RAG và AI agent cho doanh nghiệp.

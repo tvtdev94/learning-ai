@@ -18,7 +18,7 @@ SNIPPET = """{marker}
 <link rel="apple-touch-icon" href="{p}icons/apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Học AI">
+<meta name="apple-mobile-web-app-title" content="Sổ tay">
 <script>if('serviceWorker' in navigator)addEventListener('load',function(){{navigator.serviceWorker.register('{p}sw.js').catch(function(){{}})}})</script>
 """
 

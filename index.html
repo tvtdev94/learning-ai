@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Học AI</title>
+<title>Sổ tay</title>
 <!-- pwa -->
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Học AI">
+<meta name="apple-mobile-web-app-title" content="Sổ tay">
 <script>if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})</script>
 <script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <style>
@@ -46,6 +46,13 @@ a.topic:hover,a.topic:focus-visible{border-color:var(--accent);transform:transla
 .topic .meta{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px}
 .tag{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
 .tag.dim{background:var(--surface-2);color:var(--muted)}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.chip{min-height:40px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:999px;padding:6px 16px;font:inherit;font-size:15px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] .chip[aria-pressed="true"]{color:#15171a}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .chip[aria-pressed="true"]{color:#15171a}}
+[hidden]{display:none!important}
+.empty{color:var(--muted)}
 .topic .go{margin-top:12px;color:var(--accent);font-weight:600;font-size:14px}
 footer{color:var(--muted);font-size:14px;margin-top:32px}
 </style>
@@ -56,14 +63,17 @@ footer{color:var(--muted);font-size:14px;margin-top:32px}
     <span class="tag dim">Ghi chú học tập</span>
     <button class="theme-btn" id="themeBtn" aria-label="Đổi giao diện sáng/tối">◐</button>
   </div>
-  <h1>Học AI</h1>
-  <p class="lead">Mỗi chủ đề là một trang riêng: khái niệm cốt lõi, cách hoạt động, ví dụ và lộ trình tự học. Bấm vào một thẻ để bắt đầu.</p>
+  <h1>Sổ tay</h1>
+  <p class="lead">Ghi chép những gì tôi học: AI, lập trình và cả chuyện trong cuộc sống. Mỗi bài là một trang riêng, đọc tốt trên điện thoại. Bấm vào một thẻ để bắt đầu.</p>
+  <div class="filters" id="filters" role="group" aria-label="Lọc theo nhóm"></div>
   <div class="grid" id="topics"></div>
-  <footer>Chủ đề mới sẽ được bổ sung dần.</footer>
+  <p class="empty" id="empty" hidden>Nhóm này chưa có bài nào.</p>
+  <footer>Bài mới sẽ được bổ sung dần.</footer>
 </main>
 <script>
 (function(){
   // Add a new topic: create its folder with an index.html, then add one entry here.
+  // group: 'ai' | 'code' | 'life'. Entries without a group belong to 'ai'.
   var TOPICS=[
     {href:'rag/',icon:'📚',title:'RAG',sub:'Retrieval-Augmented Generation',desc:'Cách cho LLM trả lời dựa trên tài liệu của bạn: flow hai pha, embedding, retrieval, đánh giá và các kỹ thuật nâng cao.',tags:['Cốt lõi + flow','Không cần code','~3 tuần']},
     {href:'ai-agent/',icon:'🤖',title:'AI Agent',sub:'Agent loop, tool, memory',desc:'Agent hoạt động thế nào: vòng lặp suy nghĩ–hành động–quan sát, tool calling, memory, multi-agent, lỗi, an toàn, đánh giá. Có mô phỏng tương tác.',tags:['Cốt lõi + flow','Có mô phỏng','~3 tuần']},
@@ -94,11 +104,25 @@ footer{color:var(--muted);font-size:14px;margin-top:32px}
   ];
   var grid=document.getElementById('topics');
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  var GROUPS=[['all','Tất cả'],['ai','AI'],['code','Lập trình'],['life','Cuộc sống']];
+  var filters=document.getElementById('filters'),empty=document.getElementById('empty');
   TOPICS.forEach(function(t){
-    var a=document.createElement('a');a.className='topic';a.href=t.href;
+    var a=document.createElement('a');a.className='topic';a.href=t.href;a.dataset.group=t.group||'ai';
     a.innerHTML='<div class="icon" aria-hidden="true">'+t.icon+'</div><h2>'+esc(t.title)+'</h2><p><b>'+esc(t.sub)+'</b></p><p style="margin-top:6px">'+esc(t.desc)+'</p><div class="meta">'+t.tags.map(function(g){return '<span class="tag">'+esc(g)+'</span>'}).join('')+'</div><div class="go">Bắt đầu học →</div>';
     grid.appendChild(a);
   });
+  function show(g){
+    var n=0;
+    [].forEach.call(grid.children,function(a){var on=g==='all'||a.dataset.group===g;a.hidden=!on;if(on)n++});
+    [].forEach.call(filters.children,function(b){b.setAttribute('aria-pressed',b.dataset.g===g?'true':'false')});
+    empty.hidden=n>0;
+  }
+  GROUPS.forEach(function(g){
+    var n=g[0]==='all'?TOPICS.length:TOPICS.filter(function(t){return (t.group||'ai')===g[0]}).length;
+    var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.g=g[0];b.textContent=g[1]+' ('+n+')';
+    b.addEventListener('click',function(){show(g[0])});filters.appendChild(b);
+  });
+  show('all');
   var root=document.documentElement;
   document.getElementById('themeBtn').addEventListener('click',function(){
     var cur=root.getAttribute('data-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');

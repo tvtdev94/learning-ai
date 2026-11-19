@@ -1,9 +1,11 @@
-# Tiến trình learning-ai
+# Tiến trình Sổ tay (trước đây là learning-ai)
 
 Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng để làm tiếp trên máy khác.
 
-- Site: https://tvtdev94.github.io/learning-ai/
-- Repo: https://github.com/tvtdev94/learning-ai (public). Nhánh `main`, GitHub Pages build từ thư mục gốc.
+- Site: https://tvtdev94.github.io/ (tên hiển thị "Sổ tay": ghi chép AI, lập trình và cuộc sống).
+- Repo: https://github.com/tvtdev94/tvtdev94.github.io (public). Nhánh `main`, GitHub Pages build từ thư mục gốc.
+- Đổi tên 2026-11-19: repo `learning-ai` thành `tvtdev94.github.io`, site từ `/learning-ai/` lên gốc domain. Thư mục `learning-ai/` trong repo chỉ chứa trang chuyển hướng cho link cũ (mỗi bài đã publish trước ngày đổi tên một trang) và một `sw.js` tự gỡ service worker cũ. Bài mới không cần thêm gì vào đó. Thư mục trên máy vẫn tên `learning-ai`.
+- Trang chủ chia nhóm bằng trường `group` trong `TOPICS`: `ai` (mặc định), `code`, `life`.
 
 ## Cấu trúc repo
 
@@ -105,7 +107,7 @@ Bảng port (8781–8794) và phạm vi nội dung của từng chủ đề nằ
 
 ## Thiết lập trên máy mới
 
-1. `git clone https://github.com/tvtdev94/learning-ai.git`
+1. `git clone https://github.com/tvtdev94/tvtdev94.github.io.git learning-ai`
 2. Mở Claude Code tại thư mục repo. Đọc `PROGRESS.md` và `_work/topic-session-brief.md`.
 3. Kiểm tra các công cụ sau trên máy mới (**chưa kiểm**, vì chúng là cài đặt riêng của máy cũ):
    - Agent `kongming` dùng để review.

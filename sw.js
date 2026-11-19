@@ -1,7 +1,7 @@
-// Offline support for the "Học AI" app.
+// Offline support for the "Sổ tay" app.
 // Network first so new content shows up as soon as it is published;
 // every page you open is also saved, so it still opens when offline.
-const CACHE = 'hoc-ai-v1';
+const CACHE = 'so-tay-v1';
 const SHELL = ['./', './manifest.webmanifest', './icons/icon-192.png'];
 
 self.addEventListener('install', (event) => {
