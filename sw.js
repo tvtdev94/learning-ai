@@ -2,7 +2,7 @@
 // Network first so new content shows up as soon as it is published;
 // every page you open is also saved, so it still opens when offline.
 const CACHE = 'so-tay-v2';
-const SHELL = ['./', './manifest.webmanifest', './icons/icon-192.png'];
+const SHELL = ['./', './so-tay/', './manifest.webmanifest', './icons/icon-192.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)));

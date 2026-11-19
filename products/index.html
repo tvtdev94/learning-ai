@@ -203,7 +203,7 @@ h1{margin:8px 0 6px;font-size:clamp(32px,8vw,52px);line-height:1.1;letter-spacin
         <div class="q">
           <div class="ok step" style="--i:0"><span>SELECT name FROM users LIMIT 5</span><b><span data-l="vi">cho phép</span><span data-l="en">allowed</span></b></div>
           <div class="no step" style="--i:1"><span>DELETE FROM users</span><b><span data-l="vi">chặn</span><span data-l="en">blocked</span></b></div>
-          <div class="ok step" style="--i:2"><span>db.orders.find({status:"paid"})</span><b><span data-l="vi">cho phép</span><span data-l="en">allowed</span></b></div>
+          <div class="ok step" style="--i:2"><span>{"find":"orders","filter":{"status":"paid"}}</span><b><span data-l="vi">cho phép</span><span data-l="en">allowed</span></b></div>
           <div class="no step" style="--i:3"><span>DROP TABLE orders</span><b><span data-l="vi">chặn</span><span data-l="en">blocked</span></b></div>
         </div>
         <div class="layers"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i></div>
@@ -236,7 +236,8 @@ h1{margin:8px 0 6px;font-size:clamp(32px,8vw,52px);line-height:1.1;letter-spacin
   // Copy buttons.
   document.querySelectorAll('.copy').forEach(function(b){
     b.addEventListener('click',function(){
-      var done=function(){var o=b.innerHTML;b.textContent=root.lang==='en'?'Copied':'Đã chép';setTimeout(function(){b.innerHTML=o},1400)};
+      if(b.dataset.busy)return;
+      var o=b.innerHTML,done=function(){b.dataset.busy=1;b.textContent=root.lang==='en'?'Copied':'Đã chép';setTimeout(function(){b.innerHTML=o;delete b.dataset.busy},1400)};
       if(navigator.clipboard)navigator.clipboard.writeText(b.dataset.copy).then(done,function(){});
     });
   });
