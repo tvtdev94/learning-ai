@@ -319,6 +319,16 @@ footer{width:100%;max-width:1160px;margin:0 auto;padding:8px 16px 28px;color:var
     if(e.dataset.tAria)VI[e.dataset.tAria]=e.getAttribute('aria-label');
     if(e.dataset.tAlt)VI[e.dataset.tAlt]=e.getAttribute('alt');
   });
+  // The role line keeps the height of its longest role at the current width, so the name
+  // and bio above and below never jump when a long role is typed or erased.
+  var roleBox=document.querySelector('.role-box'),rolePill=document.querySelector('.role');
+  function fitRole(){
+    var save=typed.textContent,max=0;
+    ROLES[lang].forEach(function(w){typed.textContent=w;max=Math.max(max,rolePill.offsetHeight)});
+    typed.textContent=save;roleBox.style.minHeight=max+'px';
+  }
+  var fitQueued=false;
+  addEventListener('resize',function(){if(fitQueued)return;fitQueued=true;requestAnimationFrame(function(){fitQueued=false;fitRole()})});
   function setLang(l){
     lang=l;var D=l==='en'?EN:VI;
     root.lang=l;document.title=D.title;
@@ -329,6 +339,7 @@ footer{width:100%;max-width:1160px;margin:0 auto;padding:8px 16px 28px;color:var
       if(e.dataset.tAlt)e.setAttribute('alt',D[e.dataset.tAlt]);
     });
     roleSr.textContent=ROLES[l].join('. ')+'.';
+    fitRole();
     langBtn.textContent=l==='en'?'VI':'EN';langBtn.lang=l==='en'?'vi':'en';
     langBtn.setAttribute('aria-label',l==='en'?'Chuyển sang tiếng Việt':'Switch to English');
   }
