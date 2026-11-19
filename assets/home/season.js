@@ -138,19 +138,56 @@ function launch(){
   var x=6+Math.random()*88,y=5+Math.random()*23,c=FW[Math.floor(Math.random()*FW.length)],climb=Math.min(innerHeight*.45,280);
   var r=document.createElement('b');r.className='rocket';r.style.cssText='left:'+x+'%;top:'+y+'%;--c:'+c;layer.appendChild(r);
   r.animate([{translate:'0 '+climb+'px',opacity:0},{opacity:1,offset:.25},{translate:'0 0',opacity:.9}],{duration:750,easing:'cubic-bezier(.2,.7,.4,1)'})
-    .onfinish=function(){r.remove();burst(x,y,c)};
+    .onfinish=function(){r.remove();burst(x+'%',y+'%',c,layer)};
 }
-function burst(x,y,c){
+// Sparks fly out from (left, top), CSS lengths inside host, then fall away.
+function burst(x,y,c,host){
   var n=innerWidth<600?24:40,R=innerWidth<600?60+Math.random()*40:100+Math.random()*80,two=Math.random()<.4?FW[Math.floor(Math.random()*FW.length)]:c;
-  var fl=document.createElement('b');fl.className='flash';fl.style.cssText='left:'+x+'%;top:'+y+'%;--c:'+c;layer.appendChild(fl);
+  var fl=document.createElement('b');fl.className='flash';fl.style.cssText='left:'+x+';top:'+y+';--c:'+c;host.appendChild(fl);
   fl.animate([{opacity:.9,scale:.3},{opacity:0,scale:1.6}],{duration:500,easing:'ease-out'}).onfinish=function(){fl.remove()};
   for(var i=0;i<n;i++){
     var a=i/n*Math.PI*2+Math.random()*.2,d=R*(.7+Math.random()*.3),s=document.createElement('b');
-    s.style.cssText='left:'+x+'%;top:'+y+'%;--c:'+(i%2?two:c);layer.appendChild(s);
+    s.style.cssText='left:'+x+';top:'+y+';--c:'+(i%2?two:c);host.appendChild(s);
     s.animate([{translate:'0 0',opacity:1,scale:1.2},{translate:f1(Math.cos(a)*d)+'px '+f1(Math.sin(a)*d)+'px',opacity:.9,scale:1,offset:.55},{translate:f1(Math.cos(a)*d*1.08)+'px '+f1(Math.sin(a)*d*1.08+36)+'px',opacity:0,scale:.4}],
       {duration:1300+Math.random()*500,easing:'cubic-bezier(.15,.7,.3,1)'}).onfinish=function(){this.effect.target.remove()};
   }
 }
+// Tapping the photo sets off the current look's effect at the tap point, above the page.
+var fx=document.createElement('div');fx.className='fx';fx.setAttribute('aria-hidden','true');document.body.appendChild(fx);
+function gone(){this.effect.target.remove()}
+function piece(cls,x,y,w,h,c){
+  var e=document.createElement('i');e.className=cls;
+  e.style.cssText='left:'+f1(x-w/2)+'px;top:'+f1(y-h/2)+'px;width:'+f1(w)+'px;height:'+f1(h)+'px'+(c?';--c:'+c:'');
+  fx.appendChild(e);return e;
+}
+// Pieces pop out around (x, y), drift, then fall (or float up when fall is negative) and fade.
+function spray(cls,colors,n,x,y,size,spread,fall,spin){
+  for(var i=0;i<n;i++){
+    var k=cls[i%cls.length],w=size*(.8+Math.random()*.5),e=piece(k,x,y,w,k==='lixi'?w*1.35:w,colors&&colors[i%colors.length]);
+    var a=Math.random()*Math.PI*2,d=spread*(.4+Math.random()*.6),dx=Math.cos(a)*d,dy=Math.sin(a)*d*.8,r=(Math.random()<.5?-1:1)*spin;
+    e.animate([{translate:'0 0',rotate:'0deg',opacity:1,scale:.4},{translate:f1(dx)+'px '+f1(dy)+'px',rotate:f1(r*.4)+'deg',opacity:1,scale:1,offset:.3},
+      {translate:f1(dx*1.3)+'px '+f1(dy+fall*(.7+Math.random()*.6))+'px',rotate:f1(r)+'deg',opacity:0,scale:.9}],
+      {duration:1500+Math.random()*700,easing:'cubic-bezier(.2,.7,.3,1)'}).onfinish=gone;
+  }
+}
+function lantern(x,y,size,delay){
+  var e=piece('star',x,y,size,size,Math.random()<.7?'var(--lamp)':'var(--mai)'),up=innerHeight*(.45+Math.random()*.2),sw=20+Math.random()*25;
+  e.animate([{translate:'0 0',opacity:0,scale:.5},{translate:sw+'px '+(-up*.35)+'px',opacity:1,scale:1,offset:.3},{translate:(-sw)+'px '+(-up*.7)+'px',opacity:1,offset:.65},{translate:'0 '+(-up)+'px',opacity:0}],
+    {duration:4200,delay:delay,easing:'ease-out',fill:'backwards'}).onfinish=gone;
+}
+var TAP={
+  spring:function(x,y){spray(['petal'],['var(--peach)','var(--blush)'],16,x,y,14,110,150,540)},
+  summer:function(x,y){spray(['fly'],null,16,x,y,5,120,-60,0)},
+  autumn:function(x,y){spray(['maple','oval'],['var(--leaf1)','var(--leaf2)','var(--leaf3)'],14,x,y,18,110,170,600)},
+  winter:function(x,y){spray(['flake','snow'],null,18,x,y,12,120,130,360)},
+  noel:function(x,y){spray(['flake','snow','spark'],null,20,x,y,12,120,130,360)},
+  tet:function(x,y){burst(x+'px',y+'px',FW[Math.floor(Math.random()*FW.length)],fx);spray(['flower','lixi'],['var(--mai)','var(--peach)'],8,x,y,14,90,160,360)},
+  trungthu:function(x,y){lantern(x,y,30,0);lantern(x-40,y+10,20,350);lantern(x+40,y+10,22,700)}
+};
+document.getElementById('me').addEventListener('click',function(e){
+  if(reduce||!TAP[season])return;
+  TAP[season](e.clientX,e.clientY);
+});
 function saved(){try{var v=localStorage.getItem(KEY);return NAMES[v]?v:'auto'}catch(e){return 'auto'}}
 function apply(next){
   season=next;root.setAttribute('data-season',season);layer.textContent='';

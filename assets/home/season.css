@@ -14,7 +14,10 @@
   body{transition:background-color .6s}
 }
 
-.season{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;contain:strict;
+.season{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;contain:strict}
+/* tap effects play above the page, in their own layer */
+.fx{position:fixed;inset:0;z-index:20;pointer-events:none;overflow:hidden}
+.season,.fx{
   --snow:light-dark(#8fb0dc,#ffffff);--drift:light-dark(#d3e2f5,rgba(255,255,255,.16));
   --peach:light-dark(#e6709f,#f59bc0);--blush:light-dark(#f2a8c4,#ffe3ee);--mai:light-dark(#d9a400,#f6c431);
   --leaf1:#e0782f;--leaf2:#c94a24;--leaf3:#e3a83c;--fly:light-dark(#a88a00,#e3f56b);
@@ -31,18 +34,18 @@
 :root[data-season]:not([data-season="off"]) .season{background:radial-gradient(80% 60% at 10% 100%,color-mix(in srgb,var(--accent-2) 26%,transparent),transparent 72%),radial-gradient(60% 45% at 95% 100%,color-mix(in srgb,var(--accent) 18%,transparent),transparent 70%)}
 
 /* particles: a mask gives each one its silhouette, --c its colour */
-.season i{position:absolute;top:0;display:block;opacity:var(--o,.9);background:var(--c);-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat}
-.season .snow{--m:none;-webkit-mask:none;mask:none;border-radius:50%;background:var(--snow)}
-.season .flake{--m:var(--m-flake);background:var(--snow)}
-.season .petal{--m:var(--m-petal)}
-.season .maple{--m:var(--m-maple)}
-.season .oval{--m:var(--m-oval)}
-.season .flower{--m:var(--m-flower);background:radial-gradient(circle,var(--c2) 0 15%,var(--c) 24%)}
-.season .spark{--m:var(--m-spark);background:var(--gold)}
-.season .star{--m:var(--m-star);background:radial-gradient(circle,#ffe680 0 24%,var(--c) 52%)}
-.season .bfly{--m:var(--m-bfly)}
-.season .lixi{-webkit-mask:none;mask:none;border-radius:2px;background:linear-gradient(#c41e1e 0 34%,#ffcf3f 34% 46%,#c41e1e 46%)}
-.season .fly{-webkit-mask:none;mask:none;border-radius:50%;background:var(--fly);box-shadow:0 0 8px 3px var(--fly)}
+:is(.season,.fx) i{position:absolute;top:0;display:block;opacity:var(--o,.9);background:var(--c);-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat}
+:is(.season,.fx) .snow{--m:none;-webkit-mask:none;mask:none;border-radius:50%;background:var(--snow)}
+:is(.season,.fx) .flake{--m:var(--m-flake);background:var(--snow)}
+:is(.season,.fx) .petal{--m:var(--m-petal)}
+:is(.season,.fx) .maple{--m:var(--m-maple)}
+:is(.season,.fx) .oval{--m:var(--m-oval)}
+:is(.season,.fx) .flower{--m:var(--m-flower);background:radial-gradient(circle,var(--c2,#fff3a0) 0 15%,var(--c) 24%)}
+:is(.season,.fx) .spark{--m:var(--m-spark);background:var(--gold)}
+:is(.season,.fx) .star{--m:var(--m-star);background:radial-gradient(circle,#ffe680 0 24%,var(--c) 52%)}
+:is(.season,.fx) .bfly{--m:var(--m-bfly)}
+:is(.season,.fx) .lixi{-webkit-mask:none;mask:none;border-radius:2px;background:linear-gradient(#c41e1e 0 34%,#ffcf3f 34% 46%,#c41e1e 46%)}
+:is(.season,.fx) .fly{-webkit-mask:none;mask:none;border-radius:50%;background:var(--fly);box-shadow:0 0 8px 3px var(--fly)}
 .season .fall{animation:fall var(--t) linear var(--d) infinite,sway var(--s) ease-in-out var(--d) infinite alternate,flip var(--s) linear var(--d) infinite}
 .season .rise{animation:rise var(--t) linear var(--d) infinite,sway var(--s) ease-in-out var(--d) infinite alternate}
 .season .fly{animation:drift var(--t) ease-in-out var(--d) infinite alternate,glint var(--s) ease-in-out var(--d) infinite}
@@ -50,9 +53,9 @@
 .season .spark{animation:fall var(--t) linear var(--d) infinite,glint var(--s) ease-in-out var(--d) infinite}
 
 /* Tết fireworks: a rocket climbs, then sparks burst out and fall away (season.js) */
-.season b{position:absolute;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;border-radius:50%;background:var(--c);box-shadow:0 0 8px 2px var(--c);pointer-events:none}
-.season b.flash{width:60px;height:60px;margin:-30px 0 0 -30px;background:radial-gradient(circle,var(--c),transparent 65%);box-shadow:none}
-.season b.rocket{width:3px;height:14px;margin:0 0 0 -1.5px;border-radius:2px;background:linear-gradient(var(--c),transparent);box-shadow:none}
+:is(.season,.fx) b{position:absolute;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;border-radius:50%;background:var(--c);box-shadow:0 0 8px 2px var(--c);pointer-events:none}
+:is(.season,.fx) b.flash{width:60px;height:60px;margin:-30px 0 0 -30px;background:radial-gradient(circle,var(--c),transparent 65%);box-shadow:none}
+:is(.season,.fx) b.rocket{width:3px;height:14px;margin:0 0 0 -1.5px;border-radius:2px;background:linear-gradient(var(--c),transparent);box-shadow:none}
 
 /* signature decorations: a strip along the bottom, a corner piece, lanterns in wide margins */
 .season .ground{position:absolute;left:0;bottom:0;width:100%;height:64px}
