@@ -23,8 +23,11 @@
 @keyframes flip{from{rotate:0deg}to{rotate:var(--r)}}
 @keyframes drift{from{translate:0 0}to{translate:var(--dx) var(--dy)}}
 @keyframes glint{0%,100%{opacity:.1}50%{opacity:.95}}
-/* footer button that shows the current look and switches it off or on */
-.season-btn{display:inline-flex;align-items:center;gap:6px;min-height:40px;margin:0 6px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--muted);font:inherit;font-size:14px;cursor:pointer;transition:border-color .2s,color .2s}
-.season-btn:hover{border-color:var(--accent);color:var(--text)}
-.season-btn[hidden]{display:none}
+/* footer picker: auto by the calendar, any season or holiday, or the default look */
+.season-pick{appearance:none;-webkit-appearance:none;min-height:40px;max-width:100%;margin:0 6px;padding:0 32px 0 14px;border:1px solid var(--line);border-radius:999px;
+  background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238a94ab' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 13px center/10px;
+  color:var(--muted);font:inherit;font-size:14px;cursor:pointer;transition:border-color .2s,color .2s}
+.season-pick:hover{border-color:var(--accent);color:var(--text)}
+.season-pick option{background:var(--surface);color:var(--text)}
+.season-pick[hidden]{display:none}
 @media (prefers-reduced-motion: reduce){.season i{display:none}}

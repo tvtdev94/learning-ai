@@ -198,7 +198,7 @@ function cursorEl(c){
   layer.appendChild(el);return el;
 }
 // Every piece that can fall, with the cursor that owns it.
-var FALLS=[['.mono,.nav .menu,#langBtn,#themeBtn,.fine,#seasonBtn,#replay',0],['h1 .w,.bio',1],['.chip,.role',2],['.dock a,.handles span',3],['.orbit .dot',4]];
+var FALLS=[['.mono,.nav .menu,#langBtn,#themeBtn,.fine,#seasonPick,#replay',0],['h1 .w,.bio',1],['.chip,.role',2],['.dock a,.handles span',3],['.orbit .dot',4]];
 // Pieces are drawn from a shuffled bag, so every piece falls once before any falls again.
 var bag=[];
 function drawPieces(n,vw,vh){
@@ -222,7 +222,7 @@ function mischief(){
   running=running.filter(function(a){return a.playState!=='finished'});
   root.classList.add('building');
   var A={x:m.left+scrollX+m.width/2,y:m.top+scrollY+m.height/2};
-  var occ=[].slice.call(document.querySelectorAll('.mono,.nav .menu,#langBtn,#themeBtn,.fine,#seasonBtn,#replay,h1 .w,.chip,.role-box,.bio,.dock a,.handles span,.orbit .dot,#me')).map(function(e){return box(e,6)});
+  var occ=[].slice.call(document.querySelectorAll('.mono,.nav .menu,#langBtn,#themeBtn,.fine,#seasonPick,#replay,h1 .w,.chip,.role-box,.bio,.dock a,.handles span,.orbit .dot,#me')).map(function(e){return box(e,6)});
   pool.forEach(function(el,i){
     var r=el.getBoundingClientRect(),own=box(el,6),rest=occ.filter(function(q){return q.l!==own.l||q.t!==own.t}),cands=[];
     [50,70,90,110,130,30,150].forEach(function(dy){[0,-30,30,-60,60,-90,90].forEach(function(dx){cands.push([dx+Math.round((Math.random()-.5)*16),dy])})});

@@ -9,8 +9,6 @@ var LUNAR={2026:['0217','0925'],2027:['0206','0915'],2028:['0126','1003'],2029:[
   2031:['0123','1001'],2032:['0211','0919'],2033:['0131','0908'],2034:['0219','0926'],2035:['0208','0916'],
   2036:['0128','1004'],2037:['0215','0924'],2038:['0204','0913'],2039:['0124','1002'],2040:['0212','0920']};
 function pickSeason(){
-  var o=/[?&]season=(spring|summer|autumn|winter|tet|trungthu|noel)\b/.exec(location.search);
-  if(o)return o[1];
   var vn=new Date(Date.now()+7*36e5),y=vn.getUTCFullYear(),m=vn.getUTCMonth()+1,d=vn.getUTCDate();
   var today=Date.UTC(y,m-1,d)/864e5,L=LUNAR[y];
   function off(mmdd){return today-Date.UTC(y,+mmdd.slice(0,2)-1,+mmdd.slice(2))/864e5}
@@ -21,24 +19,31 @@ function pickSeason(){
   if(m===12&&d>=20&&d<=26)return 'noel';
   return m>=2&&m<=4?'spring':m>=5&&m<=7?'summer':m>=8&&m<=10?'autumn':'winter';
 }
-// Visitors can switch the seasonal look off with the footer button; only "off" is saved.
-// ?season=<name> still previews a season for that page view without touching the saved choice.
-var KEY='home-season',layer=document.getElementById('season'),seasonBtn=document.getElementById('seasonBtn');
+// Visitors pick the look in the footer: auto (follows the calendar), any season or holiday, or the
+// default look. The choice is saved on this device; auto saves nothing. ?season=<name> previews one
+// season for that page view without touching the saved choice.
+var KEY='home-season',layer=document.getElementById('season'),pick=document.getElementById('seasonPick');
+var ORDER=['auto','spring','summer','autumn','winter','tet','trungthu','noel','off'];
 var NAMES={spring:['🌸','Mùa xuân','Spring'],summer:['☀️','Mùa hạ','Summer'],autumn:['🍂','Mùa thu','Autumn'],winter:['❄️','Mùa đông','Winter'],
   tet:['🧧','Tết','Lunar New Year'],trungthu:['🏮','Trung thu','Mid-Autumn'],noel:['🎄','Noel','Christmas'],off:['◯','Mặc định','Default']};
-var season;
-function savedOff(){try{return localStorage.getItem(KEY)==='off'}catch(e){return false}}
+var season,choice;
+function saved(){try{var v=localStorage.getItem(KEY);return NAMES[v]?v:'auto'}catch(e){return 'auto'}}
 function apply(next){
   season=next;root.setAttribute('data-season',season);layer.textContent='';
   if(season==='trungthu'){var moon=document.createElement('div');moon.className='moon';layer.appendChild(moon)}
   if(season!=='off'&&!reduce)particles();
-  label();
 }
+function choose(c){choice=c;apply(c==='auto'?pickSeason():c);label()}
+// Options are rebuilt on each language change; auto names the season the calendar gives today.
 function label(){
-  var en=root.lang==='en',n=NAMES[season],act=season==='off'?(en?'turn on the seasonal look':'bật giao diện theo mùa'):(en?'switch to the default look':'chuyển về giao diện mặc định');
-  seasonBtn.innerHTML='<span aria-hidden="true">'+n[0]+'</span> '+n[en?2:1];
-  seasonBtn.setAttribute('aria-label',n[en?2:1]+': '+act);seasonBtn.title=act.charAt(0).toUpperCase()+act.slice(1);
-  seasonBtn.hidden=false;
+  var en=root.lang==='en',i=en?2:1;
+  pick.innerHTML=ORDER.map(function(k){
+    var n=NAMES[k==='auto'?pickSeason():k],text=k==='auto'?n[0]+' '+(en?'Auto':'Tự động')+' · '+n[i]:n[0]+' '+n[i];
+    return '<option value="'+k+'">'+text+'</option>';
+  }).join('');
+  pick.value=ORDER.indexOf(choice)<0?'auto':choice;
+  pick.setAttribute('aria-label',en?'Page look':'Giao diện trang');pick.title=pick.getAttribute('aria-label');
+  pick.hidden=false;
 }
 function particles(){
   // A separate seed keeps the star field and constellations unchanged.
@@ -69,11 +74,11 @@ function particles(){
     layer.appendChild(p);
   }
 }
-seasonBtn.addEventListener('click',function(){
-  var off=season!=='off';
-  try{if(off)localStorage.setItem(KEY,'off');else localStorage.removeItem(KEY)}catch(e){}
-  apply(off?'off':pickSeason());
+pick.addEventListener('change',function(){
+  try{if(pick.value==='auto')localStorage.removeItem(KEY);else localStorage.setItem(KEY,pick.value)}catch(e){}
+  choose(pick.value);
 });
-// The language switch sets <html lang>; relabel the button when it changes.
+// The language switch sets <html lang>; relabel the options when it changes.
 new MutationObserver(label).observe(root,{attributes:true,attributeFilter:['lang']});
-apply(/[?&]season=/.test(location.search)||!savedOff()?pickSeason():'off');
+var preview=/[?&]season=(spring|summer|autumn|winter|tet|trungthu|noel)\b/.exec(location.search);
+choose(preview?preview[1]:saved());
