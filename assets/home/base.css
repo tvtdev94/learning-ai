@@ -45,12 +45,17 @@ a{color:inherit}
 .mono{display:inline-flex;align-items:center;gap:8px;font-weight:800;letter-spacing:.08em;font-size:15px;margin-right:auto}
 .mono i{width:10px;height:10px;border-radius:50%;background:var(--star);box-shadow:0 0 0 4px rgba(244,201,93,.18);box-shadow:0 0 0 4px color-mix(in srgb,var(--star) 22%,transparent);animation:beat 2.6s var(--ease) infinite}
 @keyframes beat{0%,100%{scale:1}50%{scale:1.35}}
-.menu{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-weight:600;font-size:15px;text-decoration:none;transition:border-color .2s,translate .2s var(--ease)}
+.menu{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 14px;white-space:nowrap;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-weight:600;font-size:15px;text-decoration:none;transition:border-color .2s,translate .2s var(--ease)}
 .nav{display:flex;gap:8px}
 .menu:hover{border-color:var(--accent);translate:0 -1px}
 .menu svg{width:16px;height:16px;transition:translate .2s var(--ease)}
 .menu:hover svg{translate:3px 0}
 @media (max-width:480px){.bar{gap:6px;padding-inline:12px}.nav{gap:6px}.menu{padding:0 11px}.menu svg{display:none}}
+/* phones: menu labels stay on one line, so the bar tightens instead of wrapping them */
+@media (max-width:420px){.bar{gap:5px;padding-inline:10px}.nav{gap:5px}.menu{padding:0 9px;font-size:14px}.mono{font-size:14px;gap:6px}.theme-btn{width:36px;height:36px}}
+@media (max-width:380px){.bar,.nav{gap:4px}.menu{padding:0 7px}}
+/* the narrowest phones keep only the dot of the TVT mark */
+@media (max-width:340px){.mono{font-size:0;gap:0}}
 .theme-btn{display:inline-grid;place-items:center;width:40px;height:40px;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:999px;cursor:pointer;transition:rotate .3s var(--ease),border-color .2s}
 .theme-btn:hover{border-color:var(--accent);rotate:-25deg}
 .theme-btn svg{width:20px;height:20px}
