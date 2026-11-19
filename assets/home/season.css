@@ -1,33 +1,85 @@
-/* season layer: a tinted glow plus falling or rising particles, picked from the date in Vietnam */
-.season{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;
-  --snow:#ffffff;--peach:#f59bc0;--mai:#f6c431;--leaf1:#e0782f;--leaf2:#c94a24;--leaf3:#e3a83c;--fly:#e3f56b;--lamp:#e5483a;--lamp2:#f39a2b}
-:root[data-theme="light"] .season{--snow:#8fb0dc;--peach:#e6709f;--mai:#d9a400;--fly:#a88a00}
-@media (prefers-color-scheme: light){:root:not([data-theme="dark"]) .season{--snow:#8fb0dc;--peach:#e6709f;--mai:#d9a400;--fly:#a88a00}}
-.season i{position:absolute;top:0;display:block;opacity:var(--o,.85)}
-.season .snow{border-radius:50%;background:var(--snow);filter:blur(.4px);animation:fall var(--t) linear var(--d) infinite,sway var(--s) ease-in-out var(--d) infinite alternate}
-.season .petal{border-radius:70% 0 70% 0;background:var(--c);animation:fall var(--t) linear var(--d) infinite,sway var(--s) ease-in-out var(--d) infinite alternate,flip var(--s) linear var(--d) infinite}
-.season .leaf{border-radius:0 80% 0 80%;background:var(--c);animation:fall var(--t) linear var(--d) infinite,sway var(--s) ease-in-out var(--d) infinite alternate,flip var(--s) linear var(--d) infinite}
-.season .fly{border-radius:50%;background:var(--fly);box-shadow:0 0 8px 3px var(--fly);animation:drift var(--t) ease-in-out var(--d) infinite alternate,glint var(--s) ease-in-out var(--d) infinite}
-.season .lamp{border-radius:40% 40% 46% 46%;background:radial-gradient(circle at 50% 40%,#ffe2a8,var(--c) 70%);box-shadow:0 0 14px 4px rgba(243,154,43,.45);animation:rise var(--t) linear var(--d) infinite,sway var(--s) ease-in-out var(--d) infinite alternate}
-.season .moon{position:absolute;top:max(68px,8%);left:3%;width:clamp(44px,11vw,110px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 40% 38%,#fff8de,#f6d77c 70%);box-shadow:0 0 50px 18px rgba(246,215,124,.35);opacity:.9}
-[data-season="spring"] .season{background:radial-gradient(70% 55% at 15% 100%,rgba(245,155,192,.16),transparent 70%)}
-[data-season="summer"] .season{background:radial-gradient(70% 55% at 15% 100%,rgba(110,200,120,.14),transparent 70%)}
-[data-season="autumn"] .season{background:radial-gradient(70% 55% at 15% 100%,rgba(224,120,47,.16),transparent 70%)}
-[data-season="winter"] .season{background:radial-gradient(70% 55% at 15% 100%,rgba(143,176,220,.18),transparent 70%)}
-[data-season="tet"] .season{background:radial-gradient(70% 55% at 15% 100%,rgba(229,57,53,.16),transparent 70%),radial-gradient(50% 40% at 90% 100%,rgba(246,196,49,.14),transparent 70%)}
-[data-season="trungthu"] .season{background:radial-gradient(60% 50% at 12% 10%,rgba(246,215,124,.2),transparent 70%)}
-[data-season="noel"] .season{background:radial-gradient(60% 50% at 10% 100%,rgba(214,40,57,.15),transparent 70%),radial-gradient(50% 45% at 92% 100%,rgba(30,140,80,.14),transparent 70%)}
-@keyframes fall{from{translate:0 -6vh}to{translate:var(--dx) 106vh}}
-@keyframes rise{from{translate:0 106vh}to{translate:var(--dx) -12vh}}
+/* Seasonal looks. Each look recolours the page accents, adds one signature decoration
+   and sends shaped particles across the sky. Colours are written as light-dark(light, dark). */
+
+/* page accents per look; browsers without light-dark() keep the default palette */
+@supports (color:light-dark(#000,#fff)){
+  :root[data-season="spring"]{--accent:light-dark(#b3245f,#f59bc0);--accent-2:light-dark(#2e7d3a,#8fdc9a);--star:light-dark(#9a6200,#ffd27a)}
+  :root[data-season="summer"]{--accent:light-dark(#007a70,#44d7c8);--accent-2:light-dark(#4f7a00,#d8f36a);--star:light-dark(#946000,#ffd447)}
+  :root[data-season="autumn"]{--accent:light-dark(#a8480c,#f2a24e);--accent-2:light-dark(#b23a1a,#e0603a);--star:light-dark(#8a5a00,#f2c14e)}
+  :root[data-season="winter"]{--accent:light-dark(#00668a,#8fe1ff);--accent-2:light-dark(#3d5fa8,#c9d8ff);--star:light-dark(#4a6f8f,#e6f4ff)}
+  :root[data-season="noel"]{--accent:light-dark(#c0182d,#ff6b7a);--accent-2:light-dark(#13784a,#4fd18b);--star:light-dark(#9a6400,#ffd166)}
+  :root[data-season="tet"]{--accent:light-dark(#c41e1e,#ff6b5e);--accent-2:light-dark(#946800,#ffcf3f);--star:light-dark(#946800,#ffcf3f)}
+  :root[data-season="trungthu"]{--accent:light-dark(#9a5b00,#ffc857);--accent-2:light-dark(#c2410c,#ff7a45);--star:light-dark(#8a6200,#ffe9a8)}
+  :root[data-season]:not([data-season="off"]){--focus:var(--accent);--mark:color-mix(in srgb,var(--accent) 22%,transparent);--bg-glow:color-mix(in srgb,var(--accent) 16%,transparent)}
+}
+
+.season{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;contain:strict;
+  --snow:light-dark(#8fb0dc,#ffffff);--drift:light-dark(#d3e2f5,rgba(255,255,255,.16));
+  --peach:light-dark(#e6709f,#f59bc0);--blush:light-dark(#f2a8c4,#ffe3ee);--mai:light-dark(#d9a400,#f6c431);
+  --leaf1:#e0782f;--leaf2:#c94a24;--leaf3:#e3a83c;--fly:light-dark(#a88a00,#e3f56b);
+  --lamp:#e5483a;--gold:light-dark(#c99400,#ffd166);--sea:light-dark(#2aa89b,#44d7c8);
+  --grass:light-dark(#5aa469,#3f8f52);--bark:light-dark(#6b4a2f,#8a6a4a);--pine:light-dark(#1f7a4a,#2e9a5e);
+  --m-petal:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 24'%3E%3Cpath d='M10 24C2 17 1 8 7 1l3 3 3-3c6 7 5 16-3 23z'/%3E%3C/svg%3E");
+  --m-maple:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1l2 4.5 3-1.5-1 5 4.5-1.5-2 4 3.5 1.5-6 3.5 1 2.5-4.5-1V24h-1v-5.5l-4.5 1 1-2.5-6-3.5 3.5-1.5-2-4L8 9.5l-1-5 3 1.5z'/%3E%3C/svg%3E");
+  --m-oval:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1C5 7 4 15 11.5 22.5V24h1v-1.5C20 15 19 7 12 1z'/%3E%3C/svg%3E");
+  --m-flake:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-12 -12 24 24'%3E%3Cg stroke='%23000' stroke-width='1.8' stroke-linecap='round' fill='none'%3E%3Cpath id='a' d='M0 0V-11M0-6.5l-3.2-3M0-6.5l3.2-3'/%3E%3Cuse href='%23a' transform='rotate(60)'/%3E%3Cuse href='%23a' transform='rotate(120)'/%3E%3Cuse href='%23a' transform='rotate(180)'/%3E%3Cuse href='%23a' transform='rotate(240)'/%3E%3Cuse href='%23a' transform='rotate(300)'/%3E%3C/g%3E%3C/svg%3E");
+  --m-flower:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-12 -12 24 24'%3E%3Cellipse id='p' cy='-6' rx='4.6' ry='6'/%3E%3Cuse href='%23p' transform='rotate(72)'/%3E%3Cuse href='%23p' transform='rotate(144)'/%3E%3Cuse href='%23p' transform='rotate(216)'/%3E%3Cuse href='%23p' transform='rotate(288)'/%3E%3C/svg%3E");
+  --m-star:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-12 -12 24 24'%3E%3Cpath d='M0-10l3 6.2 6.6.9-4.8 4.6 1.2 6.6L0 5.1l-6 3.2 1.2-6.6-4.8-4.6 6.6-.9z'/%3E%3Ccircle r='11' fill='none' stroke='%23000' stroke-width='1'/%3E%3C/svg%3E");
+  --m-spark:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 0c1 8 4 11 12 12-8 1-11 4-12 12-1-8-4-11-12-12 8-1 11-4 12-12z'/%3E%3C/svg%3E");
+  --m-bfly:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 20'%3E%3Cpath d='M12 8C9 2 3 0 1 3c-2 4 3 7 8 7-5 1-7 6-4 8 3 2 6-3 7-7 1 4 4 9 7 7 3-2 1-7-4-8 5 0 10-3 8-7-2-3-8-1-11 5z'/%3E%3C/svg%3E")}
+:root[data-season]:not([data-season="off"]) .season{background:radial-gradient(70% 55% at 12% 100%,color-mix(in srgb,var(--accent-2) 14%,transparent),transparent 70%)}
+
+/* particles: a mask gives each one its silhouette, --c its colour */
+.season i{position:absolute;top:0;display:block;opacity:var(--o,.9);background:var(--c);-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat}
+.season .snow{--m:none;-webkit-mask:none;mask:none;border-radius:50%;background:var(--snow)}
+.season .flake{--m:var(--m-flake);background:var(--snow)}
+.season .petal{--m:var(--m-petal)}
+.season .maple{--m:var(--m-maple)}
+.season .oval{--m:var(--m-oval)}
+.season .flower{--m:var(--m-flower);background:radial-gradient(circle,var(--c2) 0 15%,var(--c) 24%)}
+.season .spark{--m:var(--m-spark);background:var(--gold)}
+.season .star{--m:var(--m-star);background:radial-gradient(circle,#ffe680 0 24%,var(--c) 52%)}
+.season .bfly{--m:var(--m-bfly)}
+.season .lixi{-webkit-mask:none;mask:none;border-radius:2px;background:linear-gradient(#c41e1e 0 34%,#ffcf3f 34% 46%,#c41e1e 46%)}
+.season .fly{-webkit-mask:none;mask:none;border-radius:50%;background:var(--fly);box-shadow:0 0 8px 3px var(--fly)}
+.season .fall{animation:fall var(--t) linear var(--d) infinite,sway var(--s) ease-in-out var(--d) infinite alternate,flip var(--s) linear var(--d) infinite}
+.season .rise{animation:rise var(--t) linear var(--d) infinite,sway var(--s) ease-in-out var(--d) infinite alternate}
+.season .fly{animation:drift var(--t) ease-in-out var(--d) infinite alternate,glint var(--s) ease-in-out var(--d) infinite}
+.season .bfly{animation:drift var(--t) ease-in-out var(--d) infinite alternate,flap .35s ease-in-out infinite alternate}
+.season .spark{animation:fall var(--t) linear var(--d) infinite,glint var(--s) ease-in-out var(--d) infinite}
+
+/* signature decorations: a strip along the bottom, a corner piece, lanterns in wide margins */
+.season .ground{position:absolute;left:0;bottom:0;width:100%;height:48px}
+.season .corner{position:absolute;right:0;bottom:0;width:clamp(120px,17vw,240px);height:auto}
+.season .hang{position:absolute;top:0;width:44px;height:auto;transform-origin:50% 0;animation:swing 4s ease-in-out infinite alternate;display:none}
+.season .hang.l{left:max(12px,calc(50vw - 690px))}.season .hang.r{right:max(12px,calc(50vw - 690px));animation-delay:-2s}
+@media (min-width:1320px){.season .hang{display:block}}
+@media (max-width:959px){.season .corner{opacity:.35}}
+.season .wave{animation:wave var(--t) linear infinite}
+.season .bulb{animation:glint 1.6s ease-in-out infinite}
+.season .moon{position:absolute;top:max(68px,8%);left:max(3%,calc(50vw - 600px));width:clamp(44px,11vw,110px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 40% 38%,#fff8de,#f6d77c 70%);box-shadow:0 0 50px 18px rgba(246,215,124,.35);opacity:.9}
+:root[data-theme="light"] .season .moon{box-shadow:0 0 0 2px #e0a82e,0 0 40px 12px rgba(224,168,46,.3)}
+
+@keyframes fall{from{translate:0 -8vh}to{translate:var(--dx) 108vh}}
+@keyframes rise{from{translate:0 108vh}to{translate:var(--dx) -14vh}}
 @keyframes sway{from{transform:translateX(calc(var(--w) * -1))}to{transform:translateX(var(--w))}}
 @keyframes flip{from{rotate:0deg}to{rotate:var(--r)}}
 @keyframes drift{from{translate:0 0}to{translate:var(--dx) var(--dy)}}
-@keyframes glint{0%,100%{opacity:.1}50%{opacity:.95}}
-/* footer picker: auto by the calendar, any season or holiday, or the default look */
-.season-pick{appearance:none;-webkit-appearance:none;min-height:40px;max-width:100%;margin:0 6px;padding:0 32px 0 14px;border:1px solid var(--line);border-radius:999px;
-  background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238a94ab' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 13px center/10px;
-  color:var(--muted);font:inherit;font-size:14px;cursor:pointer;transition:border-color .2s,color .2s}
-.season-pick:hover{border-color:var(--accent);color:var(--text)}
-.season-pick option{background:var(--surface);color:var(--text)}
-.season-pick[hidden]{display:none}
+@keyframes glint{0%,100%{opacity:.15}50%{opacity:1}}
+@keyframes flap{from{scale:1 1}to{scale:.35 1}}
+@keyframes wave{to{translate:200px 0}}
+@keyframes swing{from{rotate:-4deg}to{rotate:4deg}}
+
+/* footer: one small button that opens a grid of looks */
+.look{position:relative;display:inline-block;margin:0 6px;vertical-align:middle}
+.look-btn{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--muted);font:inherit;font-size:14px;cursor:pointer;transition:border-color .2s,color .2s}
+.look-btn:hover,.look-btn[aria-expanded="true"]{border-color:var(--accent);color:var(--text)}
+.look-btn[hidden]{display:none}
+.look-panel{position:absolute;z-index:10;bottom:calc(100% + 8px);left:50%;translate:-50% 0;width:max-content;max-width:calc(100vw - 24px);display:grid;grid-template-columns:repeat(3,92px);gap:6px;padding:8px;border:1px solid var(--line);border-radius:16px;background:var(--surface);box-shadow:0 12px 32px rgba(0,0,0,.28)}
+.look-panel[hidden]{display:none}
+.look-panel button{display:flex;flex-direction:column;align-items:center;gap:2px;min-height:56px;padding:6px 4px;border:1px solid transparent;border-radius:10px;background:none;color:var(--muted);font:inherit;font-size:12px;line-height:1.25;cursor:pointer}
+.look-panel button span{font-size:20px;line-height:1.2}
+.look-panel button:hover{background:var(--surface-2);color:var(--text)}
+.look-panel button[aria-pressed="true"]{border-color:var(--accent);background:var(--mark);color:var(--text);font-weight:700}
+
 @media (prefers-reduced-motion: reduce){.season i{display:none}}

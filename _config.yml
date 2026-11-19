@@ -5,3 +5,4 @@
 # remove it from this list and add its card to TOPICS in so-tay/index.html.
 exclude:
   - PROGRESS.md
+  - plans
