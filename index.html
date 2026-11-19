@@ -142,8 +142,11 @@ h1 .w:nth-child(1){animation-delay:.35s}h1 .w:nth-child(2){animation-delay:.47s}
 .comet{position:absolute;left:0;top:0;width:0;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--star));transform-origin:0 0;opacity:0;will-change:transform,width,opacity}
 .comet::after{content:"";position:absolute;right:-4px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:var(--star);box-shadow:0 0 10px 3px var(--star)}
 .asm .ring{animation:spin var(--dur) linear infinite var(--dir)}
+.sky .c{transform-box:fill-box;transform-origin:center}
 .asm .me,.asm h1 .w,.asm .role,.asm .bio,.asm .contact{animation:none}
 .asm .bio mark{animation:none}
+/* orbits hold still while the cursors build them, so every grab lands on its piece */
+.building .ring,.building .chip{animation-play-state:paused}
 .replay{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 4px;border:0;background:none;color:var(--muted);font:inherit;font-size:14px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .replay:hover{color:var(--text)}
 .replay[hidden]{display:none}
@@ -258,11 +261,14 @@ footer{width:100%;max-width:1160px;margin:0 auto;padding:8px 16px 28px;color:var
       '--tx:'+(dist*Math.cos(rad)).toFixed(1)+'vw;--ty:'+(dist*Math.sin(rad)).toFixed(1)+'vw;--dur:'+(6+rnd()*5).toFixed(1)+'s;--delay:'+(0.6+i*1.1+rnd()*0.8).toFixed(2)+'s';
     sky0.appendChild(sh);
   }
+  // Constellations are kept so the cosmos cursor can draw them star by star.
+  var CONS=[];
   [[90,120],[760,80],[820,640],[120,760]].forEach(function(o){
-    var pts=[],x=o[0],y=o[1];
+    var pts=[],x=o[0],y=o[1],cn={lines:[],stars:[]};
     for(var k=0;k<5;k++){pts.push([x,y]);x+=40+rnd()*70;y+=(rnd()-.4)*90}
-    for(k=1;k<pts.length;k++)el('line',{x1:pts[k-1][0],y1:pts[k-1][1],x2:pts[k][0],y2:pts[k][1]},svg);
-    pts.forEach(function(p){el('circle',{'class':'c',cx:p[0],cy:p[1],r:3},svg)});
+    for(k=1;k<pts.length;k++)cn.lines.push(el('line',{x1:pts[k-1][0],y1:pts[k-1][1],x2:pts[k][0],y2:pts[k][1]},svg));
+    pts.forEach(function(p){cn.stars.push(el('circle',{'class':'c',cx:p[0],cy:p[1],r:3},svg))});
+    CONS.push(cn);
   });
 
   // Type the role out; the full text stays in a screen-reader copy.
@@ -334,72 +340,118 @@ footer{width:100%;max-width:1160px;margin:0 auto;padding:8px 16px 28px;color:var
     if(document.startViewTransition&&!reduce)document.startViewTransition(apply);else apply();
   });
 
-  // Four cursors assemble the page on open: each drags pieces from scattered spots into place.
+  // Five cursors assemble the page on open. Each drag moves exactly one small piece:
+  // a word, a menu link, an icon, a chip. Rings are resized, constellations are drawn.
   var layer=document.getElementById('cursors'),replay=document.getElementById('replay'),running=[],timers=[];
-  // Each cursor is named after its job: layout (photo, menu, rings), typography (name, highlight),
-  // content (role, bio, rings) and contact (icons, rings).
-  var CUR=[{vi:'Bố cục',en:'Layout',color:'#2f6fe0'},{vi:'Chữ',en:'Typography',color:'#8b4fd8'},{vi:'Nội dung',en:'Content',color:'#0f8a5f'},{vi:'Liên hệ',en:'Contact',color:'#c2410c'}];
-  var EASE='cubic-bezier(.22,1,.36,1)',INOUT='cubic-bezier(.65,0,.35,1)',APPROACH=450,PRESS=100,MOVE=600;
+  // Each cursor is named after its job.
+  var CUR=[{vi:'Bố cục',en:'Layout',color:'#2f6fe0'},{vi:'Chữ',en:'Typography',color:'#8b4fd8'},{vi:'Nội dung',en:'Content',color:'#0f8a5f'},{vi:'Liên hệ',en:'Contact',color:'#c2410c'},{vi:'Vũ trụ',en:'Cosmos',color:'#be185d'}];
+  var EASE='cubic-bezier(.22,1,.36,1)',INOUT='cubic-bezier(.65,0,.35,1)',DIVE='cubic-bezier(.5,0,.9,.5)',APPROACH=340,PRESS=90,MOVE=480;
   function later(fn,ms){timers.push(setTimeout(fn,ms))}
-  function stop(){running.forEach(function(a){a.cancel()});running=[];timers.forEach(clearTimeout);timers=[];layer.textContent='';document.querySelectorAll('.grab').forEach(function(e){e.classList.remove('grab')})}
-  // Rings spin, so their client rect wobbles; derive their unrotated box from the orbit instead.
-  function box(el){
-    if(!el.classList.contains('ring'))return el.getBoundingClientRect();
-    var o=orbit.getBoundingClientRect(),k=parseFloat(el.style.getPropertyValue('--in'))/100;
-    return {left:o.left+o.width*k,top:o.top+o.height*k,width:o.width*(1-2*k),height:o.height*(1-2*k)};
+  function stop(){
+    clearTimeout(idleT);running.forEach(function(a){a.cancel()});running=[];timers.forEach(clearTimeout);timers=[];layer.textContent='';
+    root.classList.remove('building');document.querySelectorAll('.grab').forEach(function(e){e.classList.remove('grab')});
   }
-  function pt(el,fx,fy){var r=box(el);return {x:r.left+scrollX+r.width*fx,y:r.top+scrollY+r.height*fy}}
+  // Rings spin, so their client rect wobbles; derive their box from the orbit instead.
+  function ringBox(k){var o=orbit.getBoundingClientRect();return {left:o.left+o.width*k,top:o.top+o.height*k,width:o.width*(1-2*k),height:o.height*(1-2*k)}}
+  function pt(el,fx,fy){var r=el.getBoundingClientRect();return {x:r.left+scrollX+r.width*fx,y:r.top+scrollY+r.height*fy}}
   function burst(x,y,color,at){
     var b=document.createElement('span');b.className='burst';b.style.cssText='left:'+x+'px;top:'+y+'px;border-color:'+color;layer.appendChild(b);
     running.push(b.animate([{opacity:0,scale:.2,offset:0},{opacity:.9,scale:.3,offset:.05},{opacity:0,scale:2.4}],{duration:520,delay:at,easing:EASE,fill:'both'}));
   }
+  function grabFx(el,c,from,to){
+    later(function(){el.style.setProperty('--gc',CUR[c].color);el.classList.add('grab')},from);
+    later(function(){el.classList.remove('grab');running.push(el.animate([{scale:1.04},{scale:1}],{duration:260,easing:EASE}))},to);
+  }
   function assemble(){
-    stop();replay.hidden=true;typed.textContent='';
-    var vw=document.documentElement.clientWidth,vh=innerHeight,Q=function(q){return document.querySelector(q)};
-    var w=document.querySelectorAll('h1 .w'),ic=document.querySelectorAll('.dock a'),rg=document.querySelectorAll('.ring'),mark=Q('.bio mark');
-    // [cursor, element, grab x, grab y (fractions of the box), offset x, offset y, rotate, start ms, scale]
-    var plan=[
-      [0,me,.5,.5,-60,46,-10,150],[1,w[0],.5,.55,-50,70,-12,250],[3,ic[0],.5,.5,-40,90,-20,400],[2,Q('.role'),.18,.5,70,-34,-7,600],
-      [3,ic[1],.5,.5,30,110,15,1250],[1,w[1],.5,.55,40,-60,9,1300],[0,Q('.nav'),.2,.5,-50,40,-6,1600],[2,Q('.bio'),.12,.3,-30,60,3,1950],
-      [3,ic[2],.5,.5,-20,100,-18,2100],[1,w[2],.5,.55,60,80,-8,2350],[3,ic[3],.5,.5,50,80,22,2950],[0,Q('.handles'),.3,.5,40,50,4,2950],
-      // Rings start shrunk and turned; a cursor grabs each rim and stretches it back into orbit.
-      [2,rg[0],.03,.33,-30,20,-50,3250,.7],[0,rg[1],.88,.18,40,-30,40,4150,.7],[3,rg[2],.25,.93,-20,30,-30,4150,.75]
+    stop();replay.hidden=true;typed.textContent='';root.classList.add('building');
+    var vw=document.documentElement.clientWidth,vh=innerHeight,Q=function(q){return document.querySelector(q)},QA=function(q){return [].slice.call(document.querySelectorAll(q))};
+    var w=QA('h1 .w'),ic=QA('.dock a'),menus=QA('.nav .menu'),chips=QA('.chip'),hs=QA('.handles span'),rings=QA('.ring'),mark=Q('.bio mark');
+    var o=orbit.getBoundingClientRect(),OC={x:o.left+scrollX+o.width/2,y:o.top+scrollY+o.height/2},OW=o.width;
+    // Task: ['d', el, grab x, grab y, offset x, offset y, rotate] drags one piece;
+    // ['r', ring, angle, start inset] resizes a ring; ['s', constellation] draws one; ['h'] highlights the bio.
+    var D=function(el,fx,fy,dx,dy,r){return ['d',el,fx,fy,dx,dy,r]};
+    var jobs=[
+      [D(me,.5,.5,-60,46,-10),D(Q('.mono'),.5,.5,-40,34,-8),D(menus[0],.5,.5,-30,44,-8),D(menus[1],.5,.5,24,52,6),D(menus[2],.5,.5,40,38,-5),D(langBtn,.5,.5,30,44,15),D(btn,.5,.5,-24,48,-20)],
+      [D(w[0],.5,.55,-50,70,-12),D(w[1],.5,.55,40,-60,9),D(w[2],.5,.55,60,80,-8),D(Q('.bio'),.12,.3,-30,60,3),['h']],
+      [D(Q('.role'),.18,.5,70,-34,-7)].concat(chips.map(function(ch,i){var v=[[-50,-40,-12],[60,-30,10],[-40,50,8],[50,45,-10],[-60,20,14]][i%5];return D(ch,.5,.5,v[0],v[1],v[2])})),
+      ic.map(function(a,i){var v=[[-40,90,-20],[30,110,15],[-20,100,-18],[50,80,22]][i];return D(a,.5,.5,v[0],v[1],v[2])}).concat([D(hs[0],.3,.5,40,50,4),D(hs[1],.5,.5,-30,44,-4)]),
+      [['r',rings[0],200,28],['r',rings[1],-40,21],['r',rings[2],120,13]].concat(CONS.map(function(cn){return ['s',cn]}))
     ];
-    // Measure everything before any piece moves. The cursor grabs the point where the
-    // scattered piece actually sits: centre + offset + the grab point rotated and scaled.
-    plan.forEach(function(p){
-      var r=box(p[1]),cx=r.left+scrollX+r.width/2,cy=r.top+scrollY+r.height/2,g=pt(p[1],p[2],p[3]);
-      var a=p[6]*Math.PI/180,k=p[8]||1,vx=(g.x-cx)*k,vy=(g.y-cy)*k;
-      p.g=g;p.s={x:cx+p[4]+vx*Math.cos(a)-vy*Math.sin(a),y:cy+p[5]+vx*Math.sin(a)+vy*Math.cos(a)};
-    });
+    // Measure everything before any piece moves.
+    jobs.forEach(function(list){list.forEach(function(j){
+      if(j[0]==='d'){
+        var el=j[1],r=el.getBoundingClientRect(),cx=r.left+scrollX+r.width/2,cy=r.top+scrollY+r.height/2,g=pt(el,j[2],j[3]);
+        var a=j[6]*Math.PI/180,vx=g.x-cx,vy=g.y-cy;
+        j.g=g;j.s={x:cx+j[4]+vx*Math.cos(a)-vy*Math.sin(a),y:cy+j[5]+vx*Math.sin(a)+vy*Math.cos(a)};
+      }else if(j[0]==='r'){
+        var k1=parseFloat(j[1].style.getPropertyValue('--in'))/100,k0=j[3]/100,ph=j[2]*Math.PI/180;
+        j.k1=k1;j.s={x:OC.x+Math.cos(ph)*OW*(.5-k0),y:OC.y+Math.sin(ph)*OW*(.5-k0)};j.g={x:OC.x+Math.cos(ph)*OW*(.5-k1),y:OC.y+Math.sin(ph)*OW*(.5-k1)};
+      }else if(j[0]==='s'){
+        j.p=j[1].stars.map(function(c){var r=c.getBoundingClientRect();return {x:r.left+scrollX+r.width/2,y:r.top+scrollY+r.height/2}});
+        // Only draw constellations that are fully on screen; the rest simply stay as they are.
+        j.skip=j.p.some(function(q){return q.x<12||q.x>vw-12||q.y<scrollY+12||q.y>scrollY+vh-12});
+      }
+    })});
     var A=pt(me,.5,.5),RAD=me.getBoundingClientRect().width/2;
     var mr=mark.getClientRects(),ma=mr[0],mb=mr[mr.length-1];
-    var paths=[[{t:0,x:-40,y:scrollY+vh*.75,s:1,o:0}],[{t:0,x:vw+40,y:scrollY+vh*.35,s:1,o:0}],[{t:0,x:vw*.75,y:scrollY-40,s:1,o:0}],[{t:0,x:vw*.3,y:scrollY+vh+40,s:1,o:0}]];
+    var starts=[{x:-40,y:scrollY+vh*.75},{x:vw+40,y:scrollY+vh*.35},{x:vw*.75,y:scrollY-40},{x:vw*.3,y:scrollY+vh+40},{x:-40,y:scrollY+vh*.12}];
+    var paths=starts.map(function(p){return [{t:0,x:p.x,y:p.y,s:1,o:0}]});
     var lastEnd=0;
-    plan.forEach(function(p){
-      var c=p[0],el=p[1],g=p.g,s0=p.s,T=p[7],grabAt=T+APPROACH,dropAt=grabAt+PRESS+MOVE;
-      paths[c].push({t:grabAt,x:s0.x,y:s0.y,s:1,o:1,e:INOUT},{t:grabAt+PRESS,x:s0.x,y:s0.y,s:.8,o:1},{t:dropAt,x:g.x,y:g.y,s:.8,o:1,e:EASE},{t:dropAt+100,x:g.x,y:g.y,s:1,o:1});
-      var start='translate('+p[4]+'px,'+p[5]+'px) rotate('+p[6]+'deg) scale('+(p[8]||1)+')';
-      running.push(el.animate([{transform:start,offset:0},{transform:start,offset:grabAt/dropAt},{transform:start+' scale(1.05)',offset:(grabAt+PRESS)/dropAt,easing:EASE},{transform:'none',offset:1}],{duration:dropAt}));
-      later(function(){el.style.setProperty('--gc',CUR[c].color);el.classList.add('grab')},grabAt);
-      later(function(){el.classList.remove('grab');running.push(el.animate([{scale:1.04},{scale:1}],{duration:260,easing:EASE}))},dropAt);
-      burst(g.x,g.y,CUR[c].color,dropAt);
-      if(el.classList.contains('role'))later(function(){typeRole(0)},dropAt+120);
-      lastEnd=Math.max(lastEnd,dropAt+100);
+    jobs.forEach(function(list,c){
+      var path=paths[c],t=80+c*140;
+      list.forEach(function(j){
+        if(j[0]==='d'){
+          var el=j[1],grabAt=t+APPROACH,dropAt=grabAt+PRESS+MOVE;
+          path.push({t:grabAt,x:j.s.x,y:j.s.y,s:1,o:1,e:INOUT},{t:grabAt+PRESS,x:j.s.x,y:j.s.y,s:.8,o:1},{t:dropAt,x:j.g.x,y:j.g.y,s:.8,o:1,e:EASE},{t:dropAt+80,x:j.g.x,y:j.g.y,s:1,o:1});
+          var st='translate('+j[4]+'px,'+j[5]+'px) rotate('+j[6]+'deg)';
+          running.push(el.animate([{transform:st,offset:0},{transform:st,offset:grabAt/dropAt},{transform:st+' scale(1.05)',offset:(grabAt+PRESS)/dropAt,easing:EASE},{transform:'none',offset:1}],{duration:dropAt}));
+          grabFx(el,c,grabAt,dropAt);burst(j.g.x,j.g.y,CUR[c].color,dropAt);
+          if(el.classList.contains('role'))later(function(){typeRole(0)},dropAt+120);
+          t=dropAt+80;
+        }else if(j[0]==='r'){
+          var ring=j[1],gA=t+APPROACH,dA=gA+PRESS+MOVE+120,i0=(j[3])+'%';
+          path.push({t:gA,x:j.s.x,y:j.s.y,s:1,o:1,e:INOUT},{t:gA+PRESS,x:j.s.x,y:j.s.y,s:.8,o:1},{t:dA,x:j.g.x,y:j.g.y,s:.8,o:1,e:EASE},{t:dA+80,x:j.g.x,y:j.g.y,s:1,o:1});
+          running.push(ring.animate([{inset:i0,offset:0},{inset:i0,offset:(gA+PRESS)/dA,easing:EASE},{inset:(j.k1*100)+'%',offset:1}],{duration:dA}));
+          grabFx(ring,c,gA,dA);burst(j.g.x,j.g.y,CUR[c].color,dA);
+          t=dA+80;
+        }else if(j[0]==='s'){
+          if(j.skip)return;
+          var cn=j[1],q=j.p,at=t+APPROACH,SEG=300,CL=80;
+          // Hide the constellation until the cursor reaches each star and line.
+          var hits=[at];for(var n=1;n<q.length;n++)hits.push(hits[n-1]+CL+SEG);
+          var end=hits[hits.length-1]+CL;
+          path.push({t:at,x:q[0].x,y:q[0].y,s:1,o:1,e:INOUT});
+          q.forEach(function(p,n){
+            if(n>0)path.push({t:hits[n],x:p.x,y:p.y,s:1,o:1,e:INOUT});
+            path.push({t:hits[n]+CL/2,x:p.x,y:p.y,s:.8,o:1},{t:hits[n]+CL,x:p.x,y:p.y,s:1,o:1});
+            running.push(cn.stars[n].animate([{transform:'scale(0)',offset:0},{transform:'scale(0)',offset:hits[n]/(hits[n]+260)},{transform:'scale(1.9)',offset:(hits[n]+90)/(hits[n]+260)},{transform:'scale(1)'}],{duration:hits[n]+260}));
+          });
+          cn.lines.forEach(function(ln,n){
+            var L=ln.getTotalLength();ln.style.strokeDasharray=L;
+            var a0=hits[n]+CL,a1=hits[n+1];
+            running.push(ln.animate([{strokeDashoffset:L,offset:0},{strokeDashoffset:L,offset:a0/a1,easing:INOUT},{strokeDashoffset:0}],{duration:a1,fill:'forwards'}));
+          });
+          t=end+60;
+        }else if(j[0]==='h'){
+          // The typography cursor highlights the topics in the bio like selecting text.
+          var sx=ma.left+scrollX,sy=ma.top+scrollY+ma.height*.6,ex=mb.right+scrollX,ey=mb.top+scrollY+mb.height*.6,S=t+APPROACH;
+          path.push({t:S,x:sx,y:sy,s:1,o:1,e:INOUT},{t:S+PRESS,x:sx,y:sy,s:.8,o:1},{t:S+900,x:ex,y:ey,s:.8,o:1,e:INOUT},{t:S+1000,x:ex,y:ey,s:1,o:1});
+          running.push(mark.animate([{backgroundSize:'0% 45%'},{backgroundSize:'0% 45%',offset:(S+PRESS)/(S+900)},{backgroundSize:'100% 45%'}],{duration:S+900,fill:'forwards'}));
+          t=S+1000;
+        }
+      });
+      lastEnd=Math.max(lastEnd,t);
     });
-    // The typography cursor highlights the topics in the bio like selecting text.
-    var sx=ma.left+scrollX,sy=ma.top+scrollY+ma.height*.6,ex=mb.right+scrollX,ey=mb.top+scrollY+mb.height*.6,S=paths[1][paths[1].length-1].t+350;
-    paths[1].push({t:S,x:sx,y:sy,s:1,o:1,e:INOUT},{t:S+PRESS,x:sx,y:sy,s:.8,o:1},{t:S+900,x:ex,y:ey,s:.8,o:1,e:INOUT},{t:S+1000,x:ex,y:ey,s:1,o:1});
-    running.push(mark.animate([{backgroundSize:'0% 45%'},{backgroundSize:'0% 45%',offset:(S+PRESS)/(S+900)},{backgroundSize:'100% 45%'}],{duration:S+900,fill:'forwards'}));
-    lastEnd=Math.max(lastEnd,S+1000);
+    // Orbits start turning again once every piece is placed.
+    later(function(){root.classList.remove('building')},lastEnd);
     // Finale: each cursor pinches a star, pulls it back, then flings it into the photo.
     // The star stretches into a streak on the way; every hit ripples the photo like a click.
-    var DIVE='cubic-bezier(.5,0,.9,.5)',order=[0,1,2,3].sort(function(a,b){return paths[a][paths[a].length-1].t-paths[b][paths[b].length-1].t}),done=0;
+    var order=paths.map(function(p,c){return c}).sort(function(a,b){return paths[a][paths[a].length-1].t-paths[b][paths[b].length-1].t}),done=0;
     function clamp(v,lo,hi){return Math.min(hi,Math.max(lo,v))}
     order.forEach(function(c,k){
-      var path=paths[c],l=path[path.length-1],t0=Math.max(l.t+150,lastEnd-600+k*380);
-      var ux=l.x-A.x,uy=l.y-A.y,d=Math.hypot(ux,uy)||1,D=Math.max(d,RAD*2.4);
-      var sx=clamp(A.x+ux/d*D,40,vw-40),sy=clamp(A.y+uy/d*D,scrollY+40,scrollY+vh-40);
+      var path=paths[c],l=path[path.length-1],t0=Math.max(l.t+150,lastEnd-700+k*340);
+      var ux=l.x-A.x,uy=l.y-A.y,d=Math.hypot(ux,uy)||1,DST=Math.max(d,RAD*2.4);
+      var sx=clamp(A.x+ux/d*DST,40,vw-40),sy=clamp(A.y+uy/d*DST,scrollY+40,scrollY+vh-40);
       var vx=A.x-sx,vy=A.y-sy,L=Math.hypot(vx,vy)||1;vx/=L;vy/=L;
       var px=sx-vx*45,py=sy-vy*45,hx=A.x-vx*RAD*.35,hy=A.y-vy*RAD*.35;
       var grab=t0+APPROACH,pull=grab+PRESS+260,hit=pull+420,end=hit+160,th=Math.atan2(vy,vx)*180/Math.PI;
@@ -408,7 +460,7 @@ footer{width:100%;max-width:1160px;margin:0 auto;padding:8px 16px 28px;color:var
       var star=document.createElement('span');star.className='comet';layer.appendChild(star);
       running.push(star.animate([
         {offset:0,opacity:0,width:'0px',transform:at(sx,sy)},
-        {offset:(t0+200)/end,opacity:0,width:'0px',transform:at(sx,sy)},
+        {offset:(t0+150)/end,opacity:0,width:'0px',transform:at(sx,sy)},
         {offset:grab/end,opacity:1,width:'0px',transform:at(sx,sy)},
         {offset:(grab+PRESS)/end,opacity:1,width:'0px',transform:at(sx,sy),easing:EASE},
         {offset:pull/end,opacity:1,width:'14px',transform:at(px,py),easing:DIVE},
@@ -421,12 +473,56 @@ footer{width:100%;max-width:1160px;margin:0 auto;padding:8px 16px 28px;color:var
     });
     paths.forEach(function(path,c){
       var total=path[path.length-1].t;
-      var el=document.createElement('div');el.className='cur';el.style.setProperty('--cc',CUR[c].color);
-      el.innerHTML='<svg viewBox="0 0 24 24"><path d="M3 2l17 9.5-7.4 1.9L9 21z"/></svg><span>'+CUR[c][lang]+'</span>';
-      layer.appendChild(el);
+      var el=cursorEl(c);
       running.push(el.animate(path.map(function(wp,i){return {offset:wp.t/total,opacity:wp.o,transform:'translate('+wp.x.toFixed(1)+'px,'+wp.y.toFixed(1)+'px) scale('+wp.s+')',easing:(path[i+1]&&path[i+1].e)||'linear'}}),{duration:total,fill:'forwards'}));
     });
-    later(function(){layer.textContent='';replay.hidden=false},done+600);
+    later(function(){layer.textContent='';replay.hidden=false;idleNext()},done+600);
+  }
+  // Now and then a few pieces fall off; the cursor that owns them pops out of the photo,
+  // puts them back one by one, then dives back into the photo.
+  var idleT=0;
+  function idleNext(){clearTimeout(idleT);idleT=setTimeout(mischief,9000+Math.random()*9000)}
+  function cursorEl(c){
+    var el=document.createElement('div');el.className='cur';el.style.setProperty('--cc',CUR[c].color);
+    el.innerHTML='<svg viewBox="0 0 24 24"><path d="M3 2l17 9.5-7.4 1.9L9 21z"/></svg><span>'+CUR[c][lang]+'</span>';
+    layer.appendChild(el);return el;
+  }
+  function mischief(){
+    if(replay.hidden||document.hidden){idleNext();return}
+    var vw=document.documentElement.clientWidth,vh=innerHeight,m=me.getBoundingClientRect();
+    if(m.bottom<0||m.top>vh){idleNext();return}
+    var owners=[['.mono,.nav .menu,#langBtn,#themeBtn',0],['h1 .w',1],['.chip,.role',2],['.dock a,.handles span',3]],pick=owners[Math.floor(Math.random()*owners.length)];
+    var pool=[].slice.call(document.querySelectorAll(pick[0])).filter(function(el){var r=el.getBoundingClientRect();return r.top>8&&r.bottom<vh-8&&r.left>4&&r.right<vw-4});
+    if(!pool.length){idleNext();return}
+    pool.sort(function(){return Math.random()-.5});pool=pool.slice(0,1+Math.floor(Math.random()*Math.min(3,pool.length)));
+    running=running.filter(function(a){return a.playState!=='finished'});
+    root.classList.add('building');
+    var c=pick[1],A={x:m.left+scrollX+m.width/2,y:m.top+scrollY+m.height/2},path=[{t:0,x:A.x,y:A.y,s:.3,o:0}];
+    pool.forEach(function(el,i){
+      var r=el.getBoundingClientRect(),dx=Math.round((Math.random()-.5)*60),dy=50+Math.round(Math.random()*60),rot=Math.round((Math.random()-.5)*50);
+      var F='translate('+dx+'px,'+dy+'px) rotate('+rot+'deg)',UP='translate('+dx+'px,'+(dy-12)+'px) rotate('+Math.round(rot*.8)+'deg)';
+      el.fallAt={x:r.left+scrollX+r.width/2+dx,y:r.top+scrollY+r.height/2+dy};el.home={x:r.left+scrollX+r.width/2,y:r.top+scrollY+r.height/2};el.F=F;
+      el.fall=el.animate([{transform:'none',easing:'cubic-bezier(.55,0,1,.45)'},{transform:F,offset:.72,easing:'ease-out'},{transform:UP,offset:.86,easing:'ease-in'},{transform:F}],{duration:700,delay:i*140,fill:'forwards'});
+      running.push(el.fall);
+    });
+    var t=1100+pool.length*140;
+    later(ripple,t);
+    path.push({t:t,x:A.x,y:A.y,s:.3,o:0},{t:t+260,x:A.x,y:A.y,s:1,o:1,e:EASE});t+=260;
+    pool.forEach(function(el){
+      var grabAt=t+APPROACH,dropAt=grabAt+PRESS+MOVE,f=el.fallAt,h=el.home;
+      path.push({t:grabAt,x:f.x,y:f.y,s:1,o:1,e:INOUT},{t:grabAt+PRESS,x:f.x,y:f.y,s:.8,o:1},{t:dropAt,x:h.x,y:h.y,s:.8,o:1,e:EASE},{t:dropAt+80,x:h.x,y:h.y,s:1,o:1});
+      later(function(){
+        el.fall.cancel();
+        running.push(el.animate([{transform:el.F},{transform:el.F+' scale(1.05)',offset:PRESS/(PRESS+MOVE),easing:EASE},{transform:'none'}],{duration:PRESS+MOVE}));
+      },grabAt);
+      grabFx(el,c,grabAt,dropAt);burst(h.x,h.y,CUR[c].color,dropAt);
+      t=dropAt+80;
+    });
+    path.push({t:t+450,x:A.x,y:A.y,s:.8,o:1,e:INOUT},{t:t+600,x:A.x,y:A.y,s:.3,o:0});
+    var cur=cursorEl(c),total=t+600;
+    running.push(cur.animate(path.map(function(wp,i){return {offset:wp.t/total,opacity:wp.o,transform:'translate('+wp.x.toFixed(1)+'px,'+wp.y.toFixed(1)+'px) scale('+wp.s+')',easing:(path[i+1]&&path[i+1].e)||'linear'}}),{duration:total,fill:'forwards'}));
+    later(function(){ripple();running.push(me.animate([{scale:1},{scale:.93,offset:.35},{scale:1}],{duration:360,easing:EASE}))},t+450);
+    later(function(){cur.remove();root.classList.remove('building');idleNext()},total+100);
   }
   replay.addEventListener('click',function(){scrollTo({top:0});root.classList.add('asm');requestAnimationFrame(assemble)});
   // The scene always plays on open (it starts from the top); reduced motion skips it.
