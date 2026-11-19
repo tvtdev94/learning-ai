@@ -85,6 +85,7 @@
 @media (max-width:959px){.season .corner{opacity:.45}}
 .season .wave{animation:wave var(--t) linear infinite}
 .season .bulb{animation:glint 1.6s ease-in-out infinite}
+.season .bit{transform-box:fill-box;transform-origin:center}
 .season .glow{animation:flicker 2.4s ease-in-out infinite}
 .season .flag{transform-box:fill-box;transform-origin:0 50%;animation:flutter 2.6s ease-in-out infinite alternate}
 .season .ground.bunt{top:0;bottom:auto;height:44px}

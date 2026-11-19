@@ -7,7 +7,8 @@ var btn=document.getElementById('themeBtn'),langBtn=document.getElementById('lan
 
 // Five cursors assemble the page on open. Each drag moves exactly one small piece:
 // a word, a menu link, an icon, a chip. Rings are resized, constellations are drawn.
-// A sixth, the season cursor, sets the current look's decorations when it has any.
+// A sixth, the season cursor, sets the current look's decorations when it has any, and later
+// puts back the lanterns, moons and decoration parts that fall off.
 var layer=document.getElementById('cursors'),replay=document.getElementById('replay'),running=[],timers=[];
 // Each cursor is named after its job.
 var CUR=[{vi:'Bố cục',en:'Layout',color:'#2f6fe0'},{vi:'Chữ',en:'Typography',color:'#8b4fd8'},{vi:'Nội dung',en:'Content',color:'#0f8a5f'},{vi:'Liên hệ',en:'Contact',color:'#c2410c'},{vi:'Vũ trụ',en:'Cosmos',color:'#be185d'},{vi:'Mùa',en:'Season',color:'#b45309'}];
@@ -224,7 +225,7 @@ function cursorEl(c){
   layer.appendChild(el);return el;
 }
 // Every piece that can fall, with the cursor that owns it.
-var FALLS=[['.mono,.nav .menu,#langBtn,#themeBtn,.fine,#lookBtn,#replay',0],['h1 .w,.bio',1],['.chip,.role',2],['.dock a,.handles span',3],['.orbit .dot',4]];
+var FALLS=[['.mono,.nav .menu,#langBtn,#themeBtn,.fine,#lookBtn,#replay',0],['h1 .w,.bio',1],['.chip,.role',2],['.dock a,.handles span',3],['.orbit .dot',4],['#season .hang,#season .moon,#season .bit',5]];
 // Pieces are drawn from a shuffled bag, so every piece falls once before any falls again.
 var bag=[];
 function drawPieces(n,vw,vh){
@@ -255,7 +256,9 @@ function mischief(){
     cands=cands.concat(ringCands([0,60]));
     var rot=Math.round((Math.random()-.5)*50),tb=turned(own,rot),fc=freeSpot(tb,cands.concat(gridCands(tb,vw,scrollY,scrollY+vh)),rest,vw,scrollY,scrollY+vh),dx=fc[0],dy=fc[1];
     occ.push({l:tb.l+dx,t:tb.t+dy,w:tb.w,h:tb.h});
-    var F='translate('+dx+'px,'+dy+'px) rotate('+rot+'deg)',UP='translate('+dx+'px,'+(dy-12)+'px) rotate('+Math.round(rot*.8)+'deg)';
+    // A part inside a decoration's SVG moves in that drawing's units, so scale the screen offset to them.
+    var k=el.ownerSVGElement?el.ownerSVGElement.getScreenCTM().a:1,fx=function(v){return (v/k).toFixed(1)+'px'};
+    var F='translate('+fx(dx)+','+fx(dy)+') rotate('+rot+'deg)',UP='translate('+fx(dx)+','+fx(dy-12)+') rotate('+Math.round(rot*.8)+'deg)';
     el.fallAt={x:r.left+scrollX+r.width/2+dx,y:r.top+scrollY+r.height/2+dy};el.home={x:r.left+scrollX+r.width/2,y:r.top+scrollY+r.height/2};el.F=F;
     el.fall=el.animate([{transform:'none',easing:'cubic-bezier(.55,0,1,.45)'},{transform:F,offset:.72,easing:'ease-out'},{transform:UP,offset:.86,easing:'ease-in'},{transform:F}],{duration:700,delay:i*140,fill:'forwards'});
     running.push(el.fall);

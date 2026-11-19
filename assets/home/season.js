@@ -90,6 +90,9 @@ function particles(){
 }
 
 // Signature decorations, drawn as inline SVG in safe zones away from text and controls.
+// Parts wrapped in a .bit group (and whole lanterns and moons) can fall off now and then; the
+// season cursor puts them back (cursors.js). The wrapper has no transform of its own, so it can move.
+function bit(svg){return '<g class="bit">'+svg+'</g>'}
 var SLICE=' preserveAspectRatio="xMidYMax slice" aria-hidden="true"';
 function drift(){return '<svg class="ground" viewBox="0 0 1200 48"'+SLICE+'><path fill="var(--drift)" d="M0 48V26C90 12 170 30 280 22S470 8 590 20S800 34 920 22S1110 10 1200 24V48Z"/></svg>'}
 function flower(x,y,r,fill){
@@ -104,7 +107,7 @@ function tree(x,h){
   [[-.3,.45,'#ff6b7a'],[.35,.6,'var(--gold)'],[-.15,.72,'#8fe1ff'],[.2,.32,'#ff6b7a'],[-.4,.8,'var(--gold)']].forEach(function(b,i){
     s+='<circle class="bulb" style="animation-delay:'+(-i*.4)+'s" cx="'+(x+w*b[0]*1.4)+'" cy="'+(y+h*b[1])+'" r="3.2" fill="'+b[2]+'"/>';
   });
-  return s+'<path fill="var(--gold)" transform="translate('+x+' '+(y-2)+') scale(.55)" d="M0-10l3 6.2 6.6.9-4.8 4.6 1.2 6.6L0 5.1l-6 3.2 1.2-6.6-4.8-4.6 6.6-.9z"/>';
+  return s+bit('<path fill="var(--gold)" transform="translate('+x+' '+(y-2)+') scale(.55)" d="M0-10l3 6.2 6.6.9-4.8 4.6 1.2 6.6L0 5.1l-6 3.2 1.2-6.6-4.8-4.6 6.6-.9z"/>');
 }
 function hang(inner,cord){
   return ['l','r'].map(function(side){return '<svg class="hang '+side+'" viewBox="0 0 44 130" aria-hidden="true"><path d="M22 0V44" stroke="'+(cord||'var(--gold)')+'" stroke-width="1.5"/>'+inner+'</svg>'}).join('');
@@ -135,7 +138,7 @@ var DECO={
   },
   autumn:function(){
     var s='<svg class="corner" viewBox="0 0 220 120" aria-hidden="true">';
-    for(var i=0;i<11;i++)s+=maple(f1(pr(40,215)),f1(pr(70,112)),f1(pr(1.2,2.2)),pr(-60,60).toFixed(0),'var(--leaf'+(1+i%3)+')');
+    for(var i=0;i<11;i++){var m=maple(f1(pr(40,215)),f1(pr(70,112)),f1(pr(1.2,2.2)),pr(-60,60).toFixed(0),'var(--leaf'+(1+i%3)+')');s+=i%3?m:bit(m)}
     return s+'</svg>';
   },
   winter:drift,
@@ -144,7 +147,7 @@ var DECO={
     var s='<svg class="corner" viewBox="0 0 220 170" aria-hidden="true"><g fill="none" stroke="var(--bark)" stroke-linecap="round">'+
       '<path stroke-width="5" d="M222 160C170 150 130 128 100 96S48 44 18 34"/><path stroke-width="3" d="M150 136C138 116 142 98 158 82"/><path stroke-width="3" d="M84 78C72 64 74 50 88 40"/></g>';
     [[30,36,9,'var(--mai)'],[62,58,8,'var(--peach)'],[96,94,10,'var(--mai)'],[88,40,7,'var(--mai)'],[124,118,9,'var(--peach)'],[158,82,8,'var(--mai)'],[176,148,10,'var(--mai)'],[146,104,7,'var(--peach)']]
-      .forEach(function(f){s+=flower(f[0],f[1],f[2],f[3])});
+      .forEach(function(f,i){var fl=flower(f[0],f[1],f[2],f[3]);s+=i%2?fl:bit(fl)});
     return s+'</svg>'+hang('<path d="M14 44h16v6H14z" fill="var(--gold)"/><ellipse cx="22" cy="74" rx="18" ry="24" fill="#d62828"/><path d="M22 50v48M10 56q-4 18 0 36M34 56q4 18 0 36" stroke="#a11d1d" stroke-width="1.2" fill="none"/><path d="M14 98h16v5H14z" fill="var(--gold)"/><path d="M22 103v20M18 103v16M26 103v16" stroke="var(--gold)" stroke-width="1.5"/>');
   },
   quockhanh:function(){
@@ -153,21 +156,21 @@ var DECO={
       '<g class="flag"><rect x="44" y="14" width="150" height="100" fill="#da251d"/><path fill="#ffff00" d="M119 34L125.7 54.7L147.5 54.7L129.9 67.5L136.6 88.3L119 75.5L101.4 88.3L108.1 67.5L90.5 54.7L112.3 54.7Z"/></g></svg>';
   },
   halloween:function(){
-    return '<div class="moon"></div><svg class="corner" viewBox="0 0 220 170" aria-hidden="true">'+pumpkin(150,128,40)+pumpkin(62,146,24)+'</svg>';
+    return '<div class="moon"></div><svg class="corner" viewBox="0 0 220 170" aria-hidden="true">'+bit(pumpkin(150,128,40))+bit(pumpkin(62,146,24))+'</svg>';
   },
   valentine:function(){
     return '<svg class="corner" viewBox="0 0 220 170" aria-hidden="true"><g stroke="var(--bark)" stroke-width="1.2" fill="none"><path d="M150 168C150 140 120 110 96 72"/><path d="M150 168C150 130 150 100 156 56"/><path d="M150 168C152 140 180 120 196 92"/></g>'+
-      heart(96,58,2.3,'var(--heart1)')+heart(156,42,2.7,'var(--heart2)')+heart(196,80,1.9,'var(--heart3)')+'<path d="M140 160l10 8 10-8-10 4z" fill="var(--heart1)"/></svg>'+
+      bit(heart(96,58,2.3,'var(--heart1)'))+bit(heart(156,42,2.7,'var(--heart2)'))+bit(heart(196,80,1.9,'var(--heart3)'))+'<path d="M140 160l10 8 10-8-10 4z" fill="var(--heart1)"/></svg>'+
       hang(heart(22,62,1.6,'var(--heart1)')+'<path d="M22 79V96" stroke="var(--heart2)" stroke-width="1.5"/>'+heart(22,106,.9,'var(--heart2)'),'var(--heart2)');
   },
   birthday:function(){
     // Bunting along the top, and a cake with one candle in the corner.
     var b='<svg class="ground bunt" viewBox="0 0 1200 44" preserveAspectRatio="xMidYMin slice" aria-hidden="true"><path d="M0 4Q150 34 300 4Q450 34 600 4Q750 34 900 4Q1050 34 1200 4" stroke="var(--bark)" stroke-width="1.2" fill="none"/>';
     for(var x=12,i=0;x<1200;x+=30,i++){var t=(x%300)/300,y=4+60*t*(1-t);b+='<path fill="var(--cf'+(1+i%5)+')" d="M'+(x-9)+' '+f1(y)+'h18l-9 16z"/>'}
-    var c='<svg class="corner" viewBox="0 0 220 170" aria-hidden="true">'+balloonDeco(48,48,'var(--cf2)')+balloonDeco(78,30,'var(--cf4)')+
+    var c='<svg class="corner" viewBox="0 0 220 170" aria-hidden="true">'+bit(balloonDeco(48,48,'var(--cf2)'))+bit(balloonDeco(78,30,'var(--cf4)'))+
       '<rect x="100" y="112" width="96" height="50" rx="6" fill="var(--cake)"/><path d="M100 124q8 10 16 0t16 0 16 0 16 0 16 0 16 0V116a6 6 0 0 0-6-6h-84a6 6 0 0 0-6 6z" fill="var(--icing)"/>'+
-      '<rect x="92" y="160" width="112" height="6" rx="3" fill="var(--bark)"/><rect x="145" y="88" width="6" height="22" rx="2" fill="var(--cf1)"/>'+
-      '<path class="glow" d="M148 72q7 8 0 15-7-7 0-15z" fill="#ffb627"/>'+
+      '<rect x="92" y="160" width="112" height="6" rx="3" fill="var(--bark)"/>'+
+      bit('<rect x="145" y="88" width="6" height="22" rx="2" fill="var(--cf1)"/><path class="glow" d="M148 72q7 8 0 15-7-7 0-15z" fill="#ffb627"/>')+
       '<g fill="var(--cf3)"><circle cx="112" cy="140" r="3"/><circle cx="136" cy="146" r="3"/><circle cx="160" cy="140" r="3"/><circle cx="184" cy="146" r="3"/></g></svg>';
     return b+'</svg>'+c;
   },
