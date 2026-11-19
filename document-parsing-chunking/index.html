@@ -1,0 +1,1255 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Document Parsing &amp; Chunking cho RAG</title>
+<!-- pwa -->
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15171a" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" sizes="32x32" href="../icons/favicon-32.png">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sổ tay">
+<script>if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('../sw.js').catch(function(){})})</script>
+<meta name="description" content="Biến PDF, Word, ảnh scan, Excel thành chunk tốt cho RAG: text layer và OCR, phân tích bố cục, bảng, chiến lược chunking, metadata, lỗi thường gặp và cách đo.">
+<script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+:root{
+  --bg:#f7f6f2; --surface:#ffffff; --surface-2:#f0eee8; --text:#1f2328; --muted:#5b6370;
+  --border:#dcd8cf; --accent:#2559b8; --accent-soft:#e3ecfc; --ok:#16703d; --ok-soft:#e1f3e8;
+  --warn:#8f4c0a; --warn-soft:#fbeedd; --bad:#a82f2f; --bad-soft:#fae3e3;
+  --p1:#2559b8; --p2:#7440b8; --p3:#16703d; --p4:#8f4c0a;
+  --code-bg:#f0eee8; --shadow:0 1px 2px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04); --on-accent:#ffffff; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+    --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+    --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+    --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --code-bg:#252930; --shadow:none; --on-accent:#15171a; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+  --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+  --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+  --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --code-bg:#252930; --shadow:none; --on-accent:#15171a; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+a{color:var(--accent)}
+header.top{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
+.top-inner{max-width:1100px;margin:0 auto;padding:10px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.brand{font-weight:700;white-space:nowrap}
+.home{white-space:nowrap;text-decoration:none;color:var(--text);border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:4px 10px;font-size:14px}
+.home:hover{border-color:var(--accent);color:var(--accent)}
+nav.toc{display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin;flex:1}
+nav.toc a{white-space:nowrap;text-decoration:none;color:var(--muted);padding:4px 10px;border-radius:999px;font-size:14px}
+nav.toc a:hover,nav.toc a.active{background:var(--accent-soft);color:var(--accent)}
+button{font:inherit;cursor:pointer}
+.theme-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:4px 10px;font-size:14px}
+main{max-width:1100px;margin:0 auto;padding:16px}
+section{padding:28px 0;border-bottom:1px solid var(--border);scroll-margin-top:64px}
+section:last-child{border-bottom:none}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.2;margin:16px 0 8px}
+h2{font-size:clamp(22px,3.5vw,28px);margin:0 0 12px}
+h3{font-size:18px;margin:20px 0 8px}
+p{margin:8px 0}
+.lead{font-size:18px;color:var(--muted);max-width:760px}
+.muted{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 10px 10px 0;margin:12px 0}
+.callout.ok{border-color:var(--ok);background:var(--ok-soft)}
+.callout.warn{border-color:var(--warn);background:var(--warn-soft)}
+.callout.bad{border-color:var(--bad);background:var(--bad-soft)}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);margin-right:4px}
+.tag.p1{background:var(--accent-soft);color:var(--p1)}
+.tag.p3{background:var(--ok-soft);color:var(--p3)}
+.tag.p4{background:var(--warn-soft);color:var(--p4)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+th{background:var(--surface-2);font-weight:600}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.mono,code{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:14px}
+code{background:var(--code-bg);padding:1px 5px;border-radius:5px}
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-word;margin:8px 0;font-size:14px;line-height:1.55}
+svg text{fill:var(--text);font-family:inherit}
+.diagram{width:100%;height:auto;display:block}
+.svgbox{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;overflow-x:auto}
+.svgbox svg{min-width:640px}
+/* Glossary */
+.gloss-tools{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+.gloss-tools input{flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
+.chip{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:999px;padding:4px 12px;font-size:14px}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.term h4{margin:0 0 4px;font-size:16px}
+.term .en{font-weight:400;color:var(--muted);font-size:14px}
+.term p{margin:4px 0;font-size:15px}
+.term .ex{font-size:14px;color:var(--muted)}
+.term .rel{font-size:13px;margin-top:6px}
+.term .rel a{font-size:13px}
+/* Stepper */
+.stepper{display:grid;grid-template-columns:240px 1fr;gap:12px}
+@media (max-width:720px){.stepper{grid-template-columns:1fr}}
+.steps{display:flex;flex-direction:column;gap:6px}
+@media (max-width:720px){.steps{flex-direction:row;overflow-x:auto}}
+.steps button{text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px;white-space:nowrap}
+.steps button .n{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--surface-2);text-align:center;line-height:22px;font-size:12px;margin-right:6px}
+.steps button.on{border-color:var(--accent);background:var(--accent-soft)}
+.steps button.on .n{background:var(--accent);color:var(--on-accent)}
+.step-nav{display:flex;gap:8px;margin-top:12px}
+.step-nav button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 14px}
+.chunk{border:1px dashed var(--border);border-radius:8px;padding:8px 10px;margin:6px 0;font-size:14px;background:var(--surface)}
+.chunk.hit{border-style:solid;border-color:var(--ok);background:var(--ok-soft)}
+.chunk .id{font-weight:700;font-size:12px;color:var(--muted)}
+.vec{font-family:ui-monospace,Consolas,monospace;font-size:13px;color:var(--p2)}
+.bar{height:8px;background:var(--surface-2);border-radius:4px;overflow:hidden;margin-top:4px}
+.bar>span{display:block;height:100%;background:var(--ok)}
+/* Space demo */
+.space{display:grid;grid-template-columns:1fr 300px;gap:12px}
+@media (max-width:820px){.space{grid-template-columns:1fr}}
+.qbtns{display:flex;flex-direction:column;gap:6px}
+.qbtns button{text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px}
+.qbtns button.on{border-color:var(--p4);background:var(--warn-soft)}
+#spaceSvg{width:100%;height:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px}
+details{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin:8px 0}
+details summary{cursor:pointer;font-weight:600}
+details[open] summary{margin-bottom:6px}
+.check{display:flex;gap:8px;align-items:flex-start;padding:6px 0}
+.check input{margin-top:6px}
+footer{max-width:1100px;margin:0 auto;padding:24px 16px;color:var(--muted);font-size:14px}
+.kpi{display:flex;gap:10px;flex-wrap:wrap}
+.kpi .card{flex:1;min-width:160px}
+.kpi b{display:block;font-size:20px}
+.card>h4:first-child,.card>.tag+h4{margin-top:4px}
+.card h4{margin-bottom:6px}
+.m-only{display:none}
+/* Citations */
+sup.cite{font-size:max(11px,.72em);line-height:0;margin-left:1px;white-space:nowrap}
+sup.cite a{text-decoration:none;font-weight:600;padding:10px 3px;margin:-10px 0}
+sup.cite a:hover{text-decoration:underline}
+sup.cite a+a{margin-left:2px}
+ol.sources{padding-left:1.6em;margin:8px 0}
+ol.sources li{margin:0 0 10px;font-size:15px;overflow-wrap:anywhere;scroll-margin-top:64px}
+ol.sources li:target{background:var(--accent-soft);border-radius:6px}
+ol.sources .acc{color:var(--muted);font-size:14px;white-space:nowrap}
+.vflow .box,.vflow .node,.vflow .ar{display:block}
+.vflow .ph{font-weight:700;font-size:14px;margin:4px 0 8px}
+.vflow .ph1{color:var(--p1)} .vflow .ph2{color:var(--p3)}
+.vflow .node{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px}
+.vflow .node b{display:block}
+.vflow .node span{font-size:13px;color:var(--muted)}
+.vflow .node.r{border:2px solid var(--p1)} .vflow .node.a{border:2px solid var(--p2)} .vflow .node.g{border:2px solid var(--p3)} .vflow .node.db{border:2px solid var(--p2)}
+.vflow .opt{background:var(--warn-soft);border-color:var(--p4)}
+.vflow .ar{text-align:center;color:var(--muted);font-size:13px;line-height:1.3;padding:4px 0}
+.vflow .box{border-radius:12px;padding:10px;margin-bottom:10px}
+.vflow .box1{background:var(--accent-soft)} .vflow .box2{background:var(--ok-soft)}
+.vflow .note{font-size:13px;color:var(--muted);margin-top:6px}
+/* Desktop SVG diagrams (viewBox 1000 wide) only from 1081px so their 11-unit labels render at 11px or larger */
+@media (max-width:1080px){.d-only{display:none}.m-only{display:block}.vflow{max-width:560px;margin:0 auto}}
+@media (max-width:600px){
+  .brand{display:none} body{font-size:15px}
+  .theme-btn .lbl,.home .lbl{display:none}
+  main{padding:12px 16px}
+  section{padding:22px 0}
+  .card{padding:14px}
+  table.stack thead{display:none}
+  table.stack,table.stack tbody,table.stack tr,table.stack td{display:block;width:100%}
+  table.stack tr{border-bottom:1px solid var(--border);padding:8px 0}
+  table.stack tr:last-child{border-bottom:none}
+  table.stack td{border:none;padding:3px 12px}
+  table.stack td[data-label]::before{content:attr(data-label);display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  table.stack td:first-child{font-size:16px}
+  table.stack td:first-child::before{display:none}
+  .home,.theme-btn,nav.toc a,.chip,.step-nav button,.qbtns button,.steps button{min-height:40px}
+  .home,.theme-btn,nav.toc a{display:inline-flex;align-items:center}
+  pre,pre.mono,.term .ex{font-size:15px}
+  .vflow .node span{font-size:14px}
+  .term .rel a{font-size:14px;padding:10px 2px}
+}
+/* ---- Trang này ---- */
+.tag.p2{background:var(--surface-2);color:var(--p2)}
+.chunk.bad{border-style:solid;border-color:var(--warn);background:var(--warn-soft)}
+.chunk .meta{display:block;font-size:13px;color:var(--muted);margin-top:4px}
+.del{text-decoration:line-through;color:var(--bad)}
+mark{background:var(--warn-soft);color:var(--text);border-radius:3px;padding:0 2px;box-shadow:inset 0 -2px 0 var(--p4)}
+/* Reading-order demo */
+.ro{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start}
+@media (max-width:820px){.ro{grid-template-columns:minmax(0,1fr)}}
+.pagemock{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.5;box-shadow:var(--shadow)}
+.pm-blk{position:relative;border:1px dashed var(--border);border-radius:6px;padding:6px 8px 6px 34px;margin:6px 0}
+.pm-blk.off{text-decoration:line-through}
+.pm-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pm-cols .pm-blk{margin:0}
+.pm-line{display:block;white-space:nowrap}
+.pm-muted{color:var(--muted)}
+.ob{position:absolute;left:6px;top:6px;min-width:22px;height:22px;border-radius:11px;background:var(--accent);color:var(--on-accent);font-size:12px;font-weight:700;line-height:22px;text-align:center;padding:0 4px}
+.ob.x{background:var(--surface-2);color:var(--muted)}
+.ob.mix{background:var(--bad);color:var(--on-accent)}
+/* Vietnamese text in pre blocks: use the body font so stacked diacritics render correctly on every device */
+pre{font-family:inherit}
+.ro-out{margin:0;background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:8px 10px;font-size:14px}
+.ro-line{display:flex;gap:8px;padding:3px 0;border-bottom:1px dashed var(--border)}
+.ro-line:last-child{border-bottom:none}
+.ro-line .ln{flex:0 0 auto;min-width:20px;color:var(--muted);font-size:12px;line-height:1.9;text-align:right}
+.ro-line.mix-l{background:var(--bad-soft)}
+.ro-line.bad-l{color:var(--bad);font-weight:600}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+/* Chunker playground */
+.sim{display:grid;grid-template-columns:320px minmax(0,1fr);gap:12px;align-items:start}
+@media (max-width:900px){.sim{grid-template-columns:1fr}}
+.ctl{margin:0 0 14px}
+.ctl>.lbl{display:block;font-weight:600;font-size:14px;margin-bottom:4px}
+.ctl .chip{margin:0 4px 6px 0}
+.ctl input[type=range]{width:100%;height:40px;accent-color:var(--accent)}
+.ctl .val{font-weight:700;color:var(--accent)}
+.qlist{display:flex;flex-direction:column;gap:6px}
+.qlist button{text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px}
+.qlist button.on{border-color:var(--p4);background:var(--warn-soft)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:10px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 10px}
+.stat b{display:block;font-size:20px;line-height:1.2}
+.stat span{font-size:13px;color:var(--muted)}
+.verdict{border-radius:10px;padding:10px 12px;margin-bottom:10px;border-left:4px solid}
+.verdict.ok{background:var(--ok-soft);border-color:var(--ok)}
+.verdict.no{background:var(--bad-soft);border-color:var(--bad)}
+.chunk.parent{border-style:solid;border-color:var(--border)}
+.chunk.parent.hitp{border-color:var(--ok);border-width:2px}
+.chunk.child{margin:6px 0 0;background:var(--surface-2)}
+.chunk.child.hit{background:var(--ok-soft)}
+.chunk .txt{white-space:pre-wrap;overflow-wrap:anywhere}
+.sim-note{font-size:14px;color:var(--muted)}
+@media (max-width:600px){
+  .chunk,.qlist button,.chunk .meta,.sim-note{font-size:15px}
+  .chunk .id{font-size:13px}
+  .qlist button,.btnrow .chip{min-height:40px}
+  .pagemock{font-size:13px;padding:8px}
+  .pm-cols .pm-blk{padding:30px 6px 6px 6px}
+  .term .rel a{display:inline-block;padding:10px 4px;line-height:20px;min-height:40px}
+  details summary{padding:8px 0}
+  .stat span{font-size:14px}
+}
+/* cite-tap */
+/* Same tap area for citation links on every page: at least 40px high and 24px wide.
+   Negative vertical margins keep line spacing unchanged. */
+sup.cite a{display:inline-block;box-sizing:border-box;min-width:24px;line-height:1;padding:15px 3px;margin-top:-15px;margin-bottom:-15px;text-align:center}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <a class="home" href="../" aria-label="Về trang tất cả chủ đề">←<span class="lbl"> Chủ đề</span></a>
+    <span class="brand">Parsing &amp; Chunking</span>
+    <nav class="toc" id="toc">
+      <a href="#tong-quan">1. Tổng quan</a>
+      <a href="#flow">2. Flow</a>
+      <a href="#vi-du">3. Ví dụ từng bước</a>
+      <a href="#parsing">4. Parsing</a>
+      <a href="#bang">5. Bảng &amp; Excel</a>
+      <a href="#chunking">6. Chunking</a>
+      <a href="#mo-phong">7. Mô phỏng</a>
+      <a href="#metadata">8. Metadata</a>
+      <a href="#khai-niem">9. Khái niệm</a>
+      <a href="#quan-he">10. Mối quan hệ</a>
+      <a href="#so-sanh">11. So sánh</a>
+      <a href="#loi">12. Lỗi &amp; chẩn đoán</a>
+      <a href="#danh-gia">13. Đánh giá</a>
+      <a href="#lo-trinh">14. Lộ trình</a>
+      <a href="#nguon">Nguồn</a>
+    </nav>
+    <button class="theme-btn" id="themeBtn" aria-label="Đổi giao diện sáng/tối">◐<span class="lbl"> Giao diện</span></button>
+  </div>
+</header>
+
+<main>
+
+<!-- 1. TỔNG QUAN -->
+<section id="tong-quan">
+  <h1>Document Parsing &amp; Chunking: biến PDF, Office, ảnh scan, Excel thành chunk tốt cho RAG</h1>
+  <p class="lead">Trước khi RAG tìm được gì, mọi file phải được <b>đọc thành chữ có cấu trúc</b> (parsing) rồi <b>cắt thành các đoạn</b> để embed và tìm (chunking). Trang này đi sâu vào hai bước đó cho tài liệu doanh nghiệp: chính sách, hợp đồng, báo cáo kiểm toán, bảng tính.</p>
+  <p class="muted">Chưa rõ RAG hay knowledge base là gì thì đọc trước <a href="../rag/">RAG</a> và <a href="../knowledge-base/">Knowledge Base</a>. Trang này không nhắc lại phần cơ bản, mà tập trung vào chỗ hai trang đó chỉ lướt qua: PDF scan, bố cục, bảng, Excel, các cách cắt chunk và cách đo.</p>
+
+  <h3>Vì sao chất lượng parsing là "trần" của chất lượng RAG?</h3>
+  <div class="grid g3">
+    <div class="card"><span class="tag p4">Không đọc được</span><h4>Không có chữ thì không tìm được</h4><p>PDF scan chỉ chứa ảnh. Không chạy OCR thì trích ra gần như rỗng: các trang đó không thành chunk nào và không câu hỏi nào tìm tới chúng.<sup class="cite"><a href="#src-10">[10]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Đọc sai</span><h4>Chữ lộn xộn thì tìm sai</h4><p>Trang hai cột bị đọc ngang qua cột, bảng bị dàn phẳng, header lặp ở mỗi trang: chunk trộn nhiều ý không liên quan, nên khó khớp với câu hỏi.<sup class="cite"><a href="#src-11">[11]</a><a href="#src-16">[16]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Cắt sai</span><h4>Chunk dở dang thì LLM thiếu ý</h4><p>Chunk quá nhỏ thiếu ngữ cảnh; chunk quá lớn thì tốn và loãng.<sup class="cite"><a href="#src-16">[16]</a></sup> Chunk dài hơn giới hạn của embedding model có thể bị cắt bớt phần thừa mà bạn không hay biết.<sup class="cite"><a href="#src-25">[25]</a></sup></p></div>
+  </div>
+  <div class="callout"><b>Chuỗi phụ thuộc:</b> parse → chunk → retrieval → câu trả lời. Mỗi bước chỉ làm việc với những gì bước trước đưa cho. Thông tin mất ở bước parse (một bảng bị nát, một trang scan không OCR) thì reranker hay prompt tốt đến đâu cũng không lấy lại được.</div>
+
+  <h3>Parsing và chunking khác nhau thế nào?</h3>
+  <div class="grid g2">
+    <div class="card"><span class="tag p1">Parsing</span><h4>Hiểu file</h4><p>Biến file gốc thành văn bản <b>có cấu trúc</b>: đâu là tiêu đề, đoạn văn, bảng, hình, header, footer, chữ nằm ở trang nào. Kết quả thường là Markdown hoặc JSON.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-5">[5]</a></sup></p></div>
+    <div class="card"><span class="tag p3">Chunking</span><h4>Chia đơn vị tìm kiếm</h4><p>Cắt văn bản đã parse thành các chunk vừa cỡ để embed, mỗi chunk mang metadata (nguồn, trang, mục, quyền). Tách hai bước giúp bạn <b>parse một lần, thử nhiều cách chunk</b> mà không phải parse lại.<sup class="cite"><a href="#src-16">[16]</a></sup></p></div>
+  </div>
+  <div class="card" style="margin-top:12px">
+    <h4>🗂️ Hình dung: số hóa một tủ hồ sơ</h4>
+    <p><b>Parsing</b> giống người nhập liệu đọc từng trang và chép lại đúng: tiêu đề nào, bảng nào, cột nào đi với cột nào, bỏ qua dòng "Trang 3/12" lặp ở mỗi trang.</p>
+    <p><b>Chunking</b> giống việc chia nội dung thành các phiếu tra cứu, mỗi phiếu đủ ý để đọc riêng.</p>
+    <p><b>Metadata</b> là dòng ghi trên đầu mỗi phiếu: thuộc hồ sơ nào, trang mấy, mục nào, ai được xem.</p>
+  </div>
+</section>
+
+<!-- 2. FLOW -->
+<section id="flow">
+  <h2>2. Flow: đường đi của một file vào kho</h2>
+  <p>Mỗi file đi qua cùng một chuỗi bước, nhưng đoạn giữa <b>rẽ nhánh theo loại file</b>: PDF số, PDF scan và file Office cần cách đọc khác nhau. Chỉ hai nhánh PDF cần model phân tích bố cục; file Office đã có sẵn heading, bảng, sheet trong file. Sau khi có văn bản có cấu trúc, mọi loại file lại đi chung đường: chunking, metadata, embedding, index.</p>
+
+  <div class="vflow m-only" aria-label="Flow nạp tài liệu (dạng dọc)">
+    <div class="box box1">
+      <div class="ph ph1">PARSING · hiểu file</div>
+      <div class="node"><b>File gốc</b><span>PDF, Word, Excel, PowerPoint, ảnh</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>Nhận dạng loại file</b><span>theo nội dung file, không chỉ đuôi tên · tính hash để bỏ file trùng</span></div>
+      <div class="ar">↓ rẽ ba nhánh</div>
+      <div class="node r"><b>PDF số</b><span>trích text layer (nhanh)</span></div>
+      <div class="node r" style="margin-top:6px"><b>PDF scan, ảnh</b><span>OCR (chậm hơn nhiều)</span></div>
+      <div class="node r" style="margin-top:6px"><b>Word, Excel, PowerPoint, HTML</b><span>cấu trúc có sẵn trong file (heading, bảng, sheet), bỏ qua bước bố cục</span></div>
+      <div class="ar">↓ hai nhánh PDF</div>
+      <div class="node"><b>Phân tích bố cục</b><span>tiêu đề, bảng, hình, header/footer, thứ tự đọc</span></div>
+      <div class="ar">↓ gộp với nhánh Office</div>
+      <div class="node db"><b>Tài liệu có cấu trúc</b><span>Markdown / JSON, mỗi phần tử biết mình ở trang nào</span></div>
+    </div>
+    <div class="ar" style="color:var(--p2)">↓ đưa sang chunker ↓</div>
+    <div class="box box2">
+      <div class="ph ph2">CHUNKING · chia và lập chỉ mục</div>
+      <div class="node g"><b>Chunking</b><span>theo cấu trúc, có giới hạn cỡ</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>Metadata</b><span>nguồn, trang, mục, hash, quyền</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>Embedding</b><span>mỗi chunk → một vector</span></div>
+      <div class="ar">↓</div>
+      <div class="node db"><b>Index</b><span>vector + từ khóa, kèm metadata để lọc</span></div>
+    </div>
+  </div>
+
+  <div class="svgbox d-only">
+  <svg class="diagram" viewBox="0 0 1000 410" role="img" aria-label="Flow nạp tài liệu: nhận dạng, ba nhánh đọc file, hai nhánh PDF qua phân tích bố cục, nhánh Office đi thẳng, rồi chunking, metadata, embedding, index">
+    <defs>
+      <marker id="arrF" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+    </defs>
+    <rect x="6" y="6" width="988" height="252" rx="14" fill="var(--accent-soft)" stroke="var(--p1)" stroke-opacity=".35"/>
+    <text x="20" y="28" font-weight="700" font-size="14" style="fill:var(--p1)">PARSING · hiểu file</text>
+    <g font-size="14">
+      <rect x="20" y="100" width="125" height="64" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="82" y="128" text-anchor="middle" font-weight="600">File gốc</text>
+      <text x="82" y="148" text-anchor="middle" font-size="11" style="fill:var(--muted)">PDF, Office, ảnh</text>
+      <rect x="170" y="100" width="155" height="64" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="247" y="122" text-anchor="middle" font-weight="600">Nhận dạng</text>
+      <text x="247" y="140" text-anchor="middle" font-weight="600">loại file</text>
+      <text x="247" y="157" text-anchor="middle" font-size="11" style="fill:var(--muted)">+ hash, bỏ file trùng</text>
+      <rect x="365" y="38" width="240" height="56" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="485" y="61" text-anchor="middle" font-weight="600">PDF số</text>
+      <text x="485" y="81" text-anchor="middle" font-size="11" style="fill:var(--muted)">trích text layer (nhanh)</text>
+      <rect x="365" y="104" width="240" height="56" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="485" y="127" text-anchor="middle" font-weight="600">PDF scan, ảnh</text>
+      <text x="485" y="147" text-anchor="middle" font-size="11" style="fill:var(--muted)">OCR (chậm hơn nhiều)</text>
+      <rect x="365" y="170" width="240" height="56" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="485" y="193" text-anchor="middle" font-weight="600">Word, Excel, PowerPoint, HTML</text>
+      <text x="485" y="213" text-anchor="middle" font-size="11" style="fill:var(--muted)">đọc heading, bảng, sheet trong file</text>
+      <rect x="645" y="100" width="165" height="64" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="727" y="122" text-anchor="middle" font-weight="600">Phân tích bố cục</text>
+      <text x="727" y="141" text-anchor="middle" font-size="11" style="fill:var(--muted)">tiêu đề, bảng, hình,</text>
+      <text x="727" y="156" text-anchor="middle" font-size="11" style="fill:var(--muted)">header/footer, thứ tự đọc</text>
+      <rect x="840" y="100" width="145" height="64" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="912" y="121" text-anchor="middle" font-weight="600">Tài liệu</text>
+      <text x="912" y="140" text-anchor="middle" font-weight="600">có cấu trúc</text>
+      <text x="912" y="157" text-anchor="middle" font-size="11" style="fill:var(--muted)">Markdown / JSON</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="2" fill="none" marker-end="url(#arrF)">
+      <line x1="145" y1="132" x2="168" y2="132"/>
+      <line x1="325" y1="126" x2="363" y2="70"/>
+      <line x1="325" y1="132" x2="363" y2="132"/>
+      <line x1="325" y1="138" x2="363" y2="194"/>
+      <line x1="605" y1="70" x2="643" y2="122"/>
+      <line x1="605" y1="132" x2="643" y2="132"/>
+      <path d="M605 198 L825 198 L825 152 L838 152"/>
+      <line x1="810" y1="132" x2="838" y2="132"/>
+    </g>
+    <rect x="6" y="290" width="988" height="108" rx="14" fill="var(--ok-soft)" stroke="var(--p3)" stroke-opacity=".35"/>
+    <text x="980" y="312" text-anchor="end" font-weight="700" font-size="14" style="fill:var(--p3)">CHUNKING · chia và lập chỉ mục</text>
+    <g font-size="14">
+      <rect x="40" y="322" width="190" height="64" rx="10" fill="var(--surface)" stroke="var(--p3)" stroke-width="2"/>
+      <text x="135" y="348" text-anchor="middle" font-weight="600">Chunking</text>
+      <text x="135" y="368" text-anchor="middle" font-size="11" style="fill:var(--muted)">theo cấu trúc + giới hạn cỡ</text>
+      <rect x="290" y="322" width="190" height="64" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="385" y="348" text-anchor="middle" font-weight="600">Metadata</text>
+      <text x="385" y="368" text-anchor="middle" font-size="11" style="fill:var(--muted)">nguồn, trang, mục, hash, quyền</text>
+      <rect x="540" y="322" width="190" height="64" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="635" y="348" text-anchor="middle" font-weight="600">Embedding</text>
+      <text x="635" y="368" text-anchor="middle" font-size="11" style="fill:var(--muted)">mỗi chunk → một vector</text>
+      <rect x="790" y="322" width="190" height="64" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="885" y="348" text-anchor="middle" font-weight="600">Index</text>
+      <text x="885" y="368" text-anchor="middle" font-size="11" style="fill:var(--muted)">vector + từ khóa, kèm metadata</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="2" fill="none" marker-end="url(#arrF)">
+      <line x1="230" y1="354" x2="288" y2="354"/>
+      <line x1="480" y1="354" x2="538" y2="354"/>
+      <line x1="730" y1="354" x2="788" y2="354"/>
+    </g>
+    <path d="M912 164 C 912 262, 135 236, 135 320" fill="none" stroke="var(--p2)" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arrF)"/>
+    <text x="540" y="278" font-size="12" style="fill:var(--p2)">đưa sang chunker</text>
+    <text x="715" y="190" text-anchor="middle" font-size="11" style="fill:var(--muted)">cấu trúc có sẵn trong file</text>
+  </svg>
+  </div>
+
+  <div class="grid g3" style="margin-top:12px">
+    <div class="card"><span class="tag p1">Nhận dạng loại file</span><p>Đuôi tên file có thể sai. Unstructured dùng libmagic để đoán loại file từ nội dung, chỉ lùi về đuôi tên khi không có libmagic.<sup class="cite"><a href="#src-7">[7]</a></sup> Magika của Google dùng model học sâu cho việc này.<sup class="cite"><a href="#src-33">[33]</a></sup></p></div>
+    <div class="card"><span class="tag p1">Chuyển đổi (tùy chọn)</span><p>File cũ hoặc lạ được đổi sang dạng dễ đọc hơn: Unstructured đổi <code>.doc</code> sang <code>.docx</code> bằng LibreOffice rồi mới parse.<sup class="cite"><a href="#src-7">[7]</a></sup> LibreOffice chạy được không cần giao diện và đổi hàng loạt sang PDF.<sup class="cite"><a href="#src-34">[34]</a></sup> Nhưng mỗi lần đổi định dạng trung gian có thể làm mất dữ liệu.<sup class="cite"><a href="#src-16">[16]</a></sup></p></div>
+    <div class="card"><span class="tag p3">Lưu kết quả parse</span><p>Lưu riêng bản đã parse để xem lại trước khi chunk và chạy nhiều cách chunk trên cùng một bản, đỡ tốn thời gian và tiền.<sup class="cite"><a href="#src-16">[16]</a></sup> Parse (nhất là OCR) đắt hơn chunk rất nhiều.</p></div>
+  </div>
+</section>
+
+<!-- 3. VÍ DỤ TỪNG BƯỚC -->
+<section id="vi-du">
+  <h2>3. Ví dụ đi qua từng bước</h2>
+  <p>Công ty <b>Hải Âu</b> (tên hư cấu) làm trợ lý hỏi đáp cho Phòng Kiểm soát nội bộ. Đợt đầu cần nạp một hợp đồng scan, một chính sách Word và một checklist Excel. Bấm từng bước để xem dữ liệu thay đổi thế nào. <span class="muted">Tên file, hash, nội dung và điểm tin cậy đều là <b>minh họa</b>.</span></p>
+  <div class="stepper card">
+    <div class="steps" id="steps"></div>
+    <div>
+      <div id="stepBody" aria-live="polite"></div>
+      <div class="step-nav"><button id="prevStep">← Trước</button><button id="nextStep">Tiếp →</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. PARSING -->
+<section id="parsing">
+  <h2>4. Parsing: đọc file thành văn bản có cấu trúc</h2>
+
+  <h3>PDF số và PDF scan: câu hỏi đầu tiên là "có text layer không?"</h3>
+  <div class="grid g3">
+    <div class="card"><span class="tag p3">PDF số</span><h4>Có lớp chữ (text layer)</h4><p>PDF xuất từ Word hay phần mềm chứa sẵn chữ thật. Trích trực tiếp nhanh và chính xác về ký tự. Các thư viện như pdfplumber ghi rõ chúng làm tốt nhất với PDF do máy tạo, không phải bản scan.<sup class="cite"><a href="#src-12">[12]</a></sup></p><p class="muted">Nhưng chữ được trích theo thứ tự lưu trong file, không chắc là thứ tự đọc.<sup class="cite"><a href="#src-11">[11]</a></sup></p></div>
+    <div class="card"><span class="tag p4">PDF scan, ảnh</span><h4>Chỉ có ảnh, phải OCR</h4><p>Mỗi trang là một ảnh, nên cần OCR (nhận dạng chữ từ ảnh). PyMuPDF ghi OCR chậm khoảng <b>1000 lần</b> so với trích chữ thông thường.<sup class="cite"><a href="#src-10">[10]</a></sup> Unstructured khuyên không dùng chế độ "fast" (đọc theo luật, không dùng model) cho file dạng ảnh.<sup class="cite"><a href="#src-8">[8]</a></sup></p></div>
+    <div class="card"><span class="tag p2">Trường hợp lai</span><h4>Lớp chữ hỏng hoặc chỉ vài trang scan</h4><p>Có file trông bình thường nhưng trích ra toàn "�", hoặc lớp chữ lệch với hình. Khi đó OCR lại đúng vùng hoặc đúng trang bị lỗi.<sup class="cite"><a href="#src-10">[10]</a></sup> Ép OCR lên PDF số sạch thì chậm hơn nhiều và có thể <b>giảm</b> chất lượng.<sup class="cite"><a href="#src-10">[10]</a></sup></p></div>
+  </div>
+  <div class="callout"><b>Cách nhận biết trang cần OCR:</b> trích chữ thông thường từng trang rồi đếm ký tự. Gần như 0 ký tự nghĩa là trang chỉ có ảnh. Nhiều ký tự "�" nghĩa là lớp chữ hỏng. PyMuPDF dùng chính các dấu hiệu này để tự quyết định chỗ cần OCR.<sup class="cite"><a href="#src-10">[10]</a></sup> Chất lượng ảnh scan cũng quan trọng: Azure ghi chiều cao chữ tối thiểu tương đương chữ cỡ khoảng 8pt ở 150 dpi.<sup class="cite"><a href="#src-1">[1]</a></sup></div>
+  <div class="callout warn"><b>OCR tiếng Việt: đặt đúng ngôn ngữ.</b> Với Tesseract qua PyMuPDF, ngôn ngữ mặc định là "eng" (tiếng Anh) và phải cài gói dữ liệu của ngôn ngữ cần đọc.<sup class="cite"><a href="#src-10">[10]</a></sup> Unstructured cho chọn ngôn ngữ OCR bằng tham số <code>languages</code>.<sup class="cite"><a href="#src-7">[7]</a></sup> <span class="muted">Gợi ý kiểm tra (kinh nghiệm, không phải số liệu của nguồn): đưa vào bộ trang đo ở mục 13 cả trang nhiều dấu thanh, trang có con dấu đỏ và chữ ký đè lên chữ, rồi so dấu từng chữ với bản chuẩn.</span></div>
+
+  <h3>Phân tích bố cục (layout analysis)</h3>
+  <p>Có chữ rồi vẫn chưa đủ. Layout analysis dùng model để nhận ra <b>vai trò</b> của từng khối trên trang. Azure AI Document Intelligence chia hai loại vai trò: hình học (chữ, bảng, hình, ô đánh dấu) và logic (tiêu đề, heading, header, footer).<sup class="cite"><a href="#src-1">[1]</a></sup> AWS Textract trả về các khối như tiêu đề, header, footer, tiêu đề mục, số trang, danh sách, hình, bảng.<sup class="cite"><a href="#src-2">[2]</a></sup></p>
+  <div class="grid g2">
+    <div class="card"><h4>Thứ tự đọc (reading order)</h4><p>Trang hai cột là bẫy kinh điển. Textract trả các khối theo thứ tự đọc: hết cột trái từ trên xuống rồi mới sang cột kế tiếp.<sup class="cite"><a href="#src-2">[2]</a></sup> Còn trích chữ thô thì có thể ra thứ tự bất kỳ, xuống dòng lạ, và header thêm sau có thể nằm cuối trang.<sup class="cite"><a href="#src-11">[11]</a></sup></p></div>
+    <div class="card"><h4>Header, footer, hình</h4><p>Dòng lặp ở đầu và cuối trang nên được tách khỏi nội dung; Microsoft gợi ý bỏ watermark, header, footer ở bước tiền xử lý.<sup class="cite"><a href="#src-16">[16]</a></sup> Hình (biểu đồ, sơ đồ) không tự thành chữ: cần LLM viết mô tả rồi chunk mô tả đó, và đó là chi phí thêm.<sup class="cite"><a href="#src-16">[16]</a></sup></p></div>
+  </div>
+
+  <h4 style="margin-top:18px">Thử: cùng một trang, hai cách đọc</h4>
+  <p class="muted">Một trang hợp đồng (minh họa) có header, tiêu đề, hai cột chữ và footer. Số trong ô tròn là thứ tự đọc. Bấm để đổi cách đọc và xem văn bản thu được.</p>
+  <div class="btnrow" id="roBtns">
+    <button class="chip on" data-m="naive">Đọc thô theo dòng ngang</button>
+    <button class="chip" data-m="layout">Đọc theo bố cục</button>
+  </div>
+  <div class="ro">
+    <div class="pagemock" id="roPage" aria-label="Trang hợp đồng minh họa"></div>
+    <div>
+      <div class="ro-out" id="roOut" aria-live="polite"></div>
+      <div id="roNote"></div>
+    </div>
+  </div>
+
+  <h3>Đầu ra: Markdown hay JSON?</h3>
+  <div class="grid g2">
+    <div class="card"><span class="tag p1">Markdown</span><p>Gọn, đọc được, giữ heading nên dễ cắt theo tiêu đề.<sup class="cite"><a href="#src-19">[19]</a></sup> Azure layout xuất được Markdown, và bảng được viết dạng HTML để giữ ô gộp và tiêu đề nhiều tầng.<sup class="cite"><a href="#src-1">[1]</a></sup></p></div>
+    <div class="card"><span class="tag p2">JSON có cấu trúc</span><p>Giữ đủ chi tiết: loại phần tử, trang, tọa độ khung (bounding box), quan hệ cha con. Docling có JSON "lossless" (không mất mát) bên cạnh Markdown.<sup class="cite"><a href="#src-5">[5]</a></sup> Tọa độ cho phép tô sáng đúng chỗ trích dẫn trên PDF gốc.</p></div>
+  </div>
+  <div class="callout ok"><b>Gợi ý thực tế:</b> lưu bản JSON đầy đủ làm "bản gốc đã parse", sinh Markdown từ đó để chunk. Muốn đổi cách chunk thì chạy lại từ JSON, không cần OCR lại.</div>
+
+  <h3>LLM/VLM đọc ảnh trang</h3>
+  <div class="card"><p>VLM (vision-language model, model đọc được cả ảnh lẫn chữ) nhận ảnh từng trang rồi viết lại thành văn bản, thường là Markdown. Gemini đọc PDF bằng thị giác, hiểu chữ, hình, biểu đồ, bảng.<sup class="cite"><a href="#src-14">[14]</a></sup> Claude nhận mỗi trang dưới dạng ảnh kèm chữ trích được.<sup class="cite"><a href="#src-15">[15]</a></sup> Docling cũng hỗ trợ model VLM.<sup class="cite"><a href="#src-5">[5]</a></sup></p><p><b>Mạnh</b> ở trang nhiều hình, biểu đồ, bố cục lạ mà parser theo luật hay làm hỏng. <b>Cần lưu ý:</b> đầu ra là văn bản do model sinh, nên phải đối chiếu với bản gốc như mọi đầu ra LLM; chi phí tính theo token mỗi trang (xem <a href="#danh-gia">mục 13</a>); dữ liệu đi qua nhà cung cấp nếu không tự chạy model. So sánh với các nhóm công cụ khác ở <a href="#so-sanh">mục 11</a>.</p></div>
+</section>
+
+<!-- 5. BẢNG & EXCEL -->
+<section id="bang">
+  <h2>5. Bảng và Excel</h2>
+  <p>Bảng là nơi parsing và chunking hay hỏng nhất, vì <b>ý nghĩa của một ô nằm ở tiêu đề cột và hàng của nó</b>, không nằm trong chữ của ô. Ô "Hằng quý" đứng riêng không cho biết đó là tần suất, hạn chót hay kỳ báo cáo.</p>
+  <div class="grid g2">
+    <div class="card"><h4>❌ Dàn phẳng thành chữ</h4>
+      <pre>Mã KS Mô tả Tần suất Phụ trách KS-SL-01 Sao lưu CSDL khách hàng Hằng ngày Phòng Hạ tầng KS-SL-02 Sao lưu file chia sẻ Hằng tuần Phòng Hạ tầng KS-SL-03 Thử khôi phục bản sao lưu Hằng quý …</pre>
+      <p class="muted">Ranh giới ô và hàng biến mất. Cắt chunk theo số ký tự ở giữa đoạn này thì chunk sau không còn hàng tiêu đề.</p></div>
+    <div class="card"><h4>✅ Dải hàng lặp lại tiêu đề</h4>
+      <pre>[KiemSoat-NoiBo-2026.xlsx › Sao lưu › dòng 2–8]
+| Mã KS | Mô tả | Tần suất | Phụ trách |
+| KS-SL-01 | Sao lưu CSDL khách hàng | Hằng ngày | Phòng Hạ tầng |
+| KS-SL-02 | Sao lưu file chia sẻ | Hằng tuần | Phòng Hạ tầng |
+| KS-SL-03 | Thử khôi phục bản sao lưu | Hằng quý | Phòng Hạ tầng |
+| … 4 dòng nữa … |</pre>
+      <p class="muted">Mỗi chunk tự đủ nghĩa: biết mình thuộc file nào, sheet nào, dòng nào, và cột nào nghĩa là gì.</p></div>
+  </div>
+
+  <h3>Bốn cách xử lý bảng</h3>
+  <div class="grid g2">
+    <div class="card"><span class="tag p1">1</span><h4>Giữ bảng nguyên khối nếu vừa</h4><p>Unstructured luôn để phần tử Table đứng riêng, không ghép với chữ khác; bảng quá lớn mới bị chia thành nhiều TableChunk.<sup class="cite"><a href="#src-9">[9]</a></sup></p></div>
+    <div class="card"><span class="tag p1">2</span><h4>Dải hàng, lặp tiêu đề cột</h4><p>Bảng dài cắt thành nhiều nhóm hàng, mỗi nhóm lặp lại tên bảng và hàng tiêu đề. Google Layout Parser đưa cả tiêu đề cha và tiêu đề bảng vào chunk để chunk vẫn đủ nghĩa khi được tìm ra riêng lẻ.<sup class="cite"><a href="#src-4">[4]</a></sup></p></div>
+    <div class="card"><span class="tag p1">3</span><h4>Giữ cấu trúc bằng HTML/Markdown</h4><p>Ô gộp và tiêu đề nhiều tầng khó viết bằng Markdown thuần, nên Azure xuất bảng dạng HTML.<sup class="cite"><a href="#src-1">[1]</a></sup> Unstructured lưu bản HTML của bảng trong metadata.<sup class="cite"><a href="#src-7">[7]</a></sup></p></div>
+    <div class="card"><span class="tag p1">4</span><h4>Viết lại bảng thành câu hoặc tóm tắt</h4><p>Microsoft gợi ý định dạng lại bảng cho dễ xử lý, hoặc dùng LLM viết tóm tắt bảng làm chunk.<sup class="cite"><a href="#src-16">[16]</a></sup> Ví dụ: "KS-SL-03: thử khôi phục bản sao lưu, hằng quý, Phòng Hạ tầng". Tốn thêm lời gọi LLM và có thể sai, nên giữ bảng gốc để đối chiếu.</p></div>
+  </div>
+
+  <h3>Excel: mỗi sheet là một mục dạng bảng</h3>
+  <div class="grid g2">
+    <div class="card"><h4>Công cụ xử lý Excel khác nhau</h4>
+      <ul>
+        <li>Unstructured: mỗi sheet thành một phần tử Table.<sup class="cite"><a href="#src-7">[7]</a></sup></li>
+        <li>Google Layout Parser: hỗ trợ XLSX và XLSM, đọc bảng trong sheet.<sup class="cite"><a href="#src-4">[4]</a></sup></li>
+        <li>Azure layout: nhận XLSX, mỗi worksheet tính là một đơn vị trang, nhưng <b>không phân tích bảng</b> cho đầu vào XLSX.<sup class="cite"><a href="#src-1">[1]</a></sup></li>
+      </ul>
+      <p class="muted">Bài học: chọn công cụ theo từng định dạng, đừng mặc định một công cụ cho mọi file.</p></div>
+    <div class="card"><h4>Nên kiểm tra với file Excel thật</h4>
+      <ul>
+        <li>Một sheet có <b>nhiều bảng</b> cách nhau bằng dòng trống.</li>
+        <li>Hàng tiêu đề gộp ô nhiều tầng.</li>
+        <li>Sheet ẩn, cột ẩn: có nên đưa vào kho không.</li>
+        <li>Ô công thức: parser lấy giá trị hay công thức.</li>
+        <li>Trích dẫn bằng tên sheet + dải dòng, vì Excel không có "trang".</li>
+      </ul>
+      <p class="muted">Danh sách này là gợi ý kiểm tra; cách mỗi công cụ xử lý các trường hợp trên cần thử trên file của bạn.</p></div>
+  </div>
+  <div class="callout warn"><b>Bảng kéo qua nhiều trang PDF:</b> mỗi trang thường ra một bảng riêng và trang sau có thể không lặp hàng tiêu đề. Azure gợi ý xử lý sau để ghép các trang thành một bảng.<sup class="cite"><a href="#src-1">[1]</a></sup> Marker ở chế độ dùng LLM có thể ghép bảng qua nhiều trang.<sup class="cite"><a href="#src-13">[13]</a></sup></div>
+</section>
+
+<!-- 6. CHUNKING -->
+<section id="chunking">
+  <h2>6. Các chiến lược chunking</h2>
+  <p>Có nhiều cách cắt. Bảng dưới xếp từ đơn giản đến phức tạp, kèm <b>bằng chứng</b> mà nguồn đã mở thực sự cho thấy. Phần lớn số liệu chỉ đo trên một vài bộ dữ liệu, nên hãy coi chúng là gợi ý để thử, không phải luật.</p>
+  <div class="table-wrap">
+  <table class="stack">
+    <thead><tr><th>Chiến lược</th><th>Cách làm</th><th>Mạnh</th><th>Yếu</th><th>Bằng chứng</th></tr></thead>
+    <tbody>
+      <tr><td><b>Cố định + overlap</b></td><td>Cắt mỗi N ký tự hoặc token; hai chunk liền nhau lặp lại một đoạn.</td><td>Đơn giản, rẻ, dùng được cho mọi văn bản.</td><td>Cắt ngang câu, ngang bảng; không biết mục nào.</td><td>Pinecone khuyên bắt đầu từ đây rồi mới cải tiến.<sup class="cite"><a href="#src-25">[25]</a></sup> Overlap: <b>trái chiều</b>, Chroma thấy bỏ overlap làm tăng IoU (tỷ lệ chữ liên quan trên tổng chữ lấy ra) nhưng với model embedding nhỏ thì recall (tỷ lệ tìm ra đoạn đúng) giảm.<sup class="cite"><a href="#src-24">[24]</a></sup></td></tr>
+      <tr><td><b>Recursive</b></td><td>Thử cắt ở ranh giới đoạn trước, rồi dòng, rồi khoảng trắng, đến khi đủ nhỏ.</td><td>Ít cắt ngang câu hơn; vẫn rẻ.</td><td>Vẫn không hiểu tiêu đề và bảng.</td><td>LangChain mô tả cách giữ đoạn, câu, từ đi cùng nhau.<sup class="cite"><a href="#src-18">[18]</a></sup> Trên bộ của Chroma, recursive cỡ 200 token không overlap cho kết quả tốt và ổn định.<sup class="cite"><a href="#src-24">[24]</a></sup></td></tr>
+      <tr><td><b>Theo cấu trúc</b> (heading / phần tử)</td><td>Cắt theo tiêu đề, mục, phần tử (đoạn, danh sách, bảng); mục quá dài mới chia nhỏ. Gắn đường dẫn tiêu đề vào chunk.</td><td>Chunk khớp một ý, biết mình thuộc mục nào; bảng không bị trộn với chữ.</td><td>Cần parse tốt; mục dài ngắn không đều.</td><td>Unstructured "by_title" không bao giờ trộn hai mục trong một chunk.<sup class="cite"><a href="#src-9">[9]</a></sup> Docling HybridChunker cắt theo phần tử rồi chỉnh theo số token.<sup class="cite"><a href="#src-6">[6]</a></sup> Trên báo cáo tài chính, chunk theo loại phần tử cải thiện RAG rõ rệt (một miền dữ liệu).<sup class="cite"><a href="#src-26">[26]</a></sup></td></tr>
+      <tr><td><b>Semantic</b></td><td>Embed từng câu, cắt ở chỗ nghĩa đổi nhiều.</td><td>Chunk theo chủ đề, không cần cấu trúc.</td><td>Tốn embedding lúc nạp; khó dự đoán cỡ chunk.</td><td><b>Trái chiều:</b> Qu và cộng sự thấy chi phí không đổi lại được cải thiện ổn định;<sup class="cite"><a href="#src-23">[23]</a></sup> Chroma thấy một biến thể dựa trên cụm có precision và IoU cao nhất ở một cỡ.<sup class="cite"><a href="#src-24">[24]</a></sup> Microsoft xếp công sức và chi phí ở mức cao.<sup class="cite"><a href="#src-16">[16]</a></sup></td></tr>
+      <tr><td><b>Cha–con</b> (small-to-big)</td><td>Embed chunk con nhỏ để tìm chính xác; khi trúng thì trả về chunk cha lớn (cả mục) cho LLM.</td><td>Tìm chính xác mà LLM vẫn đủ ngữ cảnh.</td><td>Gửi nhiều token hơn cho LLM; phải lưu hai tầng.</td><td>LangChain mô tả mâu thuẫn "nhỏ để embedding đúng nghĩa, lớn để giữ ngữ cảnh" và cách giải.<sup class="cite"><a href="#src-20">[20]</a></sup> Chưa có số liệu độc lập trong các nguồn đã mở: tự đo.</td></tr>
+      <tr><td><b>Contextual retrieval</b></td><td>Dùng LLM viết 50–100 token ngữ cảnh riêng cho từng chunk, ghép vào đầu chunk trước khi embed và lập chỉ mục từ khóa.</td><td>Sửa lỗi chunk "mồ côi" không biết nói về ai, kỳ nào.</td><td>Thêm một lời gọi LLM mỗi chunk lúc nạp.</td><td>Anthropic báo tỷ lệ tìm trượt trong top-20 giảm từ 5,7% xuống 3,7% (giảm 35%), xuống 2,9% khi thêm Contextual <a href="../hybrid-search/">BM25</a> (tìm theo từ khóa), xuống 1,9% khi thêm <a href="../reranking/">reranking</a> (xếp hạng lại); số do chính nhà cung cấp đo trên vài miền dữ liệu.<sup class="cite"><a href="#src-21">[21]</a></sup></td></tr>
+      <tr><td><b>Late chunking</b></td><td>Đưa cả văn bản dài qua embedding model một lần, rồi mới chia vector theo từng chunk.</td><td>Vector của chunk "thấm" ngữ cảnh toàn văn bản; không cần huấn luyện thêm.</td><td>Cần embedding model nhận context dài và cho phép can thiệp bước pooling.</td><td>Kết quả tốt hơn trên nhiều tác vụ theo bài báo gốc của nhóm tác giả.<sup class="cite"><a href="#src-22">[22]</a></sup></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p class="muted">Ngoài bảng trên còn cách dựa trên đồ thị: bắt đầu từ chunk đơn giản, dùng LLM rút thực thể và quan hệ để dựng graph; Microsoft xếp công sức và chi phí ở mức cao.<sup class="cite"><a href="#src-16">[16]</a></sup> Xem <a href="../graphrag/">GraphRAG</a>.</p>
+
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h4>Cỡ chunk: đo bằng token, không đoán</h4>
+      <p>Mỗi embedding model có giới hạn đầu vào; vượt quá thì phần thừa có thể bị cắt bỏ.<sup class="cite"><a href="#src-25">[25]</a></sup> Docling đếm token bằng tokenizer khớp với embedding model.<sup class="cite"><a href="#src-6">[6]</a></sup> Microsoft cũng khuyên đếm theo token thay vì theo ký tự.<sup class="cite"><a href="#src-16">[16]</a></sup></p>
+      <p class="muted">Cùng một nội dung, số token thay đổi mạnh theo ngôn ngữ, có cặp chênh tới 15 lần.<sup class="cite"><a href="#src-35">[35]</a></sup> Hãy đếm token trên chính văn bản tiếng Việt của bạn bằng tokenizer của embedding model, đừng lấy cỡ chunk "chuẩn" của tài liệu tiếng Anh rồi dùng luôn.</p>
+      <p class="muted">Pinecone gợi ý thử cả cỡ nhỏ (128, 256 token) lẫn lớn (512, 1024 token) rồi so.<sup class="cite"><a href="#src-25">[25]</a></sup></p></div>
+    <div class="card"><h4>Bắt đầu từ đâu?</h4>
+      <ol>
+        <li>Parse tốt trước: có heading, bảng tách riêng.</li>
+        <li>Cắt theo cấu trúc, có giới hạn token, mục quá dài thì chia bằng recursive.</li>
+        <li>Gắn đường dẫn tiêu đề và metadata vào mỗi chunk.</li>
+        <li>Dựng golden set nhỏ (mục 13), đo vài cỡ chunk.</li>
+        <li>Chỉ khi đo thấy chunk thiếu ngữ cảnh mới thêm cha–con hoặc contextual retrieval.</li>
+      </ol>
+      <p class="muted">Đổi cách chunk về sau buộc phải xử lý lại cả kho; Microsoft gọi lựa chọn này là "nửa vĩnh viễn".<sup class="cite"><a href="#src-16">[16]</a></sup></p></div>
+  </div>
+</section>
+
+<!-- 7. MÔ PHỎNG -->
+<section id="mo-phong">
+  <h2>7. Mô phỏng: sân chơi chunker</h2>
+  <p>Văn bản mẫu là chính sách bảo mật của Hải Âu sau khi parse (5 mục). Chọn chiến lược và cỡ chunk, rồi chọn một câu hỏi: trang sẽ tính lại các chunk, đếm token và cho biết chunk nào được tìm ra, chunk đó có <b>đủ thông tin để trả lời</b> không.</p>
+  <p class="sim-note">Cách tính trong mô phỏng (đơn giản hóa để minh họa): cỡ chunk tính bằng ký tự; token ước lượng = ký tự ÷ 4, chỉ để so sánh giữa các chiến lược, số thật tùy tokenizer và ngôn ngữ. "Tìm" = đếm số từ khóa của câu hỏi có trong chunk, lấy 1 chunk điểm cao nhất (k = 1); hòa điểm thì chọn chunk ngắn hơn. Hệ thống thật dùng embedding hoặc BM25 (xem <a href="../hybrid-search/">Hybrid search</a>).</p>
+  <div class="sim">
+    <div class="card">
+      <div class="ctl"><span class="lbl">Chiến lược</span><div id="simStrat"></div></div>
+      <div class="ctl"><span class="lbl">Cỡ chunk tối đa: <span class="val" id="sizeVal"></span> ký tự<span id="sizeNote" style="font-weight:400;color:var(--muted)"></span></span><input type="range" id="simSize" min="100" max="500" step="20" value="200" aria-label="Cỡ chunk tối đa (ký tự)"></div>
+      <div class="ctl" id="ovWrap"><span class="lbl">Overlap: <span class="val" id="ovVal"></span> ký tự<span id="ovNote" style="font-weight:400;color:var(--muted)"></span></span><input type="range" id="simOv" min="0" max="120" step="10" value="40" aria-label="Overlap (ký tự)"></div>
+      <div class="ctl"><span class="lbl">Câu hỏi thử</span><div class="qlist" id="simQ"></div></div>
+    </div>
+    <div>
+      <div class="stats" id="simStats"></div>
+      <div id="simVerdict" aria-live="polite"></div>
+      <div id="simChunks"></div>
+    </div>
+  </div>
+  <div class="callout"><b>Gợi ý thử:</b> (1) "Cố định", cỡ 200, câu về sự cố bảo mật: chunk trúng có phần đầu câu nhưng đáp án nằm ở chunk sau. (2) Chuyển sang "Cố định + overlap" (40 ký tự): câu đó đủ ý, đổi lại tổng token phải embed tăng từ ~213 lên ~261. Kéo cỡ lên 300 thì overlap lại làm hỏng câu về điện thoại: overlap không phải lúc nào cũng giúp. (3) "Theo tiêu đề" cỡ 200, câu sao lưu: mục 3 bị chia đôi, thiếu "35 ngày"; kéo lên 300 thì cả mục nằm gọn trong một chunk. (4) "Cha–con": con nhỏ được tìm, cả mục được trả cho LLM, nên đủ ý ở cả 4 câu; đổi lại LLM nhận nhiều token hơn đoạn con trúng, và mục càng dài thì càng tốn.</div>
+</section>
+
+<!-- 8. METADATA -->
+<section id="metadata">
+  <h2>8. Metadata: thứ đi kèm mỗi chunk</h2>
+  <p>Chunk không có metadata thì không trích dẫn được, không lọc quyền được, và không biết khi nào phải xử lý lại. Bảng dưới là bộ trường tối thiểu nên có cho tài liệu doanh nghiệp. Tên trường là ví dụ thiết kế.</p>
+  <div class="table-wrap">
+  <table class="stack">
+    <thead><tr><th>Trường</th><th>Ví dụ</th><th>Dùng để</th></tr></thead>
+    <tbody>
+      <tr><td><b>source_id</b></td><td>phap-che/HD-117-BaoTri.pdf</td><td>Trỏ về file gốc; gom và xóa chunk theo nguồn.<sup class="cite"><a href="#src-27">[27]</a></sup></td></tr>
+      <tr><td><b>file_hash</b></td><td>SHA-256 của toàn bộ byte file</td><td>Nhận ra file đã nạp rồi để bỏ qua parse và embed lại. Thiết kế ví dụ ở mức file, cùng ý tưởng với ID dạng hash của Microsoft và Indexing API của LangChain.<sup class="cite"><a href="#src-17">[17]</a><a href="#src-27">[27]</a></sup></td></tr>
+      <tr><td><b>page</b> hoặc <b>sheet + dòng</b></td><td>tr. 3 · "Sao lưu" dòng 2–8</td><td>Trích dẫn chính xác; người đọc mở đúng chỗ.<sup class="cite"><a href="#src-17">[17]</a></sup></td></tr>
+      <tr><td><b>section_path</b></td><td>Hợp đồng 117/2024 › Điều 5. Thanh toán</td><td>Trích dẫn cho file không có trang (Word, HTML); gắn vào đầu chunk cho đủ ngữ cảnh.<sup class="cite"><a href="#src-4">[4]</a><a href="#src-19">[19]</a></sup></td></tr>
+      <tr><td><b>element_type</b></td><td>paragraph · table · list</td><td>Xử lý riêng bảng; lọc hoặc ưu tiên theo loại.</td></tr>
+      <tr><td><b>chunk_index, parent_id</b></td><td>c09 · cha: Điều 5</td><td>Lấy chunk lân cận hoặc chunk cha khi cần thêm ngữ cảnh.<sup class="cite"><a href="#src-20">[20]</a></sup></td></tr>
+      <tr><td><b>access_groups</b></td><td>Pháp chế, Tài chính, KSNB</td><td>Lọc kết quả theo người hỏi ở <b>mọi</b> truy vấn.<sup class="cite"><a href="#src-28">[28]</a></sup></td></tr>
+      <tr><td><b>parser, phiên bản, có OCR</b></td><td>layout v2 · OCR trang 1–12</td><td>Biết chunk nào cần xử lý lại khi đổi parser; soi lỗi theo nhóm.</td></tr>
+      <tr><td><b>embedding model</b></td><td>tên + phiên bản</td><td>Biết khi nào phải embed lại (xem <a href="../embedding-performance/">Embedding Performance</a>).</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="grid g3" style="margin-top:12px">
+    <div class="card"><span class="tag p1">Trích dẫn</span><p>Trả về nguồn giúp người hỏi trích được tài liệu gốc.<sup class="cite"><a href="#src-17">[17]</a></sup> Với PDF: trang và mục. Với Word: đường dẫn mục. Với Excel: sheet và dải dòng. Có tọa độ khung thì tô sáng được đúng đoạn trên PDF.<sup class="cite"><a href="#src-1">[1]</a></sup></p></div>
+    <div class="card"><span class="tag p3">Bỏ trùng, tái dùng</span><p>Microsoft gợi ý dùng hash làm ID để biết chunk đã có trong kho chưa,<sup class="cite"><a href="#src-17">[17]</a></sup> và cache kết quả xử lý ảnh theo hash ảnh.<sup class="cite"><a href="#src-16">[16]</a></sup> Indexing API của LangChain băm nội dung + metadata để bỏ qua tài liệu không đổi, và có chế độ dọn chunk cũ theo source_id.<sup class="cite"><a href="#src-27">[27]</a></sup></p><p class="muted">Hash byte chỉ bắt file giống hệt. File lưu lại (đổi thông tin file) có hash khác dù chữ không đổi; muốn bắt cả trường hợp đó, băm thêm văn bản đã parse và chuẩn hóa.</p></div>
+    <div class="card"><span class="tag p4">Lọc quyền</span><p>Mỗi chunk mang danh sách nhóm được xem; truy vấn nào cũng kèm bộ lọc theo nhóm của người hỏi. Azure AI Search mô tả mẫu này và nhấn mạnh ứng dụng phải áp bộ lọc cho mọi truy vấn.<sup class="cite"><a href="#src-28">[28]</a></sup> Quyền phải lấy từ nguồn ngay lúc nạp (xem <a href="../governance/">AI Governance</a>).</p></div>
+  </div>
+  <p class="muted">Đồng bộ tăng dần (sửa một trang thì chỉ xử lý lại phần đổi, xóa chunk cũ) được trình bày ở <a href="../knowledge-base/">Knowledge Base</a>.</p>
+</section>
+
+<!-- 9. KHÁI NIỆM -->
+<section id="khai-niem">
+  <h2>9. Từ điển khái niệm</h2>
+  <p>Mỗi thẻ có định nghĩa ngắn, ví dụ và liên kết sang khái niệm liên quan. Lọc theo nhóm hoặc gõ để tìm (gõ không dấu cũng được).</p>
+  <div class="gloss-tools">
+    <input id="glossSearch" type="search" placeholder="Tìm khái niệm… (vd: ocr, overlap, teds)" aria-label="Tìm khái niệm">
+  </div>
+  <div class="gloss-tools" id="glossChips"></div>
+  <div class="grid g3" id="glossGrid"></div>
+</section>
+
+<!-- 10. MỐI QUAN HỆ -->
+<section id="quan-he">
+  <h2>10. Bản đồ mối quan hệ</h2>
+  <p>Hình dưới cho thấy cái gì quyết định cái gì: loại file quyết định cách đọc, bố cục quyết định ranh giới cắt, embedding model giới hạn cỡ chunk, và metadata nối chunk với trích dẫn, quyền và việc bỏ trùng.</p>
+  <div class="vflow m-only" aria-label="Bản đồ quan hệ (dạng dọc)">
+    <div class="box box1">
+      <div class="ph ph1">Đọc file</div>
+      <div class="node"><b>Loại file</b><span>PDF số, PDF scan, Word, Excel…</span></div>
+      <div class="ar">↓ quyết định</div>
+      <div class="node r"><b>Parser</b><span>text layer, OCR, hoặc VLM đọc ảnh trang</span></div>
+      <div class="ar">↓ chữ + vị trí</div>
+      <div class="node r"><b>Layout analysis</b><span>vai trò khối, thứ tự đọc, bảng</span></div>
+      <div class="ar">↓ tạo ra</div>
+      <div class="node db"><b>Phần tử có cấu trúc</b><span>heading · đoạn · bảng · hình, kèm trang</span></div>
+    </div>
+    <div class="box box2">
+      <div class="ph ph2">Chia và dùng</div>
+      <div class="node"><b>Embedding model</b><span>giới hạn token → cỡ chunk tối đa</span></div>
+      <div class="ar">↓ cùng với ranh giới từ phần tử</div>
+      <div class="node g"><b>Chiến lược chunking</b></div>
+      <div class="ar">↓ tạo ra</div>
+      <div class="node"><b>Chunk</b><span>+ metadata (trang, mục lấy từ vị trí phần tử; hash; quyền)</span></div>
+      <div class="ar">↓ embed + lưu</div>
+      <div class="node db"><b>Index</b></div>
+      <div class="ar">↓ tìm (lọc theo quyền từ metadata)</div>
+      <div class="node r"><b>Retrieval</b></div>
+      <div class="ar">↓</div>
+      <div class="node g"><b>Câu trả lời + trích dẫn</b><span>trang, mục lấy từ metadata</span></div>
+      <div class="note">Hash trong metadata: file trùng thì dùng lại chunk cũ, không parse lại.</div>
+    </div>
+    <div class="node" style="border:1px dashed var(--bad);background:var(--bad-soft)"><b>Đánh giá</b><span>đo parse (edit distance, TEDS) · đo retrieval (recall@k trên golden set) · chi phí và thời gian mỗi trang</span></div>
+  </div>
+  <div class="svgbox d-only">
+  <svg class="diagram" viewBox="0 0 1000 530" role="img" aria-label="Bản đồ quan hệ giữa các khái niệm parsing và chunking">
+    <defs>
+      <marker id="arrR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+    </defs>
+    <g font-size="13">
+      <rect x="20" y="30" width="150" height="56" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="95" y="55" text-anchor="middle" font-weight="600">Loại file</text><text x="95" y="73" text-anchor="middle" font-size="11" style="fill:var(--muted)">số, scan, Office</text>
+      <rect x="250" y="30" width="170" height="56" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/><text x="335" y="55" text-anchor="middle" font-weight="600">Parser</text><text x="335" y="73" text-anchor="middle" font-size="11" style="fill:var(--muted)">text layer · OCR · VLM</text>
+      <rect x="500" y="30" width="170" height="56" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/><text x="585" y="55" text-anchor="middle" font-weight="600">Layout analysis</text><text x="585" y="73" text-anchor="middle" font-size="11" style="fill:var(--muted)">vai trò, thứ tự đọc, bảng</text>
+      <rect x="760" y="30" width="220" height="56" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/><text x="870" y="55" text-anchor="middle" font-weight="600">Phần tử có cấu trúc</text><text x="870" y="73" text-anchor="middle" font-size="11" style="fill:var(--muted)">heading · đoạn · bảng · hình + trang</text>
+      <rect x="20" y="190" width="170" height="56" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="105" y="215" text-anchor="middle" font-weight="600">Embedding model</text><text x="105" y="233" text-anchor="middle" font-size="11" style="fill:var(--muted)">giới hạn token</text>
+      <rect x="300" y="190" width="200" height="56" rx="10" fill="var(--surface)" stroke="var(--p3)" stroke-width="2"/><text x="400" y="223" text-anchor="middle" font-weight="600">Chiến lược chunking</text>
+      <rect x="590" y="190" width="150" height="56" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="665" y="223" text-anchor="middle" font-weight="600">Chunk</text>
+      <rect x="810" y="190" width="170" height="56" rx="10" fill="var(--surface)" stroke="var(--p4)" stroke-width="2"/><text x="895" y="215" text-anchor="middle" font-weight="600">Metadata</text><text x="895" y="233" text-anchor="middle" font-size="11" style="fill:var(--muted)">trang · mục · hash · quyền</text>
+      <rect x="20" y="350" width="200" height="56" rx="10" fill="var(--surface)" stroke="var(--p3)" stroke-width="2"/><text x="120" y="375" text-anchor="middle" font-weight="600">Câu trả lời</text><text x="120" y="393" text-anchor="middle" font-size="11" style="fill:var(--muted)">+ trích dẫn trang, mục</text>
+      <rect x="300" y="350" width="200" height="56" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/><text x="400" y="383" text-anchor="middle" font-weight="600">Retrieval</text>
+      <rect x="590" y="350" width="150" height="56" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/><text x="665" y="375" text-anchor="middle" font-weight="600">Index</text><text x="665" y="393" text-anchor="middle" font-size="11" style="fill:var(--muted)">vector + từ khóa</text>
+      <rect x="810" y="350" width="170" height="56" rx="10" fill="var(--ok-soft)" stroke="var(--p3)"/><text x="895" y="375" text-anchor="middle" font-weight="600">Bỏ trùng</text><text x="895" y="393" text-anchor="middle" font-size="11" style="fill:var(--muted)">trùng hash → dùng lại</text>
+      <rect x="20" y="460" width="960" height="54" rx="10" fill="var(--bad-soft)" stroke="var(--bad)" stroke-dasharray="5 4"/><text x="500" y="483" text-anchor="middle" font-weight="600">Đánh giá</text><text x="500" y="502" text-anchor="middle" font-size="11" style="fill:var(--muted)">đo parse (edit distance cho chữ, TEDS cho bảng) · đo retrieval (recall@k trên golden set) · chi phí, thời gian mỗi trang</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="1.8" fill="none" marker-end="url(#arrR)">
+      <line x1="170" y1="58" x2="248" y2="58"/>
+      <line x1="420" y1="58" x2="498" y2="58"/>
+      <line x1="670" y1="58" x2="758" y2="58"/>
+      <path d="M800 86 C 760 150, 470 130, 440 188"/>
+      <line x1="895" y1="86" x2="895" y2="188"/>
+      <line x1="190" y1="218" x2="298" y2="218"/>
+      <line x1="500" y1="218" x2="588" y2="218"/>
+      <line x1="808" y1="218" x2="742" y2="218"/>
+      <line x1="665" y1="246" x2="665" y2="348"/>
+      <line x1="588" y1="378" x2="502" y2="378"/>
+      <line x1="298" y1="378" x2="222" y2="378"/>
+      <path d="M840 246 C 800 310, 560 290, 470 348"/>
+      <line x1="935" y1="246" x2="935" y2="348"/>
+      <line x1="400" y1="458" x2="400" y2="408" stroke-dasharray="4 4"/>
+      <path d="M980 487 L993 487 L993 58 L982 58" stroke-dasharray="4 4"/>
+    </g>
+    <g font-size="11" style="fill:var(--muted)">
+      <text x="178" y="50">quyết định</text>
+      <text x="428" y="50">chữ + vị trí</text>
+      <text x="680" y="50">tạo ra</text>
+      <text x="560" y="128">ranh giới cắt</text>
+      <text x="887" y="140" text-anchor="end">vị trí → trang, mục</text>
+      <text x="200" y="210">cỡ tối đa</text>
+      <text x="512" y="210">tạo ra</text>
+      <text x="750" y="210">gắn vào</text>
+      <text x="672" y="268">embed + lưu</text>
+      <text x="512" y="370">tìm</text>
+      <text x="232" y="370">top-k</text>
+      <text x="700" y="330" style="fill:var(--p4)">lọc theo quyền</text>
+      <text x="942" y="300">so hash</text>
+      <text x="408" y="440">đo recall@k</text>
+      <text x="986" y="440" text-anchor="end">đo parse</text>
+    </g>
+  </svg>
+  </div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h4>Quan hệ "phụ thuộc" quan trọng nhất</h4>
+      <ul>
+        <li><b>Loại file quyết định</b> cách đọc: dùng nhầm cách (trích thô cho bản scan) thì ra rỗng.</li>
+        <li><b>Bố cục quyết định</b> ranh giới cắt: không có heading thì không thể cắt theo mục.</li>
+        <li><b>Embedding model quyết định</b> cỡ tối đa của chunk (theo token).</li>
+        <li><b>Metadata quyết định</b> trích dẫn, lọc quyền và việc bỏ trùng có làm được hay không.</li>
+      </ul></div>
+    <div class="card"><h4>Đánh đổi xuyên suốt</h4>
+      <ul>
+        <li><b>Parse kỹ ↔ parse nhanh:</b> layout model, OCR, VLM chính xác hơn nhưng chậm và tốn hơn.<sup class="cite"><a href="#src-8">[8]</a><a href="#src-16">[16]</a></sup></li>
+        <li><b>Chunk nhỏ ↔ chunk lớn:</b> tìm chính xác ↔ đủ ngữ cảnh.<sup class="cite"><a href="#src-20">[20]</a></sup></li>
+        <li><b>Overlap nhiều ↔ ít:</b> ít mất ý ở chỗ cắt ↔ ít trùng lặp, rẻ hơn.<sup class="cite"><a href="#src-24">[24]</a></sup></li>
+        <li><b>Cloud ↔ tự chạy:</b> ít công vận hành ↔ dữ liệu không rời hệ thống.<sup class="cite"><a href="#src-5">[5]</a><a href="#src-16">[16]</a></sup></li>
+      </ul></div>
+  </div>
+</section>
+
+<!-- 11. SO SÁNH -->
+<section id="so-sanh">
+  <h2>11. So sánh công cụ và đánh đổi</h2>
+  <p>Các công cụ chia thành năm nhóm. Bảng chỉ ghi khả năng mà tài liệu chính thức nêu rõ; độ chính xác thực tế trên tài liệu tiếng Việt của bạn thì phải tự đo (mục 13).</p>
+  <div class="table-wrap">
+  <table class="stack">
+    <thead><tr><th>Nhóm</th><th>Ví dụ và khả năng đã nêu trong tài liệu</th><th>Đánh đổi</th><th>Hợp khi</th></tr></thead>
+    <tbody>
+      <tr><td><b>Thư viện trích text layer</b></td><td>PyMuPDF: trích chữ nhanh, có OCR qua Tesseract hoặc RapidOCR cho trang cần.<sup class="cite"><a href="#src-10">[10]</a></sup> pdfplumber: chi tiết từng ký tự, đường kẻ, trích bảng; không có OCR; MIT.<sup class="cite"><a href="#src-12">[12]</a></sup></td><td>Rẻ, chạy tại chỗ; tự lo thứ tự đọc, heading, bảng phức tạp.<sup class="cite"><a href="#src-11">[11]</a></sup></td><td>PDF số bố cục đơn giản; bước kiểm tra nhanh trước khi gửi đi parse kỹ.</td></tr>
+      <tr><td><b>Parser mã nguồn mở có layout model</b></td><td>Docling: PDF, DOCX, PPTX, XLSX, HTML, ảnh; bố cục, thứ tự đọc, cấu trúc bảng; OCR; chạy tại chỗ, kể cả môi trường cách ly mạng; mã nguồn MIT.<sup class="cite"><a href="#src-5">[5]</a></sup> Unstructured: chia phần tử, chế độ fast / hi_res / ocr_only.<sup class="cite"><a href="#src-7">[7]</a><a href="#src-8">[8]</a></sup> Marker: xuất Markdown/JSON, bỏ header/footer.<sup class="cite"><a href="#src-13">[13]</a></sup></td><td>Tự vận hành, cần máy đủ mạnh; Unstructured ghi chế độ fast nhanh hơn khoảng 100 lần so với các model image-to-text hàng đầu.<sup class="cite"><a href="#src-8">[8]</a></sup> Kiểm tra license cả <b>model</b>: Marker mã nguồn Apache 2.0 nhưng trọng số model giới hạn dùng thương mại.<sup class="cite"><a href="#src-13">[13]</a></sup></td><td>Dữ liệu nhạy cảm không được rời hệ thống; khối lượng lớn, muốn kiểm soát chi phí.</td></tr>
+      <tr><td><b>Dịch vụ cloud document AI</b></td><td>Azure Document Intelligence layout: vai trò đoạn, bảng, hình, xuất Markdown.<sup class="cite"><a href="#src-1">[1]</a></sup> Google Document AI Layout Parser: PDF, HTML, DOCX, PPTX, XLSX; chunk kèm tiêu đề cha và tiêu đề bảng.<sup class="cite"><a href="#src-4">[4]</a></sup> AWS Textract: khối bố cục theo thứ tự đọc; bảng với ô gộp, tiêu đề cột, tiêu đề bảng.<sup class="cite"><a href="#src-2">[2]</a><a href="#src-3">[3]</a></sup></td><td>Phải gửi tài liệu lên cloud, cần kiểm tra quy định tuân thủ.<sup class="cite"><a href="#src-16">[16]</a></sup> Chi phí mỗi tài liệu cao hơn parse text thuần, đổi lại chunk có thể tốt hơn.<sup class="cite"><a href="#src-16">[16]</a></sup> Khả năng khác nhau theo định dạng (vd. Azure không phân tích bảng XLSX).<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>Nhiều bản scan, bảng phức tạp; đội nhỏ, muốn ít công vận hành.</td></tr>
+      <tr><td><b>LLM / VLM đọc ảnh trang</b></td><td>Gemini đọc PDF bằng thị giác, hiểu chữ, hình, biểu đồ, bảng.<sup class="cite"><a href="#src-14">[14]</a></sup> Claude nhận ảnh mỗi trang kèm chữ trích được.<sup class="cite"><a href="#src-15">[15]</a></sup> Marker có chế độ dùng LLM để ghép bảng qua trang;<sup class="cite"><a href="#src-13">[13]</a></sup> Docling hỗ trợ model VLM.<sup class="cite"><a href="#src-5">[5]</a></sup></td><td>Tính token theo trang (mục 13); dữ liệu đi qua nhà cung cấp model nếu không tự chạy model. Đầu ra là văn bản do model sinh, nên cần đối chiếu với bản gốc như mọi đầu ra LLM.</td><td>Trang nhiều hình, biểu đồ, bố cục lạ; làm bước sửa cho các trang mà parser thường làm hỏng.</td></tr>
+      <tr><td><b>Bỏ qua bước trích chữ</b></td><td>ColPali tạo embedding nhiều vector trực tiếp từ ảnh trang và tìm theo ảnh; nhóm tác giả cho rằng cách này đơn giản và nhanh hơn chuỗi trích chữ nhiều bước.<sup class="cite"><a href="#src-32">[32]</a></sup></td><td>Cần hạ tầng tìm kiếm nhiều vector; khó trích dẫn ở mức câu; vẫn cần chữ nếu muốn tìm theo từ khóa.</td><td>Tài liệu nặng hình ảnh (slide, báo cáo nhiều biểu đồ).</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h4>Một hệ thống thật thường trộn nhiều nhóm</h4>
+      <p>Ví dụ: trích text layer cho PDF số, OCR hoặc dịch vụ layout cho bản scan, đọc trực tiếp Word/Excel, và chỉ gửi VLM những trang mà kiểm tra tự động báo hỏng. Microsoft cũng khuyên cân nhắc số loại tài liệu: mỗi cách xử lý riêng là thêm công xây và bảo trì.<sup class="cite"><a href="#src-16">[16]</a></sup></p></div>
+    <div class="card"><h4>Câu hỏi để chọn</h4>
+      <ul>
+        <li>Tài liệu có được phép rời khỏi hệ thống không?</li>
+        <li>Bao nhiêu phần trăm là bản scan, bao nhiêu có bảng?</li>
+        <li>Khối lượng ban đầu và khối lượng mỗi tháng?<sup class="cite"><a href="#src-16">[16]</a></sup></li>
+        <li>License của cả mã nguồn và trọng số model có cho dùng thương mại không?</li>
+      </ul></div>
+  </div>
+</section>
+
+<!-- 12. LỖI -->
+<section id="loi">
+  <h2>12. Lỗi thường gặp và cách chẩn đoán</h2>
+  <div class="card">
+    <h4>Hỏi theo thứ tự này khi RAG trả lời sai vì tài liệu</h4>
+    <ol>
+      <li><b>File có trong kho không?</b> <span class="muted">Không → nạp hỏng, bị lọc nhầm vì quyền, hoặc bị coi là trùng.</span></li>
+      <li><b>Văn bản parse ra có đúng với trang gốc không?</b> <span class="muted">Mở bản đã parse cạnh PDF. Sai → lỗi parsing (bảng dưới).</span></li>
+      <li><b>Có chunk nào chứa trọn đáp án và đọc riêng vẫn hiểu không?</b> <span class="muted">Không → lỗi chunking.</span></li>
+      <li><b>Chunk đó có lọt vào top-k (k kết quả đầu) không?</b> <span class="muted">Không → lỗi retrieval (xem <a href="../hybrid-search/">Hybrid search</a>, <a href="../reranking/">Reranking</a>).</span></li>
+    </ol>
+  </div>
+  <div class="table-wrap" style="margin-top:12px">
+  <table class="stack">
+    <thead><tr><th>Triệu chứng</th><th>Nguyên nhân hay gặp</th><th>Cách kiểm tra</th><th>Cách sửa</th></tr></thead>
+    <tbody>
+      <tr><td>Hỏi gì về file đó cũng "không tìm thấy"</td><td>PDF scan, không có text layer, chưa OCR.<sup class="cite"><a href="#src-10">[10]</a></sup></td><td>Đếm ký tự trích được mỗi trang; gần 0 là trang ảnh.</td><td>OCR các trang đó; kiểm tra chất lượng scan.<sup class="cite"><a href="#src-1">[1]</a></sup></td></tr>
+      <tr><td>Chunk có câu vô nghĩa, ý trộn lẫn</td><td>Đọc ngang qua hai cột; thứ tự đọc sai.<sup class="cite"><a href="#src-11">[11]</a></sup></td><td>So bản parse với trang gốc ở trang nhiều cột.</td><td>Dùng parser có layout và thứ tự đọc.<sup class="cite"><a href="#src-2">[2]</a><a href="#src-5">[5]</a></sup></td></tr>
+      <tr><td>Trả lời sai số trong bảng</td><td>Bảng dàn phẳng; ô gộp lệch; bảng qua nhiều trang bị tách.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-3">[3]</a></sup></td><td>Xem chunk chứa bảng: còn hàng tiêu đề không, hàng có lệch cột không.</td><td>Nhận dạng cấu trúc bảng; dải hàng lặp tiêu đề; ghép bảng qua trang (mục 5).</td></tr>
+      <tr><td>Chunk không biết nói về đâu</td><td>Mất tiêu đề mục; chunk "mồ côi" ngữ cảnh.<sup class="cite"><a href="#src-21">[21]</a></sup></td><td>Đọc riêng chunk: có biết hợp đồng nào, điều mấy không?</td><td>Gắn đường dẫn tiêu đề; cha–con; contextual retrieval.<sup class="cite"><a href="#src-4">[4]</a><a href="#src-20">[20]</a><a href="#src-21">[21]</a></sup></td></tr>
+      <tr><td>Top-k toàn chunk giống nhau</td><td>Header, footer, điều khoản mẫu lặp ở mọi trang hoặc mọi file.</td><td>Đếm các dòng lặp lại nhiều lần trong kho.</td><td>Bỏ header/footer khi parse,<sup class="cite"><a href="#src-16">[16]</a></sup> giữ thông tin cần (số trang) làm metadata.</td></tr>
+      <tr><td>Một file xuất hiện hai lần trong kết quả</td><td>Cùng file được tải lên ở hai thư mục.</td><td>So file_hash.</td><td>Bỏ trùng theo hash, giữ nhiều source_id.<sup class="cite"><a href="#src-27">[27]</a></sup></td></tr>
+      <tr><td>Chunk dài, câu trả lời chung chung</td><td>Chunk quá to hoặc cả bảng lớn một khối; có thể vượt giới hạn embedding và bị cắt.<sup class="cite"><a href="#src-25">[25]</a></sup></td><td>Thống kê độ dài chunk theo token; tìm chunk vượt giới hạn.</td><td>Đặt giới hạn token; chia mục dài; dùng cha–con nếu cần ngữ cảnh.</td></tr>
+      <tr><td>Chữ lạ "�" hoặc lỗi dấu tiếng Việt</td><td>Lớp chữ hỏng hoặc sai mã hóa;<sup class="cite"><a href="#src-10">[10]</a></sup> với bản scan: OCR chưa đặt ngôn ngữ tiếng Việt.<sup class="cite"><a href="#src-10">[10]</a></sup></td><td>Đếm "�" và ký tự lạ mỗi trang.</td><td>OCR lại vùng hỏng;<sup class="cite"><a href="#src-10">[10]</a></sup> chuẩn hóa Unicode (xem <a href="../knowledge-base/">Knowledge Base</a>).</td></tr>
+      <tr><td>Sai số tiền, ngày trong bản scan</td><td>OCR đọc nhầm (O và 0, l và 1, mất dấu phẩy).</td><td>Lọc từ có độ tin cậy OCR thấp.<sup class="cite"><a href="#src-2">[2]</a></sup></td><td>OCR lại ảnh tốt hơn; cho người duyệt các con số quan trọng.</td></tr>
+      <tr><td>Hỏi về biểu đồ, sơ đồ thì không biết</td><td>Hình không thành chữ; Azure layout không hỗ trợ ảnh nhúng trong file Office.<sup class="cite"><a href="#src-1">[1]</a></sup></td><td>Đếm hình trong file và mô tả hình trong kho.</td><td>Dùng LLM viết mô tả cho hình có giá trị.<sup class="cite"><a href="#src-16">[16]</a></sup></td></tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="callout warn"><b>Chữ trong tài liệu cũng là dữ liệu không đáng tin.</b> Người ngoài có thể cài câu lệnh nhắm vào AI vào file được nạp; Microsoft khuyên không bao giờ dùng nội dung tài liệu làm nguồn chỉ thị.<sup class="cite"><a href="#src-17">[17]</a></sup> Xem <a href="../prompt-injection-guardrails/">Prompt Injection &amp; Guardrails</a>.</div>
+</section>
+
+<!-- 13. ĐÁNH GIÁ -->
+<section id="danh-gia">
+  <h2>13. Đánh giá và đo lường</h2>
+  <p>Đo ở ba lớp, theo đúng chuỗi phụ thuộc: parse có đúng không, chunk có giúp tìm đúng không, và mỗi trang tốn bao nhiêu.</p>
+  <div class="grid g3">
+    <div class="card"><span class="tag p1">Lớp 1 · Parse</span><h4>Văn bản có đúng không?</h4>
+      <p>Chọn 20–50 trang đại diện (scan, hai cột, nhiều bảng, Excel), sửa tay thành bản chuẩn, rồi so:</p>
+      <ul>
+        <li><b>Edit distance chuẩn hóa</b> cho chữ và cho thứ tự đọc.<sup class="cite"><a href="#src-30">[30]</a></sup></li>
+        <li><b>TEDS</b> cho bảng: so cây cấu trúc bảng, bắt được cả ô lệch hàng lẫn lỗi OCR.<sup class="cite"><a href="#src-31">[31]</a></sup></li>
+      </ul>
+      <p class="muted">OmniDocBench cho thấy kết quả thay đổi rất mạnh theo loại trang: cùng một model nhận dạng bố cục đạt 72,83 điểm trên loại trang báo cáo nghiên cứu nhưng chỉ 9,54 trên loại trang ghi chú (notes).<sup class="cite"><a href="#src-29">[29]</a><a href="#src-30">[30]</a></sup> Vì vậy phải đo trên chính loại tài liệu của bạn.</p></div>
+    <div class="card"><span class="tag p3">Lớp 2 · Chunk + retrieval</span><h4>Có tìm đúng không?</h4>
+      <p>Dựng <b>golden set</b> 30–100 câu hỏi, mỗi câu ghi rõ đoạn chứa đáp án (file, trang hoặc mục). Với mỗi cách chunk và mỗi cỡ, đo:</p>
+      <ul>
+        <li><b>recall@k</b>: đoạn đúng có trong top-k không. Anthropic đo bằng 1 − recall@20.<sup class="cite"><a href="#src-21">[21]</a></sup></li>
+        <li><b>Đáp án trọn trong chunk</b>: chunk được tìm có đủ thông tin không (như mô phỏng mục 7).</li>
+        <li><b>IoU theo token</b>: phạt chunk chứa nhiều chữ thừa hoặc lặp do overlap.<sup class="cite"><a href="#src-24">[24]</a></sup></li>
+      </ul>
+      <p class="muted">Cách dựng golden set và metric chi tiết: <a href="../llm-evaluation/">LLM Evaluation</a>.</p></div>
+    <div class="card"><span class="tag p4">Lớp 3 · Chi phí, thời gian</span><h4>Mỗi trang tốn bao nhiêu?</h4>
+      <ul>
+        <li>OCR chậm khoảng 1000 lần so với trích text layer: chỉ OCR trang cần.<sup class="cite"><a href="#src-10">[10]</a></sup></li>
+        <li>Claude: mỗi trang PDF thường 1.500–3.000 token chữ, cộng tối đa 1.568 token ảnh.<sup class="cite"><a href="#src-15">[15]</a></sup></li>
+        <li>Gemini: token mỗi trang tùy model và độ phân giải, ví dụ khoảng 560 ở mức mặc định của Gemini 3 và 4.<sup class="cite"><a href="#src-14">[14]</a></sup></li>
+        <li>Contextual retrieval: Anthropic ước tính $1,02 cho mỗi triệu token tài liệu khi dùng prompt caching (theo giá và giả định năm 2024: chunk 800 token, tài liệu 8.000 token).<sup class="cite"><a href="#src-21">[21]</a></sup></li>
+      </ul>
+      <p class="muted">Ghi lại trang/phút và chi phí/1.000 trang theo từng nhánh (số, scan, Office) từ hóa đơn thật. Xem <a href="../llm-cost-optimization/">LLM Cost Optimization</a>.</p></div>
+  </div>
+  <div class="callout"><b>Tính nhanh:</b> gửi 1.000 trang PDF cho Claude đọc thì riêng phần chữ đã khoảng 1,5–3 triệu token, cộng tối đa khoảng 1,57 triệu token ảnh.<sup class="cite"><a href="#src-15">[15]</a></sup> Với kho hàng trăm nghìn trang, đó là lý do thường chỉ gửi VLM những trang mà parser rẻ hơn làm hỏng.</div>
+  <div class="callout ok"><b>Đọc kết quả:</b> lớp 1 kém → sửa parser trước, đừng chỉnh chunk. Lớp 1 tốt mà lớp 2 kém → thử cách chunk, cỡ chunk, metadata. Lớp 2 tốt mà câu trả lời vẫn sai → vấn đề nằm ở prompt hoặc LLM (xem <a href="../rag/">RAG</a>).</div>
+</section>
+
+<!-- 14. LỘ TRÌNH -->
+<section id="lo-trinh">
+  <h2>14. Lộ trình tự học 3 tuần (không cần code)</h2>
+  <p class="muted">Khoảng 4–5 giờ mỗi tuần. Các ô đã đánh dấu được lưu trong trình duyệt của bạn.</p>
+  <div class="grid g3">
+    <div class="card"><span class="tag p1">Tuần 1</span><h4>Parsing</h4><p>Đọc mục 1–5.</p>
+      <label class="check"><input type="checkbox" data-k="w1a"><span>Lấy 3 file thật (một PDF số, một bản scan, một Excel). Mở PDF, thử bôi đen chữ: bôi được là có text layer.</span></label>
+      <label class="check"><input type="checkbox" data-k="w1b"><span>Tìm một trang hai cột hoặc có bảng, chép thử chữ ra Notepad và xem thứ tự có đúng không.</span></label>
+    </div>
+    <div class="card"><span class="tag p1">Tuần 2</span><h4>Chunking và metadata</h4><p>Đọc mục 6–8, chơi mô phỏng mục 7.</p>
+      <label class="check"><input type="checkbox" data-k="w2a"><span>Với cả 4 chiến lược trong mô phỏng, ghi lại câu hỏi nào được trả lời đủ và tổng token.</span></label>
+      <label class="check"><input type="checkbox" data-k="w2b"><span>Viết danh sách trường metadata cho kho của bạn: nguồn, trang/mục, hash, quyền.</span></label>
+    </div>
+    <div class="card"><span class="tag p1">Tuần 3</span><h4>Lỗi và đánh giá</h4><p>Đọc mục 9–13.</p>
+      <label class="check"><input type="checkbox" data-k="w3a"><span>Viết 20 câu hỏi cho 3 file tuần 1, ghi file + trang/mục chứa đáp án.</span></label>
+      <label class="check"><input type="checkbox" data-k="w3b"><span>Với mỗi câu trả lời sai, xếp lỗi vào lớp parse, chunk hay retrieval theo 4 câu hỏi ở mục 12.</span></label>
+    </div>
+  </div>
+
+  <h3>Tự kiểm tra: trả lời được là đã nắm cốt lõi</h3>
+  <details><summary>1. Vì sao nói chất lượng parsing là "trần" của chất lượng RAG?</summary>
+    <p>Các bước sau chỉ làm việc trên văn bản mà parser đưa ra. Trang scan không OCR, bảng bị nát hay cột bị đọc lẫn thì không chunk nào chứa thông tin đúng, nên retrieval và LLM không thể bù lại.</p></details>
+  <details><summary>2. Làm sao biết một PDF cần OCR?</summary>
+    <p>Trích chữ thông thường rồi đếm ký tự mỗi trang: gần 0 là trang ảnh; nhiều ký tự "�" là lớp chữ hỏng. Chỉ OCR các trang/vùng đó, vì OCR chậm hơn nhiều và ép OCR lên PDF sạch có thể làm chất lượng kém đi.<sup class="cite"><a href="#src-10">[10]</a></sup></p></details>
+  <details><summary>3. Vì sao chunk cắt từ bảng phải mang theo hàng tiêu đề?</summary>
+    <p>Nghĩa của ô nằm ở tiêu đề cột. Chunk chỉ có "KS-SL-03 … Hằng quý" thì LLM không biết "Hằng quý" là tần suất hay hạn chót. Lặp tên bảng và hàng tiêu đề ở mỗi dải hàng giúp chunk tự đủ nghĩa.<sup class="cite"><a href="#src-4">[4]</a></sup></p></details>
+  <details><summary>4. Cha–con khác cắt theo tiêu đề thế nào? Khi nào dùng?</summary>
+    <p>Cắt theo tiêu đề tạo một tầng chunk theo mục. Cha–con tạo hai tầng: con nhỏ để embed và tìm, cha lớn để trả cho LLM.<sup class="cite"><a href="#src-20">[20]</a></sup> Dùng khi đo thấy chunk đúng được tìm ra nhưng thiếu ngữ cảnh để trả lời; đổi lại tốn token hơn ở mỗi câu hỏi.</p></details>
+  <details><summary>5. Semantic chunking có luôn tốt hơn cắt cố định không?</summary>
+    <p>Không chắc. Một nghiên cứu thấy chi phí của semantic chunking không đổi lại được cải thiện ổn định;<sup class="cite"><a href="#src-23">[23]</a></sup> nghiên cứu khác thấy một biến thể tốt ở vài metric.<sup class="cite"><a href="#src-24">[24]</a></sup> Bằng chứng trái chiều, nên đo trên dữ liệu của bạn.</p></details>
+  <details><summary>6. File hash dùng để làm gì? Hạn chế của nó?</summary>
+    <p>Nhận ra file đã nạp để bỏ qua parse và embed lại, và gộp các bản trùng. Đây là thiết kế ví dụ ở mức file, cùng ý tưởng với ID dạng hash của Microsoft và Indexing API của LangChain.<sup class="cite"><a href="#src-17">[17]</a><a href="#src-27">[27]</a></sup> Hạn chế: hash byte chỉ bắt file giống hệt; file lưu lại với thông tin file khác sẽ có hash khác dù nội dung không đổi.</p></details>
+  <details><summary>7. Trích dẫn cho Word và Excel nên ghi gì thay cho số trang?</summary>
+    <p>Word không có trang cố định, nên ghi đường dẫn mục ("Chính sách bảo mật › 3. Sao lưu dữ liệu"). Excel ghi tên sheet và dải dòng.</p></details>
+</section>
+
+<!-- NGUỒN -->
+<section id="nguon">
+  <h2>Nguồn tham khảo</h2>
+  <p class="muted">Các khẳng định kỹ thuật trong trang được đối chiếu với những nguồn dưới đây. Số trong ngoặc vuông ở thân bài trỏ tới mục tương ứng. Tất cả truy cập ngày 2026-11-19.</p>
+  <ol class="sources">
+    <li id="src-1">Microsoft. <i>Document layout analysis – Document Intelligence</i> (tài liệu Azure). 2026. <a href="https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/prebuilt/layout" target="_blank" rel="noopener">learn.microsoft.com/…/document-intelligence/prebuilt/layout</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-2">Amazon Web Services. <i>Layout Response Objects</i> (Amazon Textract Developer Guide). <a href="https://docs.aws.amazon.com/textract/latest/dg/layoutresponse.html" target="_blank" rel="noopener">docs.aws.amazon.com/textract/latest/dg/layoutresponse.html</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-3">Amazon Web Services. <i>Tables</i> (Amazon Textract Developer Guide). <a href="https://docs.aws.amazon.com/textract/latest/dg/how-it-works-tables.html" target="_blank" rel="noopener">docs.aws.amazon.com/textract/latest/dg/how-it-works-tables.html</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-4">Google Cloud. <i>Process documents with Layout Parser</i> (tài liệu Document AI). <a href="https://docs.cloud.google.com/document-ai/docs/layout-parse-chunk" target="_blank" rel="noopener">docs.cloud.google.com/document-ai/docs/layout-parse-chunk</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-5">Docling Project. <i>Docling</i> (README). <a href="https://github.com/docling-project/docling" target="_blank" rel="noopener">github.com/docling-project/docling</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-6">Docling Project. <i>Chunking</i> (tài liệu khái niệm). <a href="https://docling-project.github.io/docling/concepts/chunking/" target="_blank" rel="noopener">docling-project.github.io/docling/concepts/chunking</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-7">Unstructured. <i>Partitioning</i> (tài liệu open source). <a href="https://docs.unstructured.io/open-source/core-functionality/partitioning" target="_blank" rel="noopener">docs.unstructured.io/open-source/core-functionality/partitioning</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-8">Unstructured. <i>Partitioning strategies</i> (tài liệu open source). <a href="https://docs.unstructured.io/open-source/concepts/partitioning-strategies" target="_blank" rel="noopener">docs.unstructured.io/open-source/concepts/partitioning-strategies</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-9">Unstructured. <i>Chunking</i> (tài liệu open source). <a href="https://docs.unstructured.io/open-source/core-functionality/chunking" target="_blank" rel="noopener">docs.unstructured.io/open-source/core-functionality/chunking</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-10">PyMuPDF. <i>OCR – Optical Character Recognition</i> (tài liệu). <a href="https://pymupdf.readthedocs.io/en/latest/ocr/index.html" target="_blank" rel="noopener">pymupdf.readthedocs.io/en/latest/ocr</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-11">PyMuPDF. <i>Text</i> (recipes, tài liệu). <a href="https://pymupdf.readthedocs.io/en/latest/recipes-text.html" target="_blank" rel="noopener">pymupdf.readthedocs.io/en/latest/recipes-text.html</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-12">Singer-Vine, J. và cộng đồng. <i>pdfplumber</i> (README). <a href="https://github.com/jsvine/pdfplumber" target="_blank" rel="noopener">github.com/jsvine/pdfplumber</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-13">Datalab. <i>Marker</i> (README). <a href="https://github.com/datalab-to/marker" target="_blank" rel="noopener">github.com/datalab-to/marker</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-14">Google. <i>Document understanding</i> (tài liệu Gemini API). <a href="https://aistudio.google.com/docs/document-processing" target="_blank" rel="noopener">aistudio.google.com/docs/document-processing</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-15">Anthropic. <i>PDF support</i> (tài liệu Claude API). <a href="https://platform.claude.com/docs/en/build-with-claude/pdf-support" target="_blank" rel="noopener">platform.claude.com/docs/en/build-with-claude/pdf-support</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-16">Microsoft. <i>Develop a RAG Solution – Chunking Phase</i> (Azure Architecture Center). 2026. <a href="https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/rag/rag-chunking-phase" target="_blank" rel="noopener">learn.microsoft.com/…/guide/rag/rag-chunking-phase</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-17">Microsoft. <i>Develop a RAG Solution – Chunk Enrichment Phase</i> (Azure Architecture Center). 2026. <a href="https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/rag/rag-enrichment-phase" target="_blank" rel="noopener">learn.microsoft.com/…/guide/rag/rag-enrichment-phase</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-18">LangChain. <i>Splitting recursively</i> (tài liệu text splitter). <a href="https://docs.langchain.com/oss/python/integrations/splitters/recursive_text_splitter" target="_blank" rel="noopener">docs.langchain.com/…/splitters/recursive_text_splitter</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-19">LangChain. <i>Split markdown by headers</i> (MarkdownHeaderTextSplitter). <a href="https://docs.langchain.com/oss/python/integrations/splitters/markdown_header_metadata_splitter" target="_blank" rel="noopener">docs.langchain.com/…/splitters/markdown_header_metadata_splitter</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-20">LangChain. <i>ParentDocumentRetriever</i> (tài liệu tham chiếu langchain-classic). <a href="https://reference.langchain.com/python/langchain-classic/retrievers/parent_document_retriever/ParentDocumentRetriever" target="_blank" rel="noopener">reference.langchain.com/…/ParentDocumentRetriever</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-21">Anthropic. <i>Introducing Contextual Retrieval</i>. 2024. <a href="https://www.anthropic.com/news/contextual-retrieval" target="_blank" rel="noopener">anthropic.com/news/contextual-retrieval</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-22">Günther, M. và cộng sự. <i>Late Chunking: Contextual Chunk Embeddings Using Long-Context Embedding Models</i>. arXiv, 2024. <a href="https://arxiv.org/abs/2409.04701" target="_blank" rel="noopener">arxiv.org/abs/2409.04701</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-23">Qu, R.; Tu, R.; Bao, F. <i>Is Semantic Chunking Worth the Computational Cost?</i> arXiv, 2024. <a href="https://arxiv.org/abs/2410.13070" target="_blank" rel="noopener">arxiv.org/abs/2410.13070</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-24">Smith, B.; Troynikov, A. (Chroma). <i>Evaluating Chunking Strategies for Retrieval</i>. Báo cáo kỹ thuật, 2024. <a href="https://www.trychroma.com/research/evaluating-chunking" target="_blank" rel="noopener">trychroma.com/research/evaluating-chunking</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-25">Pinecone. <i>Chunking Strategies for LLM Applications</i>. <a href="https://www.pinecone.io/learn/chunking-strategies/" target="_blank" rel="noopener">pinecone.io/learn/chunking-strategies</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-26">Jimeno Yepes, A. và cộng sự. <i>Financial Report Chunking for Effective Retrieval Augmented Generation</i>. arXiv, 2024. <a href="https://arxiv.org/abs/2402.05131" target="_blank" rel="noopener">arxiv.org/abs/2402.05131</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-27">LangChain. <i>index</i> (Indexing API, tài liệu tham chiếu langchain-core). <a href="https://reference.langchain.com/python/langchain-core/indexing/api/index" target="_blank" rel="noopener">reference.langchain.com/python/langchain-core/indexing/api/index</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-28">Microsoft. <i>Security filter pattern</i> (Azure AI Search). 2026. <a href="https://learn.microsoft.com/en-us/azure/search/search-security-trimming-for-azure-search" target="_blank" rel="noopener">learn.microsoft.com/…/search/search-security-trimming-for-azure-search</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-29">Ouyang, L. và cộng sự. <i>OmniDocBench: Benchmarking Diverse PDF Document Parsing with Comprehensive Annotations</i>. CVPR, 2025. <a href="https://arxiv.org/abs/2412.07626" target="_blank" rel="noopener">arxiv.org/abs/2412.07626</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-30">OpenDataLab. <i>OmniDocBench</i> (README, metric và kết quả theo loại trang). <a href="https://github.com/opendatalab/OmniDocBench" target="_blank" rel="noopener">github.com/opendatalab/OmniDocBench</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-31">Zhong, X.; ShafieiBavani, E.; Jimeno Yepes, A. <i>Image-based table recognition: data, model, and evaluation</i>. arXiv, 2019. <a href="https://arxiv.org/abs/1911.10683" target="_blank" rel="noopener">arxiv.org/abs/1911.10683</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-32">Faysse, M. và cộng sự. <i>ColPali: Efficient Document Retrieval with Vision Language Models</i>. ICLR, 2025. <a href="https://arxiv.org/abs/2407.01449" target="_blank" rel="noopener">arxiv.org/abs/2407.01449</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-33">Google. <i>Magika</i> (README). <a href="https://github.com/google/magika" target="_blank" rel="noopener">github.com/google/magika</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-34">The Document Foundation. <i>Starting the LibreOffice Software With Parameters</i> (LibreOffice Help). <a href="https://help.libreoffice.org/latest/en-US/text/shared/guide/start_parameters.html" target="_blank" rel="noopener">help.libreoffice.org/…/guide/start_parameters.html</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-35">Petrov, A. và cộng sự. <i>Language Model Tokenizers Introduce Unfairness Between Languages</i>. NeurIPS, 2023. <a href="https://arxiv.org/abs/2305.15425" target="_blank" rel="noopener">arxiv.org/abs/2305.15425</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+  </ol>
+</section>
+</main>
+
+<footer>
+  Tài liệu học parsing và chunking ở mức khái niệm. Công ty Hải Âu, tên file, hash, nội dung hợp đồng, chính sách, bảng kiểm soát và điểm tin cậy OCR trong trang đều là hư cấu, dùng để minh họa.
+</footer>
+
+<script>
+(function(){
+  // ---------- Theme ----------
+  var root=document.documentElement;
+  function safeGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+  function safeSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  var saved=safeGet('rag-theme'); if(saved) root.setAttribute('data-theme',saved);
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme');
+    if(!cur){cur=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+    var next=cur==='dark'?'light':'dark'; root.setAttribute('data-theme',next); safeSet('rag-theme',next);
+  });
+
+  // ---------- Stacked tables on phones: give each cell its column name ----------
+  function labelTables(root){
+    [].forEach.call(root.querySelectorAll('table.stack'),function(t){
+      var heads=[].map.call(t.querySelectorAll('thead th'),function(th){return th.textContent});
+      [].forEach.call(t.querySelectorAll('tbody tr'),function(tr){[].forEach.call(tr.children,function(td,i){if(heads[i])td.setAttribute('data-label',heads[i])})});
+    });
+  }
+  labelTables(document);
+
+  function setOn(el,on){el.classList.toggle('on',on);el.setAttribute('aria-pressed',on?'true':'false')}
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function cite(){var a=[].slice.call(arguments);return '<sup class="cite">'+a.map(function(n){return '<a href="#src-'+n+'">['+n+']</a>'}).join('')+'</sup>'}
+  function kv(rows,heads){
+    return '<div class="table-wrap"><table class="stack"><thead><tr>'+heads.map(function(h){return '<th>'+h+'</th>'}).join('')+'</tr></thead><tbody>'+
+      rows.map(function(r){return '<tr>'+r.map(function(c){return '<td>'+c+'</td>'}).join('')+'</tr>'}).join('')+'</tbody></table></div>';
+  }
+
+  // ---------- Stepper example ----------
+  var STEPS=[
+    {t:'Ba file cần nạp',h:'<h3>Bước 1 · Các file cần đưa vào kho</h3><p>Công ty Hải Âu (hư cấu) làm trợ lý hỏi đáp cho Phòng Kiểm soát nội bộ (KSNB). Đợt đầu có các file sau:</p>'+
+      kv([['<b>HD-117-BaoTri.pdf</b>','PDF scan, 12 trang','Hợp đồng bảo trì đã ký, scan từ bản giấy. Thư mục Pháp chế.'],
+          ['<b>HD-117 (ban ky).pdf</b>','PDF scan, 12 trang','Phòng Tài chính tải lên lại đúng hợp đồng đó.'],
+          ['<b>ChinhSach-BaoMat-v3.docx</b>','Word','Chính sách bảo mật thông tin, có heading theo style.'],
+          ['<b>KiemSoat-NoiBo-2026.xlsx</b>','Excel, 2 sheet','Checklist kiểm soát: sheet "Truy cập" 20 dòng, sheet "Sao lưu" 28 dòng.']],
+         ['Tên file','Loại','Mô tả'])+
+      '<div class="callout">Mỗi loại file cần một đường xử lý riêng. Microsoft khuyên chọn cách chunk theo mức độ có cấu trúc của từng loại tài liệu.'+cite(16)+' Dùng một cách cho mọi file là nguồn lỗi rất phổ biến.</div>'},
+    {t:'Nhận dạng & bỏ trùng',h:'<h3>Bước 2 · Nhận dạng loại file, băm và bỏ trùng</h3><p>Hệ thống đoán loại file từ nội dung, không chỉ từ đuôi tên (Unstructured dùng libmagic, thiếu thì mới dựa vào đuôi file'+cite(7)+'). Sau đó tính hash SHA-256 của toàn bộ byte file:</p>'+
+      kv([['HD-117-BaoTri.pdf','PDF','9f3c…a1','Parse'],
+          ['HD-117 (ban ky).pdf','PDF','9f3c…a1','<b>Trùng hash</b> → không parse lại, chỉ ghi thêm nguồn thứ hai'],
+          ['ChinhSach-BaoMat-v3.docx','DOCX','41be…07','Parse'],
+          ['KiemSoat-NoiBo-2026.xlsx','XLSX','c2d8…5e','Parse']],
+         ['File','Loại nhận ra','SHA-256 (rút gọn, minh họa)','Hành động'])+
+      '<div class="callout ok">Bản trùng không tốn OCR lần thứ hai. Bản ghi giữ cả hai <code>source_id</code> để trích dẫn đúng thư mục và phân quyền theo từng nguồn (thiết kế ví dụ). Indexing API của LangChain cũng băm nội dung và metadata để bỏ qua tài liệu đã có.'+cite(27)+'</div>'+
+      '<p class="muted">Hash byte chỉ bắt được file giống hệt; xem giới hạn ở <a href="#metadata">mục 8</a>.</p>'},
+    {t:'PDF scan → OCR',h:'<h3>Bước 3 · Hợp đồng scan: kiểm tra text layer rồi OCR</h3><p>Trích chữ thông thường được <b>0 ký tự trên cả 12 trang</b>: các trang chỉ là ảnh, phải OCR.'+cite(10)+' Nếu chỉ vài trang là ảnh thì chỉ OCR các trang đó, vì OCR chậm hơn trích text layer khoảng 1000 lần.'+cite(10)+'</p><p>Kết quả OCR trang 3 (rút gọn), mỗi dòng có độ tin cậy do bộ OCR trả về:</p>'+
+      kv([['5.2 Chậm thanh toán chịu lãi 0,05%/ngày','0,97','Giữ'],
+          ['trên số tiền chậm.','0,98','Giữ'],
+          ['5.3 Phí năm đầu là 48<b>O</b> triệu đồng,','<b>0,61</b>','<span style="color:var(--bad);font-weight:600">Cần kiểm tra</span>: chữ O thay cho số 0'],
+          ['chưa gồm VAT.','0,96','Giữ']],
+         ['Dòng OCR','Độ tin cậy (0–1, minh họa)','Xử lý'])+
+      '<div class="callout warn">Số tiền, ngày, tỷ lệ là chỗ OCR đọc sai gây hại nhất. Các dịch vụ như Textract trả độ tin cậy cho từng khối (thang điểm tùy công cụ),'+cite(2)+' nên có thể lọc dòng điểm thấp đưa cho người kiểm tra hoặc OCR lại từ ảnh tốt hơn.</div>'},
+    {t:'Bố cục hợp đồng',h:'<h3>Bước 4 · Phân tích bố cục trang hợp đồng</h3><p>Layout analysis gán vai trò cho từng khối trên trang 3:'+cite(1,2)+'</p>'+
+      kv([['"HẢI ÂU · HĐ 117/2024 · Trang 3/12"','Page header','Bỏ khỏi nội dung; giữ số trang làm metadata'],
+          ['"ĐIỀU 5. THANH TOÁN"','Section heading','Thành <code>## Điều 5. Thanh toán</code>'],
+          ['Hai cột 5.1–5.4','Đoạn văn, 2 cột','Đọc hết cột trái rồi mới sang cột phải'+cite(2)],
+          ['"Bảo mật · Trang 3"','Page footer','Bỏ']],
+         ['Khối','Vai trò nhận ra','Xử lý'])+
+      '<p>Văn bản có cấu trúc thu được:</p><pre>## Điều 5. Thanh toán        (trang 3)\n5.1 Bên A thanh toán phí bảo trì theo quý, trong 15 ngày kể từ ngày nhận hóa đơn.\n5.2 Chậm thanh toán chịu lãi 0,05%/ngày trên số tiền chậm.\n5.3 Phí năm đầu là 480 triệu đồng, chưa gồm VAT.\n5.4 Giá có thể điều chỉnh tối đa 5%/năm theo Phụ lục 2.</pre>'+
+      '<p class="muted">Bên A là Hải Âu. Header lặp ở 12 trang nếu để lại sẽ chen vào nhiều chunk, làm các chunk giống nhau hơn thực tế. Thử hai cách đọc cùng trang này ở <a href="#parsing">mục 4</a>.</p>'},
+    {t:'Word chính sách',h:'<h3>Bước 5 · File Word: đọc thẳng cấu trúc</h3><p>File .docx đã có cấu trúc: heading được đánh dấu bằng style, nên parser đọc ra tiêu đề và đoạn văn mà không cần OCR. Unstructured dùng thông tin style trong tài liệu để xác định loại từng phần tử.'+cite(7)+'</p><pre># Chính sách bảo mật thông tin\n## 1. Phạm vi\nChính sách áp dụng cho toàn bộ nhân viên, …\n## 2. Mật khẩu\n…\n## 3. Sao lưu dữ liệu\nDữ liệu khách hàng được sao lưu hằng ngày lúc 23:00. …</pre>'+
+      '<div class="callout warn"><b>Word không có "trang" cố định:</b> số trang phụ thuộc khổ giấy, font, máy in. Unstructured chỉ ghi số trang khi tài liệu có ngắt trang;'+cite(7)+' Azure quy ước 3.000 ký tự là một đơn vị trang.'+cite(1)+' Vì vậy trích dẫn Word nên dùng <b>đường dẫn mục</b>: "Chính sách bảo mật › 3. Sao lưu dữ liệu".</div>'+
+      '<p class="muted">Nếu bắt buộc cần số trang, có thể đổi sang PDF bằng LibreOffice chạy không giao diện'+cite(34)+' rồi parse PDF. Đổi lại, mỗi lần đổi định dạng trung gian có thể làm mất dữ liệu (ở đây là style heading).'+cite(16)+'</p>'},
+    {t:'Excel checklist',h:'<h3>Bước 6 · Excel: mỗi sheet là một bảng, cắt theo dải hàng</h3><p>Mỗi sheet được đọc thành một bảng.'+cite(7)+' Chú ý chọn công cụ: Azure layout không phân tích bảng cho đầu vào XLSX,'+cite(1)+' còn Google Layout Parser đọc được bảng trong XLSX.'+cite(4)+'</p><p>Sheet "Sao lưu" có 28 dòng dữ liệu. Cắt thành dải 7 dòng, mỗi dải lặp lại tên file, tên sheet và hàng tiêu đề:</p>'+
+      '<div class="chunk hit"><span class="id">KS-2026#sl-1 · sheet "Sao lưu" · dòng 2–8</span><div class="txt">[KiemSoat-NoiBo-2026.xlsx › Sao lưu › dòng 2–8]\n| Mã KS | Mô tả | Tần suất | Phụ trách |\n| KS-SL-01 | Sao lưu CSDL khách hàng | Hằng ngày | Phòng Hạ tầng |\n| KS-SL-02 | Sao lưu file chia sẻ | Hằng tuần | Phòng Hạ tầng |\n| KS-SL-03 | Thử khôi phục bản sao lưu | Hằng quý | Phòng Hạ tầng |\n| … 4 dòng nữa … |</div></div>'+
+      '<p>Kết quả: sheet "Sao lưu" 28 dòng ÷ 7 = <b>4 chunk</b>; sheet "Truy cập" 20 dòng → <b>3 chunk</b> (7 + 7 + 6). Tổng 7 chunk cho file Excel.</p>'+
+      '<div class="callout bad">Nếu dàn phẳng sheet thành chữ rồi cắt theo ký tự, dòng "KS-SL-03 … Hằng quý" có thể rơi vào chunk không có hàng tiêu đề. LLM khi đó không biết "Hằng quý" là tần suất hay hạn chót.</div>'},
+    {t:'Chunk + metadata',h:'<h3>Bước 7 · Chunk và metadata</h3><p>Hợp đồng và chính sách được cắt theo mục (heading), mục dài thì chia nhỏ; đường dẫn tiêu đề được gắn vào đầu chunk. Ví dụ một chunk của hợp đồng:</p>'+
+      '<div class="chunk hit"><span class="id">HD117#c09</span><div class="txt">[Hợp đồng bảo trì 117/2024 › Điều 5. Thanh toán] 5.1 Bên A thanh toán phí bảo trì theo quý, … 5.2 Chậm thanh toán chịu lãi 0,05%/ngày trên số tiền chậm. 5.3 … 5.4 …</div></div>'+
+      kv([['source_id','phap-che/HD-117-BaoTri.pdf<br>tai-chinh/HD-117 (ban ky).pdf'],
+          ['file_hash','9f3c…a1'],
+          ['page','3'],
+          ['section_path','Hợp đồng bảo trì 117/2024 › Điều 5. Thanh toán'],
+          ['access_groups','Pháp chế, Tài chính, KSNB'],
+          ['parser','layout + OCR (cả 12 trang)']],
+         ['Trường','Giá trị'])+
+      '<p class="muted">Chunk của file Word mang <code>section_path</code> thay cho trang; chunk của Excel mang tên sheet và dải dòng. Bảng đầy đủ các trường ở <a href="#metadata">mục 8</a>.</p>'},
+    {t:'Thử câu hỏi',h:'<h3>Bước 8 · Thử câu hỏi, kèm lọc quyền và trích dẫn</h3>'+
+      '<div class="card" style="margin:8px 0"><p><b>Chị Mai (KSNB) hỏi:</b> "Hải Âu trả phí bảo trì trễ thì bị phạt thế nào?"</p><p>Bộ lọc quyền: KSNB có trong <code>access_groups</code> của chunk hợp đồng → tìm được <b>HD117#c09</b>.</p><pre>Chậm thanh toán chịu lãi 0,05%/ngày trên số tiền chậm.\n(Hợp đồng bảo trì 117/2024, Điều 5.2, trang 3)</pre></div>'+
+      '<div class="card" style="margin:8px 0"><p><b>Anh Tuấn (Kinh doanh) hỏi cùng câu.</b></p><p>Kinh doanh không có trong <code>access_groups</code> → chunk hợp đồng bị loại <b>trước</b> khi xếp hạng. Trả lời: "Không tìm thấy trong các tài liệu bạn được xem."</p><p class="muted">Mẫu lọc theo nhóm ở mọi truy vấn được mô tả trong tài liệu Azure AI Search.'+cite(28)+'</p></div>'+
+      '<div class="card" style="margin:8px 0"><p><b>Chị Mai hỏi tiếp:</b> "KS-SL-03 làm bao lâu một lần, ai phụ trách?"</p><p>Tìm được chunk Excel <b>KS-2026#sl-1</b> nhờ hàng tiêu đề đi kèm.</p><pre>Hằng quý, Phòng Hạ tầng phụ trách.\n(KiemSoat-NoiBo-2026.xlsx, sheet "Sao lưu", dòng 2–8)</pre><p class="muted">Câu hỏi chứa mã chính xác "KS-SL-03": tìm theo từ khóa giúp ích nhiều ở đây (xem <a href="../hybrid-search/">Hybrid search</a>).</p></div>'+
+      '<div class="callout ok">Mỗi câu trả lời trỏ về đúng file, trang hoặc mục, hoặc sheet và dòng. Tất cả đều nhờ metadata gắn từ lúc parse.</div>'}
+  ];
+  var cur=0, stepsEl=document.getElementById('steps'), bodyEl=document.getElementById('stepBody');
+  STEPS.forEach(function(s,i){var b=document.createElement('button');b.innerHTML='<span class="n">'+(i+1)+'</span>'+s.t;b.addEventListener('click',function(){show(i)});stepsEl.appendChild(b)});
+  function show(i){cur=i;bodyEl.innerHTML=STEPS[i].h;labelTables(bodyEl);[].forEach.call(stepsEl.children,function(b,j){b.classList.toggle('on',j===i);if(j===i)b.setAttribute('aria-current','step');else b.removeAttribute('aria-current')});
+    document.getElementById('prevStep').disabled=i===0;var ab=stepsEl.children[i];if(stepsEl.scrollWidth>stepsEl.clientWidth){stepsEl.scrollLeft=ab.offsetLeft-stepsEl.offsetLeft-8}document.getElementById('nextStep').disabled=i===STEPS.length-1;}
+  document.getElementById('prevStep').addEventListener('click',function(){if(cur>0)show(cur-1)});
+  document.getElementById('nextStep').addEventListener('click',function(){if(cur<STEPS.length-1)show(cur+1)});
+  show(0);
+
+  // ---------- Reading-order demo ----------
+  var RO={
+    head:'HẢI ÂU · HĐ 117/2024 · Trang 3/12',
+    title:'ĐIỀU 5. THANH TOÁN',
+    L:['5.1 Bên A thanh toán','phí bảo trì theo quý,','trong 15 ngày kể từ','ngày nhận hóa đơn.','5.2 Chậm thanh toán','chịu lãi 0,05%/ngày','trên số tiền chậm.'],
+    R:['5.3 Phí năm đầu là','480 triệu đồng,','chưa gồm VAT.','5.4 Giá có thể điều','chỉnh tối đa 5%/năm','theo Phụ lục 2.',''],
+    foot:'Bảo mật · Trang 3'
+  };
+  var roMode='naive', roPage=document.getElementById('roPage'), roOut=document.getElementById('roOut'), roNote=document.getElementById('roNote');
+  function lines(a){return a.map(function(l){return '<span class="pm-line">'+(l?esc(l):'&nbsp;')+'</span>'}).join('')}
+  function paras(a){var out=[],cur='';a.forEach(function(l){if(!l)return;if(/^5\.\d/.test(l)&&cur){out.push(cur);cur=l}else{cur=cur?cur+' '+l:l}});if(cur)out.push(cur);return out}
+  function renderRO(){
+    var n=roMode==='naive';
+    function badge(v,cls){return '<span class="ob'+(cls?' '+cls:'')+'">'+v+'</span>'}
+    roPage.innerHTML=
+      '<div class="pm-blk pm-muted'+(n?'':' off')+'">'+badge(n?'1':'–',n?'':'x')+esc(RO.head)+'</div>'+
+      '<div class="pm-blk"><b>'+badge(n?'2':'1')+esc(RO.title)+'</b></div>'+
+      '<div class="pm-cols"><div class="pm-blk">'+badge(n?'3':'2',n?'mix':'')+lines(RO.L)+'</div><div class="pm-blk">'+badge(n?'3':'3',n?'mix':'')+lines(RO.R)+'</div></div>'+
+      '<div class="pm-blk pm-muted'+(n?'':' off')+'">'+badge(n?'4':'–',n?'':'x')+esc(RO.foot)+'</div>';
+    var txt;
+    if(n){
+      txt=RO.head+'\n'+RO.title+'\n'+RO.L.map(function(l,i){return (l+' '+(RO.R[i]||'')).trim()}).join('\n')+'\n'+RO.foot;
+      roNote.innerHTML='<div class="callout bad" style="margin-top:8px">Hai cột bị đọc ngang theo từng dòng (ô số 3 màu đỏ): mọi dòng nền đỏ nhạt đều ghép chữ của hai cột. Rõ nhất là hai dòng chữ đỏ: "trong 15 ngày kể từ chưa gồm VAT." là câu không có thật. Header và footer cũng lẫn vào nội dung. Trích chữ thô không bảo đảm thứ tự đọc.'+cite(11)+'</div>';
+    }else{
+      txt='## Điều 5. Thanh toán        (trang 3)\n'+paras(RO.L).concat(paras(RO.R)).join('\n');
+      roNote.innerHTML='<div class="callout ok" style="margin-top:8px">Hết cột trái rồi mới sang cột phải, như cách Textract trả thứ tự đọc.'+cite(2)+' Header và footer (gạch "–") được tách ra; số trang được giữ làm metadata. Mỗi điều khoản thành một câu trọn vẹn.</div>';
+    }
+    // One row per output line, so wrapping on narrow screens cannot hide where a line starts.
+    var badL=n?{'trong 15 ngày kể từ chưa gồm VAT.':1,'ngày nhận hóa đơn. 5.4 Giá có thể điều':1}:{};
+    var mixL={};if(n)RO.L.forEach(function(l,i){if(l&&RO.R[i])mixL[l+' '+RO.R[i]]=1});
+    roOut.innerHTML=txt.split('\n').map(function(l,i){return '<div class="ro-line'+(mixL[l]?' mix-l':'')+(badL[l]?' bad-l':'')+'"><span class="ln">'+(i+1)+'</span><span>'+esc(l)+'</span></div>'}).join('');
+    [].forEach.call(document.querySelectorAll('#roBtns .chip'),function(b){setOn(b,b.dataset.m===roMode)});
+  }
+  document.getElementById('roBtns').addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;roMode=b.dataset.m;renderRO()});
+  renderRO();
+
+  // ---------- Chunker playground ----------
+  var P_TITLE='Chính sách bảo mật thông tin';
+  var SECS=[
+    ['1. Phạm vi','Chính sách áp dụng cho toàn bộ nhân viên, cộng tác viên và nhà thầu có quyền truy cập hệ thống của công ty.'],
+    ['2. Mật khẩu','Mật khẩu phải dài tối thiểu 12 ký tự, gồm chữ hoa, chữ thường và chữ số. Mật khẩu phải được đổi sau mỗi 90 ngày. Không dùng lại 5 mật khẩu gần nhất.'],
+    ['3. Sao lưu dữ liệu','Dữ liệu khách hàng được sao lưu hằng ngày lúc 23:00. Mỗi bản sao lưu được giữ 35 ngày và lưu ở hai địa điểm khác nhau. Phòng Hạ tầng chịu trách nhiệm thử khôi phục từ bản sao lưu mỗi quý.'],
+    ['4. Báo cáo sự cố','Khi phát hiện sự cố bảo mật, nhân viên phải báo cho Phòng An ninh thông tin trong vòng 4 giờ. Sự cố nghiêm trọng phải báo thêm cho Giám đốc vận hành.'],
+    ['5. Thiết bị cá nhân','Nhân viên chỉ được đọc email công ty trên điện thoại cá nhân khi đã cài ứng dụng quản lý thiết bị. Không lưu tài liệu mật trên thiết bị cá nhân.']
+  ];
+  var PLAIN=P_TITLE+'\n'+SECS.map(function(s){return s[0]+'\n'+s[1]}).join('\n');
+  var QS=[
+    {q:'Bản sao lưu được giữ bao lâu và ai thử khôi phục?',keys:['35 ngày','Phòng Hạ tầng']},
+    {q:'Bao lâu phải đổi mật khẩu một lần?',keys:['90 ngày']},
+    {q:'Phát hiện sự cố bảo mật thì báo cho ai, trong bao lâu?',keys:['Phòng An ninh thông tin','4 giờ']},
+    {q:'Có được lưu tài liệu mật trên điện thoại cá nhân không?',keys:['Không lưu tài liệu mật']}
+  ];
+  var STOP={'được':1,'bao':1,'lâu':1,'và':1,'ai':1,'phải':1,'một':1,'lần':1,'có':1,'không':1,'thì':1,'cho':1,'trong':1,'là':1,'gì':1,'nào':1,'của':1,'các':1,'khi':1,'sau':1,'mỗi':1,'ở':1};
+  var STRATS=[['fixed','Cố định'],['overlap','Cố định + overlap'],['heading','Theo tiêu đề'],['parent','Cha–con']];
+  var sim={s:'fixed',size:200,ov:40,q:0};
+  function words(s){return s.toLowerCase().normalize('NFC').replace(/[^\p{L}\p{N}]+/gu,' ').trim().split(' ').filter(Boolean)}
+  function tok(n){return Math.ceil(n/4)}
+  // Cut [start, start+size) and step back to the last space or newline so no word is split.
+  function cutFixed(text,size,ov){
+    var out=[],start=0,L=text.length;
+    while(start<L){
+      var end=Math.min(start+size,L);
+      if(end<L){var b=Math.max(text.lastIndexOf(' ',end),text.lastIndexOf('\n',end));if(b>start)end=b}
+      out.push(text.slice(start,end).trim());
+      if(end>=L)break;
+      var ns=end;
+      if(ov>0){ns=end-ov;var w=text.slice(ns,end).search(/[ \n]/);ns=w>=0?ns+w+1:end;if(ns<=start)ns=end}
+      while(ns<L&&/[ \n]/.test(text[ns]))ns++;
+      start=ns;
+    }
+    return out.filter(Boolean);
+  }
+  // Children are half the chosen size (at least 60 characters); the parent is the whole section.
+  function childSize(){return Math.max(60,Math.round(sim.size/2))}
+  // Overlap is capped at half the chunk size; a larger overlap would repeat most of every chunk.
+  function effOv(){return Math.min(sim.ov,Math.floor(sim.size/2))}
+  function sentences(body){return body.replace(/\.\s+/g,'.\n').split('\n')}
+  function build(){
+    var units=[],parents=null;
+    if(sim.s==='fixed'||sim.s==='overlap'){
+      cutFixed(PLAIN,sim.size,sim.s==='overlap'?effOv():0).forEach(function(t,i){units.push({id:'C'+(i+1),text:t})});
+    }else if(sim.s==='heading'){
+      SECS.forEach(function(sec,si){
+        var pre='['+P_TITLE+' › '+sec[0]+'] ', pieces=[], curp='';
+        sentences(sec[1]).forEach(function(s){
+          if(curp&&(pre+curp+' '+s).length>sim.size){pieces.push(curp);curp=s}else{curp=curp?curp+' '+s:s}
+        });
+        if(curp)pieces.push(curp);
+        pieces.forEach(function(p,j){units.push({id:'H'+(si+1)+(pieces.length>1?'.'+(j+1):''),text:pre+p,sec:si})});
+      });
+    }else{
+      parents=SECS.map(function(sec,si){return {id:'P'+(si+1),text:sec[0]+'\n'+sec[1],kids:[]}});
+      SECS.forEach(function(sec,si){
+        // A tail shorter than 30% of the child size is merged into the previous child, as many splitters do.
+        var kids=cutFixed(sec[1],childSize(),0);
+        if(kids.length>1&&kids[kids.length-1].length<childSize()*0.3){var tail=kids.pop();kids[kids.length-1]+=' '+tail}
+        kids.forEach(function(t,j){var u={id:'P'+(si+1)+'.'+(j+1),text:t,parent:si};units.push(u);parents[si].kids.push(u)});
+      });
+    }
+    return {units:units,parents:parents};
+  }
+  function findBest(units,q){
+    var qt={};words(q.q).forEach(function(w){if(!STOP[w])qt[w]=1});
+    var best=null;
+    units.forEach(function(u){
+      var set={};words(u.text).forEach(function(w){set[w]=1});
+      var sc=0;Object.keys(qt).forEach(function(w){if(set[w])sc++});
+      u.score=sc;
+      if(!best||sc>best.score||(sc===best.score&&u.text.length<best.text.length))best=u;
+    });
+    return {best:best,terms:Object.keys(qt)};
+  }
+  function markKeys(t,keys){
+    var h=esc(t);
+    keys.forEach(function(k){var ek=esc(k);h=h.split(ek).join('<mark>'+ek+'</mark>')});
+    return h;
+  }
+  var stratEl=document.getElementById('simStrat'), qEl=document.getElementById('simQ');
+  STRATS.forEach(function(s){var b=document.createElement('button');b.className='chip';b.dataset.s=s[0];b.textContent=s[1];stratEl.appendChild(b)});
+  QS.forEach(function(q,i){var b=document.createElement('button');b.textContent='❓ '+q.q;b.dataset.i=i;qEl.appendChild(b)});
+  stratEl.addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;sim.s=b.dataset.s;renderSim()});
+  qEl.addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;sim.q=+b.dataset.i;renderSim()});
+  var sizeEl=document.getElementById('simSize'), ovEl=document.getElementById('simOv');
+  sizeEl.addEventListener('input',function(){sim.size=+sizeEl.value;renderSim()});
+  ovEl.addEventListener('input',function(){sim.ov=+ovEl.value;renderSim()});
+  function renderSim(){
+    [].forEach.call(stratEl.children,function(b){setOn(b,b.dataset.s===sim.s)});
+    [].forEach.call(qEl.children,function(b){setOn(b,+b.dataset.i===sim.q)});
+    document.getElementById('sizeVal').textContent=sim.size;
+    document.getElementById('ovVal').textContent=sim.s==='overlap'?effOv():sim.ov;
+        var ovOn=sim.s==='overlap';
+    ovEl.disabled=!ovOn;document.getElementById('ovNote').textContent=!ovOn?' (chỉ dùng khi chọn Cố định + overlap)':(sim.ov>effOv()?' (đã giới hạn ở nửa cỡ chunk; thanh đang đặt '+sim.ov+')':'');
+    var r=build(), q=QS[sim.q], s=findBest(r.units,q), hit=s.best;
+    var sn='';
+    if(sim.s==='parent')sn=' (con: '+childSize()+' ký tự; cha: cả mục)';
+    else if(sim.s==='heading'){
+      if(r.units.some(function(u){return u.text.length>sim.size}))sn=' (không cắt giữa câu, nên có chunk dài hơn cỡ đặt)';
+      if(r.units.length===SECS.length)sn+=' (mỗi mục đã gọn trong một chunk; tăng cỡ không đổi gì)';
+    }
+    document.getElementById('sizeNote').textContent=sn;
+    var returned=r.parents?r.parents[hit.parent]:hit;
+    var low=returned.text.toLowerCase();
+    var missing=q.keys.filter(function(k){return low.indexOf(k.toLowerCase())<0});
+    var lens=r.units.map(function(u){return u.text.length});
+    var total=lens.reduce(function(a,b){return a+b},0);
+    var embTok=r.units.reduce(function(a,u){return a+tok(u.text.length)},0);
+    var maxTok=tok(Math.max.apply(null,lens));
+    document.getElementById('simStats').innerHTML=
+      '<div class="stat"><b>'+r.units.length+'</b><span>chunk được embed</span></div>'+
+      '<div class="stat"><b>~'+Math.round(embTok/r.units.length)+'</b><span>token trung bình · lớn nhất ~'+maxTok+'</span></div>'+
+      '<div class="stat"><b>~'+embTok+'</b><span>tổng token phải embed'+(r.parents?' (chỉ chunk con, không gồm tiêu đề)':'')+'</span></div>'+
+      (r.parents?'<div class="stat"><b>~'+r.parents.reduce(function(a,p){return a+tok(p.text.length)},0)+'</b><span>token lưu thêm ở tầng cha (không embed)</span></div>':'')+
+      '<div class="stat"><b>'+(total/PLAIN.length).toFixed(2).replace('.',',')+'×</b><span>độ phình so với văn bản gốc ('+PLAIN.length+' ký tự)'+(r.parents?', chỉ tính chunk con':'')+'</span></div>'+
+      '<div class="stat"><b>~'+tok(returned.text.length)+'</b><span>token gửi LLM cho câu hỏi này</span></div>';
+    var ok=!missing.length;
+    document.getElementById('simVerdict').innerHTML='<div class="verdict '+(ok?'ok':'no')+'"><b>'+(ok?'✓ Đủ thông tin để trả lời.':'✗ Thiếu thông tin.')+'</b> Chunk được tìm: <b>'+hit.id+'</b> (khớp '+hit.score+'/'+s.terms.length+' từ khóa: '+esc(s.terms.join(', '))+')'+
+      (r.parents?'; trả về chunk cha <b>'+returned.id+'</b> cho LLM.':'.')+
+      (ok?'':' Thiếu: '+missing.map(function(k){return '"'+esc(k)+'"'}).join(', ')+' nằm ở chunk khác.')+'</div>';
+    var html='';
+    if(r.parents){
+      r.parents.forEach(function(p,pi){
+        var isHitP=pi===hit.parent;
+        html+='<div class="chunk parent'+(isHitP?' hitp':'')+'"><span class="id">Cha '+p.id+' · '+esc(SECS[pi][0])+' · ~'+tok(p.text.length)+' token'+(isHitP?' · được trả cho LLM':'')+'</span>';
+        p.kids.forEach(function(k){html+='<div class="chunk child'+(k===hit?' hit':'')+'"><span class="id">Con '+k.id+' · '+k.text.length+' ký tự · ~'+tok(k.text.length)+' token'+(k===hit?' · trúng':'')+'</span><div class="txt">'+markKeys(k.text,q.keys)+'</div></div>'});
+        html+='</div>';
+      });
+    }else{
+      r.units.forEach(function(u){html+='<div class="chunk'+(u===hit?' hit':'')+'"><span class="id">'+u.id+' · '+u.text.length+' ký tự · ~'+tok(u.text.length)+' token'+(u===hit?' · trúng':'')+'</span><div class="txt">'+markKeys(u.text,q.keys)+'</div></div>'});
+    }
+    document.getElementById('simChunks').innerHTML=html;
+  }
+  renderSim();
+
+  // ---------- Glossary ----------
+  var G={doc:'Đọc file & OCR',lay:'Bố cục & bảng',chk:'Chunking',meta:'Metadata & vận hành',ev:'Đánh giá'};
+  var T=[
+    ['parsing','doc','Document parsing','phân tích tài liệu','Biến file gốc (PDF, Word, Excel, ảnh) thành văn bản có cấu trúc: chữ, tiêu đề, bảng, hình, kèm vị trí trên trang.','PDF hợp đồng → Markdown có "## Điều 5" và bảng.',['text-layer','ocr','layout'],[1,16]],
+    ['file-type','doc','File type detection','nhận dạng loại file','Xác định file thật sự là loại gì dựa vào nội dung, không chỉ đuôi tên, để chọn đúng parser.','Unstructured dùng libmagic, không có thì lùi về đuôi file; Magika dùng model học sâu.',['conversion','parsing'],[7,33]],
+    ['conversion','doc','Conversion','chuyển đổi định dạng','Đổi file sang định dạng parser xử lý tốt hơn. Mỗi lần đổi qua định dạng trung gian có thể mất dữ liệu.','Unstructured đổi .doc sang .docx bằng LibreOffice rồi mới parse.',['file-type'],[7,16,34]],
+    ['text-layer','doc','Text layer','lớp chữ','Phần chữ thật được lưu trong PDF số. Có thì trích trực tiếp, nhanh và đúng ký tự, nhưng thứ tự chưa chắc là thứ tự đọc.','PDF xuất từ Word có text layer; bản scan thì không.',['scanned','reading-order'],[11,12]],
+    ['scanned','doc','PDF scan','image-based PDF','PDF mà mỗi trang là một ảnh. Trích chữ thông thường ra gần như rỗng, phải OCR.','Hợp đồng đã ký được scan lại.',['ocr','text-layer'],[10]],
+    ['ocr','doc','OCR','Optical Character Recognition','Nhận dạng chữ từ ảnh. Chậm hơn nhiều so với trích text layer và có thể đọc sai số, dấu.','PyMuPDF ghi OCR chậm khoảng 1000 lần so với trích chữ thông thường.',['scanned','ocr-conf'],[10]],
+    ['ocr-conf','doc','OCR confidence','độ tin cậy','Điểm mà bộ OCR hoặc dịch vụ gán cho từng từ, dòng, khối. Điểm thấp là chỗ nên kiểm tra lại.','Ưu tiên kiểm tra số tiền, ngày có điểm thấp.',['ocr'],[2]],
+    ['garbled','doc','Garbled text','chữ lỗi mã hóa','Chữ trích ra thành ký tự lạ hoặc "�" dù trang nhìn bình thường: lớp chữ hỏng hoặc sai mã hóa. OCR lại vùng đó.','',['text-layer','ocr'],[10]],
+    ['vlm','doc','VLM parsing','model đọc ảnh trang','Dùng model ngôn ngữ có thị giác đọc ảnh trang và chép ra văn bản, hiểu cả bảng và biểu đồ. Tính token theo trang.','Claude nhận ảnh mỗi trang kèm chữ trích được.',['ocr','cost-page'],[14,15]],
+    ['visual-ret','doc','Visual document retrieval','tìm bằng ảnh trang','Bỏ bước trích chữ: embed thẳng ảnh trang bằng VLM rồi tìm theo ảnh.','ColPali tạo embedding nhiều vector từ ảnh trang.',['vlm'],[32]],
+    ['layout','lay','Layout analysis','phân tích bố cục','Dùng model nhận ra vai trò từng khối trên trang: tiêu đề, đoạn, bảng, hình, header, footer, và thứ tự đọc.','Azure phân biệt vai trò hình học (bảng, hình) và logic (tiêu đề, footer).',['reading-order','header-footer','element'],[1,2,16]],
+    ['reading-order','lay','Reading order','thứ tự đọc','Thứ tự các khối chữ theo cách người đọc. Trang nhiều cột dễ bị đọc ngang qua cột.','Textract trả hết cột trái từ trên xuống rồi mới sang cột kế.',['layout','text-layer'],[2,11]],
+    ['header-footer','lay','Page header / footer','đầu trang / chân trang','Chữ lặp ở mép trên, dưới mỗi trang. Nên tách khỏi nội dung, giữ thông tin hữu ích (số trang) làm metadata.','"HẢI ÂU · HĐ 117/2024 · Trang 3/12"',['boilerplate','page'],[1,2,16]],
+    ['boilerplate','lay','Boilerplate','chữ lặp vô ích','Đoạn lặp ở nhiều trang hoặc nhiều file. Để lại thì chunk bị nhiễu và giống nhau hơn thực tế.','Footer "Bảo mật" ở 12 trang.',['header-footer'],[16]],
+    ['element','lay','Document element','phần tử tài liệu','Đơn vị parser trả về: Title, NarrativeText, ListItem, Table… Có thể chunk theo phần tử thay vì theo ký tự.','',['structure','layout'],[7,9]],
+    ['bbox','lay','Bounding box','khung tọa độ','Vị trí của một khối chữ hoặc bảng trên trang. Dùng để tô sáng chỗ trích dẫn trên PDF gốc.','',['citation'],[1,2]],
+    ['md-json','lay','Markdown / JSON có cấu trúc','','Đầu ra của parser. Markdown gọn, dễ cắt theo tiêu đề; JSON giữ đủ chi tiết (loại phần tử, trang, tọa độ).','Azure xuất Markdown; Docling có JSON không mất mát.',['element','structure'],[1,5]],
+    ['table-struct','lay','Table structure recognition','nhận dạng cấu trúc bảng','Tìm ra hàng, cột, ô, ô gộp, hàng tiêu đề của bảng, thay vì chỉ lấy chữ trong bảng.','',['merged','col-header'],[1,3]],
+    ['merged','lay','Merged cell','ô gộp','Ô trải qua nhiều hàng hoặc cột. Dàn phẳng sai thì giá trị bị gán nhầm hàng.','Azure viết bảng dạng HTML để giữ ô gộp.',['table-struct'],[1,3]],
+    ['col-header','lay','Column header','hàng tiêu đề cột','Hàng cho biết nghĩa của từng cột. Mỗi chunk cắt từ bảng nên mang theo hàng này.','"Mã KS | Mô tả | Tần suất | Phụ trách"',['row-band'],[3,4]],
+    ['row-band','lay','Row band','dải hàng','Cắt bảng dài thành nhóm vài hàng liên tiếp, mỗi nhóm lặp lại tên bảng và hàng tiêu đề.','Sheet 28 dòng → 4 dải 7 dòng.',['col-header','sheet'],[4]],
+    ['sheet','lay','Sheet-as-table','mỗi sheet là một bảng','Xem mỗi sheet Excel là một mục dạng bảng, tên sheet đóng vai tiêu đề mục, trích dẫn bằng sheet + dòng.','Unstructured: mỗi sheet thành một phần tử Table.',['row-band'],[7,4]],
+    ['chunk','chk','Chunk','đoạn','Mẩu văn bản cắt từ tài liệu, là đơn vị để embed và tìm.','Một điều khoản hợp đồng kèm tiêu đề mục.',['chunk-size','metadata'],[16]],
+    ['chunk-size','chk','Chunk size','cỡ chunk','Độ dài tối đa mỗi chunk, nên đo bằng token của embedding model. Nhỏ quá thiếu ngữ cảnh, lớn quá loãng và tốn.','Thử 128, 256, 512, 1024 token rồi đo.',['emb-limit','overlap'],[6,16,25]],
+    ['emb-limit','chk','Embedding input limit','giới hạn đầu vào','Số token tối đa embedding model nhận. Vượt quá thì phần thừa có thể bị cắt bỏ.','',['chunk-size'],[25]],
+    ['overlap','chk','Overlap','chồng lấn','Phần chữ lặp lại giữa hai chunk liền nhau để giảm mất ý ở chỗ cắt. Tăng số token phải embed; lợi ích tùy dữ liệu.','',['fixed','chunk-size'],[18,24]],
+    ['fixed','chk','Fixed-size chunking','cắt cố định','Cắt mỗi N ký tự hoặc token. Đơn giản, rẻ, nhưng cắt ngang câu và bảng.','',['overlap','recursive'],[16,25]],
+    ['recursive','chk','Recursive splitting','cắt đệ quy','Thử cắt ở ranh giới đoạn, rồi dòng, rồi khoảng trắng cho đến khi đủ nhỏ.','',['fixed','structure'],[18]],
+    ['structure','chk','Structure-aware chunking','cắt theo cấu trúc','Cắt theo tiêu đề, mục hoặc phần tử; mục quá dài mới chia nhỏ. Không trộn hai mục vào một chunk.','Unstructured "by_title", Docling HybridChunker.',['element','section-path'],[6,9,26]],
+    ['semantic','chk','Semantic chunking','cắt theo nghĩa','Embed từng câu và cắt ở chỗ nghĩa thay đổi nhiều. Bằng chứng về lợi ích còn trái chiều.','',['structure'],[23,24]],
+    ['parent-child','chk','Parent–child','small-to-big, cha–con','Embed chunk con nhỏ để tìm chính xác, trả chunk cha lớn cho LLM để đủ ngữ cảnh.','Con: một câu về sao lưu; cha: cả mục "Sao lưu dữ liệu".',['chunk-size'],[20]],
+    ['contextual','chk','Contextual retrieval','','Dùng LLM viết vài chục token ngữ cảnh riêng cho từng chunk, ghép vào đầu chunk trước khi embed và lập chỉ mục từ khóa.','Thêm "Đây là Điều 5 của hợp đồng bảo trì 117/2024…".',['section-path'],[21]],
+    ['late','chk','Late chunking','','Đưa cả văn bản dài qua embedding model rồi mới chia vector theo chunk, để vector mỗi chunk mang ngữ cảnh toàn văn.','',['contextual'],[22]],
+    ['metadata','meta','Metadata','','Thông tin đi kèm mỗi chunk: nguồn, trang, mục, hash, quyền, parser. Dùng để trích dẫn, lọc và vận hành.','',['source-id','file-hash','access'],[17]],
+    ['source-id','meta','Source id','mã nguồn tài liệu','Định danh file gốc của chunk. Dùng để gom, cập nhật, xóa chunk theo nguồn.','phap-che/HD-117-BaoTri.pdf',['metadata','dedup'],[27]],
+    ['file-hash','meta','File hash','mã băm','Giá trị băm (vd. SHA-256) của nội dung file. Trùng hash nghĩa là file giống hệt.','Hai thư mục cùng một hợp đồng → một hash.',['dedup'],[17,27]],
+    ['dedup','meta','Dedup / tái dùng','bỏ trùng','Không parse, embed lại file hoặc chunk đã có trong kho; giữ thêm nguồn cho bản trùng.','',['file-hash','source-id'],[27]],
+    ['page','meta','Page / sheet + dòng','vị trí trích dẫn','Vị trí của chunk trong file gốc. PDF dùng trang; Excel dùng sheet và dải dòng.','',['section-path','citation'],[1,7]],
+    ['section-path','meta','Section path','đường dẫn mục','Chuỗi tiêu đề từ trên xuống tới mục chứa chunk. Gắn vào chunk cho đủ ngữ cảnh và dùng để trích dẫn Word.','Chính sách bảo mật › 3. Sao lưu dữ liệu',['structure','page'],[4,19]],
+    ['citation','meta','Citation','trích dẫn','Chỉ cho người dùng câu trả lời lấy từ file nào, trang hoặc mục nào để kiểm chứng.','"(HĐ 117/2024, Điều 5.2, trang 3)"',['page','bbox'],[17]],
+    ['access','meta','Access filter','lọc quyền','Mỗi chunk mang danh sách nhóm được xem; mọi truy vấn đều lọc theo nhóm của người hỏi.','Kinh doanh không thấy chunk hợp đồng.',['metadata'],[28]],
+    ['golden','ev','Golden set','bộ câu hỏi chuẩn','Danh sách câu hỏi kèm vị trí đoạn chứa đáp án, dùng để so các cách parse và chunk.','30–100 câu, có câu về bảng và bản scan.',['recall','answer-in'],[]],
+    ['recall','ev','recall@k','','Tỷ lệ đoạn đúng nằm trong top-k kết quả. Anthropic đo tỷ lệ tìm trượt bằng 1 − recall@20.','',['golden'],[21]],
+    ['answer-in','ev','Answer-in-chunk','đáp án trọn trong chunk','Chunk được tìm có chứa đủ thông tin để trả lời không. Chunk đúng mà bị cắt dở vẫn tính là trượt.','Mô phỏng ở mục 7 kiểm tra đúng điều này.',['recall'],[]],
+    ['iou','ev','Token IoU','','Tỷ lệ chữ liên quan trên tổng chữ lấy ra, tính theo token. Phạt chunk thừa chữ hoặc lặp do overlap.','',['overlap'],[24]],
+    ['edit-dist','ev','Edit distance','khoảng cách chỉnh sửa','Số thao tác sửa để biến văn bản parse ra thành bản chuẩn, chuẩn hóa theo độ dài. Dùng cho chữ và thứ tự đọc.','',['teds'],[30]],
+    ['teds','ev','TEDS','Tree-Edit-Distance-based Similarity','Metric so cấu trúc bảng dạng cây, bắt được cả ô lệch hàng lẫn lỗi OCR trong ô.','',['edit-dist','table-struct'],[31]],
+    ['cost-page','ev','Chi phí mỗi trang','cost per page','Thời gian và tiền để xử lý một trang theo từng nhánh (số, scan, VLM). Cơ sở để chọn công cụ.','Claude: 1.500–3.000 token chữ mỗi trang PDF, cộng token ảnh.',['vlm','ocr'],[10,15]]
+  ];
+  var byId={};T.forEach(function(t){byId[t[0]]=t});
+  var grid=document.getElementById('glossGrid'), chips=document.getElementById('glossChips'), search=document.getElementById('glossSearch'), activeG='all';
+  function fold(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/[\u2013\u2014-]+/g,' ').replace(/\s+/g,' ')}
+  function renderGloss(){
+    var q=fold(search.value.trim()); grid.innerHTML='';var n=0;
+    T.forEach(function(t){
+      if(activeG!=='all'&&t[1]!==activeG)return;
+      var hay=fold(t[2]+' '+t[3]+' '+t[4]+' '+t[5]); if(q&&hay.indexOf(q)<0)return; n++;
+      var d=document.createElement('div');d.className='card term';d.id='term-'+t[0];
+      var rel=t[6].filter(function(r){return byId[r]}).map(function(r){return '<a href="#term-'+r+'" data-goto="'+r+'">'+esc(byId[r][2])+'</a>'}).join(', ');
+      var cs=(t[7]||[]).filter(function(n){return n===(n|0)&&document.getElementById('src-'+n)}).map(function(n){return '<a href="#src-'+n+'">['+n+']</a>'}).join('');if(cs)cs='<sup class="cite">'+cs+'</sup>';
+      d.innerHTML='<span class="tag">'+G[t[1]]+'</span><h4>'+esc(t[2])+(t[3]?' <span class="en">· '+esc(t[3])+'</span>':'')+'</h4><p>'+esc(t[4])+(t[5]?'':cs)+'</p>'+(t[5]?'<p class="ex">Ví dụ: '+esc(t[5])+cs+'</p>':'')+(rel?'<div class="rel">Liên quan: '+rel+'</div>':'');
+      grid.appendChild(d);
+    });
+    if(!n)grid.innerHTML='<p class="muted">Không có khái niệm khớp.</p>';
+  }
+  var all=document.createElement('button');all.className='chip on';all.textContent='Tất cả ('+T.length+')';all.dataset.g='all';all.setAttribute('aria-pressed','true');chips.appendChild(all);
+  Object.keys(G).forEach(function(k){var b=document.createElement('button');b.className='chip';b.dataset.g=k;b.setAttribute('aria-pressed','false');b.textContent=G[k];chips.appendChild(b)});
+  chips.addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;activeG=b.dataset.g;[].forEach.call(chips.children,function(c){setOn(c,c===b)});renderGloss()});
+  search.addEventListener('input',renderGloss);
+  grid.addEventListener('click',function(e){var a=e.target.closest('a[data-goto]');if(!a)return;e.preventDefault();
+    if(!document.getElementById('term-'+a.dataset.goto)){activeG='all';search.value='';[].forEach.call(chips.children,function(c){setOn(c,c.dataset.g==='all')});renderGloss()}
+    var t=document.getElementById('term-'+a.dataset.goto);t.scrollIntoView({behavior:'smooth',block:'center'});t.style.outline='2px solid var(--accent)';setTimeout(function(){t.style.outline=''},1500)});
+  renderGloss();
+
+  // ---------- Checklist persistence ----------
+  [].forEach.call(document.querySelectorAll('input[data-k]'),function(cb){
+    cb.checked=safeGet('dpc-'+cb.dataset.k)==='1';
+    cb.addEventListener('change',function(){safeSet('dpc-'+cb.dataset.k,cb.checked?'1':'0')});
+  });
+
+  // ---------- Active TOC ----------
+  var links=[].slice.call(document.querySelectorAll('#toc a'));
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(l){var on=l.getAttribute('href')==='#'+e.target.id;l.classList.toggle('active',on);if(on){var nav=l.parentNode;nav.scrollLeft=l.offsetLeft-nav.offsetLeft-(nav.clientWidth-l.offsetWidth)/2}})}})},{rootMargin:'-40% 0px -55% 0px'});
+    document.querySelectorAll('main section').forEach(function(s){io.observe(s)});
+  }
+})();
+</script>
+</body>
+</html>
