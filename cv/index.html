@@ -24,8 +24,10 @@
 <script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <!--
   How to fill this CV: every element with class "ph" is a placeholder.
-  Replace it with real text and drop the "ph" class. Copy an <article class="item"> block to add
-  another job, project or degree; delete a whole <section> you do not need.
+  Text comes in pairs, data-l="vi" for Vietnamese and data-l="en" for English; only the active
+  language shows (and prints). Replace both halves of a pair and drop the "ph" class.
+  Copy an <article class="item"> block to add another job, project or degree; delete a whole
+  <section> you do not need.
 -->
 <style>
 :root{
@@ -47,6 +49,8 @@
   --shadow:none; color-scheme:dark;
 }
 *{box-sizing:border-box}
+:root[lang="en"] [data-l="vi"],:root:not([lang="en"]) [data-l="en"]{display:none!important}
+.lang-btn{width:40px;padding:0;justify-content:center;font-size:13px;font-weight:800;letter-spacing:.04em}
 body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
 a{color:inherit}
 :focus-visible{outline:3px solid var(--focus);outline-offset:3px;border-radius:8px}
@@ -118,8 +122,9 @@ p.ph,li.ph{background:none;border-left:3px dashed var(--line);padding-left:10px}
 </head>
 <body>
 <header class="bar">
-  <a class="back" href="../">← Trang chủ</a>
-  <button class="btn" id="printBtn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 2h12v5H6zm-2 7h16a2 2 0 0 1 2 2v6h-4v5H6v-5H2v-6a2 2 0 0 1 2-2zm4 7v4h8v-4zm10-4.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/></svg>In / lưu PDF</button>
+  <a class="back" href="../">← <span data-l="vi">Trang chủ</span><span data-l="en">Home</span></a>
+  <button class="btn" id="printBtn" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 2h12v5H6zm-2 7h16a2 2 0 0 1 2 2v6h-4v5H6v-5H2v-6a2 2 0 0 1 2-2zm4 7v4h8v-4zm10-4.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/></svg><span data-l="vi">In / lưu PDF</span><span data-l="en">Print / save PDF</span></button>
+  <button class="btn lang-btn" id="langBtn" type="button" lang="en" aria-label="Switch to English">EN</button>
   <button class="btn theme-btn" id="themeBtn" type="button" aria-label="Đổi giao diện sáng/tối"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2v16a8 8 0 0 1 0-16z"/></svg></button>
 </header>
 
@@ -128,7 +133,7 @@ p.ph,li.ph{background:none;border-left:3px dashed var(--line);padding-left:10px}
     <img src="../images/avatar.png" width="104" height="104" alt="Ảnh đại diện của Trần Văn Tuấn">
     <div>
       <h1>Trần Văn Tuấn</h1>
-      <p class="role">Lập trình viên</p>
+      <p class="role"><span data-l="vi">Lập trình viên</span><span data-l="en">Software developer</span></p>
     </div>
     <ul class="contacts">
       <li><a href="mailto:tranvantuanit210@gmail.com"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm9 7.2L4 7.3V17h16V7.3l-8 4.9zM5.2 7l6.8 4.2L18.8 7H5.2z"/></svg>tranvantuanit210@gmail.com</a></li>
@@ -139,84 +144,87 @@ p.ph,li.ph{background:none;border-left:3px dashed var(--line);padding-left:10px}
   </header>
 
   <section aria-labelledby="sum">
-    <h2 id="sum">Giới thiệu</h2>
+    <h2 id="sum"><span data-l="vi">Giới thiệu</span><span data-l="en">Summary</span></h2>
     <div class="card">
-      <p class="ph">[Tóm tắt 2–3 câu: bạn làm gì, mạnh ở đâu, đang tìm cơ hội gì.]</p>
+      <p class="ph" data-l="vi">[Tóm tắt 2–3 câu: bạn làm gì, mạnh ở đâu, đang tìm cơ hội gì.]</p>
+      <p class="ph" data-l="en">[2–3 sentence summary: what you do, your strengths, the role you are looking for.]</p>
     </div>
   </section>
 
   <section aria-labelledby="exp">
-    <h2 id="exp">Kinh nghiệm</h2>
+    <h2 id="exp"><span data-l="vi">Kinh nghiệm</span><span data-l="en">Experience</span></h2>
     <div class="timeline">
       <article class="item card">
-        <h3><span class="ph">[Vị trí]</span> · <span class="ph">[Nơi làm]</span></h3>
-        <p class="meta"><span class="ph">[Tháng/Năm]</span> – <span class="ph">[Tháng/Năm hoặc Hiện tại]</span></p>
+        <h3><span class="ph" data-l="vi">[Vị trí]</span><span class="ph" data-l="en">[Position]</span> · <span class="ph" data-l="vi">[Nơi làm]</span><span class="ph" data-l="en">[Organisation]</span></h3>
+        <p class="meta"><span class="ph" data-l="vi">[Tháng/Năm]</span><span class="ph" data-l="en">[Month/Year]</span> – <span class="ph" data-l="vi">[Tháng/Năm hoặc Hiện tại]</span><span class="ph" data-l="en">[Month/Year or Present]</span></p>
         <ul>
-          <li class="ph">[Việc chính hoặc kết quả, có số liệu thật nếu có]</li>
-          <li class="ph">[Việc chính hoặc kết quả]</li>
+          <li class="ph" data-l="vi">[Việc chính hoặc kết quả, có số liệu thật nếu có]</li><li class="ph" data-l="en">[Main responsibility or result, with real numbers if you have them]</li>
+          <li class="ph" data-l="vi">[Việc chính hoặc kết quả]</li><li class="ph" data-l="en">[Main responsibility or result]</li>
         </ul>
       </article>
       <article class="item card">
-        <h3><span class="ph">[Vị trí]</span> · <span class="ph">[Nơi làm]</span></h3>
-        <p class="meta"><span class="ph">[Tháng/Năm]</span> – <span class="ph">[Tháng/Năm]</span></p>
+        <h3><span class="ph" data-l="vi">[Vị trí]</span><span class="ph" data-l="en">[Position]</span> · <span class="ph" data-l="vi">[Nơi làm]</span><span class="ph" data-l="en">[Organisation]</span></h3>
+        <p class="meta"><span class="ph" data-l="vi">[Tháng/Năm]</span><span class="ph" data-l="en">[Month/Year]</span> – <span class="ph" data-l="vi">[Tháng/Năm]</span><span class="ph" data-l="en">[Month/Year]</span></p>
         <ul>
-          <li class="ph">[Việc chính hoặc kết quả]</li>
+          <li class="ph" data-l="vi">[Việc chính hoặc kết quả]</li><li class="ph" data-l="en">[Main responsibility or result]</li>
         </ul>
       </article>
     </div>
   </section>
 
   <section aria-labelledby="proj">
-    <h2 id="proj">Dự án</h2>
+    <h2 id="proj"><span data-l="vi">Dự án</span><span data-l="en">Projects</span></h2>
     <div class="grid2">
       <article class="item card">
-        <h3 class="ph">[Tên dự án]</h3>
-        <p class="meta ph">[Vai trò · công nghệ chính]</p>
-        <p class="ph">[Dự án giải quyết việc gì, bạn làm phần nào, kết quả ra sao.]</p>
+        <h3 class="ph" data-l="vi">[Tên dự án]</h3><h3 class="ph" data-l="en">[Project name]</h3>
+        <p class="meta ph" data-l="vi">[Vai trò · công nghệ chính]</p><p class="meta ph" data-l="en">[Role · main technologies]</p>
+        <p class="ph" data-l="vi">[Dự án giải quyết việc gì, bạn làm phần nào, kết quả ra sao.]</p><p class="ph" data-l="en">[What the project solves, your part, the outcome.]</p>
       </article>
       <article class="item card">
-        <h3 class="ph">[Tên dự án]</h3>
-        <p class="meta ph">[Vai trò · công nghệ chính]</p>
-        <p class="ph">[Mô tả ngắn và kết quả.]</p>
+        <h3 class="ph" data-l="vi">[Tên dự án]</h3><h3 class="ph" data-l="en">[Project name]</h3>
+        <p class="meta ph" data-l="vi">[Vai trò · công nghệ chính]</p><p class="meta ph" data-l="en">[Role · main technologies]</p>
+        <p class="ph" data-l="vi">[Mô tả ngắn và kết quả.]</p><p class="ph" data-l="en">[Short description and outcome.]</p>
       </article>
     </div>
   </section>
 
   <section aria-labelledby="skills">
-    <h2 id="skills">Kỹ năng</h2>
+    <h2 id="skills"><span data-l="vi">Kỹ năng</span><span data-l="en">Skills</span></h2>
     <div class="card">
-      <div class="skill-group"><h3 class="ph">[Nhóm kỹ năng, ví dụ ngôn ngữ lập trình]</h3><div class="chips"><span class="ph">[Kỹ năng]</span><span class="ph">[Kỹ năng]</span><span class="ph">[Kỹ năng]</span></div></div>
-      <div class="skill-group"><h3 class="ph">[Nhóm kỹ năng]</h3><div class="chips"><span class="ph">[Kỹ năng]</span><span class="ph">[Kỹ năng]</span></div></div>
+      <div class="skill-group"><h3 class="ph" data-l="vi">[Nhóm kỹ năng, ví dụ ngôn ngữ lập trình]</h3><h3 class="ph" data-l="en">[Skill group, e.g. programming languages]</h3><div class="chips"><span class="ph" data-l="vi">[Kỹ năng]</span><span class="ph" data-l="en">[Skill]</span><span class="ph" data-l="vi">[Kỹ năng]</span><span class="ph" data-l="en">[Skill]</span><span class="ph" data-l="vi">[Kỹ năng]</span><span class="ph" data-l="en">[Skill]</span></div></div>
+      <div class="skill-group"><h3 class="ph" data-l="vi">[Nhóm kỹ năng]</h3><h3 class="ph" data-l="en">[Skill group]</h3><div class="chips"><span class="ph" data-l="vi">[Kỹ năng]</span><span class="ph" data-l="en">[Skill]</span><span class="ph" data-l="vi">[Kỹ năng]</span><span class="ph" data-l="en">[Skill]</span></div></div>
     </div>
   </section>
 
   <section aria-labelledby="edu">
-    <h2 id="edu">Học vấn</h2>
+    <h2 id="edu"><span data-l="vi">Học vấn</span><span data-l="en">Education</span></h2>
     <article class="item card">
-      <h3><span class="ph">[Ngành học]</span> · <span class="ph">[Trường]</span></h3>
-      <p class="meta ph">[Năm bắt đầu – Năm tốt nghiệp]</p>
+      <h3><span class="ph" data-l="vi">[Ngành học]</span><span class="ph" data-l="en">[Degree]</span> · <span class="ph" data-l="vi">[Trường]</span><span class="ph" data-l="en">[School]</span></h3>
+      <p class="meta ph" data-l="vi">[Năm bắt đầu – Năm tốt nghiệp]</p><p class="meta ph" data-l="en">[Start year – Graduation year]</p>
     </article>
   </section>
 
   <section aria-labelledby="cert">
-    <h2 id="cert">Chứng chỉ và giải thưởng</h2>
-    <div class="card"><ul><li class="ph">[Tên chứng chỉ · Đơn vị cấp · Năm]</li></ul></div>
+    <h2 id="cert"><span data-l="vi">Chứng chỉ và giải thưởng</span><span data-l="en">Certificates and awards</span></h2>
+    <div class="card"><ul><li class="ph" data-l="vi">[Tên chứng chỉ · Đơn vị cấp · Năm]</li><li class="ph" data-l="en">[Certificate · Issuer · Year]</li></ul></div>
   </section>
 
   <section aria-labelledby="lang">
-    <h2 id="lang">Ngoại ngữ</h2>
-    <div class="card chips"><span class="ph">[Ngôn ngữ · mức độ]</span></div>
+    <h2 id="lang"><span data-l="vi">Ngoại ngữ</span><span data-l="en">Languages</span></h2>
+    <div class="card chips"><span class="ph" data-l="vi">[Ngôn ngữ · mức độ]</span><span class="ph" data-l="en">[Language · level]</span></div>
   </section>
 
   <section class="notes" aria-labelledby="learn">
-    <h2 id="learn">Đang học</h2>
+    <h2 id="learn"><span data-l="vi">Đang học</span><span data-l="en">Learning</span></h2>
     <div class="card">
-      <p>Những gì tôi học được về AI, lập trình và cuộc sống được ghi lại trong Sổ tay.</p>
-      <a href="../so-tay/">Mở Sổ tay <span aria-hidden="true">→</span></a>
+      <p data-l="vi">Những gì tôi học được về AI, lập trình và cuộc sống được ghi lại trong Sổ tay.</p>
+      <p data-l="en">What I learn about AI, programming and life goes into my notebook (in Vietnamese).</p>
+      <a href="../so-tay/"><span data-l="vi">Mở Sổ tay</span><span data-l="en">Open the notebook</span> <span aria-hidden="true">→</span></a>
     </div>
   </section>
 
-  <p class="hint">Các ô in nghiêng có gạch là chỗ trống, đang chờ điền thông tin.</p>
+  <p class="hint" data-l="vi">Các ô in nghiêng có gạch là chỗ trống, đang chờ điền thông tin.</p>
+  <p class="hint" data-l="en">Italic, underlined items are placeholders waiting for real details.</p>
 </main>
 
 <script>
@@ -227,6 +235,21 @@ p.ph,li.ph{background:none;border-left:3px dashed var(--line);padding-left:10px}
     var next=cur==='dark'?'light':'dark';root.setAttribute('data-theme',next);try{localStorage.setItem('rag-theme',next)}catch(e){}
   });
   document.getElementById('printBtn').addEventListener('click',function(){window.print()});
+  // Language: ?lang=en, else the choice saved on the profile page, else Vietnamese.
+  var langBtn=document.getElementById('langBtn'),q=/[?&]lang=(en|vi)\b/.exec(location.search),saved=null;
+  try{saved=localStorage.getItem('profile-lang')}catch(e){}
+  function setLang(l){
+    root.lang=l;document.title=l==='en'?'CV · Trần Văn Tuấn (English)':'CV · Trần Văn Tuấn';
+    langBtn.textContent=l==='en'?'VI':'EN';langBtn.lang=l==='en'?'vi':'en';
+    langBtn.setAttribute('aria-label',l==='en'?'Chuyển sang tiếng Việt':'Switch to English');
+    document.getElementById('themeBtn').setAttribute('aria-label',l==='en'?'Toggle light/dark theme':'Đổi giao diện sáng/tối');
+  }
+  setLang(q?q[1]:(saved==='en'?'en':'vi'));
+  langBtn.addEventListener('click',function(){
+    var next=root.lang==='en'?'vi':'en';setLang(next);
+    try{localStorage.setItem('profile-lang',next)}catch(e){}
+    history.replaceState(null,'',next==='en'?'?lang=en':location.pathname);
+  });
 })();
 </script>
 </body>
