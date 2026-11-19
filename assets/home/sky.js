@@ -27,4 +27,22 @@ var CONS=[];
   CONS.push(cn);
 });
 
+// Time of day in Vietnam (UTC+7) tints the sky: morning 05:00, afternoon 11:00, evening 16:30, night 19:00.
+// The top glow moves with the sun, stars fade by day, shooting stars fall only after 16:30, and a small
+// sun (06:00–18:00) or moon crosses the top of the sky. ?tod=<band> previews one band at a fixed hour.
+// Only the sky changes; the page colours stay with the theme and the look.
+var root=document.documentElement,orb=document.createElement('span');orb.className='orb';sky0.appendChild(orb);
+var BAND={morning:8,afternoon:14,evening:17.5,night:22},fixed=new URLSearchParams(location.search).get('tod');
+function vnHour(){var d=new Date(Date.now()+7*36e5);return d.getUTCHours()+d.getUTCMinutes()/60}
+function tod(){
+  var h=BAND[fixed]?BAND[fixed]:vnHour();
+  root.setAttribute('data-tod',h>=5&&h<11?'morning':h>=11&&h<16.5?'afternoon':h>=16.5&&h<19?'evening':'night');
+  // Left to right across 12 hours, highest at the middle of the arc.
+  var sun=h>=6&&h<18,f=((sun?h-6:h+6)%24)/12;
+  orb.classList.toggle('moon',!sun);
+  orb.style.left=(6+f*88).toFixed(1)+'%';orb.style.top='calc(92px + '+((1-Math.sin(Math.PI*f))*16).toFixed(1)+'vh)';
+}
+tod();setInterval(tod,6e4);
+document.addEventListener('visibilitychange',function(){if(!document.hidden)tod()});
+
 export {CONS};

@@ -30,9 +30,19 @@ a{color:inherit}
 ::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
 
 /* night sky behind everything */
-.sky{position:fixed;inset:-24px;z-index:-1;pointer-events:none;background:radial-gradient(90% 60% at 70% 0%,var(--bg-glow),transparent 65%);translate:var(--sx,0) var(--sy,0);transition:translate .6s var(--ease)}
+.sky{position:fixed;inset:-24px;z-index:-1;pointer-events:none;background:radial-gradient(60% 45% at var(--tod-x,70%) 0%,var(--tod-glow,transparent),transparent 70%),radial-gradient(90% 60% at var(--tod-x,70%) 0%,var(--bg-glow),transparent 65%);translate:var(--sx,0) var(--sy,0);transition:translate .6s var(--ease)}
 .sky svg{width:100%;height:100%;display:block}
-.sky .d{fill:var(--dust)}
+.sky .d{fill:var(--dust);fill-opacity:var(--star-o,1)}
+/* time of day in Vietnam (sky.js): where the glow sits, its tint, and how bright the stars are */
+:root[data-tod="morning"]{--tod-x:15%;--tod-glow:rgba(255,160,110,.3);--star-o:.45}
+:root[data-tod="afternoon"]{--tod-x:50%;--tod-glow:rgba(110,185,255,.26);--star-o:.3}
+:root[data-tod="evening"]{--tod-x:85%;--tod-glow:rgba(255,100,110,.32);--star-o:.7}
+:root[data-tod="night"]{--tod-x:70%;--tod-glow:rgba(100,90,240,.26);--star-o:1}
+:root[data-tod="morning"] .shoot,:root[data-tod="afternoon"] .shoot{display:none}
+.sky .orb{position:absolute;width:40px;height:40px;margin-left:-20px;border-radius:50%;background:radial-gradient(circle,#fff6c9,#ffc94a 70%);box-shadow:0 0 28px 10px rgba(255,190,70,.35);opacity:.85}
+.sky .orb.moon{width:28px;height:28px;background:none;box-shadow:inset -7px 3px 0 0 #d9b44a;box-shadow:inset -7px 3px 0 0 light-dark(#c9962e,#f2e3b0);filter:drop-shadow(0 0 8px rgba(242,200,110,.45))}
+/* looks with a big moon of their own hide the small one */
+:root[data-season="trungthu"] .sky .orb,:root[data-season="halloween"] .sky .orb{display:none}
 .sky .tw{animation:twinkle 5s ease-in-out infinite}
 .sky line{stroke:var(--link);stroke-width:1}
 .sky .c{fill:var(--dust);transform-box:fill-box;transform-origin:center}
