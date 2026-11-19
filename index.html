@@ -29,12 +29,11 @@
 <link rel="stylesheet" href="assets/home/season.css?v={{ v }}">
 <link rel="stylesheet" href="assets/home/cursors.css?v={{ v }}">
 <!-- The modules import each other as ./name.js; this map sends those imports to the same build version. -->
-<script type="importmap">{"imports":{"./assets/home/sky.js":"./assets/home/sky.js?v={{ v }}","./assets/home/season.js":"./assets/home/season.js?v={{ v }}","./assets/home/profile.js":"./assets/home/profile.js?v={{ v }}","./assets/home/cursors.js":"./assets/home/cursors.js?v={{ v }}","./assets/home/now.js":"./assets/home/now.js?v={{ v }}"}}</script>
+<script type="importmap">{"imports":{"./assets/home/sky.js":"./assets/home/sky.js?v={{ v }}","./assets/home/season.js":"./assets/home/season.js?v={{ v }}","./assets/home/profile.js":"./assets/home/profile.js?v={{ v }}","./assets/home/cursors.js":"./assets/home/cursors.js?v={{ v }}"}}</script>
 <link rel="modulepreload" href="assets/home/sky.js?v={{ v }}">
 <link rel="modulepreload" href="assets/home/season.js?v={{ v }}">
 <link rel="modulepreload" href="assets/home/profile.js?v={{ v }}">
 <link rel="modulepreload" href="assets/home/cursors.js?v={{ v }}">
-<link rel="modulepreload" href="assets/home/now.js?v={{ v }}">
 </head>
 <body>
 <div class="sky" id="sky" aria-hidden="true"></div>
@@ -85,15 +84,9 @@
     </ul>
     <p class="handles"><span>tranvantuanit210@gmail.com</span><span>0344 446 301</span></p>
   </section>
-
-  <section class="now" aria-labelledby="nowH">
-    <h2 id="nowH" data-t="now">Gần đây tôi đang làm</h2>
-    <!-- now.js fills this with the latest commit of each recently pushed public repo; the empty rows hold its height. -->
-    <ol class="now-list" id="nowList" aria-busy="true"><li class="sk"></li><li class="sk"></li><li class="sk"></li></ol>
-  </section>
 </main>
 
-<footer><span class="fine">© 2026 Trần Văn Tuấn</span> <span class="look"><button class="look-btn" id="lookBtn" type="button" aria-expanded="false" aria-controls="lookPanel" hidden></button><span class="look-panel" id="lookPanel" role="group" hidden></span></span> <button class="replay" id="replay" type="button" hidden data-t="replay">Xem lại cảnh lắp ráp</button></footer>
+<footer><span class="fine">© 2026 Trần Văn Tuấn</span> <a class="foot-link" href="now/" data-t="nowLink">Gần đây tôi đang làm</a> <span class="look"><button class="look-btn" id="lookBtn" type="button" aria-expanded="false" aria-controls="lookPanel" hidden></button><span class="look-panel" id="lookPanel" role="group" hidden></span></span> <button class="replay" id="replay" type="button" hidden data-t="replay">Xem lại cảnh lắp ráp</button></footer>
 <div class="cursors" id="cursors" aria-hidden="true"></div>
 
 <script type="module" src="assets/home/home.js?v={{ v }}"></script>

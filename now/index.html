@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gần đây · Trần Văn Tuấn</title>
+<!-- pwa -->
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15171a" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" sizes="32x32" href="../icons/favicon-32.png">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sổ tay">
+<script>if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('../sw.js').catch(function(){})})</script>
+<meta name="description" content="Những gì Trần Văn Tuấn đang làm gần đây: commit mới nhất trong các repo công khai trên GitHub.">
+<meta property="og:title" content="Gần đây · Trần Văn Tuấn">
+<meta property="og:description" content="Commit mới nhất trong các repo công khai của tôi trên GitHub.">
+<meta property="og:image" content="https://tvtdev94.github.io/images/avatar.png">
+<meta property="og:url" content="https://tvtdev94.github.io/now/">
+<script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<script>try{var l=/[?&]lang=(en|vi)\b/.exec(location.search);l=l?l[1]:localStorage.getItem('profile-lang');if(l==='en')document.documentElement.lang='en'}catch(e){}</script>
+<style>
+:root{
+  --bg:#f3f6fc; --bg-glow:rgba(37,89,184,.12); --surface:#ffffff; --surface-2:#e7edf8; --line:#d1daeb;
+  --text:#111729; --muted:#47526a; --accent:#2559b8; --mark:rgba(37,89,184,.12); --ok:#16703d; --bad:#a82f2f; --star:#b06a00; --focus:#2559b8;
+  --term:#0d1326; --term-text:#dfe6f5; --term-muted:#9aa6c2;
+  --shadow:0 1px 2px rgba(17,23,41,.05),0 8px 24px rgba(17,23,41,.06);
+  --ease:cubic-bezier(.22,1,.36,1); color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0a0f1f; --bg-glow:rgba(120,160,255,.14); --surface:#121a31; --surface-2:#19223d; --line:#273356;
+    --text:#ebeff8; --muted:#a6b0c6; --accent:#86acff; --mark:rgba(134,172,255,.16); --ok:#4cc184; --bad:#ec7373; --star:#f4c95d; --focus:#86acff;
+    --term:#060a16; --shadow:none; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0a0f1f; --bg-glow:rgba(120,160,255,.14); --surface:#121a31; --surface-2:#19223d; --line:#273356;
+  --text:#ebeff8; --muted:#a6b0c6; --accent:#86acff; --mark:rgba(134,172,255,.16); --ok:#4cc184; --bad:#ec7373; --star:#f4c95d; --focus:#86acff;
+  --term:#060a16; --shadow:none; color-scheme:dark;
+}
+*{box-sizing:border-box}
+:root[lang="en"] [data-l="vi"],:root:not([lang="en"]) [data-l="en"]{display:none!important}
+body{margin:0;background:radial-gradient(90% 50% at 80% -10%,var(--bg-glow),transparent 60%) no-repeat,var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:3px;border-radius:8px}
+
+.bar{max-width:1000px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:8px}
+.back{display:inline-flex;align-items:center;gap:6px;min-height:40px;margin-right:auto;font-weight:600;font-size:15px;color:var(--muted);text-decoration:none}
+.back:hover{color:var(--text)}
+.btn{display:inline-grid;place-items:center;min-width:40px;height:40px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:800 13px/1 system-ui,-apple-system,sans-serif;letter-spacing:.04em;cursor:pointer;transition:border-color .2s}
+.btn:hover{border-color:var(--accent)}
+.btn svg{width:20px;height:20px}
+
+main{max-width:1000px;margin:0 auto;padding:8px 16px 56px}
+h1{margin:8px 0 6px;font-size:clamp(32px,8vw,52px);line-height:1.1;letter-spacing:-.02em}
+.lead{margin:0;max-width:60ch;color:var(--muted);font-size:17px}
+.lead a{color:var(--accent)}
+
+/* one card per repo, newest push first */
+.repos{margin-top:28px;display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(min(100%,440px),1fr))}
+.repo{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;align-content:start;min-width:0;padding:20px;background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow)}
+.repo h2{margin:0;font:700 22px/1.2 ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.repo h2 a{text-decoration:none}.repo h2 a:hover{color:var(--accent)}
+.repo .about{margin:0;color:var(--muted);font-size:15px}
+.repo .meta{display:flex;flex-wrap:wrap;gap:6px}
+.repo .meta span{font-size:13px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
+.commits{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
+.commits a{display:flex;align-items:baseline;gap:10px;min-height:44px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;text-decoration:none;font-size:14px;transition:border-color .2s,translate .2s var(--ease)}
+.commits a:hover{border-color:var(--accent);translate:2px 0}
+.commits .msg{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.commits time{flex:none;font-size:12px;color:var(--muted)}
+.sk{height:260px;border-radius:20px;background:var(--surface-2);opacity:.5}
+.fail{margin-top:28px;color:var(--muted)}
+.fail a{color:var(--accent);font-weight:700}
+.src{margin-top:28px;font-size:14px;color:var(--muted)}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <a class="back" href="../">← <span data-l="vi">Trang chủ</span><span data-l="en">Home</span></a>
+  <button class="btn" id="langBtn" type="button">EN</button>
+  <button class="btn" id="themeBtn" type="button" aria-label="Đổi giao diện sáng/tối"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2v16a8 8 0 0 1 0-16z"/></svg></button>
+</header>
+
+<main>
+  <h1><span data-l="vi">Gần đây tôi đang làm</span><span data-l="en">What I’m working on lately</span></h1>
+  <p class="lead" data-l="vi">Commit mới nhất trong các repo công khai tôi vừa đụng tới trên <a href="https://github.com/tvtdev94" target="_blank" rel="noopener">GitHub</a>, tự cập nhật mỗi khi tôi push.</p>
+  <p class="lead" data-l="en">The latest commits in the public repos I touched most recently on <a href="https://github.com/tvtdev94" target="_blank" rel="noopener">GitHub</a>, updated whenever I push.</p>
+  <div class="repos" id="repos" aria-busy="true"><div class="sk"></div><div class="sk"></div></div>
+</main>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  var themeBtn=document.getElementById('themeBtn'),langBtn=document.getElementById('langBtn');
+  themeBtn.addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+    var next=cur==='dark'?'light':'dark';root.setAttribute('data-theme',next);try{localStorage.setItem('rag-theme',next)}catch(e){}
+  });
+  // Language is shared with the profile, CV and products pages.
+  function setLang(l){
+    root.lang=l;document.title=l==='en'?'Lately · Trần Văn Tuấn':'Gần đây · Trần Văn Tuấn';
+    langBtn.textContent=l==='en'?'VI':'EN';langBtn.lang=l==='en'?'vi':'en';
+    langBtn.setAttribute('aria-label',l==='en'?'Chuyển sang tiếng Việt':'Switch to English');
+    themeBtn.setAttribute('aria-label',l==='en'?'Toggle light/dark theme':'Đổi giao diện sáng/tối');
+    render();
+  }
+  langBtn.addEventListener('click',function(){
+    var next=root.lang==='en'?'vi':'en';setLang(next);
+    try{localStorage.setItem('profile-lang',next)}catch(e){}
+    history.replaceState(null,'',next==='en'?'?lang=en':location.pathname);
+  });
+
+  // Data: my six most recently pushed public repos (forks, archived repos and this site left out),
+  // each with its three newest commits, read from the GitHub API in the visitor's browser.
+  // The answer is kept on this device for 30 minutes; a load costs seven of the 60 requests an hour
+  // GitHub allows without sign-in.
+  var USER='tvtdev94',SKIP=USER+'.github.io',KEY='now-page',FRESH=30*60e3,box=document.getElementById('repos'),data=null,failed=false;
+  function get(path){return fetch('https://api.github.com/'+path,{headers:{Accept:'application/vnd.github+json'}}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()})}
+  function load(){
+    return get('users/'+USER+'/repos?sort=pushed&per_page=30').then(function(repos){
+      repos=repos.filter(function(r){return !r.fork&&!r.archived&&r.name!==SKIP}).slice(0,6);
+      return Promise.all(repos.map(function(r){
+        return get('repos/'+r.full_name+'/commits?per_page=3').then(function(cs){
+          return {name:r.name,url:r.html_url,about:r.description||'',lang:r.language||'',stars:r.stargazers_count,pushed:r.pushed_at,
+            commits:cs.map(function(c){return {msg:c.commit.message.split('\n')[0],at:c.commit.committer.date,url:c.html_url}})};
+        });
+      }));
+    });
+  }
+  // "3 giờ trước" / "3 hours ago" in the page language.
+  function ago(iso,l){
+    var s=(Date.parse(iso)-Date.now())/1e3,f=new Intl.RelativeTimeFormat(l);
+    var U=[['year',31536e3],['month',2592e3],['week',604800],['day',86400],['hour',3600],['minute',60]];
+    for(var i=0;i<U.length;i++)if(Math.abs(s)>=U[i][1])return f.format(Math.round(s/U[i][1]),U[i][0]);
+    return f.format(0,'minute');
+  }
+  function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e}
+  function link(href,cls,text){var a=el('a',cls,text);a.href=href;a.target='_blank';a.rel='noopener';return a}
+  function render(){
+    var l=root.lang==='en'?'en':'vi';
+    if(!data){
+      if(!failed)return;
+      var p=el('p','fail',l==='en'?'Could not load from GitHub right now. ':'Chưa tải được từ GitHub. ');
+      p.appendChild(link('https://github.com/'+USER,null,l==='en'?'See my GitHub →':'Xem trên GitHub →'));
+      box.replaceWith(p);box=p;return;
+    }
+    box.replaceChildren.apply(box,data.map(function(r){
+      var c=el('article','repo'),h=el('h2');h.appendChild(link(r.url,null,r.name));c.appendChild(h);
+      if(r.about)c.appendChild(el('p','about',r.about));
+      var m=el('div','meta');
+      if(r.lang)m.appendChild(el('span',null,r.lang));
+      if(r.stars)m.appendChild(el('span',null,'★ '+r.stars));
+      m.appendChild(el('span',null,(l==='en'?'pushed ':'push ')+ago(r.pushed,l)));c.appendChild(m);
+      var ul=el('ol','commits');
+      r.commits.forEach(function(k){var li=el('li'),a=link(k.url),t=el('time',null,ago(k.at,l));t.dateTime=k.at;a.append(el('span','msg',k.msg),t);li.appendChild(a);ul.appendChild(li)});
+      c.appendChild(ul);return c;
+    }));
+    box.removeAttribute('aria-busy');
+  }
+  var cache=null;
+  try{cache=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+  if(cache&&cache.data)data=cache.data;
+  setLang(root.lang==='en'?'en':'vi');
+  if(!cache||Date.now()-cache.t>FRESH){
+    load().then(function(a){
+      if(!a.length)throw new Error('empty');
+      data=a;try{localStorage.setItem(KEY,JSON.stringify({t:Date.now(),data:a}))}catch(e){}
+    }).catch(function(){failed=true}).then(render);
+  }
+})();
+</script>
+</body>
+</html>

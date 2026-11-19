@@ -51,7 +51,7 @@ me.addEventListener('click',function(){if(!reduce)ripple()});
 // ?lang=en links straight to the English profile; the choice is remembered on this device.
 var EN={
   title:'Trần Văn Tuấn · Software developer',nav:'Pages',notebook:'Notebook',products:'Products',theme:'Toggle light/dark theme',
-  alt:'Photo of Trần Văn Tuấn',chipCode:'Programming',chipLife:'Life',contact:'Contact',replay:'Replay the build',now:'What I’m working on lately',
+  alt:'Photo of Trần Văn Tuấn',chipCode:'Programming',chipLife:'Life',contact:'Contact',replay:'Replay the build',nowLink:'What I’m working on lately',
   bio:'This is where I write down what I learn: <mark>AI, programming and life</mark>.'
 };
 var VI={title:document.title},langBtn=document.getElementById('langBtn'),roleSr=document.getElementById('roleSr');
