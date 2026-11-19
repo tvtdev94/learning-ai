@@ -39,7 +39,7 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 
 ## Trạng thái các chủ đề
 
-### Đã publish (25)
+### Đã publish (26)
 
 | Slug | Nguồn | Ghi chú |
 |---|---|---|
@@ -68,6 +68,7 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 | `langchain` | 40 | Publish 2026-11-18. Bài 1/3 chuỗi LangChain. Review: `_work/notes/kongming-261118-langchain-review.md` |
 | `langgraph` | 30 | Publish 2026-11-18. Bài 2/3 chuỗi LangChain. Review: `_work/notes/kongming-261118-langgraph-review.md` |
 | `langsmith` | 44 | Publish 2026-11-19. Bài 3/3 chuỗi LangChain. Giá trace lấy từ trang giá chính thức ngày 2026-11-19 (0.005 LSU/trace, 1 LSU = $1); giá đổi thì cập nhật. Review: `_work/notes/kongming-261118-langsmith-review.md` |
+| `llm-rubric-grading` | 31 | Publish 2026-11-19. Dùng LLM chấm điểm như tính năng sản phẩm, khác `llm-evaluation`. Review: `_work/notes/kongming-261119-llm-rubric-grading-review.md` |
 
 ### Bản nháp trong repo, chưa publish (nằm trong `exclude`)
 
