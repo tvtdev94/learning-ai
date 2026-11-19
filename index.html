@@ -59,10 +59,9 @@ a{color:inherit}
 .sky .tw{animation:twinkle 5s ease-in-out infinite}
 .sky line{stroke:var(--link);stroke-width:1}
 .sky .c{fill:var(--dust)}
-.shoot{position:absolute;top:12%;left:-10%;width:140px;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--star));opacity:0;rotate:18deg;animation:shoot 11s ease-in 2.5s infinite}
-.shoot.s2{top:38%;left:30%;width:100px;rotate:24deg;animation-delay:7.5s;animation-duration:13s}
+.shoot{position:absolute;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--star));opacity:0;animation:shoot var(--dur) ease-in var(--delay) infinite}
 @keyframes twinkle{0%,100%{opacity:.2}50%{opacity:.95}}
-@keyframes shoot{0%{opacity:0;translate:0 0}2%{opacity:1}9%{opacity:0;translate:70vw 22vw}100%{opacity:0;translate:70vw 22vw}}
+@keyframes shoot{0%{opacity:0;translate:0 0}1.5%{opacity:1}10%{opacity:0;translate:var(--tx) var(--ty)}100%{opacity:0;translate:var(--tx) var(--ty)}}
 
 /* top bar */
 .bar{width:100%;max-width:1160px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:8px}
@@ -139,6 +138,10 @@ h1 .w:nth-child(1){animation-delay:.35s}h1 .w:nth-child(2){animation-delay:.47s}
 .burst{position:absolute;width:36px;height:36px;margin:-18px 0 0 -18px;border-radius:50%;border:2px solid;opacity:0}
 .grab{outline:2px solid var(--gc);outline-offset:6px;border-radius:14px}
 .me.grab{border-radius:50%;outline-offset:12px}
+.ring.grab{border-radius:50%;outline-offset:3px}
+.comet{position:absolute;left:0;top:0;width:0;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--star));transform-origin:0 0;opacity:0;will-change:transform,width,opacity}
+.comet::after{content:"";position:absolute;right:-4px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:var(--star);box-shadow:0 0 10px 3px var(--star)}
+.asm .ring{animation:spin var(--dur) linear infinite var(--dir)}
 .asm .me,.asm h1 .w,.asm .role,.asm .bio,.asm .contact{animation:none}
 .asm .bio mark{animation:none}
 .replay{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 4px;border:0;background:none;color:var(--muted);font:inherit;font-size:14px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
@@ -168,7 +171,7 @@ footer{width:100%;max-width:1160px;margin:0 auto;padding:8px 16px 28px;color:var
 </style>
 </head>
 <body>
-<div class="sky" id="sky" aria-hidden="true"><span class="shoot"></span><span class="shoot s2"></span></div>
+<div class="sky" id="sky" aria-hidden="true"></div>
 
 <header class="bar">
   <span class="mono" aria-hidden="true"><i></i>TVT</span>
@@ -246,6 +249,15 @@ footer{width:100%;max-width:1160px;margin:0 auto;padding:8px 16px 28px;color:var
     var c=el('circle',{'class':'d',cx:(rnd()*1000).toFixed(0),cy:(rnd()*1000).toFixed(0),r:(0.8+rnd()*1.6).toFixed(1),opacity:(0.15+rnd()*0.45).toFixed(2)},svg);
     if(i%6===0){c.setAttribute('class','d tw');c.style.animationDelay=(rnd()*5).toFixed(2)+'s'}
   }
+  // Shooting stars: several streaks on staggered loops so one falls every second or two.
+  var sky0=document.getElementById('sky');
+  for(i=0;i<9;i++){
+    var sh=document.createElement('span'),ang=12+rnd()*22,dist=40+rnd()*35,rad=ang*Math.PI/180;
+    sh.className='shoot';
+    sh.style.cssText='top:'+(rnd()*55).toFixed(1)+'%;left:'+(-10+rnd()*65).toFixed(1)+'%;width:'+(70+rnd()*100).toFixed(0)+'px;rotate:'+ang.toFixed(1)+'deg;'+
+      '--tx:'+(dist*Math.cos(rad)).toFixed(1)+'vw;--ty:'+(dist*Math.sin(rad)).toFixed(1)+'vw;--dur:'+(6+rnd()*5).toFixed(1)+'s;--delay:'+(0.6+i*1.1+rnd()*0.8).toFixed(2)+'s';
+    sky0.appendChild(sh);
+  }
   [[90,120],[760,80],[820,640],[120,760]].forEach(function(o){
     var pts=[],x=o[0],y=o[1];
     for(var k=0;k<5;k++){pts.push([x,y]);x+=40+rnd()*70;y+=(rnd()-.4)*90}
@@ -273,11 +285,11 @@ footer{width:100%;max-width:1160px;margin:0 auto;padding:8px 16px 28px;color:var
 
   // Tap the avatar for a ripple.
   var me=document.getElementById('me'),orbit=document.getElementById('orbit');
-  me.addEventListener('click',function(){
-    if(reduce)return;
+  function ripple(){
     var r=document.createElement('span');r.className='ripple';orbit.appendChild(r);
     r.addEventListener('animationend',function(){r.remove()});
-  });
+  }
+  me.addEventListener('click',function(){if(!reduce)ripple()});
 
   // Language: the Vietnamese text lives in the HTML, English strings live here.
   // ?lang=en links straight to the English profile; the choice is remembered on this device.
@@ -324,11 +336,19 @@ footer{width:100%;max-width:1160px;margin:0 auto;padding:8px 16px 28px;color:var
 
   // Four cursors assemble the page on open: each drags pieces from scattered spots into place.
   var layer=document.getElementById('cursors'),replay=document.getElementById('replay'),running=[],timers=[];
-  var CUR=[{name:'Agent 1',color:'#2f6fe0'},{name:'Agent 2',color:'#8b4fd8'},{name:'Agent 3',color:'#0f8a5f'},{name:'Agent 4',color:'#c2410c'}];
+  // Each cursor is named after its job: layout (photo, menu, rings), typography (name, highlight),
+  // content (role, bio, rings) and contact (icons, rings).
+  var CUR=[{vi:'Bố cục',en:'Layout',color:'#2f6fe0'},{vi:'Chữ',en:'Typography',color:'#8b4fd8'},{vi:'Nội dung',en:'Content',color:'#0f8a5f'},{vi:'Liên hệ',en:'Contact',color:'#c2410c'}];
   var EASE='cubic-bezier(.22,1,.36,1)',INOUT='cubic-bezier(.65,0,.35,1)',APPROACH=450,PRESS=100,MOVE=600;
   function later(fn,ms){timers.push(setTimeout(fn,ms))}
   function stop(){running.forEach(function(a){a.cancel()});running=[];timers.forEach(clearTimeout);timers=[];layer.textContent='';document.querySelectorAll('.grab').forEach(function(e){e.classList.remove('grab')})}
-  function pt(el,fx,fy){var r=el.getBoundingClientRect();return {x:r.left+scrollX+r.width*fx,y:r.top+scrollY+r.height*fy}}
+  // Rings spin, so their client rect wobbles; derive their unrotated box from the orbit instead.
+  function box(el){
+    if(!el.classList.contains('ring'))return el.getBoundingClientRect();
+    var o=orbit.getBoundingClientRect(),k=parseFloat(el.style.getPropertyValue('--in'))/100;
+    return {left:o.left+o.width*k,top:o.top+o.height*k,width:o.width*(1-2*k),height:o.height*(1-2*k)};
+  }
+  function pt(el,fx,fy){var r=box(el);return {x:r.left+scrollX+r.width*fx,y:r.top+scrollY+r.height*fy}}
   function burst(x,y,color,at){
     var b=document.createElement('span');b.className='burst';b.style.cssText='left:'+x+'px;top:'+y+'px;border-color:'+color;layer.appendChild(b);
     running.push(b.animate([{opacity:0,scale:.2,offset:0},{opacity:.9,scale:.3,offset:.05},{opacity:0,scale:2.4}],{duration:520,delay:at,easing:EASE,fill:'both'}));
@@ -336,22 +356,30 @@ footer{width:100%;max-width:1160px;margin:0 auto;padding:8px 16px 28px;color:var
   function assemble(){
     stop();replay.hidden=true;typed.textContent='';
     var vw=document.documentElement.clientWidth,vh=innerHeight,Q=function(q){return document.querySelector(q)};
-    var w=document.querySelectorAll('h1 .w'),ic=document.querySelectorAll('.dock a'),mark=Q('.bio mark');
-    // [cursor, element, grab x, grab y (fractions of the box), offset x, offset y, rotate, start ms]
+    var w=document.querySelectorAll('h1 .w'),ic=document.querySelectorAll('.dock a'),rg=document.querySelectorAll('.ring'),mark=Q('.bio mark');
+    // [cursor, element, grab x, grab y (fractions of the box), offset x, offset y, rotate, start ms, scale]
     var plan=[
       [0,me,.5,.5,-60,46,-10,150],[1,w[0],.5,.55,-50,70,-12,250],[3,ic[0],.5,.5,-40,90,-20,400],[2,Q('.role'),.18,.5,70,-34,-7,600],
       [3,ic[1],.5,.5,30,110,15,1250],[1,w[1],.5,.55,40,-60,9,1300],[0,Q('.nav'),.2,.5,-50,40,-6,1600],[2,Q('.bio'),.12,.3,-30,60,3,1950],
-      [3,ic[2],.5,.5,-20,100,-18,2100],[1,w[2],.5,.55,60,80,-8,2350],[3,ic[3],.5,.5,50,80,22,2950],[0,Q('.handles'),.3,.5,40,50,4,2950]
+      [3,ic[2],.5,.5,-20,100,-18,2100],[1,w[2],.5,.55,60,80,-8,2350],[3,ic[3],.5,.5,50,80,22,2950],[0,Q('.handles'),.3,.5,40,50,4,2950],
+      // Rings start shrunk and turned; a cursor grabs each rim and stretches it back into orbit.
+      [2,rg[0],.03,.33,-30,20,-50,3250,.7],[0,rg[1],.88,.18,40,-30,40,4150,.7],[3,rg[2],.25,.93,-20,30,-30,4150,.75]
     ];
-    // Measure everything before any piece moves.
-    plan.forEach(function(p){p.g=pt(p[1],p[2],p[3])});
+    // Measure everything before any piece moves. The cursor grabs the point where the
+    // scattered piece actually sits: centre + offset + the grab point rotated and scaled.
+    plan.forEach(function(p){
+      var r=box(p[1]),cx=r.left+scrollX+r.width/2,cy=r.top+scrollY+r.height/2,g=pt(p[1],p[2],p[3]);
+      var a=p[6]*Math.PI/180,k=p[8]||1,vx=(g.x-cx)*k,vy=(g.y-cy)*k;
+      p.g=g;p.s={x:cx+p[4]+vx*Math.cos(a)-vy*Math.sin(a),y:cy+p[5]+vx*Math.sin(a)+vy*Math.cos(a)};
+    });
+    var A=pt(me,.5,.5),RAD=me.getBoundingClientRect().width/2;
     var mr=mark.getClientRects(),ma=mr[0],mb=mr[mr.length-1];
     var paths=[[{t:0,x:-40,y:scrollY+vh*.75,s:1,o:0}],[{t:0,x:vw+40,y:scrollY+vh*.35,s:1,o:0}],[{t:0,x:vw*.75,y:scrollY-40,s:1,o:0}],[{t:0,x:vw*.3,y:scrollY+vh+40,s:1,o:0}]];
     var lastEnd=0;
     plan.forEach(function(p){
-      var c=p[0],el=p[1],g=p.g,dx=p[4],dy=p[5],T=p[7],grabAt=T+APPROACH,dropAt=grabAt+PRESS+MOVE;
-      paths[c].push({t:grabAt,x:g.x+dx,y:g.y+dy,s:1,o:1,e:INOUT},{t:grabAt+PRESS,x:g.x+dx,y:g.y+dy,s:.8,o:1},{t:dropAt,x:g.x,y:g.y,s:.8,o:1,e:EASE},{t:dropAt+100,x:g.x,y:g.y,s:1,o:1});
-      var start='translate('+dx+'px,'+dy+'px) rotate('+p[6]+'deg)';
+      var c=p[0],el=p[1],g=p.g,s0=p.s,T=p[7],grabAt=T+APPROACH,dropAt=grabAt+PRESS+MOVE;
+      paths[c].push({t:grabAt,x:s0.x,y:s0.y,s:1,o:1,e:INOUT},{t:grabAt+PRESS,x:s0.x,y:s0.y,s:.8,o:1},{t:dropAt,x:g.x,y:g.y,s:.8,o:1,e:EASE},{t:dropAt+100,x:g.x,y:g.y,s:1,o:1});
+      var start='translate('+p[4]+'px,'+p[5]+'px) rotate('+p[6]+'deg) scale('+(p[8]||1)+')';
       running.push(el.animate([{transform:start,offset:0},{transform:start,offset:grabAt/dropAt},{transform:start+' scale(1.05)',offset:(grabAt+PRESS)/dropAt,easing:EASE},{transform:'none',offset:1}],{duration:dropAt}));
       later(function(){el.style.setProperty('--gc',CUR[c].color);el.classList.add('grab')},grabAt);
       later(function(){el.classList.remove('grab');running.push(el.animate([{scale:1.04},{scale:1}],{duration:260,easing:EASE}))},dropAt);
@@ -359,21 +387,46 @@ footer{width:100%;max-width:1160px;margin:0 auto;padding:8px 16px 28px;color:var
       if(el.classList.contains('role'))later(function(){typeRole(0)},dropAt+120);
       lastEnd=Math.max(lastEnd,dropAt+100);
     });
-    // Agent 2 finishes by highlighting the topics in the bio like selecting text.
+    // The typography cursor highlights the topics in the bio like selecting text.
     var sx=ma.left+scrollX,sy=ma.top+scrollY+ma.height*.6,ex=mb.right+scrollX,ey=mb.top+scrollY+mb.height*.6,S=paths[1][paths[1].length-1].t+350;
     paths[1].push({t:S,x:sx,y:sy,s:1,o:1,e:INOUT},{t:S+PRESS,x:sx,y:sy,s:.8,o:1},{t:S+900,x:ex,y:ey,s:.8,o:1,e:INOUT},{t:S+1000,x:ex,y:ey,s:1,o:1});
     running.push(mark.animate([{backgroundSize:'0% 45%'},{backgroundSize:'0% 45%',offset:(S+PRESS)/(S+900)},{backgroundSize:'100% 45%'}],{duration:S+900,fill:'forwards'}));
     lastEnd=Math.max(lastEnd,S+1000);
-    // Park, then fade out.
+    // Finale: each cursor pinches a star, pulls it back, then flings it into the photo.
+    // The star stretches into a streak on the way; every hit ripples the photo like a click.
+    var DIVE='cubic-bezier(.5,0,.9,.5)',order=[0,1,2,3].sort(function(a,b){return paths[a][paths[a].length-1].t-paths[b][paths[b].length-1].t}),done=0;
+    function clamp(v,lo,hi){return Math.min(hi,Math.max(lo,v))}
+    order.forEach(function(c,k){
+      var path=paths[c],l=path[path.length-1],t0=Math.max(l.t+150,lastEnd-600+k*380);
+      var ux=l.x-A.x,uy=l.y-A.y,d=Math.hypot(ux,uy)||1,D=Math.max(d,RAD*2.4);
+      var sx=clamp(A.x+ux/d*D,40,vw-40),sy=clamp(A.y+uy/d*D,scrollY+40,scrollY+vh-40);
+      var vx=A.x-sx,vy=A.y-sy,L=Math.hypot(vx,vy)||1;vx/=L;vy/=L;
+      var px=sx-vx*45,py=sy-vy*45,hx=A.x-vx*RAD*.35,hy=A.y-vy*RAD*.35;
+      var grab=t0+APPROACH,pull=grab+PRESS+260,hit=pull+420,end=hit+160,th=Math.atan2(vy,vx)*180/Math.PI;
+      path.push({t:grab,x:sx,y:sy,s:1,o:1,e:INOUT},{t:grab+PRESS,x:sx,y:sy,s:.8,o:1},{t:pull,x:px,y:py,s:.8,o:1,e:EASE},{t:hit,x:hx,y:hy,s:.8,o:1,e:DIVE},{t:hit+140,x:hx,y:hy,s:.3,o:0});
+      function at(x,y){return 'translate('+x.toFixed(1)+'px,'+y.toFixed(1)+'px) rotate('+th.toFixed(1)+'deg) translate(-100%,-50%)'}
+      var star=document.createElement('span');star.className='comet';layer.appendChild(star);
+      running.push(star.animate([
+        {offset:0,opacity:0,width:'0px',transform:at(sx,sy)},
+        {offset:(t0+200)/end,opacity:0,width:'0px',transform:at(sx,sy)},
+        {offset:grab/end,opacity:1,width:'0px',transform:at(sx,sy)},
+        {offset:(grab+PRESS)/end,opacity:1,width:'0px',transform:at(sx,sy),easing:EASE},
+        {offset:pull/end,opacity:1,width:'14px',transform:at(px,py),easing:DIVE},
+        {offset:hit/end,opacity:1,width:'150px',transform:at(hx,hy)},
+        {offset:1,opacity:0,width:'0px',transform:at(hx,hy)}
+      ],{duration:end,fill:'forwards'}));
+      later(function(){ripple();running.push(me.animate([{scale:1},{scale:.93,offset:.35},{scale:1}],{duration:360,easing:EASE}))},hit);
+      burst(hx,hy,CUR[c].color,hit);
+      done=Math.max(done,end);
+    });
     paths.forEach(function(path,c){
-      var l=path[path.length-1],total=lastEnd+1300;
-      path.push({t:lastEnd+500,x:l.x+(c-1.5)*20,y:l.y+28,s:1,o:1,e:EASE},{t:total,x:l.x+(c-1.5)*20,y:l.y+28,s:1,o:0});
+      var total=path[path.length-1].t;
       var el=document.createElement('div');el.className='cur';el.style.setProperty('--cc',CUR[c].color);
-      el.innerHTML='<svg viewBox="0 0 24 24"><path d="M3 2l17 9.5-7.4 1.9L9 21z"/></svg><span>'+CUR[c].name+'</span>';
+      el.innerHTML='<svg viewBox="0 0 24 24"><path d="M3 2l17 9.5-7.4 1.9L9 21z"/></svg><span>'+CUR[c][lang]+'</span>';
       layer.appendChild(el);
       running.push(el.animate(path.map(function(wp,i){return {offset:wp.t/total,opacity:wp.o,transform:'translate('+wp.x.toFixed(1)+'px,'+wp.y.toFixed(1)+'px) scale('+wp.s+')',easing:(path[i+1]&&path[i+1].e)||'linear'}}),{duration:total,fill:'forwards'}));
     });
-    later(function(){layer.textContent='';replay.hidden=false},lastEnd+1400);
+    later(function(){layer.textContent='';replay.hidden=false},done+600);
   }
   replay.addEventListener('click',function(){scrollTo({top:0});root.classList.add('asm');requestAnimationFrame(assemble)});
   // The scene always plays on open (it starts from the top); reduced motion skips it.

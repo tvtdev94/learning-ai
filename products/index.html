@@ -14,9 +14,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Sổ tay">
 <script>if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('../sw.js').catch(function(){})})</script>
-<meta name="description" content="Các công cụ mã nguồn mở của Trần Văn Tuấn cho Claude Code: mcgram (thông báo qua Telegram, ntfy.sh, Discord) và dbread (truy vấn cơ sở dữ liệu chỉ-đọc).">
+<meta name="description" content="Các công cụ mã nguồn mở của Trần Văn Tuấn cho Claude Code: agentkit (bộ skill Claude Code), mcgram (thông báo qua Telegram, ntfy.sh, Discord) và dbread (truy vấn cơ sở dữ liệu chỉ-đọc).">
 <meta property="og:title" content="Sản phẩm · Trần Văn Tuấn">
-<meta property="og:description" content="mcgram và dbread: công cụ MCP mã nguồn mở cho Claude Code.">
+<meta property="og:description" content="agentkit, mcgram và dbread: skill và công cụ MCP mã nguồn mở cho Claude Code.">
 <meta property="og:image" content="https://tvtdev94.github.io/images/avatar.png">
 <meta property="og:url" content="https://tvtdev94.github.io/products/">
 <script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
@@ -107,6 +107,8 @@ h1{margin:8px 0 6px;font-size:clamp(32px,8vw,52px);line-height:1.1;letter-spacin
 .q b{flex:none;font:700 12px system-ui,sans-serif;padding:4px 8px;border-radius:999px}
 .q .ok b{background:rgba(22,112,61,.14);color:var(--ok)}
 .q .no b{background:rgba(168,47,47,.14);color:var(--bad)}
+.q .sk b{background:var(--mark);color:var(--accent)}
+.desc code{font:15px ui-monospace,"SF Mono",Menlo,Consolas,monospace;padding:1px 6px;border-radius:6px;background:var(--surface-2)}
 .layers{display:flex;gap:4px;margin-top:10px}
 .layers i{flex:1;height:6px;border-radius:3px;background:var(--accent);opacity:.25}
 
@@ -138,6 +140,42 @@ h1{margin:8px 0 6px;font-size:clamp(32px,8vw,52px);line-height:1.1;letter-spacin
   <h1><span data-l="vi">Sản phẩm</span><span data-l="en">Products</span></h1>
   <p class="lead" data-l="vi">Công cụ mã nguồn mở tôi làm để Claude Code làm việc an toàn và đỡ tốn công hơn.</p>
   <p class="lead" data-l="en">Open-source tools I build so Claude Code works more safely and with less effort.</p>
+
+  <article class="prod" id="agentkit">
+    <div class="p-main">
+      <div class="p-head">
+        <span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2.5"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/><path d="M12 11v5M9.5 13.5h5"/></svg></span>
+        <div><h2>agentkit</h2><p class="tagline"><span data-l="vi">Bộ skill Claude Code của tôi, cài một lần</span><span data-l="en">My Claude Code skills in one plugin</span></p></div>
+      </div>
+      <p class="desc" data-l="vi">Gom các skill tôi viết cho Claude Code vào một plugin tên <code>tvt</code>: viết lại văn cho tự nhiên, mài prompt, hiểu video và dựng phim tin tức bằng code.</p>
+      <p class="desc" data-l="en">The Claude Code skills I write, shipped as one plugin named <code>tvt</code>: natural rewriting, sharper prompts, video understanding and code-built news films.</p>
+      <ul class="feats">
+        <li><span data-l="vi"><b>humanize-writing</b>: viết lại hoặc soi văn có giọng AI, tiếng Việt và tiếng Anh, không đổi dữ kiện.</span><span data-l="en"><b>humanize-writing</b>: rewrites or audits AI-sounding Vietnamese and English prose without changing facts.</span></li>
+        <li><span data-l="vi"><b>refine-prompt</b>: biến prompt thô thành prompt rõ ràng, dán dùng ngay, kèm bảng thay đổi.</span><span data-l="en"><b>refine-prompt</b>: turns rough prompts into sharp, paste-ready ones with a change table.</span></li>
+        <li><span data-l="vi"><b>cc-video</b>: hiểu video theo từng cảnh: keyframe, transcript, OCR và chú thích thành timeline Markdown.</span><span data-l="en"><b>cc-video</b>: shot-aware video understanding: keyframes, transcript, OCR and captions as a Markdown timeline.</span></li>
+        <li><span data-l="vi"><b>news-film</b>: biến bài báo thành phim tin tức kiểu truyền hình bằng code, có bản 16:9, Reels và Shorts.</span><span data-l="en"><b>news-film</b>: turns a news article into a TV-news-style film made in code, in 16:9, Reels and Shorts cuts.</span></li>
+      </ul>
+      <div class="chips"><span>Claude Code plugin</span><span>Skills</span><span>MIT</span></div>
+      <div class="term"><button class="copy" type="button" data-copy="/plugin marketplace add tvtdev94/agentkit&#10;/plugin install tvt@tvt-agentkit"><span data-l="vi">Chép</span><span data-l="en">Copy</span></button><code><span class="k">&gt; </span>/plugin marketplace add tvtdev94/agentkit
+<span class="k">&gt; </span>/plugin install tvt@tvt-agentkit</code></div>
+      <p class="note" data-l="vi">Gõ trong Claude Code. cc-video cần thêm gói Python; news-film cần Node 20+, ffmpeg và Python 3.</p>
+      <p class="note" data-l="en">Run inside Claude Code. cc-video also needs its Python package; news-film needs Node 20+, ffmpeg and Python 3.</p>
+      <div class="links">
+        <a class="primary" href="https://github.com/tvtdev94/agentkit" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.4-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.6 2.4 1.1 3 .9.1-.7.4-1.1.6-1.4-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.8 1a9.6 9.6 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .6 1.4.2 2.4.1 2.7.7.7 1 1.6 1 2.7 0 3.9-2.3 4.7-4.6 5 .4.3.7.9.7 1.9V21c0 .3.2.6.7.5A10 10 0 0 0 12 2z"/></svg>GitHub</a>
+      </div>
+    </div>
+    <div class="p-side">
+      <div class="demo" aria-hidden="true">
+        <p class="demo-k"><span data-l="vi">Minh họa</span><span data-l="en">Illustration</span></p>
+        <div class="q">
+          <div class="sk step" style="--i:0"><span>"viết lại cho tự nhiên"</span><b>humanize-writing</b></div>
+          <div class="sk step" style="--i:1"><span>/tvt:refine-prompt</span><b>refine-prompt</b></div>
+          <div class="sk step" style="--i:2"><span>/tvt:cc-video &lt;url&gt;</span><b>cc-video</b></div>
+          <div class="sk step" style="--i:3"><span>/tvt:news-film &lt;url&gt;</span><b>news-film</b></div>
+        </div>
+      </div>
+    </div>
+  </article>
 
   <article class="prod" id="mcgram">
     <div class="p-main">
