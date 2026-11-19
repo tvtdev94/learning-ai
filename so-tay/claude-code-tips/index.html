@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Sổ tay">
 <script>if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('../../sw.js').catch(function(){})})</script>
-<meta name="description" content="Mẹo dùng Claude Code hằng ngày của Trần Văn Tuấn, mỗi mẹo có lý do và file thật để chép. Mẹo 1: CLAUDE.md global cho mọi dự án.">
+<meta name="description" content="Chuyên mục mẹo dùng Claude Code hằng ngày của Trần Văn Tuấn: mỗi bài một mẹo, có lý do và file thật để chép.">
 <meta property="og:title" content="Claude Code tips · Trần Văn Tuấn">
 <meta property="og:description" content="Mẹo dùng Claude Code hằng ngày, kèm file thật để chép.">
 <meta property="og:image" content="https://tvtdev94.github.io/images/avatar.png">
@@ -22,8 +22,9 @@
 <script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <script>try{var l=/[?&]lang=(en|vi)\b/.exec(location.search);l=l?l[1]:localStorage.getItem('profile-lang');if(l==='en')document.documentElement.lang='en'}catch(e){}</script>
 <!--
-  One <article class="tip"> per tip, numbered in order. Text comes in pairs: data-l="vi" and data-l="en".
-  The CLAUDE.md shown in tip 1 is fetched live from the agentkit repo so it never drifts from the real file.
+  Index of the Claude Code tips series. Each post lives in its own folder: so-tay/claude-code-tips/<slug>/.
+  To add a post: copy global-claude-md/ as a template, then add one <li> to the list below,
+  newest first, with its number, both titles and both one-line summaries.
 -->
 <style>
 :root{
@@ -62,49 +63,15 @@ main{max-width:1000px;margin:0 auto;padding:8px 16px 56px}
 h1{margin:8px 0 6px;font-size:clamp(32px,8vw,52px);line-height:1.1;letter-spacing:-.02em}
 .lead{margin:0;max-width:60ch;color:var(--muted);font-size:17px}
 
-.toc{margin:22px 0 0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:8px}
-.toc a{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-weight:700;font-size:15px;text-decoration:none}
-.toc a:hover{border-color:var(--accent)}
-.toc b{color:var(--accent)}
-.tip{position:relative;margin-top:28px;padding:22px 20px;background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);display:grid;grid-template-columns:minmax(0,1fr);gap:16px;min-width:0}
-.tip::before{content:"";position:absolute;inset:-1px -1px auto;height:3px;border-radius:20px 20px 0 0;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+.posts{list-style:none;margin:24px 0 0;padding:0;display:grid;gap:14px}
+.post{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:start;padding:18px;background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);text-decoration:none;transition:border-color .2s,translate .2s var(--ease)}
+.post:hover{border-color:var(--accent);translate:0 -2px}
 .num{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--mark);color:var(--accent);font-weight:800}
-.t-head{display:flex;align-items:center;gap:12px}
-.t-head h2{margin:0;font-size:clamp(22px,5vw,28px);line-height:1.2}
-.tip h3{margin:6px 0 0;font-size:18px}
-.tip p{margin:0;font-size:17px;max-width:68ch}
-.tip code{font:15px ui-monospace,"SF Mono",Menlo,Consolas,monospace;padding:1px 6px;border-radius:6px;background:var(--surface-2);overflow-wrap:anywhere}
-.why{margin:0;padding:12px 16px;border-left:3px solid var(--star);background:var(--surface-2);border-radius:0 12px 12px 0;font-size:16px}
-.groups{list-style:none;margin:0;padding:0;display:grid;gap:10px}
-@media (min-width:760px){.groups{grid-template-columns:1fr 1fr}}
-.groups li{padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--bg);font-size:15px}
-.groups b{display:block;font-size:15px;margin-bottom:2px}
-.file{border-radius:14px;background:var(--term);color:var(--term-text);overflow:hidden}
-.file-bar{display:flex;align-items:center;gap:10px;padding:8px 10px 8px 14px;border-bottom:1px solid #1f2a48;font:600 13px system-ui,sans-serif;color:var(--term-muted)}
-.file-bar span{margin-right:auto;font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
-.file pre{margin:0;padding:12px 14px 14px;max-height:420px;overflow:auto;font:13.5px/1.6 ui-monospace,"SF Mono",Menlo,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
-.term{display:flex;gap:10px;align-items:flex-start;border-radius:14px;background:var(--term);color:var(--term-text);font:14px/1.7 ui-monospace,"SF Mono",Menlo,Consolas,monospace;padding:12px 10px 12px 14px}
-.term .k{color:var(--term-muted);user-select:none}
-.term code{flex:1;min-width:0;overflow-x:auto;white-space:pre;padding:2px 0 6px;background:none;font-size:14px}
-.copy{order:1;flex:none;min-height:40px;padding:0 12px;border-radius:10px;border:1px solid #2a3558;background:#141c35;color:var(--term-text);font:600 13px system-ui,sans-serif;cursor:pointer}
-.copy:hover{border-color:#86acff}
-table{width:100%;border-collapse:collapse;font-size:15px}
-th,td{text-align:left;vertical-align:top;padding:9px 10px;border-bottom:1px solid var(--line)}
-th{font-size:13px;color:var(--muted)}
-.tbl{overflow-x:auto}
-.links{display:flex;flex-wrap:wrap;gap:8px}
-.links a{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--line);font-weight:700;font-size:15px;text-decoration:none}
-.links a.primary{background:var(--accent);border-color:var(--accent);color:var(--bg)}
-.links a:hover{border-color:var(--accent)}
-.src{margin:0;padding-left:20px;font-size:14px;color:var(--muted)}
-.src a{overflow-wrap:anywhere}
-sup.cite{font-size:12px;font-weight:700}
-sup.cite a{color:var(--accent);text-decoration:none}
-/* cite-tap */
-/* Same tap area for citation links on every page: at least 40px high and 24px wide.
-   Negative vertical margins keep line spacing unchanged. */
-sup.cite a{display:inline-block;box-sizing:border-box;min-width:24px;line-height:1;padding:15px 3px;margin-top:-15px;margin-bottom:-15px;text-align:center}
-.more{margin:28px 0 0;color:var(--muted);font-size:15px}
+.post h2{margin:0;font-size:20px;line-height:1.3}
+.post p{margin:4px 0 0;color:var(--muted);font-size:15px}
+.post code{font:14px ui-monospace,"SF Mono",Menlo,Consolas,monospace;padding:1px 5px;border-radius:6px;background:var(--surface-2);overflow-wrap:anywhere}
+.post .go{margin-top:8px;font-weight:700;font-size:14px;color:var(--accent)}
+.more{margin:24px 0 0;color:var(--muted);font-size:15px}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -117,70 +84,18 @@ sup.cite a{display:inline-block;box-sizing:border-box;min-width:24px;line-height
 
 <main>
   <h1>Claude Code tips</h1>
-  <p class="lead" data-l="vi">Những cách tôi dùng Claude Code mỗi ngày. Mỗi mẹo có lý do và file thật để bạn chép về dùng.</p>
-  <p class="lead" data-l="en">How I use Claude Code every day. Each tip comes with the reason and a real file you can copy.</p>
-  <ol class="toc">
-    <li><a href="#claude-md"><b>1</b><span data-l="vi">CLAUDE.md global</span><span data-l="en">Global CLAUDE.md</span></a></li>
+  <p class="lead" data-l="vi">Chuyên mục mẹo dùng Claude Code mỗi ngày. Mỗi bài một mẹo, có lý do và file thật để bạn chép về dùng.</p>
+  <p class="lead" data-l="en">A series on using Claude Code every day. One tip per post, with the reason and a real file you can copy.</p>
+  <ol class="posts" reversed>
+    <li><a class="post" href="global-claude-md/"><span class="num">1</span><div>
+      <h2><span data-l="vi">CLAUDE.md global: luật chung cho mọi dự án</span><span data-l="en">Global CLAUDE.md: one set of rules for every project</span></h2>
+      <p data-l="vi">Viết <code>~/.claude/CLAUDE.md</code> một lần để Claude làm việc đúng cách ở mọi dự án, kèm file thật của tôi.</p>
+      <p data-l="en">Write <code>~/.claude/CLAUDE.md</code> once so Claude works your way in every project, with my real file.</p>
+      <div class="go"><span data-l="vi">Đọc bài →</span><span data-l="en">Read →</span></div>
+    </div></a></li>
   </ol>
-
-  <article class="tip" id="claude-md">
-    <div class="t-head"><span class="num">1</span><h2><span data-l="vi">CLAUDE.md global: luật chung cho mọi dự án</span><span data-l="en">Global CLAUDE.md: one set of rules for every project</span></h2></div>
-    <p data-l="vi">Claude Code đọc file <code>~/.claude/CLAUDE.md</code> ở đầu mọi phiên, trong mọi dự án trên máy bạn. Tài liệu gọi nó là "User instructions": sở thích cá nhân áp cho tất cả dự án.<sup class="cite"><a href="#src-1">[1]</a></sup> Viết cách bạn muốn làm việc vào đây một lần, khỏi phải dặn lại mỗi phiên.</p>
-    <p data-l="en">Claude Code reads <code>~/.claude/CLAUDE.md</code> at the start of every session, in every project on your machine. The docs call it "User instructions": personal preferences for all projects.<sup class="cite"><a href="#src-1">[1]</a></sup> Write down how you want to work once instead of repeating it every session.</p>
-
-    <p class="why"><span data-l="vi">Dòng đầu file của tôi nói rõ vì sao nó tồn tại:</span><span data-l="en">The first line of my file says why it exists:</span><br><code>Why: guessed facts and long answers cost me time. These rules fix both.</code></p>
-
-    <h3><span data-l="vi">File của tôi có 6 nhóm luật</span><span data-l="en">My file has six groups of rules</span></h3>
-    <ul class="groups">
-      <li><b>Facts</b><span data-l="vi">Không nói về hệ thống đang chạy theo trí nhớ. Mỗi dữ kiện kèm nguồn: file:dòng, lệnh và kết quả. Chưa kiểm thì ghi "not verified".</span><span data-l="en">No claims about a live system from memory. Every fact cites its source: file:line, or a command and its output. Unchecked means "not verified".</span></li>
-      <li><b>Before you build</b><span data-l="vi">Với lĩnh vực lạ hay thuật toán khó, xem 1–2 dự án mã nguồn mở tốt trước. Mượn ý tưởng, không chép code.</span><span data-l="en">For an unfamiliar domain or a hard algorithm, look at one or two good open-source projects first. Borrow ideas, not code.</span></li>
-      <li><b>Solutions</b><span data-l="vi">Không cãi. Sửa tận gốc, không vá tạm. Chỉ nói "xong" sau khi đã chạy kiểm tra và đưa kết quả.</span><span data-l="en">Don't argue. Fix the root cause, no temporary patches. Say "done" only after running the check and showing its output.</span></li>
-      <li><b>Decisions I must make</b><span data-l="vi">Khi cần tôi quyết, hỏi một agent cố vấn trước, rồi mới hỏi tôi kèm khuyến nghị và đánh đổi của từng lựa chọn.</span><span data-l="en">When I must decide, ask an advisor agent first, then ask me with its recommendation and a trade-off for each option.</span></li>
-      <li><b>Tests</b><span data-l="vi">Viết hay sửa test thì nạp skill kiểm tra test trước. Đổi tên, sửa chữ, tài liệu thường không cần test mới.</span><span data-l="en">Load a test-review skill before writing or changing tests. Renames, copy and docs usually need no new test.</span></li>
-      <li><b>Browser and background tasks</b><span data-l="vi">Hỏi tôi dùng trình duyệt nào trước khi mở. Việc chạy nền lâu thì theo dõi có hạn giờ và báo lỗi ngay.</span><span data-l="en">Ask which browser to use before opening one. Watch long background jobs with a timeout and report failures right away.</span></li>
-    </ul>
-
-    <div class="file">
-      <div class="file-bar"><span>~/.claude/CLAUDE.md</span><button class="copy" type="button" id="copyFile"><span data-l="vi">Chép</span><span data-l="en">Copy</span></button></div>
-      <pre id="fileBody"><span data-l="vi">Đang tải file từ GitHub…</span><span data-l="en">Loading the file from GitHub…</span></pre>
-    </div>
-
-    <h3><span data-l="vi">Cài vào máy bạn</span><span data-l="en">Install it</span></h3>
-    <div class="term"><button class="copy" type="button" data-copy="mkdir -p ~/.claude&#10;curl -fsSL https://raw.githubusercontent.com/tvtdev94/agentkit/main/claude-md/CLAUDE.md -o ~/.claude/CLAUDE.md"><span data-l="vi">Chép</span><span data-l="en">Copy</span></button><code><span class="k">$ </span>mkdir -p ~/.claude
-<span class="k">$ </span>curl -fsSL https://raw.githubusercontent.com/tvtdev94/agentkit/main/claude-md/CLAUDE.md -o ~/.claude/CLAUDE.md</code></div>
-    <p data-l="vi">Lệnh này ghi đè file cũ. Nếu bạn đã có <code>~/.claude/CLAUDE.md</code>, hãy chép từng nhóm luật bạn muốn vào file của mình.</p>
-    <p data-l="en">This overwrites the old file. If you already have a <code>~/.claude/CLAUDE.md</code>, copy the groups you want into it instead.</p>
-
-    <h3><span data-l="vi">Ba tên cần thay</span><span data-l="en">Three names to swap</span></h3>
-    <p data-l="vi">File nhắc tới ba công cụ trong bộ cài riêng của tôi. Chúng không có sẵn trong Claude Code, nên hãy thay bằng công cụ của bạn hoặc xoá dòng đó.</p>
-    <p data-l="en">The file names three tools from my own setup. They don't ship with Claude Code, so swap in your own or delete those lines.</p>
-    <div class="tbl"><table>
-      <thead><tr><th><span data-l="vi">Tên</span><span data-l="en">Name</span></th><th><span data-l="vi">Trong máy tôi là</span><span data-l="en">In my setup</span></th></tr></thead>
-      <tbody>
-        <tr><td><code>kongming</code></td><td><span data-l="vi">agent cố vấn, cho ý kiến thứ hai trước khi tôi phải quyết</span><span data-l="en">an advisor agent that gives a second opinion before I decide</span></td></tr>
-        <tr><td><code>test-audit</code></td><td><span data-l="vi">skill viết và rà soát test</span><span data-l="en">a skill for writing and reviewing tests</span></td></tr>
-        <tr><td><code>browser-skill</code></td><td><span data-l="vi">skill điều khiển trình duyệt đã đăng nhập của tôi</span><span data-l="en">a skill that drives my logged-in browser</span></td></tr>
-      </tbody>
-    </table></div>
-
-    <h3><span data-l="vi">Lưu ý từ tài liệu chính thức</span><span data-l="en">Notes from the official docs</span></h3>
-    <ul class="groups">
-      <li><b><span data-l="vi">Ngắn và cụ thể</span><span data-l="en">Short and specific</span></b><span data-l="vi">Luật càng cụ thể, càng ngắn thì Claude làm theo càng đều. Nên giữ mỗi file dưới 200 dòng; file dài tốn context và bị làm theo kém hơn.</span><span data-l="en">The more specific and concise the rules, the more consistently Claude follows them. Aim for under 200 lines per file; longer files cost context and lower adherence.</span><sup class="cite"><a href="#src-1">[1]</a></sup></li>
-      <li><b><span data-l="vi">Là context, không phải khoá</span><span data-l="en">Context, not a lock</span></b><span data-l="vi">Claude coi CLAUDE.md là ngữ cảnh, không phải cấu hình bắt buộc. Muốn chặn hẳn một hành động thì dùng hook PreToolUse.</span><span data-l="en">Claude treats CLAUDE.md as context, not enforced configuration. To block an action outright, use a PreToolUse hook.</span><sup class="cite"><a href="#src-1">[1]</a></sup></li>
-    </ul>
-
-    <div class="links">
-      <a class="primary" href="https://github.com/tvtdev94/agentkit/blob/main/claude-md/CLAUDE.md" target="_blank" rel="noopener"><span data-l="vi">Xem file trên GitHub</span><span data-l="en">View the file on GitHub</span></a>
-      <a href="../../products/#agentkit"><span data-l="vi">Bộ skill agentkit</span><span data-l="en">The agentkit skills</span></a>
-    </div>
-
-    <ol class="src">
-      <li id="src-1"><a href="https://code.claude.com/docs/en/memory" target="_blank" rel="noopener">Claude Code docs: How Claude remembers your project</a> <span data-l="vi">(truy cập 19/11/2026)</span><span data-l="en">(accessed 2026-11-19)</span></li>
-    </ol>
-  </article>
-
-  <p class="more" data-l="vi">Còn nhiều mẹo nữa sẽ được thêm dần.</p>
-  <p class="more" data-l="en">More tips are on the way.</p>
+  <p class="more" data-l="vi">Bài mới sẽ được thêm dần.</p>
+  <p class="more" data-l="en">New posts are on the way.</p>
 </main>
 
 <script>
@@ -202,21 +117,7 @@ sup.cite a{display:inline-block;box-sizing:border-box;min-width:24px;line-height
   langBtn.addEventListener('click',function(){
     var next=root.lang==='en'?'vi':'en';setLang(next);
     try{localStorage.setItem('profile-lang',next)}catch(e){}
-    history.replaceState(null,'',(next==='en'?'?lang=en':location.pathname)+location.hash);
-  });
-  // The file is read live from the repo, so this page always shows the current version.
-  var RAW='https://raw.githubusercontent.com/tvtdev94/agentkit/main/claude-md/CLAUDE.md';
-  var body=document.getElementById('fileBody'),copyFile=document.getElementById('copyFile'),text='';
-  fetch(RAW).then(function(r){if(!r.ok)throw 0;return r.text()}).then(function(t){text=t;body.textContent=t;copyFile.dataset.copy=t}).catch(function(){
-    body.innerHTML='<span data-l="vi">Không tải được file. Mở bản trên GitHub ở nút bên dưới.</span><span data-l="en">Could not load the file. Open it on GitHub with the button below.</span>';
-    copyFile.hidden=true;
-  });
-  document.querySelectorAll('.copy').forEach(function(b){
-    b.addEventListener('click',function(){
-      if(b.dataset.busy||!b.dataset.copy)return;
-      var o=b.innerHTML,done=function(){b.dataset.busy=1;b.textContent=root.lang==='en'?'Copied':'Đã chép';setTimeout(function(){b.innerHTML=o;delete b.dataset.busy},1400)};
-      if(navigator.clipboard)navigator.clipboard.writeText(b.dataset.copy).then(done,function(){});
-    });
+    history.replaceState(null,'',next==='en'?'?lang=en':location.pathname);
   });
 })();
 </script>
