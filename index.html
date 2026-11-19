@@ -1,4 +1,8 @@
-<!doctype html>
+---
+# Front matter makes GitHub Pages fill in {{ v }}: the build time, added to every homepage asset URL
+# so a new page never runs with styles or scripts the browser cached from an older build.
+---
+{% assign v = site.time | date: '%s' %}<!doctype html>
 <html lang="vi">
 <head>
 <meta charset="utf-8">
@@ -21,13 +25,15 @@
 <meta property="og:url" content="https://tvtdev94.github.io/">
 <script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <script>if(!matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.classList.add('asm')</script>
-<link rel="stylesheet" href="assets/home/base.css">
-<link rel="stylesheet" href="assets/home/season.css">
-<link rel="stylesheet" href="assets/home/cursors.css">
-<link rel="modulepreload" href="assets/home/sky.js">
-<link rel="modulepreload" href="assets/home/season.js">
-<link rel="modulepreload" href="assets/home/profile.js">
-<link rel="modulepreload" href="assets/home/cursors.js">
+<link rel="stylesheet" href="assets/home/base.css?v={{ v }}">
+<link rel="stylesheet" href="assets/home/season.css?v={{ v }}">
+<link rel="stylesheet" href="assets/home/cursors.css?v={{ v }}">
+<!-- The modules import each other as ./name.js; this map sends those imports to the same build version. -->
+<script type="importmap">{"imports":{"./assets/home/sky.js":"./assets/home/sky.js?v={{ v }}","./assets/home/season.js":"./assets/home/season.js?v={{ v }}","./assets/home/profile.js":"./assets/home/profile.js?v={{ v }}","./assets/home/cursors.js":"./assets/home/cursors.js?v={{ v }}"}}</script>
+<link rel="modulepreload" href="assets/home/sky.js?v={{ v }}">
+<link rel="modulepreload" href="assets/home/season.js?v={{ v }}">
+<link rel="modulepreload" href="assets/home/profile.js?v={{ v }}">
+<link rel="modulepreload" href="assets/home/cursors.js?v={{ v }}">
 </head>
 <body>
 <div class="sky" id="sky" aria-hidden="true"></div>
@@ -83,6 +89,6 @@
 <footer><span class="fine">© 2026 Trần Văn Tuấn</span> <select class="season-pick" id="seasonPick" hidden></select> <button class="replay" id="replay" type="button" hidden data-t="replay">Xem lại cảnh lắp ráp</button></footer>
 <div class="cursors" id="cursors" aria-hidden="true"></div>
 
-<script type="module" src="assets/home/home.js"></script>
+<script type="module" src="assets/home/home.js?v={{ v }}"></script>
 </body>
 </html>
