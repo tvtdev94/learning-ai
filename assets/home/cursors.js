@@ -181,12 +181,13 @@ function assemble(){
   });
   // Orbits start turning again once every piece is placed.
   later(function(){root.classList.remove('building')},lastEnd);
-  // Finale: each cursor pinches a star, pulls it back, then flings it into the photo.
-  // The star stretches into a streak on the way; every hit ripples the photo like a click.
-  var order=paths.map(function(p,c){return c}).sort(function(a,b){return paths[a][paths[a].length-1].t-paths[b][paths[b].length-1].t}),done=0;
+  // Finale: as soon as a cursor finishes its own pieces it pinches a star, pulls it back, then flings
+  // it into the photo, without waiting for the others. The star stretches into a streak on the way;
+  // every hit ripples the photo like a click. Hits stay at least 340ms apart so each one reads.
+  var order=paths.map(function(p,c){return c}).sort(function(a,b){return paths[a][paths[a].length-1].t-paths[b][paths[b].length-1].t}),done=0,prev=-1e9;
   function clamp(v,lo,hi){return Math.min(hi,Math.max(lo,v))}
   order.forEach(function(c,k){
-    var path=paths[c],l=path[path.length-1],t0=Math.max(l.t+150,lastEnd-700+k*340);
+    var path=paths[c],l=path[path.length-1],t0=Math.max(l.t+150,prev+340);prev=t0;
     var ux=l.x-A.x,uy=l.y-A.y,d=Math.hypot(ux,uy)||1,DST=Math.max(d,RAD*2.4);
     var sx=clamp(A.x+ux/d*DST,40,vw-40),sy=clamp(A.y+uy/d*DST,scrollY+40,scrollY+vh-40);
     var vx=A.x-sx,vy=A.y-sy,L=Math.hypot(vx,vy)||1;vx/=L;vy/=L;
