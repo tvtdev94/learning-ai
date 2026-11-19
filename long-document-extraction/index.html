@@ -1,0 +1,1237 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trích xuất có cấu trúc từ tài liệu dài bằng LLM</title>
+<!-- pwa -->
+<link rel="manifest" href="../manifest.webmanifest">
+<meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15171a" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" sizes="32x32" href="../icons/favicon-32.png">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sổ tay">
+<script>if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('../sw.js').catch(function(){})})</script>
+<meta name="description" content="Biến báo cáo kiểm toán, hợp đồng, báo cáo tài chính 100+ trang thành bản ghi có cấu trúc: schema, map-reduce, gộp bỏ trùng, checkpoint, cache, sổ cái, trích dẫn kiểm được, đo F1.">
+<script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<style>
+:root{
+  --bg:#f7f6f2; --surface:#ffffff; --surface-2:#f0eee8; --text:#1f2328; --muted:#5b6370;
+  --border:#dcd8cf; --accent:#2559b8; --accent-soft:#e3ecfc; --ok:#16703d; --ok-soft:#e1f3e8;
+  --warn:#8f4c0a; --warn-soft:#fbeedd; --bad:#a82f2f; --bad-soft:#fae3e3;
+  --p1:#2559b8; --p2:#7440b8; --p3:#16703d; --p4:#8f4c0a;
+  --code-bg:#f0eee8; --shadow:0 1px 2px rgba(0,0,0,.06),0 2px 8px rgba(0,0,0,.04); --on-accent:#ffffff; color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+    --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+    --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+    --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --code-bg:#252930; --shadow:none; --on-accent:#15171a; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15171a; --surface:#1d2024; --surface-2:#252930; --text:#e6e8eb; --muted:#9aa3ae;
+  --border:#333841; --accent:#6b9cf5; --accent-soft:#1f2c45; --ok:#4cc184; --ok-soft:#173326;
+  --warn:#e39a4f; --warn-soft:#3a2a17; --bad:#ec7373; --bad-soft:#3d1f1f;
+  --p1:#6b9cf5; --p2:#b388f0; --p3:#4cc184; --p4:#e39a4f; --code-bg:#252930; --shadow:none; --on-accent:#15171a; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+a{color:var(--accent)}
+header.top{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
+.top-inner{max-width:1100px;margin:0 auto;padding:10px 16px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+.brand{font-weight:700;white-space:nowrap}
+.home{white-space:nowrap;text-decoration:none;color:var(--text);border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:4px 10px;font-size:14px}
+.home:hover{border-color:var(--accent);color:var(--accent)}
+nav.toc{display:flex;gap:4px;overflow-x:auto;scrollbar-width:thin;flex:1}
+nav.toc a{white-space:nowrap;text-decoration:none;color:var(--muted);padding:4px 10px;border-radius:999px;font-size:14px}
+nav.toc a:hover,nav.toc a.active{background:var(--accent-soft);color:var(--accent)}
+button{font:inherit;cursor:pointer}
+.theme-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:4px 10px;font-size:14px}
+main{max-width:1100px;margin:0 auto;padding:16px}
+section{padding:28px 0;border-bottom:1px solid var(--border);scroll-margin-top:64px}
+section:last-child{border-bottom:none}
+h1{font-size:clamp(28px,5vw,40px);line-height:1.2;margin:16px 0 8px}
+h2{font-size:clamp(22px,3.5vw,28px);margin:0 0 12px}
+h3{font-size:18px;margin:20px 0 8px}
+p{margin:8px 0}
+.lead{font-size:18px;color:var(--muted);max-width:760px}
+.muted{color:var(--muted)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 10px 10px 0;margin:12px 0}
+.callout.ok{border-color:var(--ok);background:var(--ok-soft)}
+.callout.warn{border-color:var(--warn);background:var(--warn-soft)}
+.callout.bad{border-color:var(--bad);background:var(--bad-soft)}
+.tag{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);margin-right:4px}
+.tag.p1{background:var(--accent-soft);color:var(--p1)}
+.tag.p3{background:var(--ok-soft);color:var(--p3)}
+.tag.p4{background:var(--warn-soft);color:var(--p4)}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+th{background:var(--surface-2);font-weight:600}
+.table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.mono,code{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;font-size:14px}
+code{background:var(--code-bg);padding:1px 5px;border-radius:5px}
+pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:12px;white-space:pre-wrap;word-break:break-word;margin:8px 0;font-size:14px;line-height:1.55}
+svg text{fill:var(--text);font-family:inherit}
+.diagram{width:100%;height:auto;display:block}
+.svgbox{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px;overflow-x:auto}
+.svgbox svg{min-width:640px}
+/* Glossary */
+.gloss-tools{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+.gloss-tools input{flex:1;min-width:200px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:inherit}
+.chip{border:1px solid var(--border);background:var(--surface);color:var(--muted);border-radius:999px;padding:4px 12px;font-size:14px}
+.chip.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.term h4{margin:0 0 4px;font-size:16px}
+.term .en{font-weight:400;color:var(--muted);font-size:14px}
+.term p{margin:4px 0;font-size:15px}
+.term .ex{font-size:14px;color:var(--muted)}
+.term .rel{font-size:13px;margin-top:6px}
+.term .rel a{font-size:13px}
+/* Stepper */
+.stepper{display:grid;grid-template-columns:240px 1fr;gap:12px;scroll-margin-top:64px}
+@media (max-width:720px){.stepper{grid-template-columns:1fr}}
+.steps{display:flex;flex-direction:column;gap:6px}
+@media (max-width:720px){.steps{flex-direction:row;overflow-x:auto}}
+.steps button{text-align:left;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:8px 10px;font-size:14px;white-space:nowrap}
+.steps button .n{display:inline-block;width:22px;height:22px;border-radius:50%;background:var(--surface-2);text-align:center;line-height:22px;font-size:12px;margin-right:6px}
+.steps button.on{border-color:var(--accent);background:var(--accent-soft)}
+.steps button.on .n{background:var(--accent);color:var(--on-accent)}
+.step-nav{display:flex;gap:8px;margin-top:12px}
+.step-nav button{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 14px}
+.step-nav button:disabled{opacity:.5;cursor:default}
+.ct td,.ct th{padding:6px 8px}
+@media (max-width:600px){.ct{font-size:14px}.ct td,.ct th{padding:6px 5px}}
+.chunk{border:1px dashed var(--border);border-radius:8px;padding:8px 10px;margin:6px 0;font-size:14px;background:var(--surface)}
+.chunk.hit{border-style:solid;border-color:var(--ok);background:var(--ok-soft)}
+.chunk .id{font-weight:700;font-size:12px;color:var(--muted)}
+details{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin:8px 0}
+details summary{cursor:pointer;font-weight:600}
+details[open] summary{margin-bottom:6px}
+.check{display:flex;gap:8px;align-items:flex-start;padding:6px 0}
+.check input{margin-top:6px}
+footer{max-width:1100px;margin:0 auto;padding:24px 16px;color:var(--muted);font-size:14px}
+.card>h4:first-child,.card>.tag+h4{margin-top:4px}
+.card h4{margin-bottom:6px}
+.m-only{display:none}
+/* Citations */
+sup.cite{font-size:max(11px,.72em);line-height:0;margin-left:1px;white-space:nowrap}
+sup.cite a{text-decoration:none;font-weight:600;padding:10px 3px;margin:-10px 0}
+sup.cite a:hover{text-decoration:underline}
+sup.cite a+a{margin-left:2px}
+ol.sources{padding-left:1.6em;margin:8px 0}
+ol.sources li{margin:0 0 10px;font-size:15px;overflow-wrap:anywhere;scroll-margin-top:64px}
+ol.sources li:target{background:var(--accent-soft);border-radius:6px}
+ol.sources .acc{color:var(--muted);font-size:14px;white-space:nowrap}
+.vflow .box,.vflow .node,.vflow .ar{display:block}
+.vflow .ph{font-weight:700;font-size:14px;margin:4px 0 8px}
+.vflow .ph1{color:var(--p1)} .vflow .ph2{color:var(--p3)}
+.vflow .node{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 12px}
+.vflow .node b{display:block}
+.vflow .node span{font-size:13px;color:var(--muted)}
+.vflow .node.r{border:2px solid var(--p1)} .vflow .node.a{border:2px solid var(--p2)} .vflow .node.g{border:2px solid var(--p3)} .vflow .node.db{border:2px solid var(--p2)}
+.vflow .opt{background:var(--warn-soft);border-color:var(--p4)}
+.vflow .ar{text-align:center;color:var(--muted);font-size:13px;line-height:1.3;padding:4px 0}
+.vflow .box{border-radius:12px;padding:10px;margin-bottom:10px}
+.vflow .box1{background:var(--accent-soft)} .vflow .box2{background:var(--ok-soft)}
+.vflow .note{font-size:13px;color:var(--muted);margin-top:6px}
+/* Desktop SVG diagrams (viewBox 1000 wide) only from 1081px so their 11-unit labels render at 11px or larger */
+@media (max-width:1080px){.d-only{display:none}.m-only{display:block}.vflow{max-width:560px;margin:0 auto}}
+@media (max-width:600px){
+  .brand{display:none} body{font-size:15px}
+  .theme-btn .lbl,.home .lbl{display:none}
+  main{padding:12px 16px}
+  section{padding:22px 0}
+  .card{padding:14px}
+  table.stack thead{display:none}
+  table.stack,table.stack tbody,table.stack tr,table.stack td{display:block;width:100%}
+  table.stack tr{border-bottom:1px solid var(--border);padding:8px 0}
+  table.stack tr:last-child{border-bottom:none}
+  table.stack td{border:none;padding:3px 12px}
+  table.stack td[data-label]::before{content:attr(data-label);display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+  table.stack td:first-child{font-size:16px}
+  table.stack td:first-child::before{display:none}
+  .home,.theme-btn,nav.toc a,.chip,.step-nav button,.steps button{min-height:40px}
+  .home,.theme-btn,nav.toc a{display:inline-flex;align-items:center}
+  pre,pre.mono,.term .ex{font-size:15px}
+  .vflow .node span{font-size:14px}
+  .term .rel a{font-size:14px;padding:10px 2px}
+}
+/* ---- Trang này ---- */
+.tag.p2{background:var(--surface-2);color:var(--p2)}
+.tag.bad{background:var(--bad-soft);color:var(--bad)}
+pre{font-family:inherit}
+pre.rec{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.act{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 12px;font-size:14px}
+.act.main{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+.act.danger{border-color:var(--bad);color:var(--bad)}
+.act.armed{background:var(--bad);border-color:var(--bad);color:var(--on-accent)}
+.act:disabled{opacity:.5;cursor:not-allowed}
+.ctl{margin:0 0 10px}
+.ctl>.lbl{display:block;font-weight:600;font-size:14px;margin-bottom:4px}
+.ctl .chip{margin:0 4px 6px 0}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:10px 0}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:8px 10px}
+.stat b{display:block;font-size:20px;line-height:1.2}
+.stat span{font-size:13px;color:var(--muted)}
+.tiles{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin:10px 0}
+@media (max-width:900px){.tiles{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:480px){.tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.tile{border:1px dashed var(--border);border-radius:8px;padding:6px 8px;font-size:13px;line-height:1.35;background:var(--surface)}
+.tile b{display:block;font-size:14px}
+.tile .st{display:block;font-weight:600}
+.tile .k{display:block;font-family:ui-monospace,Consolas,monospace;font-size:12px;color:var(--muted)}
+.tile.done{border-style:solid;border-color:var(--ok);background:var(--ok-soft)}
+.tile.done .st{color:var(--ok)}
+.tile.cache{border-style:solid;border-color:var(--p1);background:var(--accent-soft)}
+.tile.cache .st{color:var(--p1)}
+.tile.lost{border-style:solid;border-color:var(--bad);background:var(--bad-soft)}
+.tile.lost .st{color:var(--bad)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--muted);margin:4px 0}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px;border:1px solid var(--border)}
+.legend i.done{background:var(--ok-soft);border-color:var(--ok)} .legend i.cache{background:var(--accent-soft);border-color:var(--p1)} .legend i.lost{background:var(--bad-soft);border-color:var(--bad)}
+.legend i.lg1{border:2px solid var(--p1)} .legend i.lg2{border:2px solid var(--p2)} .legend i.lg3{border:2px solid var(--p3)} .legend i.lg4{border:2px solid var(--p4)}
+.vflow .ar::first-letter{font-size:17px}
+.simlog{font-size:14px;max-height:240px;overflow:auto;background:var(--code-bg);border:1px solid var(--border);border-radius:10px;padding:8px 10px;margin:8px 0}
+.simlog div{padding:2px 0;border-bottom:1px dashed var(--border)}
+.simlog div:last-child{border-bottom:none}
+.verdict{border-radius:10px;padding:10px 12px;margin:8px 0;border-left:4px solid}
+.verdict.ok{background:var(--ok-soft);border-color:var(--ok)}
+.verdict.no{background:var(--bad-soft);border-color:var(--bad)}
+.verdict.mid{background:var(--warn-soft);border-color:var(--warn)}
+.chk{list-style:none;padding:0;margin:6px 0}
+.chk li{padding:4px 0 4px 26px;position:relative;font-size:15px}
+.chk li::before{position:absolute;left:0;top:4px;font-weight:700}
+.chk li.y::before{content:"✓";color:var(--ok)}
+.chk li.n::before{content:"✗";color:var(--bad)}
+.chk li.w::before{content:"!";color:var(--warn)}
+.sim-note{font-size:14px;color:var(--muted)}
+.evt td,.evt th{padding:6px 8px}
+@media (max-width:600px){.evt{font-size:14px}.evt td,.evt th{padding:6px 5px}}
+.evt td:not(:first-child),.evt th:not(:first-child){text-align:right;white-space:nowrap}
+.evt tr:last-child td{border-bottom:none;background:var(--surface-2)}
+.okt{color:var(--ok);font-weight:600} .badt{color:var(--bad);font-weight:600} .warnt{color:var(--warn);font-weight:600}
+@media (max-width:600px){
+  .act{min-height:40px}
+  .check{min-height:40px}
+  .tile{font-size:13px}
+  .stat span{font-size:14px}
+  .sim-note,.legend{font-size:14px}
+  .term .rel a{display:inline-block;padding:10px 4px;line-height:20px;min-height:40px;min-width:24px;text-align:center}
+  details summary{padding:8px 0}
+}
+/* cite-tap */
+/* Same tap area for citation links on every page: at least 40px high and 24px wide.
+   Negative vertical margins keep line spacing unchanged. */
+sup.cite a{display:inline-block;box-sizing:border-box;min-width:24px;line-height:1;padding:15px 3px;margin-top:-15px;margin-bottom:-15px;text-align:center}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <a class="home" href="../so-tay/" aria-label="Về trang tất cả chủ đề">←<span class="lbl"> Chủ đề</span></a>
+    <span class="brand">Trích xuất tài liệu dài</span>
+    <nav class="toc" id="toc">
+      <a href="#tong-quan">1. Tổng quan</a>
+      <a href="#flow">2. Flow</a>
+      <a href="#vi-du">3. Ví dụ từng bước</a>
+      <a href="#mo-phong">4. Mô phỏng</a>
+      <a href="#schema">5. Schema</a>
+      <a href="#pipeline">6. Pipeline</a>
+      <a href="#do-ben">7. Chạy bền</a>
+      <a href="#kiem-chung">8. Kiểm chứng</a>
+      <a href="#khai-niem">9. Khái niệm</a>
+      <a href="#quan-he">10. Mối quan hệ</a>
+      <a href="#so-sanh">11. So sánh</a>
+      <a href="#loi">12. Lỗi &amp; chẩn đoán</a>
+      <a href="#danh-gia">13. Đánh giá</a>
+      <a href="#lo-trinh">14. Lộ trình</a>
+      <a href="#nguon">Nguồn</a>
+    </nav>
+    <button class="theme-btn" id="themeBtn" aria-label="Đổi giao diện sáng/tối">◐<span class="lbl"> Giao diện</span></button>
+  </div>
+</header>
+
+<main>
+
+<!-- 1. TỔNG QUAN -->
+<section id="tong-quan">
+  <h1>Trích xuất có cấu trúc từ tài liệu dài bằng LLM</h1>
+  <p class="lead">Biến một tài liệu 100+ trang (báo cáo kiểm toán, hợp đồng, báo cáo tài chính, hợp đồng bảo hiểm) thành <b>các bản ghi có cấu trúc</b> mà phần mềm dùng được.</p>
+  <p>Bản ghi có thể là danh sách kiểm soát, kết quả kiểm tra, ngoại lệ, bên ký, điều khoản hay số liệu. Mỗi giá trị kèm số trang và câu trích để kiểm lại được.</p>
+  <p class="muted">Trang này giả định bạn đã biết <a href="../tool-calling-structured-output/">structured output</a> (bắt LLM trả JSON đúng schema) và <a href="../document-parsing-chunking/">parsing &amp; chunking</a> (đọc PDF và cắt đoạn). Ở đây ta ghép chúng thành một <b>pipeline chạy dài, chạy lại được và tự chứng minh là không bỏ sót phần nào của tài liệu</b>.</p>
+
+  <h3>Ví dụ thật của bài toán</h3>
+  <p>Một báo cáo SOC 2 Type 2 là báo cáo kiểm soát nội bộ theo khung của AICPA (Viện Kế toán viên Công chứng Hoa Kỳ). Bên thuê dịch vụ đọc nó để đánh giá rủi ro khi thuê ngoài. Báo cáo Type 2 đánh giá các kiểm soát có <b>vận hành hiệu quả trong một khoảng thời gian</b> hay không. Ví dụ, trong báo cáo SOC của Azure, phần phản hồi của ban điều hành về các ngoại lệ nằm gần cuối báo cáo.<sup class="cite"><a href="#src-32">[32]</a></sup></p>
+  <p><b>Kiểm soát</b> (control) là một biện pháp nhà cung cấp cam kết thực hiện, ví dụ "tài khoản quản trị phải dùng xác thực đa yếu tố". <b>Ngoại lệ</b> (exception) là lần kiểm toán viên thấy biện pháp đó không được làm đúng, ví dụ 2 trong 25 mẫu thiếu phê duyệt. Đội rủi ro nhà cung cấp cần chuyển nó thành bảng: mã kiểm soát, kiểm toán viên đã kiểm gì, kết quả ra sao, có ngoại lệ không, ban điều hành trả lời thế nào.</p>
+
+  <h3>Vì sao "một prompt lớn" thường hỏng với tài liệu dài?</h3>
+  <div class="grid g2">
+    <div class="card"><span class="tag p4">Giới hạn đầu vào</span><h4>Tài liệu không vừa, hoặc vừa nhưng đọc kém</h4><p>Context window là toàn bộ chữ model đọc được trong một lần gọi, kể cả câu trả lời. Anthropic ghi rõ: context nhiều hơn không tự động tốt hơn, số token càng tăng thì độ chính xác (accuracy) và recall càng giảm (context rot).<sup class="cite"><a href="#src-4">[4]</a></sup> Mỗi request Claude nhận tối đa 600 trang PDF (100 trang nếu context window của request dưới 1M token); mỗi trang thường tốn 1.500–3.000 token chữ, cộng thêm ảnh trang.<sup class="cite"><a href="#src-6">[6]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Lạc ở giữa</span><h4>Thông tin ở giữa dễ bị bỏ qua</h4><p>Đo thực nghiệm cho thấy model dùng thông tin tốt nhất khi nó nằm ở đầu hoặc cuối context, và kém hẳn khi nằm ở giữa, kể cả với model được quảng cáo là long-context.<sup class="cite"><a href="#src-1">[1]</a></sup> Trong benchmark RULER, chỉ một nửa trong 17 model giữ được chất lượng ở độ dài 32K token, dù tất cả đều nhận ít nhất 32K.<sup class="cite"><a href="#src-2">[2]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Giới hạn đầu ra</span><h4>Câu trả lời bị cắt giữa chừng</h4><p>Đầu vào có thể 1M token, nhưng mỗi request chỉ sinh tối đa 128K token đầu ra với các model Claude mới nhất (dòng context 1M) khi gọi đồng bộ; Batch API cho tới 300K trên một số model nếu thêm beta header.<sup class="cite"><a href="#src-4">[4]</a><a href="#src-5">[5]</a></sup> Nếu mỗi bản ghi kèm câu trích tốn 300–500 token (minh họa), 300 bản ghi đã là 90K–150K token. Chạm trần thì JSON bị cắt và không khớp schema nữa.<sup class="cite"><a href="#src-9">[9]</a><a href="#src-10">[10]</a></sup></p></div>
+    <div class="card"><span class="tag p4">Chi phí và làm lại</span><h4>Hỏng một chỗ là trả tiền đọc lại cả cuốn</h4><p>Giá tính theo từng triệu token đầu vào và đầu ra.<sup class="cite"><a href="#src-5">[5]</a></sup> Một prompt lớn không có điểm dừng giữa chừng: lỗi mạng, hết giờ hay sửa prompt đều phải đọc lại toàn bộ 120 trang. Bạn cũng không biết phần nào đã đọc kỹ, phần nào bị lướt.</p></div>
+  </div>
+
+  <div class="callout ok"><b>Khi nào long-context là đủ?</b> Một nghiên cứu so RAG với long-context thấy: khi đủ tài nguyên, đưa cả tài liệu vào context cho kết quả trung bình tốt hơn, còn RAG có lợi thế lớn về chi phí.<sup class="cite"><a href="#src-3">[3]</a></sup> Tài liệu của Gemini cũng khuyến khích đưa hết thông tin vào khi vừa context, nhưng lưu ý rằng khi phải tìm <b>nhiều</b> mẩu thông tin cùng lúc thì độ chính xác không còn như khi tìm một mẩu.<sup class="cite"><a href="#src-8">[8]</a></sup>
+    <br>Quy tắc thực dụng: cần <b>vài trường xuất hiện một lần</b> (bên ký, kỳ báo cáo, tổng giá trị) và tài liệu vừa context, thì một lần gọi long-context, đặt tài liệu ở đầu và câu hỏi ở cuối, là đủ.<sup class="cite"><a href="#src-7">[7]</a><a href="#src-8">[8]</a></sup> Cần <b>liệt kê đầy đủ</b> hàng chục đến hàng trăm bản ghi lặp lại (kiểm soát, điều khoản, dòng bảng) thì nên chia chunk như phần còn lại của trang này.</div>
+
+  <div class="card" style="margin-top:12px">
+    <h4>🗃️ Hình dung: một nhóm kiểm toán viên chia nhau đọc hồ sơ</h4>
+    <p>Trưởng nhóm in sẵn <b>mẫu phiếu</b> (schema): mỗi kiểm soát một phiếu, có ô mã, mô tả, kết quả, trang. Tập hồ sơ 120 trang được tách thành 12 xấp (<b>chunk</b>). Mỗi người điền phiếu cho xấp của mình (<b>map</b>), ghi rõ "xấp này không có kiểm soát nào" nếu đúng là không có.</p>
+    <p>Cuối ngày, trưởng nhóm <b>gộp phiếu</b> (reduce): hai phiếu cùng mã vì một bảng vắt qua hai xấp thì ghép thành một. Một <b>sổ giao nhận</b> (ledger) ghi xấp nào đã trả phiếu. Thiếu xấp nào thì hồ sơ chưa được coi là xong. Ai nghi ngờ một phiếu thì <b>mở lại trang gốc</b>, không hỏi lại người đã tóm tắt.</p>
+  </div>
+</section>
+
+<!-- 2. FLOW -->
+<section id="flow">
+  <h2>2. Flow: từ PDF đến bản ghi đã kiểm</h2>
+  <p>Pipeline có bảy bước chính và hai kho phụ. <b>Kho kết quả theo chunk</b> vừa là checkpoint (chạy tiếp sau sự cố) vừa là cache (chạy lại không tốn tiền cho phần không đổi). <b>Sổ cái</b> chứng minh mọi chunk đã được xử lý, không chunk nào bị bỏ sót mà không ai hay. Nó không chứng minh mọi bản ghi <i>bên trong</i> một chunk đã được trích; việc đó cần kiểm chéo ở bước 6 (mục 8).</p>
+
+  <div class="vflow m-only" aria-label="Flow trích xuất tài liệu dài (dạng dọc)">
+    <div class="box box1">
+      <div class="ph ph1">CHUẨN BỊ</div>
+      <div class="node"><b>1 · PDF gốc</b><span>120 trang, là nguồn sự thật duy nhất</span></div>
+      <div class="ar">↓</div>
+      <div class="node"><b>2 · Parse &amp; chunk</b><span>cắt theo mục và bảng, giữ số trang</span></div>
+      <div class="ar">↓</div>
+      <div class="node r"><b>3 · Định vị</b><span>chunk nào chứa loại bản ghi nào</span></div>
+    </div>
+    <div class="box box2">
+      <div class="ph ph2">TRÍCH VÀ GỘP</div>
+      <div class="node a"><b>4 · Trích từng chunk (map)</b><span>mỗi chunk → JSON đúng schema, kèm trang + câu trích</span></div>
+      <div class="ar" style="color:var(--p2)">↕ ghi ngay sau mỗi chunk · trúng cache thì bỏ qua gọi model</div>
+      <div class="node db opt"><b>Kho kết quả theo chunk</b><span>checkpoint + cache, khóa = hash chunk + phiên bản prompt</span></div>
+      <div class="ar">↓ cập nhật trạng thái chunk</div>
+      <div class="node" style="border:2px solid var(--p4)"><b>Sổ cái (ledger)</b><span>mỗi chunk: chờ · xong · lỗi</span></div>
+      <div class="ar">↓ (sổ cái được bước 6 đọc)</div>
+      <div class="node a"><b>5 · Gộp (reduce)</b><span>bỏ trùng, nối bản ghi bị cắt qua hai chunk</span></div>
+    </div>
+    <div class="box" style="background:var(--warn-soft)">
+      <div class="ph" style="color:var(--p4)">KIỂM VÀ LƯU</div>
+      <div class="node g"><b>6 · Kiểm chứng</b><span>sổ cái đủ chưa, đếm khớp chưa, id tham chiếu có tồn tại, câu trích có trong PDF</span></div>
+      <div class="ar">↩ thiếu hoặc lỗi: quay lại bước 4 cho đúng chunk đó</div>
+      <div class="ar">↩ đối chiếu câu trích, số trang với PDF gốc (bước 1), không với bản tóm tắt</div>
+      <div class="ar">↓ đạt</div>
+      <div class="node g"><b>7 · Duyệt &amp; lưu</b><span>người duyệt trường nghi ngờ; ghi theo id ổn định</span></div>
+    </div>
+  </div>
+
+  <div class="svgbox d-only">
+  <svg class="diagram" viewBox="0 24 1000 336" role="img" aria-label="Flow trích xuất tài liệu dài: PDF, parse và chunk, định vị, trích từng chunk, gộp, kiểm chứng, duyệt và lưu, kèm kho kết quả theo chunk và sổ cái">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+      <marker id="arrP" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--p2)"/></marker>
+      <marker id="arrW" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--p4)"/></marker>
+      <marker id="arrG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--p3)"/></marker>
+    </defs>
+    <g font-size="14">
+      <rect x="10" y="70" width="124" height="80" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="72" y="100" text-anchor="middle" font-weight="600">1 · PDF gốc</text>
+      <text x="72" y="120" text-anchor="middle" font-size="12" style="fill:var(--muted)">120 trang</text>
+      <text x="72" y="137" text-anchor="middle" font-size="12" style="fill:var(--muted)">nguồn sự thật</text>
+      <rect x="153" y="70" width="124" height="80" rx="10" fill="var(--surface)" stroke="var(--border)"/>
+      <text x="215" y="100" text-anchor="middle" font-weight="600">2 · Parse, chunk</text>
+      <text x="215" y="120" text-anchor="middle" font-size="12" style="fill:var(--muted)">theo mục, bảng</text>
+      <text x="215" y="137" text-anchor="middle" font-size="12" style="fill:var(--muted)">giữ số trang</text>
+      <rect x="296" y="70" width="124" height="80" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/>
+      <text x="358" y="100" text-anchor="middle" font-weight="600">3 · Định vị</text>
+      <text x="358" y="120" text-anchor="middle" font-size="12" style="fill:var(--muted)">chunk nào chứa</text>
+      <text x="358" y="137" text-anchor="middle" font-size="12" style="fill:var(--muted)">loại bản ghi nào</text>
+      <rect x="439" y="70" width="124" height="80" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="501" y="100" text-anchor="middle" font-weight="600">4 · Trích (map)</text>
+      <text x="501" y="120" text-anchor="middle" font-size="12" style="fill:var(--muted)">mỗi chunk → JSON</text>
+      <text x="501" y="137" text-anchor="middle" font-size="12" style="fill:var(--muted)">+ trang, câu trích</text>
+      <rect x="582" y="70" width="124" height="80" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/>
+      <text x="644" y="100" text-anchor="middle" font-weight="600">5 · Gộp (reduce)</text>
+      <text x="644" y="120" text-anchor="middle" font-size="12" style="fill:var(--muted)">bỏ trùng, nối</text>
+      <text x="644" y="137" text-anchor="middle" font-size="12" style="fill:var(--muted)">bản ghi bị cắt</text>
+      <rect x="725" y="70" width="124" height="80" rx="10" fill="var(--surface)" stroke="var(--p3)" stroke-width="2"/>
+      <text x="787" y="100" text-anchor="middle" font-weight="600">6 · Kiểm chứng</text>
+      <text x="787" y="120" text-anchor="middle" font-size="12" style="fill:var(--muted)">đếm, tham chiếu,</text>
+      <text x="787" y="137" text-anchor="middle" font-size="12" style="fill:var(--muted)">câu trích</text>
+      <rect x="868" y="70" width="124" height="80" rx="10" fill="var(--surface)" stroke="var(--p3)" stroke-width="2"/>
+      <text x="930" y="100" text-anchor="middle" font-weight="600">7 · Duyệt, lưu</text>
+      <text x="930" y="120" text-anchor="middle" font-size="12" style="fill:var(--muted)">người duyệt,</text>
+      <text x="930" y="137" text-anchor="middle" font-size="12" style="fill:var(--muted)">ghi theo id</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="2" marker-end="url(#arr)">
+      <line x1="134" y1="110" x2="151" y2="110"/><line x1="277" y1="110" x2="294" y2="110"/><line x1="420" y1="110" x2="437" y2="110"/><line x1="563" y1="110" x2="580" y2="110"/><line x1="706" y1="110" x2="723" y2="110"/><line x1="849" y1="110" x2="866" y2="110"/>
+    </g>
+    <!-- retry loop -->
+    <path d="M787 70 C787 28, 501 28, 501 68" fill="none" stroke="var(--p4)" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arrW)"/>
+    <text x="644" y="64" text-anchor="middle" font-size="12" style="fill:var(--p4)">thiếu hoặc lỗi: chạy lại chunk đó</text>
+    <!-- store -->
+    <rect x="380" y="220" width="240" height="72" rx="10" fill="var(--warn-soft)" stroke="var(--p2)" stroke-width="2"/>
+    <text x="500" y="248" text-anchor="middle" font-size="14" font-weight="600">Kho kết quả theo chunk</text>
+    <text x="500" y="270" text-anchor="middle" font-size="12" style="fill:var(--muted)">checkpoint + cache</text>
+    <text x="500" y="285" text-anchor="middle" font-size="12" style="fill:var(--muted)">khóa = hash chunk + bản prompt</text>
+    <line x1="490" y1="150" x2="490" y2="218" stroke="var(--p2)" stroke-width="2" marker-end="url(#arrP)"/>
+    <line x1="512" y1="218" x2="512" y2="152" stroke="var(--p2)" stroke-width="2" marker-end="url(#arrP)"/>
+    <text x="484" y="190" text-anchor="end" font-size="12" style="fill:var(--p2)">ghi ngay sau mỗi chunk</text>
+    <text x="518" y="190" font-size="12" style="fill:var(--p2)">trúng cache: bỏ qua gọi model</text>
+    <!-- ledger -->
+    <rect x="650" y="220" width="160" height="72" rx="10" fill="var(--surface)" stroke="var(--p4)" stroke-width="2"/>
+    <text x="730" y="248" text-anchor="middle" font-size="14" font-weight="600">Sổ cái (ledger)</text>
+    <text x="730" y="270" text-anchor="middle" font-size="12" style="fill:var(--muted)">mỗi chunk:</text>
+    <text x="730" y="285" text-anchor="middle" font-size="12" style="fill:var(--muted)">chờ · xong · lỗi</text>
+    <line x1="620" y1="256" x2="648" y2="256" stroke="var(--muted)" stroke-width="2" marker-end="url(#arr)"/>
+    <line x1="770" y1="220" x2="770" y2="152" stroke="var(--p4)" stroke-width="2" marker-end="url(#arrW)"/>
+    <text x="764" y="208" text-anchor="end" font-size="12" style="fill:var(--p4)">đủ 12/12 chunk?</text>
+    <!-- ground truth check -->
+    <path d="M835 150 V330 H72 V152" fill="none" stroke="var(--p3)" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arrG)"/>
+    <text x="84" y="322" text-anchor="start" font-size="12" style="fill:var(--p3)">đối chiếu câu trích và số trang với PDF gốc, không với bản tóm tắt</text>
+  </svg>
+  </div>
+  <div class="legend" aria-label="Chú thích màu"><span><i class="lg1"></i>định vị, đo</span><span><i class="lg2"></i>gọi model và kho kết quả</span><span><i class="lg4"></i>sổ cái và chạy lại</span><span><i class="lg3"></i>kiểm chứng, đối chiếu nguồn</span></div>
+
+  <div class="grid g3" style="margin-top:12px">
+    <div class="card"><span class="tag p1">Map</span><h4>Việc độc lập theo chunk</h4><p>Mỗi chunk được trích riêng, nên chạy song song được và hỏng chunk nào thì chạy lại chunk đó. LangGraph gọi mẫu này là map-reduce (hay orchestrator-worker): một node tạo danh sách, các worker xử lý song song, một node sau đọc kết quả đã gộp.<sup class="cite"><a href="#src-22">[22]</a></sup></p></div>
+    <div class="card"><span class="tag p2">Reduce</span><h4>Gộp trên bản ghi, không trên văn xuôi</h4><p>Bước gộp nhận các bản ghi JSON có id, trang, câu trích, rồi nối và bỏ trùng bằng code. Nó không yêu cầu LLM "tóm tắt các tóm tắt": mọi giá trị cuối cùng vẫn trỏ về một trang trong PDF.</p></div>
+    <div class="card"><span class="tag p3">Kiểm chứng</span><h4>Chứng minh, không phải tin</h4><p>Structured output chỉ bảo đảm <i>hình dạng</i>. OpenAI và Google đều dặn ứng dụng vẫn phải kiểm quy tắc nghiệp vụ và giá trị.<sup class="cite"><a href="#src-9">[9]</a><a href="#src-11">[11]</a></sup> Bước 6 làm việc đó bằng code tất định.</p></div>
+  </div>
+</section>
+
+<!-- 3. VÍ DỤ TỪNG BƯỚC -->
+<section id="vi-du">
+  <h2>3. Ví dụ đi qua từng bước</h2>
+  <p><b>Công ty Đồi Thông</b> (hư cấu) sắp thuê <b>Kho Mây</b> (hư cấu) lưu trữ dữ liệu khách hàng. Kho Mây gửi một báo cáo đảm bảo kiểu SOC 2 Type 2 dài 120 trang (hư cấu). Đội rủi ro nhà cung cấp của Đồi Thông muốn đưa mọi kiểm soát và ngoại lệ vào hệ thống theo dõi rủi ro. Bấm từng bước. <span class="muted">Mọi tên, mã kiểm soát, số trang, câu trích, thời gian và token đều là <b>minh họa</b>. Mô phỏng ở mục 4 dùng đúng bộ dữ liệu này.</span></p>
+  <div class="stepper card">
+    <div class="steps" id="steps"></div>
+    <div>
+      <div id="stepBody"></div>
+      <div class="step-nav"><button id="prevStep">← Trước</button><button id="nextStep">Tiếp →</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. MÔ PHỎNG -->
+<section id="mo-phong">
+  <h2>4. Mô phỏng: chạy 12 chunk với giới hạn thời gian mỗi lượt</h2>
+  <p>Job trích xuất thường chạy trong một môi trường có giới hạn thời gian (ví dụ một worker bị dừng sau N giây) và có thể chết giữa chừng. Hãy chạy từng lượt, gây sự cố, tắt checkpoint, đổi prompt hoặc nhận bản sửa của báo cáo, rồi xem sổ cái và bước gộp phản ứng ra sao. <span class="muted">Thời gian (giây) và token là <b>minh họa</b>; mọi con số dưới đây do JS tính từ bộ dữ liệu của mục 3.</span></p>
+  <div class="card">
+    <div class="ctl"><span class="lbl">Giới hạn thời gian mỗi lượt (giây, minh họa)</span><div id="simBudget"></div></div>
+    <div class="ctl"><span class="lbl">Checkpoint sau mỗi chunk</span><div id="simCkpt"></div></div>
+    <div class="btnrow">
+      <button class="act main" id="simRun">▶ Chạy 1 lượt</button>
+      <button class="act danger" id="simCrash" aria-pressed="false">💥 Gây sự cố ở lượt kế</button>
+      <button class="act" id="simPrompt">✎ Đổi prompt</button>
+      <button class="act" id="simEdit">📄 Nhận bản sửa: C09 đổi</button>
+      <button class="act" id="simReset">↺ Làm lại từ đầu</button>
+    </div>
+    <p class="sim-note" id="simHint"></p>
+    <div class="stats" id="simStats"></div>
+    <div class="legend"><span><i></i>chờ</span><span><i class="done"></i>xong (gọi model)</span><span><i class="cache"></i>tái dùng từ kho</span><span><i class="lost"></i>mất công (bị cắt hoặc sự cố)</span></div>
+    <div class="tiles" id="simTiles" aria-label="Sổ cái 12 chunk"></div>
+    <h4 style="margin:12px 0 4px">Nhật ký các lượt</h4>
+    <div class="simlog" id="simLog" aria-live="polite"></div>
+    <h4 style="margin:12px 0 4px">Gộp và kiểm chứng (tự chạy trên các chunk đã xong)</h4>
+    <div id="simMerge"></div>
+  </div>
+  <div class="callout warn"><b>Thử ba thí nghiệm này:</b> (1) Giới hạn 90 giây, checkpoint bật: cần mấy lượt? Bao nhiêu giây bị phí? (2) Làm lại từ đầu, tắt checkpoint, giới hạn 90 giây: vì sao không bao giờ xong? (3) Khi đã xong, bấm "Nhận bản sửa": bao nhiêu chunk phải gọi model lại, và quyết định nào của người duyệt phải xem lại?</div>
+</section>
+
+<!-- 5. SCHEMA -->
+<section id="schema">
+  <h2>5. Thiết kế schema đích: định nghĩa bản ghi trước khi viết prompt</h2>
+  <p>Sai lầm hay gặp là bắt đầu bằng prompt "trích hết thông tin quan trọng". Hãy bắt đầu từ câu hỏi: <b>phần mềm phía sau cần bảng nào, khóa nào, để làm gì?</b> Với báo cáo kiểu SOC 2, đó là bốn loại bản ghi:</p>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Loại bản ghi</th><th>Một bản ghi là</th><th>Khóa (id)</th><th>Trường chính</th></tr></thead>
+    <tbody>
+      <tr><td><b>Thông tin báo cáo</b></td><td>Cả tài liệu (đúng một bản ghi)</td><td>mã tài liệu + phiên bản</td><td>đơn vị được kiểm toán, đơn vị kiểm toán, kỳ báo cáo, loại báo cáo, loại ý kiến, số kiểm soát và số ngoại lệ mà báo cáo tự nêu</td></tr>
+      <tr><td><b>Kiểm soát</b></td><td>Một kiểm soát trong bảng</td><td>mã kiểm soát do báo cáo đặt (KS-05)</td><td>mô tả, tiêu chí liên quan, tần suất, trang bắt đầu – kết thúc</td></tr>
+      <tr><td><b>Kết quả kiểm tra</b></td><td>Một thủ tục kiểm toán viên đã làm</td><td>mã kiểm soát + số thứ tự thủ tục</td><td>thủ tục, kết quả (enum), số mẫu, số mẫu lỗi</td></tr>
+      <tr><td><b>Ngoại lệ</b></td><td>Một sai lệch được ghi nhận</td><td>mã kiểm soát + số thứ tự ngoại lệ</td><td>mô tả, phản hồi của ban điều hành, trạng thái theo dõi (của bạn, không phải của báo cáo)</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted">Hợp đồng thì đổi thành: bên ký, điều khoản, nghĩa vụ, mốc thời hạn. Báo cáo tài chính: chỉ tiêu, kỳ, đơn vị, giá trị. Hợp đồng bảo hiểm: quyền lợi, loại trừ, hạn mức. Cách nghĩ giữ nguyên.</p>
+
+  <h3>Năm quyết định thiết kế quan trọng</h3>
+  <div class="grid g2">
+    <div class="card"><span class="tag p1">Bắt buộc và tùy chọn</span><h4>Mọi trường đều phải có câu trả lời</h4><p>OpenAI Structured Outputs yêu cầu mọi trường đều là <code>required</code>; trường "có thể không có" được giả lập bằng kiểu union với <code>null</code>.<sup class="cite"><a href="#src-9">[9]</a></sup></p><p>Với Anthropic, thuộc tính bắt buộc luôn được sinh trước thuộc tính tùy chọn. Mỗi request có tối đa 24 tham số tùy chọn và 16 tham số dạng union trên mọi schema strict, và kiểu <code>["string", "null"]</code> cũng tính là union.<sup class="cite"><a href="#src-10">[10]</a></sup> Cho mọi trường nullable thì chạm trần rất nhanh. Vì vậy schema mỗi lượt gọi nên nhỏ.</p></div>
+    <div class="card"><span class="tag p1">Enum</span><h4>Giá trị đóng thì dùng enum</h4><p>Kết quả kiểm tra chỉ có vài giá trị: <code>khong_ngoai_le</code>, <code>co_ngoai_le</code>, <code>khong_kiem_tra</code>. Enum chặn model viết "đạt yêu cầu về cơ bản". Lưu ý Anthropic không bảo đảm hoa/thường của giá trị enum, nên so sánh không phân biệt hoa thường và tránh enum chỉ khác nhau ở chữ hoa.<sup class="cite"><a href="#src-10">[10]</a></sup> Ràng buộc số như <code>minimum</code> cũng không được hỗ trợ, phải tự kiểm.<sup class="cite"><a href="#src-10">[10]</a></sup></p></div>
+    <div class="card"><span class="tag p4">null và "không tìm thấy"</span><h4>Phân biệt ba trạng thái</h4><p><b>Có giá trị</b>; <b>tài liệu nói rõ là không có</b> (ví dụ "không ghi nhận ngoại lệ"); và <b>chunk này không nói tới</b>. Gộp hai trạng thái cuối thành một <code>null</code> sẽ làm mất thông tin. Dùng thêm trường <code>status</code> (<code>found</code> / <code>stated_none</code> / <code>not_in_chunk</code>). Anthropic khuyên cho model quyền nói "không biết" để giảm bịa.<sup class="cite"><a href="#src-13">[13]</a></sup></p></div>
+    <div class="card"><span class="tag p2">Giá trị gốc và chuẩn hóa</span><h4>Lưu cả chuỗi nguyên văn lẫn giá trị đã chuẩn hóa</h4><p>Ngày ("31/03/2026", "ngày 31 tháng 3"), tiền ("1,2 tỷ đồng", "nghìn USD"), phần trăm và đơn vị viết rất khác nhau. Lưu <code>raw</code> đúng như tài liệu và <code>value</code> đã chuẩn hóa (ngày ISO, số, đơn vị). Kiểm câu trích trên chuỗi gốc; so khớp, cộng tổng và kiểm chéo trên giá trị chuẩn hóa. Chuẩn hóa bằng code khi được, để model chỉ chép nguyên văn.</p></div>
+    <div class="card"><span class="tag p3">Id và nguồn gốc</span><h4>Id ổn định, mỗi giá trị kèm trang và câu trích</h4><p>Ưu tiên id tự nhiên do tài liệu đặt (mã kiểm soát, số điều khoản). Không có thì tạo id từ nội dung ổn định (loại bản ghi + mục + vị trí), <b>không</b> dùng số ngẫu nhiên mỗi lần chạy. Mỗi bản ghi mang <code>page</code>, <code>quote</code>, <code>chunk_id</code>, phiên bản prompt và schema để truy vết.</p></div>
+  </div>
+  <p>Ví dụ hình dạng một bản ghi ngoại lệ (minh họa):</p>
+  <pre class="rec">{"control_id": "KS-05", "seq": 1, "page": 59,
+ "quote": "Trong 25 mẫu được chọn, 2 mẫu không có phê duyệt",
+ "status": "found",
+ "description": "2/25 mẫu thay đổi quyền thiếu phê duyệt",
+ "chunk_id": "C06", "prompt_version": "v1"}</pre>
+  <p class="muted">Model chỉ sinh các trường từ <code>control_id</code> đến <code>description</code>. Hai trường cuối do code gắn vào sau lần gọi, vì code mới biết chắc đang xử lý chunk nào với prompt nào.</p>
+  <div class="callout"><b>Đặt câu trích trước kết luận.</b> Với tài liệu dài hơn khoảng 20K token, Anthropic khuyên yêu cầu model trích nguyên văn trước rồi mới làm việc.<sup class="cite"><a href="#src-7">[7]</a><a href="#src-13">[13]</a></sup> Trong schema, đặt <code>quote</code> trước các trường diễn giải. Chi tiết về strict mode, constrained decoding và kiểm lời gọi có ở trang <a href="../tool-calling-structured-output/">Tool Calling &amp; Structured Output</a>.</div>
+  <div class="callout warn"><b>Structured output và citations của Claude không dùng chung.</b> Bật citations cùng JSON output thì API trả lỗi 400. Muốn mỗi giá trị có trích dẫn do API bảo đảm, tài liệu hướng dẫn trả lời mỗi dòng một trường rồi code tự parse, và tự kiểm mỗi trường có giá trị và ít nhất một trích dẫn, vì API không bảo đảm điều đó.<sup class="cite"><a href="#src-10">[10]</a><a href="#src-12">[12]</a></sup> Trang <a href="../llm-rubric-grading/">LLM Rubric Grading</a> so sánh hai thiết kế một lần gọi và hai lần gọi.</div>
+</section>
+
+<!-- 6. PIPELINE -->
+<section id="pipeline">
+  <h2>6. Pipeline và các mẫu thiết kế</h2>
+  <h3>Bốn mẫu hay dùng</h3>
+  <div class="grid g2">
+    <div class="card"><span class="tag p1">Map-reduce</span><h4>Trích từng chunk, gộp bằng code</h4><p>Mẫu mặc định cho danh sách dài. Số chunk chỉ biết lúc chạy; LangGraph dùng <code>Send</code> để gọi cùng một node cho từng mục và dùng reducer để gộp kết quả, ví dụ nối danh sách.<sup class="cite"><a href="#src-22">[22]</a></sup> Xem thêm trang <a href="../langgraph/">LangGraph</a>.</p></div>
+    <div class="card"><span class="tag p1">Định vị rồi trích</span><h4>Lượt rẻ tìm chỗ, lượt kỹ trích</h4><p>Lượt 1 dùng model rẻ hoặc mục lục để gán mỗi chunk các loại bản ghi nó có thể chứa. Lượt 2 chỉ gửi schema phù hợp cho chunk đó: schema nhỏ hơn, prompt tập trung hơn. Nguy cơ: lượt 1 bỏ nhầm chunk thì mất bản ghi mà không ai hay, nên sổ cái phải ghi cả lý do <b>bỏ qua</b>.</p></div>
+    <div class="card"><span class="tag p2">Theo schema</span><h4>Mô tả trường chính là prompt</h4><p>Custom Extractor của Google Document AI mặc định là foundation model dự đoán zero-shot, dùng tên và mô tả của trường để dựng prompt.<sup class="cite"><a href="#src-17">[17]</a></sup> LangExtract dựa vào vài ví dụ mẫu: "Examples drive model behavior".<sup class="cite"><a href="#src-15">[15]</a></sup> Đặt tên và mô tả trường rõ ràng như viết đề bài.</p></div>
+    <div class="card"><span class="tag p2">Dùng cấu trúc tài liệu</span><h4>Cắt theo mục và bảng, không theo số ký tự</h4><p>Báo cáo kiểm toán có cấu trúc rõ: thư ý kiến, mô tả hệ thống, bảng kiểm soát. Cắt theo ranh giới đó, lặp lại hàng tiêu đề bảng ở mỗi chunk, giữ số trang. Cách làm có ở trang <a href="../document-parsing-chunking/">Parsing &amp; Chunking</a>.</p></div>
+  </div>
+
+  <h3>Ngữ cảnh xuyên chunk</h3>
+  <p>Một chunk đứng riêng thường thiếu thông tin để hiểu: "Công ty" là ai, số liệu tính bằng nghìn hay triệu, hàng bảng này thuộc cột nào. Cho mỗi chunk mang theo một phần đầu ngắn: <b>đường dẫn mục</b> (Phần 4 › Truy cập), <b>hàng tiêu đề bảng</b>, và <b>danh sách thuật ngữ được định nghĩa</b> ở đầu tài liệu.</p>
+  <p>Ranh giới với quy tắc nguồn sự thật: phần mang theo chỉ giúp model hiểu. Mọi giá trị vẫn phải có câu trích nằm trong chính chunk đó. Cắt chunk có overlap cũng giúp giữ ngữ cảnh, đổi lại sinh thêm bản trùng cho bước gộp (xem <a href="../document-parsing-chunking/">Parsing &amp; Chunking</a>).</p>
+
+  <h3>Nhiều lượt để tăng recall</h3>
+  <p>LangExtract xử lý tài liệu dài bằng chunking, chạy song song và <b>nhiều lượt trích</b> để tăng recall.<sup class="cite"><a href="#src-15">[15]</a></sup> Anthropic gợi ý một cách tương tự: chạy cùng một prompt nhiều lần và so, chỗ không nhất quán có thể là bịa.<sup class="cite"><a href="#src-13">[13]</a></sup> Đổi lại, chi phí nhân theo số lượt, và bước gộp phải chịu được bản ghi trùng.</p>
+
+  <h3>Gộp, bỏ trùng và nhận diện thực thể</h3>
+  <p>Một kiểm soát có thể xuất hiện ở nhiều chunk: bảng vắt qua ranh giới chunk, nhiều lượt trích cùng ra một bản ghi, hoặc phần phản hồi ở cuối báo cáo nhắc lại mã kiểm soát. Bài toán nhận ra các mô tả khác nhau cùng chỉ một thực thể có tên là <b>entity resolution</b>.<sup class="cite"><a href="#src-31">[31]</a></sup> Với tài liệu kiểm toán, thứ tự ưu tiên:</p>
+  <ol>
+    <li><b>Khóa tự nhiên trước.</b> Cùng mã kiểm soát thì là một kiểm soát. Chuẩn hóa mã trước khi so (<code>KS-5</code>, <code>KS 05</code> → <code>KS-05</code>).</li>
+    <li><b>Nối phần bị cắt.</b> Bản ghi đánh dấu "bắt đầu ở chunk trước" hoặc "tiếp ở chunk sau" được nối theo thứ tự trang. Azure ghi nhận hàng bảng bị chia qua trang có thể có độ tin cậy của hàng thấp hơn hàng không bị chia,<sup class="cite"><a href="#src-20">[20]</a></sup> nên các bản ghi nối là ứng viên tốt để người duyệt xem.</li>
+    <li><b>Không có khóa thì so nội dung.</b> So mô tả đã chuẩn hóa và vị trí trang. Ca không chắc thì để người duyệt quyết, đừng gộp đại.</li>
+    <li><b>Giá trị mâu thuẫn thì không chọn ngầm.</b> Hai chunk cho số mẫu lỗi khác nhau: giữ cả hai kèm trang, đánh dấu xung đột, và mở lại trang gốc.</li>
+    <li><b>Giữ nguồn gốc.</b> Bản ghi gộp giữ danh sách mọi chunk, trang và câu trích đã đóng góp.</li>
+  </ol>
+
+  <div class="callout bad"><b>Quy tắc nguồn sự thật:</b> PDF gốc là sự thật. Bản tóm tắt, ghi chú của model, kết quả của lần chạy trước đều là <i>dữ liệu phái sinh</i>, không bao giờ là đầu vào để trích tiếp.
+    <br>Nghiên cứu tóm tắt sách dài thấy cách gộp phân cấp các tóm tắt theo chunk giữ được <b>ít chi tiết hơn</b> cách cập nhật dần, và LLM mắc tám loại lỗi mạch lạc khi tóm tắt sách dài.<sup class="cite"><a href="#src-28">[28]</a></sup> Bài báo so hai cách tóm tắt, không đo trích xuất.
+    <br>Từ đó trang này rút ra một quy tắc thiết kế của riêng mình, không phải kết luận của bài báo: đừng gộp qua văn xuôi. Bước reduce chỉ thao tác trên bản ghi có trang và câu trích; khi nghi ngờ, quay lại trang PDF.</div>
+</section>
+
+<!-- 7. CHẠY BỀN -->
+<section id="do-ben">
+  <h2>7. Chạy bền: checkpoint, idempotency, cache</h2>
+  <p>Một tài liệu 120 trang có thể cần hàng chục lần gọi model trong nhiều phút. Mạng chập chờn, giới hạn tốc độ, worker bị dừng theo giờ, hoặc chính bạn sửa prompt rồi chạy lại. Pipeline tốt coi các sự kiện này là chuyện bình thường.</p>
+  <div class="grid g2">
+    <div class="card"><span class="tag p1">Checkpoint</span><h4>Ghi kết quả ngay sau mỗi chunk</h4><p>Đừng giữ kết quả trong bộ nhớ rồi ghi một lần ở cuối. LangGraph ghi checkpoint ở ranh giới super-step, không ở giữa hàm; muốn resume bỏ qua các đơn vị đã xong bên trong một node thì bọc mỗi đơn vị trong một task.<sup class="cite"><a href="#src-23">[23]</a></sup> Temporal cũng vậy: mỗi lần thử lại một Activity bắt đầu từ đầu, trừ khi code dùng Heartbeat để checkpoint.<sup class="cite"><a href="#src-24">[24]</a></sup></p></div>
+    <div class="card"><span class="tag p1">Idempotency</span><h4>Chạy lại không tạo bản ghi trùng</h4><p>Idempotent (lũy đẳng) nghĩa là làm nhiều lần cũng cho kết quả như làm một lần. Retry trong LangGraph là at-least-once: một node có thể chạy hơn một lần, nên code phải làm cho tác dụng phụ idempotent, với khóa lấy từ state đã được lưu bền.<sup class="cite"><a href="#src-23">[23]</a></sup></p><p>Temporal khuyên Activity idempotent để retry không gây trùng.<sup class="cite"><a href="#src-24">[24]</a></sup> Stripe là ví dụ kinh điển: cùng khóa idempotency thì trả lại kết quả đã lưu, và báo lỗi nếu tham số khác lần đầu.<sup class="cite"><a href="#src-25">[25]</a></sup> Với trích xuất: ghi theo kiểu upsert với khóa là id bản ghi.</p></div>
+    <div class="card"><span class="tag p2">Cache theo nội dung</span><h4>Khóa = hash chunk + phiên bản prompt, schema, model</h4><p>Nội dung chunk, prompt, schema và model không đổi thì kết quả cũ dùng lại được. Đổi bất kỳ thứ nào thì khóa đổi và chunk đó phải chạy lại. LangChain Indexing API dùng hash nội dung và một record manager để biết tài liệu nào bỏ qua được,<sup class="cite"><a href="#src-26">[26]</a></sup> LangGraph cache kết quả node theo input.<sup class="cite"><a href="#src-22">[22]</a></sup> Đừng đưa thời gian chạy hay số ngẫu nhiên vào khóa.</p><p class="muted">Đây là cache kết quả phía ứng dụng. Nó khác prompt caching hay context caching của nhà cung cấp, thứ giảm giá phần đầu vào lặp lại, ví dụ khi hỏi nhiều lượt trên cùng một tài liệu dài.<sup class="cite"><a href="#src-5">[5]</a><a href="#src-8">[8]</a></sup> Xem <a href="../llm-cost-optimization/">LLM Cost Optimization</a>.</p></div>
+    <div class="card"><span class="tag p2">Lượt có giới hạn thời gian</span><h4>Mỗi lượt làm một phần, lượt sau làm tiếp</h4><p>Nhờ checkpoint, một job bị giới hạn thời gian vẫn xử lý xong tài liệu sau vài lượt: mỗi lượt đọc sổ cái, bỏ qua chunk đã xong, làm tiếp chunk còn lại. Không có checkpoint, mỗi lượt lại làm từ đầu và tài liệu dài hơn giới hạn sẽ không bao giờ xong (thử ở mục 4).</p><p>Chunk lỗi mãi (luôn chạm <code>max_tokens</code>, luôn bị từ chối) cần giới hạn số lần thử. Hết lượt thử thì ghi <code>failed</code> vào sổ cái, tách chunk nhỏ hơn hoặc giao người xử lý, và lần chạy mang trạng thái <code>partial</code>.</p></div>
+  </div>
+  <div class="callout"><b>Batch API cho việc không gấp.</b> Message Batches của Anthropic giảm 50% chi phí; đa số batch xong dưới 1 giờ, batch chưa xong trong 24 giờ thì hết hạn; mỗi request mang một <code>custom_id</code> để ghép kết quả về.<sup class="cite"><a href="#src-27">[27]</a><a href="#src-5">[5]</a></sup> Đặt <code>custom_id</code> là khóa cache của chunk thì kết quả về tự rơi đúng ô trong sổ cái. Request bị hết hạn cũng chỉ là một ô "chưa xong" cần gửi lại.</div>
+  <p class="muted">Durable execution, checkpointer, thread và human-in-the-loop được giải thích kỹ ở trang <a href="../langgraph/">LangGraph</a>. Nếu chunk trong tài liệu có thể chứa chữ kiểu "bỏ qua hướng dẫn trên", xem <a href="../prompt-injection-guardrails/">Prompt Injection &amp; Guardrails</a>: tài liệu nhà cung cấp gửi tới là dữ liệu từ bên ngoài.</p>
+</section>
+
+<!-- 8. KIỂM CHỨNG -->
+<section id="kiem-chung">
+  <h2>8. Kiểm chứng: chứng minh không thiếu, không bịa</h2>
+  <h3>Sáu lớp kiểm tra, từ rẻ đến đắt</h3>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Lớp kiểm</th><th>Câu hỏi</th><th>Bắt được</th><th>Làm bằng</th></tr></thead>
+    <tbody>
+      <tr><td><b>1 · Sổ cái đủ</b></td><td>Mọi chunk đã có kết quả hoặc lý do bỏ qua?</td><td>Chunk lỗi, hết giờ, bị lọc nhầm mà không ai biết</td><td>Code: đếm trạng thái trong sổ cái</td></tr>
+      <tr><td><b>2 · Đầu ra trọn vẹn</b></td><td>Lần gọi kết thúc bình thường?</td><td>JSON bị cắt do chạm <code>max_tokens</code>, từ chối</td><td>Code: đọc <code>stop_reason</code> hoặc trạng thái <code>incomplete</code><sup class="cite"><a href="#src-9">[9]</a><a href="#src-10">[10]</a></sup></td></tr>
+      <tr><td><b>3 · Kiểm chéo</b></td><td>Số đếm, tổng, tham chiếu có khớp? Dãy mã có liền nhau?</td><td>Thiếu bản ghi bên trong chunk, id ma, ngoại lệ trỏ tới kiểm soát không tồn tại</td><td>Code: so với con số chính tài liệu nêu, kiểm dãy mã không hổng (KS-01…KS-14), kiểm khóa ngoại</td></tr>
+      <tr><td><b>4 · Câu trích có thật</b></td><td>Câu trích có nằm trong trang đã ghi?</td><td>Câu bịa, câu diễn đạt lại, câu lấy từ ví dụ few-shot</td><td>Code: tìm chuỗi sau khi chuẩn hóa khoảng trắng và Unicode</td></tr>
+      <tr><td><b>5 · Câu trích chứng minh giá trị</b></td><td>Câu trích có thật sự nói điều đó?</td><td>Trích đúng câu nhưng hiểu sai</td><td>Người duyệt, hoặc một lần gọi model chỉ hỏi đúng điều đó</td></tr>
+      <tr><td><b>6 · Đo trên bộ nhãn tay</b></td><td>Pipeline đúng bao nhiêu phần trăm?</td><td>Lỗi hệ thống của prompt, schema, chunking</td><td>Precision, recall, F1 theo trường (mục 13)</td></tr>
+    </tbody>
+  </table></div>
+  <div class="callout warn"><b>Sổ cái chỉ chứng minh độ phủ theo chunk.</b> Một bản ghi bị sót bên trong một chunk đã "xong" thì sổ cái không thấy. Bắt nó bằng lớp 3 (số đếm tài liệu tự nêu, dãy mã không hổng), bằng nhiều lượt trích, và bằng recall trên golden set. Không phải tài liệu nào cũng nêu tổng số, nên đừng chỉ dựa vào một lớp.</div>
+
+  <h3>Grounding: mỗi giá trị trỏ về đúng chỗ trong nguồn</h3>
+  <p>LangExtract gắn mỗi kết quả với vị trí chính xác trong văn bản nguồn; kết quả không định vị được thì có <code>char_interval = None</code>, và README gợi ý lọc bỏ chúng. README cũng thừa nhận model đôi khi lấy nội dung từ ví dụ few-shot thay vì văn bản đầu vào.<sup class="cite"><a href="#src-15">[15]</a></sup> Anthropic gợi ý cho model tự tìm câu trích ủng hộ từng khẳng định, không tìm được thì rút lại.<sup class="cite"><a href="#src-13">[13]</a></sup> Dù dùng cách nào, <b>code vẫn phải tự tìm câu trích trong trang gốc</b>, vì đó là kiểm tra duy nhất không phụ thuộc vào chính model.</p>
+
+  <h3>Báo rõ "mới trích được một phần" thay vì âm thầm thiếu</h3>
+  <p>Kết quả lưu vào hệ thống phải mang trạng thái của cả lần chạy: <code>complete</code>, <code>complete_with_review</code> (đủ nhưng còn trường chờ duyệt) hay <code>partial</code> (kèm danh sách chunk thiếu). Màn hình phía sau hiển thị rõ "Báo cáo này mới trích được 9/12 phần". Người dùng thấy 11 kiểm soát mà không biết còn thiếu 3 thì nguy hiểm hơn không thấy gì.</p>
+
+  <h3>Chạy lại mà không mất quyết định của con người</h3>
+  <p>Người duyệt đã đánh dấu ngoại lệ KS-05 là "chấp nhận rủi ro". Tháng sau nhà cung cấp gửi bản sửa của báo cáo. Nếu id sinh ngẫu nhiên, mọi quyết định cũ mất. Cách làm bền:</p>
+  <ul>
+    <li>Id bản ghi ổn định qua các lần chạy (mã kiểm soát + số thứ tự).</li>
+    <li>Lưu kèm mỗi bản ghi một <b>dấu vân tay nội dung</b>. Chỉ hash những thứ bám vào tài liệu: câu trích nguyên văn, giá trị đã chuẩn hóa, enum. Đừng hash câu mô tả do model tự viết, vì đổi prompt hay model là lời văn đổi và mọi quyết định cũ sẽ bị đẩy sang "cần xem lại" dù tài liệu không đổi.</li>
+    <li>Lần chạy mới: cùng id và cùng vân tay thì <b>giữ quyết định cũ</b>; cùng id nhưng vân tay đổi thì giữ quyết định cũ ở trạng thái "cần xem lại"; id biến mất thì đánh dấu "không còn trong bản mới", không âm thầm xóa.</li>
+  </ul>
+
+  <h3>Độ tin cậy và người duyệt</h3>
+  <p>Đừng hỏi model "bạn chắc bao nhiêu phần trăm" rồi dùng con số đó làm ngưỡng: LLM khi tự nói ra độ tự tin thường <b>tự tin quá mức</b>; lấy nhiều câu trả lời và đo độ nhất quán giúp giảm vấn đề này.<sup class="cite"><a href="#src-30">[30]</a></sup> Tín hiệu tốt hơn để đưa một trường sang người duyệt: câu trích không khớp, bản ghi nối qua hai chunk, hai lượt trích cho giá trị khác nhau, kiểm chéo thất bại, và điểm confidence của dịch vụ document AI nếu có.</p>
+  <p>Các dịch vụ lớn dùng đúng mẫu này:</p>
+  <ul>
+    <li><b>Azure Content Understanding</b> có tùy chọn trả confidence và grounding cho từng trường, và khuyên chuyển phần confidence thấp hoặc grounding yếu sang người duyệt.<sup class="cite"><a href="#src-19">[19]</a></sup></li>
+    <li><b>Azure Document Intelligence</b> mô tả confidence là xác suất ước lượng từ 0 đến 1, dùng để quyết định tự nhận hay gửi người duyệt.<sup class="cite"><a href="#src-20">[20]</a></sup></li>
+    <li><b>Amazon A2I</b> cho người duyệt dự đoán confidence thấp hoặc một mẫu ngẫu nhiên; lưu ý A2I đã ngừng nhận khách hàng mới.<sup class="cite"><a href="#src-21">[21]</a></sup></li>
+  </ul>
+  <p>Mẫu ngẫu nhiên quan trọng: chỉ duyệt phần confidence thấp thì không bao giờ phát hiện lỗi "tự tin mà sai".</p>
+</section>
+
+<!-- 9. KHÁI NIỆM -->
+<section id="khai-niem">
+  <h2>9. Từ điển khái niệm</h2>
+  <p>Mỗi thẻ có định nghĩa ngắn, ví dụ và liên kết sang khái niệm liên quan. Lọc theo nhóm hoặc gõ để tìm (gõ không dấu cũng được).</p>
+  <div class="gloss-tools">
+    <input id="glossSearch" type="search" placeholder="Tìm khái niệm… (vd: ledger, cache, F1)" aria-label="Tìm khái niệm">
+  </div>
+  <div class="gloss-tools" id="glossChips"></div>
+  <div class="grid g3" id="glossGrid"></div>
+</section>
+
+<!-- 10. MỐI QUAN HỆ -->
+<section id="quan-he">
+  <h2>10. Bản đồ mối quan hệ</h2>
+  <p>Ba dòng chạy song song: <b>thiết kế và trích</b> tạo ra bản ghi, <b>chạy bền</b> bảo đảm mọi chunk được xử lý đúng một lần về mặt kết quả, <b>kiểm và đo</b> chứng minh bản ghi đúng và đủ.</p>
+  <div class="vflow m-only" aria-label="Bản đồ quan hệ (dạng dọc)">
+    <div class="box box1">
+      <div class="ph ph1">Thiết kế và trích</div>
+      <div class="node r"><b>Schema</b><span>loại bản ghi, id, enum, trạng thái</span></div>
+      <div class="ar">↓ ràng buộc</div>
+      <div class="node a"><b>Structured output</b><span>mỗi lần gọi trên một chunk</span></div>
+      <div class="ar">↓ sinh ra</div>
+      <div class="node"><b>Mention theo chunk</b><span>có thể trùng, có thể dở dang</span></div>
+      <div class="ar">↓ đi vào</div>
+      <div class="node a"><b>Entity resolution</b><span>gộp theo khóa, nối phần bị cắt</span></div>
+      <div class="ar">↓ tạo ra</div>
+      <div class="node g"><b>Bản ghi có id ổn định</b><span>kèm trang, câu trích, nguồn gốc</span></div>
+    </div>
+    <div class="box box2">
+      <div class="ph ph2">Chạy bền</div>
+      <div class="node"><b>PDF gốc</b></div>
+      <div class="ar">↓ parse, cắt</div>
+      <div class="node"><b>Chunk + số trang</b><span>là đầu vào của mỗi lần gọi structured output</span></div>
+      <div class="ar">↓ hash + phiên bản prompt, schema, model</div>
+      <div class="node db"><b>Kho checkpoint / cache</b><span>trúng thì không gọi model</span></div>
+      <div class="ar">↓ cập nhật</div>
+      <div class="node" style="border:2px solid var(--p4)"><b>Sổ cái</b><span>chứng minh đủ chunk (không chứng minh đủ bản ghi)</span></div>
+    </div>
+    <div class="box" style="background:var(--warn-soft)">
+      <div class="ph" style="color:var(--p4)">Kiểm và đo</div>
+      <div class="node g"><b>Kiểm chứng</b><span>nhận bản ghi + sổ cái; đối chiếu câu trích với PDF gốc</span></div>
+      <div class="ar">↓ trường nghi ngờ</div>
+      <div class="node"><b>Người duyệt</b><span>quyết định gắn theo id, giữ qua các lần chạy</span></div>
+      <div class="ar">↓ đã duyệt</div>
+      <div class="node"><b>Lưu vào hệ thống</b><span>kèm trạng thái lần chạy</span></div>
+    </div>
+    <div class="box box1">
+      <div class="ph ph1">Đo chất lượng</div>
+      <div class="node g"><b>Bản ghi có id ổn định</b><span>đầu ra của pipeline, trước khi người duyệt sửa</span></div>
+      <div class="ar">↓ so với golden set (bộ nhãn tay)</div>
+      <div class="node" style="border:2px solid var(--p1)"><b>P / R / F1 theo trường</b><span>đo pipeline, không đo dữ liệu đã duyệt</span></div>
+    </div>
+  </div>
+  <div class="svgbox d-only">
+  <svg class="diagram" viewBox="0 0 1000 424" role="img" aria-label="Bản đồ quan hệ giữa schema, structured output, chunk, cache, sổ cái, entity resolution, bản ghi, kiểm chứng, người duyệt và đánh giá">
+    <defs>
+      <marker id="arrM" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+      <marker id="arrM1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--p1)"/></marker>
+      <marker id="arrM3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--p3)"/></marker>
+    </defs>
+    <text x="15" y="26" font-size="13" font-weight="700" style="fill:var(--muted)">THIẾT KẾ VÀ TRÍCH</text>
+    <text x="15" y="161" font-size="13" font-weight="700" style="fill:var(--muted)">CHẠY BỀN</text>
+    <text x="15" y="296" font-size="13" font-weight="700" style="fill:var(--muted)">KIỂM VÀ ĐO</text>
+    <g font-size="14">
+      <rect x="15" y="36" width="160" height="64" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/><text x="95" y="62" text-anchor="middle" font-weight="600">Schema</text><text x="95" y="82" text-anchor="middle" font-size="12" style="fill:var(--muted)">loại bản ghi, id, enum</text>
+      <rect x="215" y="36" width="160" height="64" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/><text x="295" y="62" text-anchor="middle" font-weight="600">Structured output</text><text x="295" y="82" text-anchor="middle" font-size="12" style="fill:var(--muted)">ràng buộc bởi schema</text>
+      <rect x="415" y="36" width="160" height="64" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="495" y="62" text-anchor="middle" font-weight="600">Mention theo chunk</text><text x="495" y="82" text-anchor="middle" font-size="12" style="fill:var(--muted)">có thể trùng, dở dang</text>
+      <rect x="615" y="36" width="160" height="64" rx="10" fill="var(--surface)" stroke="var(--p2)" stroke-width="2"/><text x="695" y="62" text-anchor="middle" font-weight="600">Entity resolution</text><text x="695" y="82" text-anchor="middle" font-size="12" style="fill:var(--muted)">gộp theo khóa, nối</text>
+      <rect x="815" y="36" width="170" height="64" rx="10" fill="var(--surface)" stroke="var(--p3)" stroke-width="2"/><text x="900" y="62" text-anchor="middle" font-weight="600">Bản ghi id ổn định</text><text x="900" y="82" text-anchor="middle" font-size="12" style="fill:var(--muted)">+ trang, câu trích</text>
+
+      <rect x="15" y="171" width="160" height="64" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="95" y="197" text-anchor="middle" font-weight="600">PDF gốc</text><text x="95" y="217" text-anchor="middle" font-size="12" style="fill:var(--muted)">nguồn sự thật</text>
+      <rect x="215" y="171" width="160" height="64" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="295" y="197" text-anchor="middle" font-weight="600">Chunk + số trang</text><text x="295" y="217" text-anchor="middle" font-size="12" style="fill:var(--muted)">đơn vị của mỗi lần gọi</text>
+      <rect x="415" y="171" width="160" height="64" rx="10" fill="var(--warn-soft)" stroke="var(--p2)" stroke-width="2"/><text x="495" y="197" text-anchor="middle" font-weight="600">Kho checkpoint</text><text x="495" y="217" text-anchor="middle" font-size="12" style="fill:var(--muted)">khóa = hash + phiên bản</text>
+      <rect x="615" y="171" width="160" height="64" rx="10" fill="var(--surface)" stroke="var(--p4)" stroke-width="2"/><text x="695" y="197" text-anchor="middle" font-weight="600">Sổ cái</text><text x="695" y="217" text-anchor="middle" font-size="12" style="fill:var(--muted)">chờ · xong · lỗi</text>
+
+      <rect x="15" y="306" width="160" height="64" rx="10" fill="var(--accent-soft)" stroke="var(--p1)" stroke-dasharray="5 4"/><text x="95" y="332" text-anchor="middle" font-weight="600">Golden set</text><text x="95" y="352" text-anchor="middle" font-size="12" style="fill:var(--muted)">bộ nhãn tay</text>
+      <rect x="215" y="306" width="160" height="64" rx="10" fill="var(--surface)" stroke="var(--p1)" stroke-width="2"/><text x="295" y="332" text-anchor="middle" font-weight="600">P / R / F1</text><text x="295" y="352" text-anchor="middle" font-size="12" style="fill:var(--muted)">so đầu ra với nhãn</text>
+      <rect x="415" y="306" width="160" height="64" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="495" y="332" text-anchor="middle" font-weight="600">Lưu vào hệ thống</text><text x="495" y="352" text-anchor="middle" font-size="12" style="fill:var(--muted)">đã duyệt + trạng thái</text>
+      <rect x="615" y="306" width="160" height="64" rx="10" fill="var(--surface)" stroke="var(--border)"/><text x="695" y="332" text-anchor="middle" font-weight="600">Người duyệt</text><text x="695" y="352" text-anchor="middle" font-size="12" style="fill:var(--muted)">trường nghi ngờ, theo id</text>
+      <rect x="815" y="306" width="170" height="64" rx="10" fill="var(--surface)" stroke="var(--p3)" stroke-width="2"/><text x="900" y="332" text-anchor="middle" font-weight="600">Kiểm chứng</text><text x="900" y="352" text-anchor="middle" font-size="12" style="fill:var(--muted)">đếm, tham chiếu, trích</text>
+    </g>
+    <g stroke="var(--muted)" stroke-width="2" marker-end="url(#arrM)" fill="none">
+      <line x1="175" y1="68" x2="213" y2="68"/><line x1="375" y1="68" x2="413" y2="68"/><line x1="575" y1="68" x2="613" y2="68"/><line x1="775" y1="68" x2="813" y2="68"/>
+      <line x1="175" y1="203" x2="213" y2="203"/><line x1="375" y1="203" x2="413" y2="203"/><line x1="575" y1="203" x2="613" y2="203"/>
+      <line x1="295" y1="171" x2="295" y2="102"/>
+      <line x1="880" y1="100" x2="880" y2="304"/>
+      <line x1="815" y1="338" x2="777" y2="338"/><line x1="615" y1="338" x2="577" y2="338"/><line x1="175" y1="338" x2="213" y2="338"/>
+      <line x1="775" y1="230" x2="843" y2="304"/>
+    </g>
+    <text x="303" y="141" font-size="12" style="fill:var(--muted)">đầu vào</text>
+    <text x="886" y="141" font-size="12" style="fill:var(--muted)">mỗi bản ghi</text>
+    <text x="786" y="262" text-anchor="end" font-size="12" style="fill:var(--muted)">đủ chunk?</text>
+    <path d="M940 306 V280 H95 V237" fill="none" stroke="var(--p3)" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#arrM3)"/>
+    <text x="520" y="274" text-anchor="middle" font-size="12" style="fill:var(--p3)">đối chiếu câu trích và số trang với PDF gốc</text>
+    <path d="M985 68 H995 V396 H295 V374" fill="none" stroke="var(--p1)" stroke-width="2" marker-end="url(#arrM1)"/>
+    <text x="640" y="414" text-anchor="middle" font-size="12" style="fill:var(--p1)">đầu ra của pipeline (trước khi người duyệt sửa) đem so với golden set</text>
+  </svg>
+  </div>
+  <div class="legend" aria-label="Chú thích màu"><span><i class="lg1"></i>đo chất lượng</span><span><i class="lg2"></i>gọi model, gộp và kho</span><span><i class="lg4"></i>sổ cái</span><span><i class="lg3"></i>bản ghi đã kiểm, đối chiếu nguồn</span></div>
+</section>
+
+<!-- 11. SO SÁNH -->
+<section id="so-sanh">
+  <h2>11. So sánh cách làm và công cụ</h2>
+  <h3>Sáu cách tiếp cận</h3>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Cách</th><th>Hợp khi</th><th>Điểm mạnh</th><th>Điểm yếu</th></tr></thead>
+    <tbody>
+      <tr><td><b>Một lần gọi long-context</b></td><td>Tài liệu vừa context, cần vài trường xuất hiện một lần</td><td>Đơn giản; model thấy cả tài liệu nên tham chiếu chéo dễ<sup class="cite"><a href="#src-3">[3]</a></sup></td><td>Lạc ở giữa, trần output, chạy lại tốn cả cuốn, không resume được<sup class="cite"><a href="#src-1">[1]</a><a href="#src-4">[4]</a></sup></td></tr>
+      <tr><td><b>Map-reduce theo chunk</b></td><td>Cần liệt kê đủ nhiều bản ghi lặp lại</td><td>Song song, chạy lại từng phần, output mỗi lần nhỏ</td><td>Bản ghi bị cắt và trùng; mất ngữ cảnh xuyên chunk; phải có bước gộp</td></tr>
+      <tr><td><b>Định vị rồi trích</b></td><td>Bản ghi chỉ nằm ở vài mục của tài liệu rất dài</td><td>Rẻ hơn, schema mỗi lần nhỏ hơn</td><td>Lượt định vị bỏ sót là mất mà không ai hay, nếu sổ cái không ghi lý do</td></tr>
+      <tr><td><b>Tìm (RAG) rồi trích</b></td><td>Cần vài trường cụ thể từ kho nhiều tài liệu</td><td>Rẻ; tái dùng index sẵn có (xem <a href="../rag/">RAG</a>)</td><td>Recall phụ thuộc retrieval; không hợp yêu cầu "liệt kê tất cả"</td></tr>
+      <tr><td><b>Dịch vụ document AI</b></td><td>Cần giao diện duyệt, confidence, ít vận hành</td><td>Có sẵn confidence, grounding, đánh giá<sup class="cite"><a href="#src-17">[17]</a><a href="#src-19">[19]</a></sup></td><td>Thêm một nhà cung cấp và hóa đơn riêng; ràng buộc schema riêng (Google không cho sửa, xóa trường sau khi đã tạo phiên bản processor<sup class="cite"><a href="#src-17">[17]</a></sup>)</td></tr>
+      <tr><td><b>Thư viện mã nguồn mở</b></td><td>Muốn kiểm soát pipeline, đổi model tự do</td><td>Validation và thử lại, grounding theo vị trí ký tự<sup class="cite"><a href="#src-14">[14]</a><a href="#src-15">[15]</a></sup></td><td>Tự lo checkpoint, sổ cái, giao diện duyệt</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Công cụ: chỉ ghi điều tài liệu chính thức nói</h3>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Công cụ</th><th>Loại</th><th>Tài liệu nói gì</th><th>Lưu ý</th></tr></thead>
+    <tbody>
+      <tr><td><b>OpenAI Structured Outputs</b></td><td>Tính năng API</td><td>Ràng buộc đầu ra hoàn chỉnh, không từ chối, theo JSON Schema; có ví dụ trích từ dữ liệu phi cấu trúc<sup class="cite"><a href="#src-9">[9]</a></sup></td><td>Phải tự xử lý từ chối, đầu ra dở dang, quy tắc nghiệp vụ</td></tr>
+      <tr><td><b>Anthropic structured outputs + Citations</b></td><td>Tính năng API</td><td>Constrained decoding bảo đảm đúng schema; Citations bảo đảm con trỏ hợp lệ vào tài liệu đã gửi<sup class="cite"><a href="#src-10">[10]</a><a href="#src-12">[12]</a></sup></td><td>Hai tính năng không bật chung được (lỗi 400)</td></tr>
+      <tr><td><b>Gemini structured output</b></td><td>Tính năng API</td><td>Hỗ trợ một tập con JSON Schema; use case gồm trích dữ liệu<sup class="cite"><a href="#src-11">[11]</a></sup></td><td>"Luôn kiểm giá trị trong ứng dụng"</td></tr>
+      <tr><td><b>Instructor</b></td><td>Thư viện (MIT)</td><td>Dùng Pydantic định nghĩa schema, tự hỏi lại model khi validation thất bại; hỗ trợ 15+ nhà cung cấp<sup class="cite"><a href="#src-14">[14]</a></sup></td><td>Không tự chia chunk hay gộp</td></tr>
+      <tr><td><b>LangExtract</b></td><td>Thư viện (Apache 2.0)</td><td>Gắn mỗi kết quả với vị trí trong nguồn; chunking, song song, nhiều lượt cho tài liệu dài<sup class="cite"><a href="#src-15">[15]</a></sup></td><td>README ghi: không phải sản phẩm Google hỗ trợ chính thức</td></tr>
+      <tr><td><b>LlamaParse Extract</b> (trước là LlamaExtract)</td><td>Dịch vụ (LlamaIndex)</td><td>Trích dữ liệu có cấu trúc từ PDF, ảnh; bảo đảm khớp schema hoặc báo lỗi rõ; nhiều mức chất lượng/chi phí<sup class="cite"><a href="#src-16">[16]</a></sup></td><td>Chọn tier theo tài liệu (Agentic Plus, Agentic, Cost Effective, Turbo); Turbo dành cho PDF và ảnh</td></tr>
+      <tr><td><b>Google Document AI Custom Extractor</b></td><td>Dịch vụ cloud</td><td>Mặc định là foundation model zero-shot; model tự huấn luyện cần ≥ 10 mẫu train và 10 mẫu test mỗi trường; đánh giá bằng precision, recall, F1<sup class="cite"><a href="#src-17">[17]</a><a href="#src-18">[18]</a></sup></td><td>Không sửa, xóa trường sau khi đã tạo phiên bản</td></tr>
+      <tr><td><b>Azure Content Understanding</b></td><td>Dịch vụ cloud</td><td>Trích trường theo schema bằng extract, classify, generate; confidence và grounding tùy chọn; nêu use case hợp đồng, báo cáo tài chính, hợp đồng bảo hiểm<sup class="cite"><a href="#src-19">[19]</a></sup></td><td>Đi cùng Document Intelligence cho tài liệu có cấu trúc cố định</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted">Bảng chỉ ghi điều tài liệu chính thức nói tại ngày truy cập, không phải đánh giá chất lượng. Hãy đo trên tài liệu của bạn (mục 13).</p>
+</section>
+
+<!-- 12. LỖI -->
+<section id="loi">
+  <h2>12. Lỗi thường gặp và cách chẩn đoán</h2>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Triệu chứng</th><th>Nguyên nhân hay gặp</th><th>Chẩn đoán và sửa</th></tr></thead>
+    <tbody>
+      <tr><td><b>Số kiểm soát ít hơn con số báo cáo tự nêu</b></td><td>Chunk lỗi hoặc hết giờ không ai biết; lượt định vị lọc nhầm; JSON bị cắt do <code>max_tokens</code></td><td>Xem sổ cái tìm chunk thiếu; đọc <code>stop_reason</code><sup class="cite"><a href="#src-10">[10]</a></sup>; chia chunk nhỏ hơn nếu đầu ra dài</td></tr>
+      <tr><td><b>Một kiểm soát xuất hiện hai lần, mỗi bản nửa vời</b></td><td>Hàng bảng vắt qua ranh giới chunk</td><td>Lặp hàng tiêu đề bảng ở mỗi chunk; đánh dấu phần đầu/phần tiếp; gộp theo mã</td></tr>
+      <tr><td><b>Giá trị không có trong tài liệu</b></td><td>Schema bắt buộc trường đó dù chunk không nói tới; model lấy từ ví dụ few-shot<sup class="cite"><a href="#src-15">[15]</a></sup></td><td>Thêm <code>status</code> cho "không có trong chunk"; kiểm câu trích; dùng ví dụ few-shot khác lĩnh vực</td></tr>
+      <tr><td><b>Câu trích không tìm thấy trong trang</b></td><td>Model diễn đạt lại; OCR lỗi; khác khoảng trắng hoặc dạng Unicode</td><td>Chuẩn hóa trước khi so (không bỏ dấu tiếng Việt); vẫn lệch thì gửi người duyệt</td></tr>
+      <tr><td><b>Chạy lại tốn y như lần đầu</b></td><td>Không có cache, hoặc khóa có thời gian chạy</td><td>Khóa = hash chunk + phiên bản prompt, schema, model</td></tr>
+      <tr><td><b>Sửa prompt nhưng kết quả không đổi</b></td><td>Khóa cache thiếu phiên bản prompt nên trả kết quả cũ</td><td>Đưa phiên bản prompt và schema vào khóa</td></tr>
+      <tr><td><b>Chạy lại thì mất quyết định của người duyệt</b></td><td>Id sinh ngẫu nhiên mỗi lần chạy</td><td>Id từ khóa tự nhiên; so vân tay nội dung để giữ quyết định</td></tr>
+      <tr><td><b>Sau sự cố có bản ghi bị nhân đôi</b></td><td>Ghi kiểu insert, retry là at-least-once<sup class="cite"><a href="#src-23">[23]</a></sup></td><td>Ghi kiểu upsert theo id; khóa idempotency lấy từ state đã lưu</td></tr>
+      <tr><td><b>Enum lệch hoa thường, bị loại oan</b></td><td>Structured output không bảo đảm hoa/thường của enum<sup class="cite"><a href="#src-10">[10]</a></sup></td><td>So không phân biệt hoa thường; tránh enum chỉ khác chữ hoa</td></tr>
+      <tr><td><b>Báo "xong" nhưng thiếu dữ liệu</b></td><td>Không có trạng thái lần chạy</td><td>Trạng thái <code>partial</code> kèm danh sách chunk thiếu; không cho đánh dấu hoàn tất khi sổ cái chưa đủ</td></tr>
+      <tr><td><b>Kết quả lệch dần qua mỗi bước gộp</b></td><td>Gộp bằng cách tóm tắt các tóm tắt</td><td>Gộp bản ghi bằng code; khi mâu thuẫn, mở lại trang PDF</td></tr>
+      <tr><td><b>Job chạy mãi không xong vì một chunk</b></td><td>Chunk luôn chạm <code>max_tokens</code> hoặc luôn bị từ chối, retry không giới hạn</td><td>Giới hạn số lần thử; ghi <code>failed</code> vào sổ cái; tách chunk nhỏ hơn hoặc giao người xử lý; lần chạy mang trạng thái <code>partial</code></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<!-- 13. ĐÁNH GIÁ -->
+<section id="danh-gia">
+  <h2>13. Đánh giá và đo lường</h2>
+  <p>Cần một <b>bộ nhãn tay</b> (golden set): vài tài liệu thật, người làm nghề điền đúng các bản ghi như schema yêu cầu. Rồi so đầu ra của pipeline với bộ đó <b>theo từng trường</b>. Cách xây golden set và chọn metric nói chung có ở trang <a href="../llm-evaluation/">LLM Evaluation</a>.</p>
+  <div class="grid g3">
+    <div class="card"><span class="tag p1">Precision</span><p>Trong các giá trị pipeline trích ra, bao nhiêu phần trăm khớp nhãn: TP / (TP + FP).<sup class="cite"><a href="#src-18">[18]</a></sup> Precision thấp nghĩa là <b>bịa hoặc sai</b>.</p></div>
+    <div class="card"><span class="tag p1">Recall</span><p>Trong các giá trị có trong nhãn, bao nhiêu phần trăm được trích đúng: TP / (TP + FN).<sup class="cite"><a href="#src-18">[18]</a></sup> Recall thấp nghĩa là <b>bỏ sót</b>.</p></div>
+    <div class="card"><span class="tag p1">F1</span><p>Trung bình điều hòa của hai số trên: 2PR / (P + R).<sup class="cite"><a href="#src-18">[18]</a></sup> Một giá trị sai vừa là FP (giá trị sai) vừa là FN (giá trị đúng bị thiếu): hai loại lỗi không loại trừ nhau.<sup class="cite"><a href="#src-18">[18]</a></sup></p></div>
+  </div>
+
+  <h3>Máy tính: chấm 7 kiểm soát của Kho Mây</h3>
+  <p>Nhãn tay cho KS-01 đến KS-07 so với đầu ra của pipeline (<b>minh họa</b>). Pipeline bỏ sót KS-03 và KS-07, ghi sai trang của KS-04, sai số mẫu lỗi của KS-05, viết "không có ngoại lệ" khác hoa thường ở KS-02, và bịa thêm KS-15 từ ví dụ few-shot. Recall thấp hơn precision vì pipeline sót nhiều hơn bịa. Bật hoặc tắt luật so khớp để thấy con số thay đổi.</p>
+  <div class="card">
+    <div class="ctl"><span class="lbl">Luật so khớp chữ</span><div id="evMatch"></div></div>
+    <div id="evOut"></div>
+    <p class="sim-note">So khớp nới lỏng ở đây theo cách Document AI mô tả: bỏ khoảng trắng thừa, dấu câu ở hai đầu, đổi về chữ thường; số thì không bao giờ so nới lỏng.<sup class="cite"><a href="#src-18">[18]</a></sup> Dòng "Tất cả" cộng TP, FP, FN của mọi trường rồi mới tính, nên trường nhiều giá trị nặng ký hơn.<sup class="cite"><a href="#src-18">[18]</a></sup> Máy tính ghép bản ghi theo mã kiểm soát. Loại bản ghi không có khóa tự nhiên (điều khoản, dòng bảng) phải ghép cặp dự đoán với nhãn trước khi chấm, và luật ghép đó ảnh hưởng thẳng tới P và R.</p>
+  </div>
+
+  <h3>Các con số khác nên theo dõi</h3>
+  <div class="table-wrap"><table class="stack">
+    <thead><tr><th>Metric</th><th>Đo gì</th><th>Ghi chú</th></tr></thead>
+    <tbody>
+      <tr><td><b>Tỷ lệ chunk đã xử lý</b></td><td>Số chunk xong trên tổng chunk, và tỷ lệ lần chạy đạt 100%</td><td>Phải là 100% mới được trạng thái hoàn tất</td></tr>
+      <tr><td><b>Tỷ lệ câu trích khớp</b></td><td>Số câu trích tìm thấy trong trang / tổng câu trích</td><td>Giảm đột ngột thường do đổi parser, OCR hoặc prompt</td></tr>
+      <tr><td><b>Bản ghi đúng hoàn toàn</b></td><td>Tỷ lệ bản ghi mà mọi trường đều đúng</td><td>Khắt khe hơn F1 theo trường; sát với công sức người duyệt phải sửa</td></tr>
+      <tr><td><b>Tỷ lệ gửi người duyệt</b></td><td>Số trường bị chuyển duyệt / tổng trường</td><td>Kèm tỷ lệ lỗi trong mẫu ngẫu nhiên không bị chuyển duyệt</td></tr>
+      <tr><td><b>Chi phí và thời gian mỗi tài liệu</b></td><td>Token, lần gọi, phút, tỷ lệ trúng cache khi chạy lại</td><td>Tách lần chạy đầu và lần chạy lại</td></tr>
+    </tbody>
+  </table></div>
+  <p class="muted">Benchmark công khai cho tài liệu dài: Kleister có hai bộ, hợp đồng NDA (540 tài liệu, 3.229 trang) và báo cáo tài chính của tổ chức từ thiện (2.788 tài liệu, 61.643 trang), trộn bản scan và PDF số, đo bằng F1. Model tốt nhất trong bài đạt khoảng 82–84% F1.<sup class="cite"><a href="#src-29">[29]</a></sup> Con số đó là của các model năm 2021, chỉ để thấy bài toán khó; đừng dùng làm mục tiêu cho tài liệu của bạn.</p>
+</section>
+
+<!-- 14. LỘ TRÌNH -->
+<section id="lo-trinh">
+  <h2>14. Lộ trình tự học 3 tuần (không cần code)</h2>
+  <p class="muted">Đánh dấu khi xong; trạng thái được lưu trên trình duyệt này. Dùng tài liệu công khai hoặc tự soạn, đừng dùng tài liệu mật của công ty khi thử với dịch vụ bên ngoài.</p>
+  <div class="grid g3">
+    <div class="card"><span class="tag p1">Tuần 1</span><h4>Schema và một chunk</h4>
+      <label class="check"><input type="checkbox" data-k="w1a"> Chọn một tài liệu dài công khai (hợp đồng mẫu, báo cáo thường niên)</label>
+      <label class="check"><input type="checkbox" data-k="w1b"> Viết bảng bản ghi: loại, khóa, trường bắt buộc, enum, trạng thái</label>
+      <label class="check"><input type="checkbox" data-k="w1c"> Tự điền tay bản ghi cho 10 trang: đây là golden set đầu tiên</label>
+      <label class="check"><input type="checkbox" data-k="w1d"> Thử trích một chunk bằng structured output, so với bản điền tay</label>
+    </div>
+    <div class="card"><span class="tag p2">Tuần 2</span><h4>Cả tài liệu và gộp</h4>
+      <label class="check"><input type="checkbox" data-k="w2a"> Chia tài liệu theo mục và bảng; ghi sổ cái từng chunk</label>
+      <label class="check"><input type="checkbox" data-k="w2b"> Trích từng chunk, tìm các bản ghi bị cắt và bị trùng</label>
+      <label class="check"><input type="checkbox" data-k="w2c"> Viết luật gộp: khóa tự nhiên, nối phần cắt, xử lý mâu thuẫn</label>
+      <label class="check"><input type="checkbox" data-k="w2d"> Kiểm chéo với con số chính tài liệu nêu</label>
+    </div>
+    <div class="card"><span class="tag p3">Tuần 3</span><h4>Chạy bền và đo</h4>
+      <label class="check"><input type="checkbox" data-k="w3a"> Thiết kế khóa cache; thử đổi prompt và đổi một chunk</label>
+      <label class="check"><input type="checkbox" data-k="w3b"> Kiểm câu trích bằng tìm chuỗi; đếm tỷ lệ khớp</label>
+      <label class="check"><input type="checkbox" data-k="w3c"> Tính P/R/F1 theo trường trên golden set</label>
+      <label class="check"><input type="checkbox" data-k="w3d"> Viết luật giữ quyết định người duyệt khi chạy lại</label>
+    </div>
+  </div>
+
+  <h3>Tự kiểm tra: trả lời được là đã nắm cốt lõi</h3>
+  <details><summary>1. Tài liệu 120 trang vừa context 1M token. Vì sao vẫn có thể nên chia chunk?</summary><p>Vì vừa context không có nghĩa là đọc tốt: thông tin ở giữa dễ bị bỏ qua và chất lượng giảm khi context dài.<sup class="cite"><a href="#src-1">[1]</a><a href="#src-4">[4]</a></sup> Liệt kê hàng trăm bản ghi có thể chạm trần output. Và một lần gọi lớn không resume, không cache từng phần được. Nếu chỉ cần vài trường xuất hiện một lần thì một lần gọi long-context có thể là đủ.</p></details>
+  <details><summary>2. "null" và "không tìm thấy" khác nhau thế nào, vì sao quan trọng?</summary><p>"Tài liệu nói rõ là không có" là một sự thật cần lưu. "Chunk này không nói tới" chỉ có nghĩa là phải xem chunk khác. Gộp làm một thì bước reduce không biết nên tin chunk nào, và bản ghi cuối có thể ghi "không có ngoại lệ" chỉ vì đa số chunk không nhắc tới ngoại lệ.</p></details>
+  <details><summary>3. Khóa cache nên gồm những gì? Thiếu một thành phần thì hỏng thế nào?</summary><p>Hash nội dung chunk, phiên bản prompt, phiên bản schema, model. Thiếu phiên bản prompt: sửa prompt mà vẫn nhận kết quả cũ. Thiếu hash nội dung: tài liệu đổi mà vẫn dùng kết quả cũ. Có thêm thời gian chạy: không bao giờ trúng cache.</p></details>
+  <details><summary>4. Vì sao không có checkpoint thì một job giới hạn 90 giây không bao giờ xong tài liệu cần 232 giây?</summary><p>Kết quả chỉ được ghi khi job kết thúc bình thường. Job bị dừng ở giây 90 thì mọi kết quả trong bộ nhớ mất, lượt sau làm lại từ chunk đầu và lại bị dừng ở cùng chỗ. Có checkpoint thì mỗi lượt cộng dồn tiến độ (mô phỏng ở mục 4).</p></details>
+  <details><summary>5. Sổ cái chứng minh được điều gì, và không chứng minh được điều gì?</summary><p>Sổ cái chứng minh <b>mọi phần của tài liệu</b> đã được xử lý hoặc bỏ qua có lý do, kể cả phần không có bản ghi nào. Thiếu một ô là biết ngay đó là phần nào. Nó không chứng minh mọi bản ghi bên trong một chunk đã được trích: việc đó cần kiểm chéo số đếm tài liệu tự nêu (nếu có), dãy mã không hổng, nhiều lượt trích, và recall trên golden set.</p></details>
+  <details><summary>6. Vì sao không dùng độ tự tin do model tự nói ra làm ngưỡng gửi người duyệt?</summary><p>LLM khi tự nói ra độ tự tin thường tự tin quá mức.<sup class="cite"><a href="#src-30">[30]</a></sup> Dùng tín hiệu kiểm được: câu trích không khớp, bản ghi nối, hai lượt bất đồng, kiểm chéo thất bại; cộng thêm một mẫu ngẫu nhiên để bắt lỗi "tự tin mà sai".</p></details>
+  <details><summary>7. Báo cáo bản sửa đổi một chunk. Quyết định của người duyệt trên các bản ghi khác có giữ được không?</summary><p>Giữ được nếu id bản ghi ổn định và có vân tay nội dung: bản ghi cùng id, cùng vân tay thì giữ quyết định; cùng id khác vân tay thì chuyển "cần xem lại". Cache chỉ gọi lại model cho chunk đã đổi.</p></details>
+</section>
+
+<!-- NGUỒN -->
+<section id="nguon">
+  <h2>Nguồn tham khảo</h2>
+  <p class="muted">Các khẳng định kỹ thuật trong trang được đối chiếu với những nguồn dưới đây. Số trong ngoặc vuông ở thân bài trỏ tới mục tương ứng. Tất cả truy cập ngày 2026-11-19.</p>
+  <ol class="sources">
+    <li id="src-1">Liu, N. F. và cộng sự. <i>Lost in the Middle: How Language Models Use Long Contexts</i>. arXiv 2023, đăng ở TACL. <a href="https://arxiv.org/abs/2307.03172" target="_blank" rel="noopener">arxiv.org/abs/2307.03172</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-2">Hsieh, C.-P. và cộng sự. <i>RULER: What's the Real Context Size of Your Long-Context Language Models?</i> COLM, 2024. <a href="https://arxiv.org/abs/2404.06654" target="_blank" rel="noopener">arxiv.org/abs/2404.06654</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-3">Li, Z. và cộng sự. <i>Retrieval Augmented Generation or Long-Context LLMs? A Comprehensive Study and Hybrid Approach</i>. EMNLP Industry Track, 2024. <a href="https://arxiv.org/abs/2407.16833" target="_blank" rel="noopener">arxiv.org/abs/2407.16833</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-4">Anthropic. <i>Context windows</i> (tài liệu Claude API). <a href="https://platform.claude.com/docs/en/build-with-claude/context-windows" target="_blank" rel="noopener">platform.claude.com/docs/en/build-with-claude/context-windows</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-5">Anthropic. <i>Models overview</i> (tài liệu Claude API). <a href="https://platform.claude.com/docs/en/models/overview" target="_blank" rel="noopener">platform.claude.com/docs/en/models/overview</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-6">Anthropic. <i>PDF support</i> (tài liệu Claude API). <a href="https://platform.claude.com/docs/en/build-with-claude/pdf-support" target="_blank" rel="noopener">platform.claude.com/docs/en/build-with-claude/pdf-support</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-7">Anthropic. <i>Prompting best practices</i>, mục Long context prompting (tài liệu Claude API). <a href="https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices" target="_blank" rel="noopener">platform.claude.com/…/claude-prompting-best-practices</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-8">Google. <i>Long context</i> (tài liệu Gemini API). <a href="https://aistudio.google.com/docs/long-context" target="_blank" rel="noopener">aistudio.google.com/docs/long-context</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-9">OpenAI. <i>Structured Outputs</i> (tài liệu API). <a href="https://developers.openai.com/api/docs/guides/structured-outputs" target="_blank" rel="noopener">developers.openai.com/api/docs/guides/structured-outputs</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-10">Anthropic. <i>Structured outputs</i> (tài liệu Claude API). <a href="https://platform.claude.com/docs/en/build-with-claude/structured-outputs" target="_blank" rel="noopener">platform.claude.com/docs/en/build-with-claude/structured-outputs</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-11">Google. <i>Structured output</i> (tài liệu Gemini API). <a href="https://aistudio.google.com/docs/structured-output" target="_blank" rel="noopener">aistudio.google.com/docs/structured-output</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-12">Anthropic. <i>Citations</i> (tài liệu Claude API). <a href="https://platform.claude.com/docs/en/build-with-claude/citations" target="_blank" rel="noopener">platform.claude.com/docs/en/build-with-claude/citations</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-13">Anthropic. <i>Reduce hallucinations</i> (tài liệu Claude API). <a href="https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/reduce-hallucinations" target="_blank" rel="noopener">platform.claude.com/…/reduce-hallucinations</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-14">Instructor. <i>Instructor</i> (tài liệu chính thức). <a href="https://python.useinstructor.com/" target="_blank" rel="noopener">python.useinstructor.com</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-15">Google. <i>LangExtract</i> (README). <a href="https://github.com/google/langextract" target="_blank" rel="noopener">github.com/google/langextract</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-16">LlamaIndex. <i>Overview of Extract</i> (LlamaParse Extract, trước là LlamaExtract). <a href="https://developers.llamaindex.ai/llamaparse/extract/getting_started/" target="_blank" rel="noopener">developers.llamaindex.ai/llamaparse/extract/getting_started</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-17">Google Cloud. <i>Custom extractor mechanisms</i> (tài liệu Document AI). <a href="https://docs.cloud.google.com/document-ai/docs/ce-mechanisms" target="_blank" rel="noopener">docs.cloud.google.com/document-ai/docs/ce-mechanisms</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-18">Google Cloud. <i>Evaluate performance</i> (tài liệu Document AI). <a href="https://docs.cloud.google.com/document-ai/docs/evaluate" target="_blank" rel="noopener">docs.cloud.google.com/document-ai/docs/evaluate</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-19">Microsoft. <i>Azure Content Understanding in Foundry Tools – Document overview</i>. 2026. <a href="https://learn.microsoft.com/en-us/azure/ai-services/content-understanding/document/overview" target="_blank" rel="noopener">learn.microsoft.com/…/content-understanding/document/overview</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-20">Microsoft. <i>Interpret and improve model accuracy and confidence scores</i> (Document Intelligence). 2026. <a href="https://learn.microsoft.com/en-us/azure/ai-services/document-intelligence/concept/accuracy-confidence" target="_blank" rel="noopener">learn.microsoft.com/…/document-intelligence/concept/accuracy-confidence</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-21">Amazon Web Services. <i>Using Amazon Augmented AI for Human Review</i> (SageMaker Developer Guide). <a href="https://docs.aws.amazon.com/sagemaker/latest/dg/a2i-use-augmented-ai-a2i-human-review-loops.html" target="_blank" rel="noopener">docs.aws.amazon.com/…/a2i-use-augmented-ai-a2i-human-review-loops.html</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-22">LangChain. <i>Graph API</i> (tài liệu LangGraph). <a href="https://docs.langchain.com/oss/python/langgraph/graph-api" target="_blank" rel="noopener">docs.langchain.com/oss/python/langgraph/graph-api</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-23">LangChain. <i>Fault tolerance</i> (tài liệu LangGraph). <a href="https://docs.langchain.com/oss/python/langgraph/fault-tolerance" target="_blank" rel="noopener">docs.langchain.com/oss/python/langgraph/fault-tolerance</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-24">Temporal Technologies. <i>What is a Temporal Activity?</i> (tài liệu Temporal). <a href="https://docs.temporal.io/activities" target="_blank" rel="noopener">docs.temporal.io/activities</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-25">Stripe. <i>Idempotent requests</i> (API reference). <a href="https://docs.stripe.com/api/idempotent_requests" target="_blank" rel="noopener">docs.stripe.com/api/idempotent_requests</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-26">LangChain. <i>index</i> (Indexing API, tài liệu tham chiếu langchain-core). <a href="https://reference.langchain.com/python/langchain-core/indexing/api/index" target="_blank" rel="noopener">reference.langchain.com/python/langchain-core/indexing/api/index</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-27">Anthropic. <i>Batch processing</i> (tài liệu Claude API). <a href="https://platform.claude.com/docs/en/build-with-claude/batch-processing" target="_blank" rel="noopener">platform.claude.com/docs/en/build-with-claude/batch-processing</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-28">Chang, Y.; Lo, K.; Goyal, T.; Iyyer, M. <i>BooookScore: A systematic exploration of book-length summarization in the era of LLMs</i>. ICLR, 2024. <a href="https://arxiv.org/abs/2310.00785" target="_blank" rel="noopener">arxiv.org/abs/2310.00785</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-29">Stanisławek, T. và cộng sự. <i>Kleister: Key Information Extraction Datasets Involving Long Documents with Complex Layouts</i>. ICDAR, 2021. <a href="https://arxiv.org/abs/2105.05796" target="_blank" rel="noopener">arxiv.org/abs/2105.05796</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-30">Xiong, M. và cộng sự. <i>Can LLMs Express Their Uncertainty? An Empirical Evaluation of Confidence Elicitation in LLMs</i>. ICLR, 2024. <a href="https://arxiv.org/abs/2306.13063" target="_blank" rel="noopener">arxiv.org/abs/2306.13063</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-31">Christophides, V. và cộng sự. <i>End-to-End Entity Resolution for Big Data: A Survey</i>. arXiv, 2019. <a href="https://arxiv.org/abs/1905.06397" target="_blank" rel="noopener">arxiv.org/abs/1905.06397</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+    <li id="src-32">Microsoft. <i>System and Organization Controls (SOC) 2 Type 2</i> (Azure compliance). <a href="https://learn.microsoft.com/en-us/azure/compliance/offerings/offering-soc-2" target="_blank" rel="noopener">learn.microsoft.com/…/compliance/offerings/offering-soc-2</a> <span class="acc">(truy cập 2026-11-19)</span></li>
+  </ol>
+</section>
+</main>
+
+<footer>
+  Tài liệu học trích xuất có cấu trúc từ tài liệu dài, ở mức khái niệm. Công ty Đồi Thông, Kho Mây, báo cáo 120 trang, mã kiểm soát, câu trích, thời gian và token trong trang đều là hư cấu, dùng để minh họa.
+</footer>
+
+<script>
+(function(){
+  // ---------- Theme ----------
+  var root=document.documentElement;
+  function safeGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+  function safeSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  var saved=safeGet('rag-theme'); if(saved) root.setAttribute('data-theme',saved);
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme');
+    if(!cur){cur=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}
+    var next=cur==='dark'?'light':'dark'; root.setAttribute('data-theme',next); safeSet('rag-theme',next);
+  });
+
+  // ---------- Stacked tables on phones: give each cell its column name ----------
+  function labelTables(root){
+    [].forEach.call(root.querySelectorAll('table.stack'),function(t){
+      var heads=[].map.call(t.querySelectorAll('thead th'),function(th){return th.textContent});
+      [].forEach.call(t.querySelectorAll('tbody tr'),function(tr){[].forEach.call(tr.children,function(td,i){if(heads[i])td.setAttribute('data-label',heads[i])})});
+    });
+  }
+  labelTables(document);
+
+  function setOn(el,on){el.classList.toggle('on',on);el.setAttribute('aria-pressed',on?'true':'false')}
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  function cite(){var a=[].slice.call(arguments);return '<sup class="cite">'+a.map(function(n){return '<a href="#src-'+n+'">['+n+']</a>'}).join('')+'</sup>'}
+  function kv(rows,heads){
+    return '<div class="table-wrap"><table class="stack"><thead><tr>'+heads.map(function(h){return '<th>'+h+'</th>'}).join('')+'</tr></thead><tbody>'+
+      rows.map(function(r){return '<tr>'+r.map(function(c){return '<td>'+c+'</td>'}).join('')+'</tr>'}).join('')+'</tbody></table></div>';
+  }
+  function fmt(n){return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,'.')}
+  function pct(x){return (x*100).toFixed(1).replace('.',',')+'%'}
+
+  // ---------- Example data (fictional): a 120-page SOC 2-style report from "Kho Mây" ----------
+  // d = seconds per chunk, pg = pages; every number is illustrative.
+  function M(id,part,q,ex,src){return {id:id,part:part,q:q,ex:!!ex,src:src||q}}
+  var CH=[
+    {id:'C01',p:'1–6',sec:'Thư ý kiến của kiểm toán viên',d:12,pg:6,ctrl:[],
+      src:['Theo ý kiến của chúng tôi, các kiểm soát được mô tả đã vận hành hiệu quả trong suốt kỳ từ 01/04/2025 đến 31/03/2026.','Phần 4 trình bày 14 kiểm soát và 3 ngoại lệ được ghi nhận.'],
+      fact:{controls:14,exceptions:3,q:'Phần 4 trình bày 14 kiểm soát và 3 ngoại lệ được ghi nhận.'}},
+    {id:'C02',p:'7–9',sec:'Khẳng định của ban điều hành',d:6,pg:3,ctrl:[],src:['Ban điều hành Kho Mây chịu trách nhiệm về mô tả hệ thống.']},
+    {id:'C03',p:'10–38',sec:'Mô tả hệ thống',d:28,pg:29,ctrl:[],src:['Hệ thống gồm dịch vụ lưu trữ đối tượng và cổng quản trị.']},
+    {id:'C04',p:'39–47',sec:'Phần 4 · Truy cập (1)',d:20,pg:9,ctrl:[
+      M('KS-01','full','Mọi tài khoản quản trị phải đăng nhập bằng xác thực đa yếu tố.'),
+      M('KS-02','full','Quyền truy cập của nhân viên nghỉ việc bị thu hồi trong vòng 24 giờ.')]},
+    {id:'C05',p:'48–56',sec:'Phần 4 · Truy cập (2)',d:22,pg:9,ctrl:[
+      M('KS-03','full','Mật khẩu hệ thống sản xuất được đổi theo chính sách 90 ngày.'),
+      M('KS-04','head','Quyền truy cập cơ sở dữ liệu khách hàng được rà soát')]},
+    {id:'C06',p:'57–65',sec:'Phần 4 · Truy cập (3)',d:26,pg:9,ctrl:[
+      M('KS-04','tail','mỗi quý bởi trưởng bộ phận và lưu biên bản rà soát.'),
+      M('KS-05','full','Trong 25 mẫu được chọn, 2 mẫu không có phê duyệt thay đổi quyền.',1),
+      M('KS-06','full','Nhật ký truy cập được giữ tối thiểu 12 tháng.')]},
+    {id:'C07',p:'66–74',sec:'Phần 4 · Thay đổi',d:16,pg:9,ctrl:[
+      M('KS-07','full','Thay đổi mã nguồn phải được một người khác duyệt trước khi triển khai.')]},
+    {id:'C08',p:'75–83',sec:'Phần 4 · Vận hành (1)',d:22,pg:9,ctrl:[
+      M('KS-08','full','Bản vá bảo mật mức nghiêm trọng được cài trong vòng 14 ngày.'),
+      M('KS-09','head','Lỗ hổng phát hiện qua quét định kỳ được ghi nhận')]},
+    {id:'C09',p:'84–92',sec:'Phần 4 · Vận hành (2)',d:24,pg:9,ctrl:[
+      M('KS-09','tail','và xử lý theo hạn; 3 trong 40 mẫu quá hạn xử lý.',1),
+      M('KS-10','full','Hệ thống giám sát gửi cảnh báo khi CPU vượt 90% trong 5 phút.')]},
+    {id:'C10',p:'93–101',sec:'Phần 4 · Sao lưu',d:20,pg:9,ctrl:[
+      // The model paraphrased this quote ("hằng quý"); the source says "mỗi quý".
+      M('KS-11','full','Bản sao lưu được khôi phục thử hằng quý.',0,'Bản sao lưu được khôi phục thử mỗi quý.'),
+      M('KS-12','full','Dữ liệu sao lưu được mã hóa khi lưu trữ.')]},
+    {id:'C11',p:'102–112',sec:'Phần 4 · Sự cố',d:26,pg:11,ctrl:[
+      M('KS-13','full','Trong 12 sự cố, 1 sự cố không được báo cho khách hàng đúng hạn 72 giờ.',1),
+      M('KS-14','full','Kế hoạch ứng phó sự cố được diễn tập ít nhất mỗi năm một lần.')]},
+    {id:'C12',p:'113–120',sec:'Phản hồi của ban điều hành',d:10,pg:8,ctrl:[],refs:['KS-05','KS-09','KS-13'],
+      src:['Ban điều hành đã bổ sung bước phê duyệt bắt buộc (KS-05), rút hạn xử lý lỗ hổng (KS-09) và tự động hóa thông báo sự cố (KS-13).']}
+  ];
+  // Version 2 of chunk C09 (the vendor's revised report) changes the KS-10 threshold.
+  var C09V2='Hệ thống giám sát gửi cảnh báo khi CPU vượt 85% trong 5 phút.';
+  var TOTAL_SEC=CH.reduce(function(a,c){return a+c.d},0);
+  function fnv(s){var h=0x811c9dc5;for(var i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0}return ('0000000'+h.toString(16)).slice(-8)}
+  function norm(s){return String(s).normalize('NFC').toLowerCase().replace(/\s+/g,' ').trim()}
+  function mentions(c,st){
+    return c.ctrl.map(function(m){
+      if(c.id==='C09'&&m.id==='KS-10'&&st.ver.C09>1)return {id:m.id,part:m.part,q:C09V2,ex:m.ex,src:C09V2};
+      return m;
+    });
+  }
+  function srcText(c,st){return (c.src||[]).concat(mentions(c,st).map(function(m){return m.src})).join('\n')}
+  function keyOf(c,st){return fnv(c.id+'|'+srcText(c,st)+'|prompt-v'+st.prompt)}
+  function tokIn(c){return c.pg*2000+1200}
+  function tokOut(c){return 200+350*(c.ctrl.length+(c.refs?c.refs.length:0)+(c.fact?1:0))}
+
+  function newState(){return {budget:90,ckpt:true,prompt:1,ver:{C09:1},store:{},done:{},fail:{},pass:0,run:1,calls:0,tok:0,secs:0,waste:0,hits:0,runCalls:0,runHits:0,armed:false,log:[]}}
+  // One time-limited pass: skip finished chunks, reuse stored results, stop at the time limit or at an injected crash.
+  function runPass(st){
+    st.pass++; var t=0, mem=[], fresh=0, stop=null, msgs=[];
+    st.fail={};
+    for(var i=0;i<CH.length;i++){
+      var c=CH[i]; if(st.done[c.id])continue;
+      var k=keyOf(c,st);
+      if(st.store[k]){st.done[c.id]={pass:st.pass,how:'cache',key:k};st.hits++;st.runHits++;continue}
+      if(st.armed&&fresh===2){var half=c.d/2;t+=half;st.waste+=half;st.fail[c.id]='sự cố';stop={type:'crash',at:c.id,lost:half};break}
+      if(t+c.d>st.budget){var w=st.budget-t;st.waste+=w;st.fail[c.id]='bị cắt';stop={type:'cut',at:c.id,lost:w};t=st.budget;break}
+      t+=c.d; st.calls++; st.runCalls++; st.tok+=tokIn(c)+tokOut(c); fresh++;
+      if(st.ckpt){st.store[k]=1;st.done[c.id]={pass:st.pass,how:'run',key:k}}
+      else mem.push({c:c,k:k});
+    }
+    var lostMem=0;
+    if(!st.ckpt){
+      if(!stop){mem.forEach(function(x){st.store[x.k]=1;st.done[x.c.id]={pass:st.pass,how:'run',key:x.k}})}
+      else{mem.forEach(function(x){lostMem+=x.c.d;st.fail[x.c.id]='mất (chưa ghi)'});st.waste+=lostMem}
+    }
+    var hadCrash=st.armed; st.armed=false;
+    st.secs+=t;
+    var doneN=Object.keys(st.done).length;
+    var line='<b>Lượt '+st.pass+'</b> ('+st.budget+' giây, checkpoint '+(st.ckpt?'bật':'tắt')+'): ';
+    line+='gọi model '+fresh+' chunk, '+Math.round(t*10)/10+' giây. ';
+    if(stop&&stop.type==='crash')line+='<span class="badt">Sự cố giữa '+stop.at+'</span>, phí '+stop.lost+' giây. ';
+    if(stop&&stop.type==='cut')line+='<span class="warnt">Hết giờ giữa '+stop.at+'</span>, phí '+stop.lost+' giây. ';
+    if(lostMem)line+='<span class="badt">Không có checkpoint: mất kết quả của '+mem.length+' chunk ('+lostMem+' giây).</span> ';
+    if(hadCrash&&!stop)line+='(Sự cố đã đặt nhưng lượt này xong trước khi tới chunk thứ ba.) ';
+    line+='Sổ cái: '+doneN+'/12.';
+    st.log.push(line);
+    return {stop:stop,fresh:fresh,t:t,lostMem:lostMem};
+  }
+  function remainingSec(st){return CH.reduce(function(a,c){return a+(st.done[c.id]||st.store[keyOf(c,st)]?0:c.d)},0)}
+
+  // Reviewer decisions recorded on version 1, with the content fingerprint they were made on.
+  function fpOf(id,st){return fnv(CH.reduce(function(a,c){return a.concat(mentions(c,st).filter(function(m){return m.id===id}).map(function(m){return m.q}))},[]).join(' '))}
+  var BASE=newState();
+  var DECISIONS=[{id:'KS-05',d:'Chấp nhận rủi ro đến 30/06',fp:fpOf('KS-05',BASE)},{id:'KS-10',d:'Đã xác nhận ngưỡng cảnh báo',fp:fpOf('KS-10',BASE)},{id:'KS-13',d:'Yêu cầu Kho Mây gửi bằng chứng khắc phục',fp:fpOf('KS-13',BASE)}];
+
+  // Merge and verify over the chunks finished in the current run.
+  function mergeVerify(st){
+    var done=CH.filter(function(c){return st.done[c.id]});
+    var missing=CH.filter(function(c){return !st.done[c.id]}).map(function(c){return c.id});
+    var raw=[], by={}, order=[];
+    done.forEach(function(c){mentions(c,st).forEach(function(m){raw.push({m:m,c:c});if(!by[m.id]){by[m.id]=[];order.push(m.id)}by[m.id].push({m:m,c:c})})});
+    var merged=[], partial=[];
+    order.forEach(function(id){
+      var parts=by[id], hasHead=parts.some(function(x){return x.m.part==='head'}), hasTail=parts.some(function(x){return x.m.part==='tail'});
+      if(hasHead&&hasTail)merged.push(id+' ('+parts.map(function(x){return x.c.id}).join(' + ')+')');
+      else if(hasHead||hasTail)partial.push(id+' chỉ có '+(hasHead?'phần đầu ('+parts[0].c.id+')':'phần tiếp ('+parts[0].c.id+')'));
+    });
+    var exc={};raw.forEach(function(x){if(x.m.ex)exc[x.m.id]=1});
+    var quoteFail=[], quoteOk=0;
+    raw.forEach(function(x){if(norm(srcText(x.c,st)).indexOf(norm(x.m.q))>=0)quoteOk++;else quoteFail.push(x.m.id+' ('+x.c.id+')')});
+    var c01=st.done.C01?CH[0].fact:null, c12=st.done.C12?CH[11].refs:null;
+    var badRefs=c12?c12.filter(function(r){return !by[r]}):[];
+    return {done:done.length,missing:missing,raw:raw.length,unique:order.length,merged:merged,partial:partial,exc:Object.keys(exc).length,
+      quoteOk:quoteOk,quoteFail:quoteFail,fact:c01,refs:c12,badRefs:badRefs};
+  }
+
+  // ---------- Stepper example ----------
+  function simulateTo(budget){var s=newState();s.budget=budget;var passes=[];while(Object.keys(s.done).length<12&&s.pass<10){var r=runPass(s);passes.push({n:s.pass,done:Object.keys(s.done).length,stop:r.stop,t:r.t})}return {s:s,passes:passes}}
+  var EX=simulateTo(90), EXM=mergeVerify(EX.s);
+  var chunkRows=CH.map(function(c){var n=c.ctrl.length;return ['<b>'+c.id+'</b><br><span class="muted">tr. '+c.p+'</span>',esc(c.sec),n?n+' dòng kiểm soát':(c.fact?'thông tin báo cáo':(c.refs?'phản hồi ngoại lệ':'không có bản ghi'))]});
+  // A compact table that stays a table on phones (stacking 12 rows made step 2 very tall).
+  function ctab(rows,heads){
+    return '<div class="table-wrap"><table class="ct"><thead><tr>'+heads.map(function(h){return '<th>'+h+'</th>'}).join('')+'</tr></thead><tbody>'+
+      rows.map(function(r){return '<tr>'+r.map(function(c){return '<td>'+c+'</td>'}).join('')+'</tr>'}).join('')+'</tbody></table></div>';
+  }
+  var STEPS=[
+    {t:'Bài toán & schema',h:'<h3>Bước 1 · Viết schema trước, prompt sau</h3><p>Đội rủi ro của Đồi Thông cần đưa vào hệ thống theo dõi: mỗi kiểm soát của Kho Mây, kết quả kiểm tra, mỗi ngoại lệ thành một việc cần theo dõi. Họ chốt bốn loại bản ghi ở mục 5: thông tin báo cáo, kiểm soát, kết quả kiểm tra, ngoại lệ.</p>'+
+      '<p>Ba quyết định được ghi thành văn bản trước khi viết prompt:</p><ul><li><b>Id</b>: dùng mã kiểm soát do báo cáo đặt (KS-01…), không tự sinh.</li><li><b>Trạng thái</b>: <code>found</code>, <code>stated_none</code> (báo cáo nói rõ "không có ngoại lệ"), <code>not_in_chunk</code>.</li><li><b>Nguồn</b>: mỗi bản ghi bắt buộc có <code>page</code> và <code>quote</code> nguyên văn.</li></ul>'+
+      '<p class="muted">Con số tham chiếu để kiểm chéo cũng được xác định ngay: thư ý kiến (trang 1–6) tự nêu số kiểm soát và số ngoại lệ.</p>'},
+    {t:'Parse & chia chunk',h:'<h3>Bước 2 · 120 trang thành 12 chunk theo cấu trúc</h3><p>Parser đọc PDF, giữ số trang và bảng (xem trang <a href="../document-parsing-chunking/">Parsing &amp; Chunking</a>). Phần 4 (bảng kiểm soát, trang 39–112) dài nên được chia thành 8 chunk theo nhóm kiểm soát; mỗi chunk lặp lại hàng tiêu đề bảng.</p>'+
+      ctab(chunkRows,['Chunk','Mục','Chứa gì (đáp án)'])+
+      '<p class="muted">Hai hàng bảng vắt qua ranh giới chunk: KS-04 (trang 56–57, C05 → C06) và KS-09 (trang 83–84, C08 → C09). Bước Gộp sẽ phải nối chúng.</p>'},
+    {t:'Định vị',h:'<h3>Bước 3 · Lượt định vị: chunk nào cần schema nào</h3><p>Một lượt rẻ (hoặc chính mục lục) gán cho mỗi chunk loại bản ghi cần hỏi:</p><ul><li>C01: <b>thông tin báo cáo</b> (kỳ, ý kiến, số kiểm soát và ngoại lệ tự nêu).</li><li>C04–C11: <b>kiểm soát, kết quả kiểm tra, ngoại lệ</b>.</li><li>C12: <b>phản hồi ngoại lệ</b>, mỗi phản hồi trỏ tới một mã kiểm soát.</li><li>C02, C03: chỉ hỏi thông tin báo cáo; vẫn được ghi vào sổ cái với kết quả "không có bản ghi".</li></ul>'+
+      '<div class="callout warn" style="margin-top:8px">Không chunk nào bị bỏ qua mà không ai hay. Nếu muốn bỏ C03 (mô tả hệ thống) cho đỡ tốn, sổ cái phải ghi "bỏ qua: mô tả hệ thống, không thuộc schema", để người kiểm biết đó là quyết định chứ không phải lỗi.</div>'},
+    {t:'Trích từng chunk',h:'<h3>Bước 4 · Map: mỗi chunk một lần gọi structured output</h3><p>Ví dụ đầu ra của chunk C06 (trang 57–65), rút gọn:</p>'+
+      kv([['KS-04','<code>found</code>, <b>phần tiếp</b> (bắt đầu ở chunk trước)','tr. 57','"mỗi quý bởi trưởng bộ phận và lưu biên bản rà soát."'],
+          ['KS-05','<code>found</code>, có ngoại lệ','tr. 59','"Trong 25 mẫu được chọn, 2 mẫu không có phê duyệt thay đổi quyền."'],
+          ['KS-06','<code>found</code>, không ngoại lệ','tr. 63','"Nhật ký truy cập được giữ tối thiểu 12 tháng."']],['Mã','Trạng thái','Trang','Câu trích'])+
+      '<p>Chunk C07 chỉ có KS-07 và trả <code>stated_none</code> cho ngoại lệ vì bảng ghi "Không có ngoại lệ". Chunk C02 trả thông tin báo cáo với <code>not_in_chunk</code>; sổ cái ghi "không có bản ghi".</p>'+
+      '<p class="muted">Sau mỗi lần gọi, code kiểm <code>stop_reason</code>: nếu là <code>max_tokens</code> thì JSON có thể dở và không khớp schema, chunk được đánh dấu lỗi để chạy lại, không được lưu.'+cite(10)+'</p>'},
+    {t:'Checkpoint & cache',h:'<h3>Bước 5 · Lưu ngay, lượt sau làm tiếp</h3><p>Worker của Đồi Thông bị dừng sau 90 giây mỗi lượt (minh họa); cả tài liệu cần '+TOTAL_SEC+' giây gọi model. Mỗi kết quả chunk được ghi vào kho ngay khi xong, với khóa:</p><pre class="rec">khóa = hash(mã chunk + nội dung chunk + "prompt-v1")</pre><p class="muted">(Rút gọn; thực tế khóa còn có phiên bản schema và model, như mục 7.)</p>'+
+      kv(EX.passes.map(function(p){return ['<b>Lượt '+p.n+'</b>',Math.round(p.t)+' giây',p.stop?(p.stop.type==='cut'?'hết giờ giữa '+p.stop.at+' (phí '+p.stop.lost+' giây)':'sự cố giữa '+p.stop.at):'xong',p.done+'/12']}),['Lượt','Thời gian','Kết thúc','Sổ cái'])+
+      '<p>Tổng: '+EX.s.calls+' lần gọi model, phí '+EX.s.waste+' giây ở hai chunk bị cắt ngang. Lượt sau đọc sổ cái và <b>bỏ qua</b> chunk đã xong; chunk bị cắt ngang chạy lại từ đầu, như retry trong LangGraph chạy lại cả node.'+cite(23)+'</p>'},
+    {t:'Gộp & bỏ trùng',h:'<h3>Bước 6 · Reduce: '+EXM.raw+' mention thành '+EXM.unique+' kiểm soát</h3><p>Code gom mọi mention theo mã kiểm soát đã chuẩn hóa:</p><ul><li><b>Nối phần bị cắt</b>: '+EXM.merged.map(esc).join('; ')+'. Mô tả ghép theo thứ tự trang, giữ cả hai câu trích và hai số trang.</li>'+
+      '<li><b>Không tạo bản ghi từ phản hồi</b>: C12 nhắc lại KS-05, KS-09, KS-13. Đó là tham chiếu, được gắn vào ngoại lệ tương ứng, không thành kiểm soát mới.</li><li><b>Ngoại lệ</b>: '+EXM.exc+' ngoại lệ (KS-05, KS-09, KS-13). Ngoại lệ của KS-09 nằm ở phần tiếp (C09), nên nếu không nối, KS-09 phần đầu sẽ trông như "không có ngoại lệ".</li></ul>'+
+      '<p class="muted">Bước này không gọi LLM để "tóm tắt lại" các chunk. Mọi giá trị trong bản ghi gộp vẫn trỏ về một trang PDF.</p>'},
+    {t:'Kiểm chứng',h:'<h3>Bước 7 · Kiểm bằng code</h3><ul class="chk">'+
+      '<li class="y">Sổ cái: '+EXM.done+'/12 chunk có kết quả.</li>'+
+      '<li class="y">Số kiểm soát: '+EXM.unique+' = '+EXM.fact.controls+' mà thư ý kiến tự nêu.</li>'+
+      '<li class="y">Số ngoại lệ: '+EXM.exc+' = '+EXM.fact.exceptions+'.</li>'+
+      '<li class="y">Tham chiếu: cả '+EXM.refs.length+' mã trong phần phản hồi (C12) đều tồn tại.</li>'+
+      '<li class="w">Câu trích: '+EXM.quoteOk+'/'+EXM.raw+' tìm thấy nguyên văn. Lệch: '+EXM.quoteFail.map(esc).join(', ')+'. Model viết "hằng quý", trang gốc viết "mỗi quý".</li></ul>'+
+      '<div class="verdict mid">Trạng thái lần chạy: <b>complete_with_review</b>. Đủ dữ liệu, một trường chờ người duyệt. Giá trị có thể đúng nghĩa, nhưng câu trích không phải nguyên văn nên không được coi là đã kiểm.</div>'},
+    {t:'Duyệt & chạy lại',h:'<h3>Bước 8 · Người duyệt, rồi bản sửa của báo cáo</h3><p>Người duyệt mở trang 95, sửa câu trích KS-11 cho đúng nguyên văn, và ghi ba quyết định: KS-05 "chấp nhận rủi ro đến 30/06", KS-10 "đã xác nhận ngưỡng cảnh báo", KS-13 "yêu cầu bằng chứng khắc phục".</p>'+
+      '<p>Một tháng sau Kho Mây gửi bản sửa: chỉ trang 84–92 (chunk C09) đổi, ngưỡng cảnh báo của KS-10 từ 90% xuống 85%. Chạy lại cả tài liệu:</p><ul><li><b>Cache</b>: 11 chunk có khóa không đổi, dùng lại kết quả; chỉ C09 gọi model.</li><li><b>Id ổn định + vân tay nội dung</b>: KS-05 và KS-13 không đổi nên giữ quyết định; KS-10 cùng id nhưng nội dung đổi nên quyết định cũ chuyển "cần xem lại".</li></ul>'+
+      '<p class="muted">Thử lại cả chuỗi này trong mô phỏng ở mục 4.</p>'}
+  ];
+  var stepsEl=document.getElementById('steps'), bodyEl=document.getElementById('stepBody'), cur=0;
+  STEPS.forEach(function(s,i){var b=document.createElement('button');b.innerHTML='<span class="n">'+(i+1)+'</span>'+s.t;b.addEventListener('click',function(){show(i)});stepsEl.appendChild(b)});
+  function show(i){cur=i;[].forEach.call(stepsEl.children,function(b,j){setOn(b,j===i)});bodyEl.innerHTML=STEPS[i].h;labelTables(bodyEl);
+    document.getElementById('prevStep').disabled=i===0;var ab=stepsEl.children[i];if(stepsEl.scrollWidth>stepsEl.clientWidth){stepsEl.scrollLeft=ab.offsetLeft-stepsEl.offsetLeft-8}document.getElementById('nextStep').disabled=i===STEPS.length-1;}
+  // After Prev/Next, bring the top of the stepper back into view if the reader had scrolled past it.
+  var stepperEl=document.querySelector('.stepper');
+  function go(i){show(i);if(stepperEl.getBoundingClientRect().top<64)stepperEl.scrollIntoView({block:'start'})}
+  document.getElementById('prevStep').addEventListener('click',function(){if(cur>0)go(cur-1)});
+  document.getElementById('nextStep').addEventListener('click',function(){if(cur<STEPS.length-1)go(cur+1)});
+  show(0);
+
+  // ---------- Run simulator ----------
+  var S=newState();
+  var budEl=document.getElementById('simBudget'), ckEl=document.getElementById('simCkpt');
+  [60,90,120,300].forEach(function(b){var x=document.createElement('button');x.className='chip';x.dataset.b=b;x.textContent=b+' giây';budEl.appendChild(x)});
+  [['1','Bật'],['0','Tắt']].forEach(function(o){var x=document.createElement('button');x.className='chip';x.dataset.c=o[0];x.textContent=o[1];ckEl.appendChild(x)});
+  budEl.addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;S.budget=+b.dataset.b;renderSim()});
+  ckEl.addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;S.ckpt=b.dataset.c==='1';renderSim()});
+  var crashBtn=document.getElementById('simCrash');
+  document.getElementById('simRun').addEventListener('click',function(){if(Object.keys(S.done).length>=12)return;runPass(S);renderSim()});
+  crashBtn.addEventListener('click',function(){S.armed=!S.armed;renderSim()});
+  document.getElementById('simPrompt').addEventListener('click',function(){S.prompt++;S.done={};S.fail={};S.run++;S.runCalls=0;S.runHits=0;S.log.push('<b>Đổi prompt sang v'+S.prompt+'</b>: khóa của cả 12 chunk đổi, kết quả cũ không còn dùng được. Bắt đầu lần chạy '+S.run+'. Vân tay chỉ tính trên câu trích nguyên văn, không trên lời model tự viết, nên đổi prompt không đẩy quyết định nào của người duyệt sang "cần xem lại".');renderSim()});
+  document.getElementById('simEdit').addEventListener('click',function(){if(S.ver.C09>1)return;S.ver.C09=2;S.done={};S.fail={};S.run++;S.runCalls=0;S.runHits=0;S.log.push('<b>Nhận bản sửa</b>: nội dung C09 đổi (KS-10: 90% → 85%). Chạy lại cả tài liệu, lần chạy '+S.run+'; chunk nào khóa không đổi sẽ lấy từ kho.');renderSim()});
+  document.getElementById('simReset').addEventListener('click',function(){var b=S.budget,c=S.ckpt;S=newState();S.budget=b;S.ckpt=c;renderSim()});
+  function renderSim(){
+    [].forEach.call(budEl.children,function(b){setOn(b,+b.dataset.b===S.budget)});
+    [].forEach.call(ckEl.children,function(b){setOn(b,(b.dataset.c==='1')===S.ckpt)});
+    crashBtn.classList.toggle('armed',S.armed);crashBtn.setAttribute('aria-pressed',S.armed?'true':'false');
+    crashBtn.textContent=S.armed?'💥 Sự cố đã đặt (bấm để hủy)':'💥 Gây sự cố ở lượt kế';
+    var doneN=Object.keys(S.done).length;
+    document.getElementById('simRun').disabled=doneN>=12;
+    document.getElementById('simEdit').disabled=S.ver.C09>1;
+    var rem=remainingSec(S), hint;
+    if(doneN>=12)hint='Đã đủ 12/12 chunk. '+(S.ver.C09>1?'Thử "Đổi prompt" để xem cache mất tác dụng.':'Thử "Nhận bản sửa: C09 đổi" để xem cache và quyết định người duyệt.');
+    else if(!S.ckpt&&rem>S.budget)hint='Checkpoint đang tắt: phần còn lại cần '+rem+' giây gọi model, lớn hơn giới hạn '+S.budget+' giây. Mỗi lượt sẽ làm lại từ chunk chưa lưu đầu tiên và bị cắt ở cùng chỗ, nên lần chạy không bao giờ xong.';
+    else hint='Còn '+(12-doneN)+' chunk, cần khoảng '+rem+' giây gọi model (chunk lấy được từ kho tính 0 giây). Sự cố (nếu đặt) xảy ra giữa chunk thứ ba mà lượt đó gọi model.';
+    document.getElementById('simHint').textContent=hint;
+    document.getElementById('simStats').innerHTML=
+      '<div class="stat"><b>'+doneN+'/12</b><span>chunk xong trong lần chạy '+S.run+'</span></div>'+
+      '<div class="stat"><b>'+S.pass+'</b><span>lượt đã chạy (tổng)</span></div>'+
+      '<div class="stat"><b>'+S.runCalls+' · '+S.runHits+'</b><span>gọi model · lấy từ kho (lần chạy này)</span></div>'+
+      '<div class="stat"><b>'+S.calls+'</b><span>lần gọi model (tổng)</span></div>'+
+      '<div class="stat"><b>~'+fmt(S.tok/1000)+'K</b><span>token của các lần gọi hoàn tất (tổng)</span></div>'+
+      '<div class="stat"><b>'+Math.round(S.secs)+' · '+Math.round(S.waste)+'</b><span>giây chạy · giây phí công (tổng)</span></div>';
+    document.getElementById('simTiles').innerHTML=CH.map(function(c){
+      var d=S.done[c.id], f=S.fail[c.id], cls='', st='chờ';
+      if(d){cls=d.how==='cache'?'cache':'done';st=d.how==='cache'?'từ kho':'xong · lượt '+d.pass}
+      else if(f){cls='lost';st=f}
+      return '<div class="tile '+cls+'"><b>'+c.id+'</b>tr. '+c.p+'<span class="st">'+st+'</span><span class="k">#'+keyOf(c,S).slice(0,6)+'</span></div>';
+    }).join('');
+    var lg=document.getElementById('simLog');
+    lg.innerHTML=S.log.length?S.log.map(function(l){return '<div>'+l+'</div>'}).join(''):'<div class="muted">Chưa chạy lượt nào. Bấm "▶ Chạy 1 lượt".</div>';
+    lg.scrollTop=lg.scrollHeight;
+    var R=mergeVerify(S), items=[];
+    items.push('<li class="'+(R.missing.length?'n':'y')+'">Sổ cái: '+R.done+'/12'+(R.missing.length?'; thiếu '+R.missing.join(', '):'')+'.</li>');
+    items.push('<li class="y">Gộp: '+R.raw+' mention → '+R.unique+' kiểm soát'+(R.merged.length?'; đã nối '+R.merged.map(esc).join(', '):'')+'.</li>');
+    if(R.partial.length)items.push('<li class="n">Bản ghi dở dang: '+R.partial.map(esc).join('; ')+'.</li>');
+    items.push(R.fact?'<li class="'+(R.unique===R.fact.controls?'y':'n')+'">Số kiểm soát: '+R.unique+' / '+R.fact.controls+' theo thư ý kiến.</li>':'<li class="w">Số kiểm soát: chưa có con số tham chiếu vì C01 chưa xong.</li>');
+    if(R.fact)items.push('<li class="'+(R.exc===R.fact.exceptions?'y':'n')+'">Số ngoại lệ: '+R.exc+' / '+R.fact.exceptions+'.</li>');
+    items.push(R.refs?'<li class="'+(R.badRefs.length?'n':'y')+'">Tham chiếu trong phản hồi (C12): '+(R.badRefs.length?'trỏ tới mã chưa có: '+R.badRefs.join(', '):'cả '+R.refs.length+' mã đều tồn tại')+'.</li>':'<li class="w">Tham chiếu: C12 chưa xong.</li>');
+    items.push('<li class="'+(R.quoteFail.length?'w':'y')+'">Câu trích tìm thấy nguyên văn: '+R.quoteOk+'/'+R.raw+(R.quoteFail.length?'; lệch: '+R.quoteFail.map(esc).join(', ')+' → gửi người duyệt':'')+'.</li>');
+    var hard=R.missing.length||R.partial.length||(R.fact&&(R.unique!==R.fact.controls||R.exc!==R.fact.exceptions))||R.badRefs.length;
+    var verdict;
+    if(R.missing.length)verdict='<div class="verdict no"><b>partial</b>: mới trích được '+R.done+'/12 chunk. Hệ thống phía sau phải hiển thị "chưa đủ", không được coi '+R.unique+' kiểm soát là toàn bộ.</div>';
+    else if(hard)verdict='<div class="verdict no"><b>Kiểm chéo thất bại</b>: đủ chunk nhưng số liệu không khớp. Xem các dòng ✗.</div>';
+    else if(R.quoteFail.length)verdict='<div class="verdict mid"><b>complete_with_review</b>: đủ và khớp; '+R.quoteFail.length+' câu trích chờ người duyệt.</div>';
+    else verdict='<div class="verdict ok"><b>complete</b>.</div>';
+    var dec='';
+    if(!R.missing.length){
+      dec='<h4 style="margin:10px 0 4px">Quyết định của người duyệt (ghi trên bản đầu tiên)</h4><ul class="chk">'+DECISIONS.map(function(x){var same=fpOf(x.id,S)===x.fp;return '<li class="'+(same?'y':'w')+'"><b>'+x.id+'</b>: "'+esc(x.d)+'" → '+(same?'giữ (vân tay nội dung không đổi)':'<span class="warnt">cần xem lại</span> (cùng id, nội dung đổi)')+'</li>'}).join('')+'</ul>';
+    }
+    document.getElementById('simMerge').innerHTML='<ul class="chk">'+items.join('')+'</ul>'+verdict+dec;
+  }
+  renderSim();
+
+  // ---------- Field-level precision / recall / F1 ----------
+  var GOLD=[
+    {id:'KS-01',kq:'Không có ngoại lệ',loi:0,trang:40},{id:'KS-02',kq:'Không có ngoại lệ',loi:0,trang:44},
+    {id:'KS-03',kq:'Không có ngoại lệ',loi:0,trang:49},{id:'KS-04',kq:'Không có ngoại lệ',loi:0,trang:56},
+    {id:'KS-05',kq:'Có ngoại lệ',loi:2,trang:59},{id:'KS-06',kq:'Không có ngoại lệ',loi:0,trang:63},
+    {id:'KS-07',kq:'Không có ngoại lệ',loi:0,trang:67}];
+  var PRED=[
+    {id:'KS-01',kq:'Không có ngoại lệ',loi:0,trang:40},{id:'KS-02',kq:'không có ngoại lệ ',loi:0,trang:44},
+    {id:'KS-04',kq:'Không có ngoại lệ',loi:0,trang:57},{id:'KS-05',kq:'Có ngoại lệ',loi:3,trang:59},
+    {id:'KS-06',kq:'Không có ngoại lệ.',loi:0,trang:63},{id:'KS-15',kq:'Không có ngoại lệ',loi:0,trang:71}];
+  var FIELDS=[['id','Mã kiểm soát','text'],['kq','Kết quả kiểm tra','text'],['loi','Số mẫu lỗi','num'],['trang','Trang','num']];
+  var ev={fuzzy:false};
+  function fz(s){return String(s).replace(/\s+/g,' ').trim().replace(/^[!,.:;\-"?|]+|[!,.:;\-"?|]+$/g,'').toLowerCase()}
+  function same(a,b,type){if(type==='num')return a===b;return ev.fuzzy?fz(a)===fz(b):a===b}
+  function scoreEval(){
+    var g={},p={};GOLD.forEach(function(r){g[r.id]=r});PRED.forEach(function(r){p[r.id]=r});
+    var rows=FIELDS.map(function(f){
+      var tp=0,fp=0,fn=0;
+      PRED.forEach(function(r){var gr=g[r.id];if(!gr){fp++;return}if(f[0]==='id'||same(r[f[0]],gr[f[0]],f[2]))tp++;else{fp++;fn++}});
+      GOLD.forEach(function(r){if(!p[r.id])fn++});
+      return {f:f,tp:tp,fp:fp,fn:fn};
+    });
+    var all={tp:0,fp:0,fn:0};rows.forEach(function(r){all.tp+=r.tp;all.fp+=r.fp;all.fn+=r.fn});
+    var perfect=GOLD.filter(function(r){var q=p[r.id];return q&&FIELDS.every(function(f){return f[0]==='id'||same(q[f[0]],r[f[0]],f[2])})}).map(function(r){return r.id});
+    return {rows:rows,all:all,perfect:perfect};
+  }
+  function prf(x){var P=x.tp+x.fp?x.tp/(x.tp+x.fp):0,R=x.tp+x.fn?x.tp/(x.tp+x.fn):0,F=P+R?2*P*R/(P+R):0;return [P,R,F]}
+  var evMatch=document.getElementById('evMatch');
+  [['0','Chính xác từng ký tự'],['1','Nới lỏng (fuzzy)']].forEach(function(o){var x=document.createElement('button');x.className='chip';x.dataset.f=o[0];x.textContent=o[1];evMatch.appendChild(x)});
+  evMatch.addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;ev.fuzzy=b.dataset.f==='1';renderEval()});
+  function renderEval(){
+    [].forEach.call(evMatch.children,function(b){setOn(b,(b.dataset.f==='1')===ev.fuzzy)});
+    var s=scoreEval();
+    var rows=s.rows.map(function(r){var m=prf(r);return ['<b>'+r.f[1]+'</b>',r.tp+' · '+r.fp+' · '+r.fn,pct(m[0]),pct(m[1]),'<b>'+pct(m[2])+'</b>']});
+    var ma=prf(s.all);
+    rows.push(['<b>Tất cả (cộng dồn)</b>',s.all.tp+' · '+s.all.fp+' · '+s.all.fn,pct(ma[0]),pct(ma[1]),'<b>'+pct(ma[2])+'</b>']);
+    // A compact numeric table (not stacked): five short columns fit a 390px screen.
+    document.getElementById('evOut').innerHTML='<div class="table-wrap"><table class="evt"><thead><tr><th>Trường</th><th>TP · FP · FN</th><th>P</th><th>R</th><th>F1</th></tr></thead><tbody>'+
+      rows.map(function(r){return '<tr>'+r.map(function(c){return '<td>'+c+'</td>'}).join('')+'</tr>'}).join('')+'</tbody></table></div>'+
+      '<p style="margin-top:8px">Bản ghi đúng mọi trường: <b>'+s.perfect.length+'/'+GOLD.length+'</b> ('+(s.perfect.join(', ')||'không có')+'). '+
+      (ev.fuzzy?'Nới lỏng gỡ được KS-02 (hoa thường, khoảng trắng) và KS-06 (dấu chấm cuối); lỗi số trang và số mẫu lỗi vẫn giữ nguyên vì số không so nới lỏng.':'Chế độ chính xác tính KS-02 và KS-06 là sai dù nghĩa đúng: luật so khớp phải được chốt trước khi so sánh hai phiên bản pipeline.')+'</p>'+
+      '<p class="sim-note">Cách đếm: bản ghi thừa KS-15 là FP ở mọi trường; hai bản ghi thiếu KS-03 và KS-07 là FN ở mọi trường; giá trị sai trên bản ghi có thật tính một FP và một FN.</p>';
+  }
+  renderEval();
+
+  // ---------- Glossary ----------
+  var G={lim:'Giới hạn context',sch:'Schema & đầu ra',pipe:'Pipeline & gộp',run:'Chạy bền',ver:'Kiểm chứng & duyệt',ev:'Đánh giá'};
+  var T=[
+    ['ctx','lim','Context window','cửa sổ ngữ cảnh','Toàn bộ token model đọc được trong một lần gọi, kể cả câu trả lời nó sinh ra.','Các model Claude mới nhất: 1M token.',['max-out','rot','lc-route'],[4]],
+    ['rot','lim','Context rot','suy giảm theo độ dài','Context càng dài thì độ chính xác và khả năng nhớ lại càng giảm, dù vẫn vừa cửa sổ.','',['lost-mid','eff-ctx'],[4]],
+    ['lost-mid','lim','Lost in the middle','lạc ở giữa','Model dùng thông tin ở đầu hoặc cuối context tốt hơn ở giữa, kể cả model long-context.','',['rot'],[1]],
+    ['eff-ctx','lim','Effective context','độ dài dùng được','Độ dài mà model còn giữ được chất lượng, thường ngắn hơn con số quảng cáo.','RULER: chỉ nửa số model giữ chất lượng ở 32K.',['rot'],[2]],
+    ['max-out','lim','Max output tokens','trần đầu ra','Số token tối đa sinh ra trong một request. Chạm trần thì JSON bị cắt.','128K khi gọi đồng bộ với các model Claude mới nhất; Batch tới 300K trên một số model (beta header).',['stop','ctx'],[4,5]],
+    ['lc-route','lim','Long-context hay chia chunk','','Đưa cả tài liệu vào một lần gọi khi vừa và chỉ cần vài trường; chia chunk khi cần liệt kê đủ nhiều bản ghi.','Self-Route chọn RAG hay long-context theo tự đánh giá của model.',['map-reduce','ctx'],[3,8]],
+    ['schema','sch','Target schema','schema đích','Định nghĩa các loại bản ghi, trường, kiểu, khóa mà phần mềm phía sau cần. Viết trước prompt.','Thông tin báo cáo, kiểm soát, kết quả kiểm tra, ngoại lệ.',['record','stable-id','enum','raw-norm','so'],[]],
+    ['record','sch','Record type','loại bản ghi','Một "bảng" trong schema: mỗi bản ghi là một dòng có khóa riêng.','Ngoại lệ: mã kiểm soát + số thứ tự.',['schema','stable-id'],[]],
+    ['req-opt','sch','Required / optional','bắt buộc / tùy chọn','Trường nào luôn phải có. Trường "có thể không có" thường khai báo là kiểu có null.','Anthropic: tối đa 24 tham số tùy chọn mỗi request strict.',['null-nf','so'],[9,10]],
+    ['enum','sch','Enum','tập giá trị đóng','Trường chỉ nhận vài giá trị định sẵn. So sánh không phân biệt hoa thường.','co_ngoai_le / khong_ngoai_le / khong_kiem_tra',['so'],[10]],
+    ['null-nf','sch','null và "không tìm thấy"','','Tách "tài liệu nói không có", "chunk này không nói tới" và "có giá trị" bằng một trường trạng thái.','status: found / stated_none / not_in_chunk',['req-opt','partial'],[13]],
+    ['raw-norm','sch','Raw / normalized value','giá trị gốc / chuẩn hóa','Lưu cả chuỗi đúng như tài liệu và giá trị đã đổi về dạng chuẩn (ngày ISO, số, đơn vị). Kiểm câu trích trên chuỗi gốc, tính toán trên giá trị chuẩn hóa.','"1,2 tỷ đồng" → 1200000000 VND',['quote-check','fp','schema'],[]],
+    ['stable-id','sch','Stable id','id ổn định','Id giữ nguyên qua các lần chạy: lấy từ khóa tự nhiên của tài liệu, không sinh ngẫu nhiên.','KS-05',['carry','er'],[]],
+    ['prov','sch','Provenance','nguồn gốc','Các trường truy vết đi kèm mỗi bản ghi: chunk, trang, câu trích, phiên bản prompt và schema.','',['grounding','stable-id'],[15]],
+    ['so','sch','Structured output','đầu ra có cấu trúc','Bắt model trả JSON đúng schema. Bảo đảm hình dạng, không bảo đảm giá trị đúng.','',['constrained','schema'],[9,10,11]],
+    ['constrained','sch','Constrained decoding','sinh có ràng buộc','Giới hạn việc chọn token để đầu ra luôn khớp schema đã biên dịch thành grammar.','',['so'],[10]],
+    ['stop','sch','stop_reason','lý do dừng','Cho biết lần gọi kết thúc bình thường, chạm max_tokens hay bị từ chối. Không bình thường thì không lưu kết quả.','max_tokens → JSON có thể dở dang.',['max-out','ledger'],[9,10]],
+    ['map-reduce','pipe','Map-reduce','','Trích từng chunk độc lập (map) rồi gộp kết quả bằng code (reduce).','LangGraph: Send + reducer.',['locate','er','chunk-ctx'],[22]],
+    ['chunk-ctx','pipe','Cross-chunk context','ngữ cảnh xuyên chunk','Phần đầu ngắn đi kèm mỗi chunk: đường dẫn mục, hàng tiêu đề bảng, thuật ngữ được định nghĩa. Chỉ để hiểu; giá trị vẫn phải trích từ chính chunk.','Phần 4 › Truy cập',['map-reduce','truth'],[]],
+    ['locate','pipe','Locate then extract','định vị rồi trích','Lượt rẻ tìm chunk nào chứa loại bản ghi nào; lượt kỹ chỉ trích ở đó với schema phù hợp.','',['map-reduce','schema-guided','ledger'],[]],
+    ['schema-guided','pipe','Schema-guided extraction','trích theo schema','Tên và mô tả trường đóng vai đề bài cho model; ví dụ mẫu định hướng hành vi.','Document AI dùng tên và mô tả trường để dựng prompt.',['schema'],[15,17]],
+    ['multi-pass','pipe','Multiple passes','nhiều lượt','Chạy trích nhiều lần để tăng recall hoặc so độ nhất quán. Tốn gấp nhiều lần, sinh thêm bản trùng.','LangExtract: extraction_passes.',['er','bestofn'],[13,15]],
+    ['mention','pipe','Mention','lần nhắc tới','Một lần một thực thể xuất hiện trong một chunk. Nhiều mention có thể là cùng một bản ghi.','KS-04 có mention ở C05 và C06.',['er','split'],[]],
+    ['split','pipe','Split record','bản ghi bị cắt','Bản ghi vắt qua ranh giới chunk hoặc trang, mỗi chunk chỉ thấy một phần.','Hàng bảng trang 56–57.',['er','mention'],[20]],
+    ['er','pipe','Entity resolution','nhận diện thực thể','Nhận ra các mô tả khác nhau cùng chỉ một thực thể rồi gộp chúng.','Gộp KS-4, KS 04, KS-04.',['dedupe','stable-id'],[31]],
+    ['dedupe','pipe','Dedupe','bỏ trùng','Loại bản ghi trùng sau khi gộp, giữ danh sách nguồn của mọi bản đóng góp.','',['er','prov'],[]],
+    ['sos','pipe','Summary of summary','tóm tắt của tóm tắt','Gộp qua văn xuôi nhiều tầng. Nghiên cứu tóm tắt sách thấy gộp phân cấp giữ ít chi tiết hơn cập nhật dần; trang này vì thế không dùng nó làm đầu vào trích xuất.','',['truth','map-reduce'],[28]],
+    ['ckpt','run','Checkpoint','điểm lưu','Ghi kết quả của mỗi chunk ngay khi xong để lượt sau làm tiếp từ đó.','',['resume','cache','batch'],[23,24]],
+    ['resume','run','Resume','chạy tiếp','Lượt mới đọc sổ cái, bỏ qua chunk đã xong, làm tiếp phần còn lại.','',['ckpt','ledger','budget'],[23]],
+    ['idem','run','Idempotency','lũy đẳng (lặp lại an toàn)','Làm một việc nhiều lần cho cùng kết quả như một lần. Cần vì retry là at-least-once.','Ghi upsert theo id bản ghi.',['idem-key','alo'],[23,24,25]],
+    ['idem-key','run','Idempotency key','khóa lũy đẳng','Khóa nhận diện cùng một việc qua các lần thử, lấy từ dữ liệu đã lưu bền.','Stripe trả lại kết quả đã lưu cho cùng khóa.',['idem'],[23,25]],
+    ['alo','run','At-least-once','ít nhất một lần','Bảo đảm việc được chạy, nhưng có thể chạy hơn một lần.','Retry trong LangGraph.',['idem'],[23]],
+    ['cache','run','Cache key','khóa cache','Hash nội dung chunk + phiên bản prompt, schema, model. Không đổi thì dùng lại kết quả.','',['ckpt','idem'],[22,26]],
+    ['budget','run','Time-limited pass','lượt có giới hạn thời gian','Mỗi lượt chạy tối đa N giây rồi bị dừng. Chỉ có tiến độ khi có checkpoint.','',['ckpt','resume'],[]],
+    ['batch','run','Batch API','xử lý theo lô','Gửi nhiều request bất đồng bộ, rẻ hơn, có custom_id để ghép kết quả.','Anthropic: giảm 50%, hết hạn sau 24 giờ.',['cache','ledger'],[27]],
+    ['ledger','ver','Ledger','sổ cái','Bảng trạng thái của mọi chunk (chờ, xong, lỗi, bỏ qua có lý do). Chứng minh mọi chunk đã được xử lý; không chứng minh mọi bản ghi trong chunk đã được trích.','',['partial','resume','cross'],[]],
+    ['cross','ver','Cross-check','kiểm chéo','So số đếm, tổng, tham chiếu với chính con số tài liệu nêu và với các bản ghi khác.','14 kiểm soát, 3 ngoại lệ theo thư ý kiến.',['ledger'],[]],
+    ['grounding','ver','Grounding','gắn với nguồn','Mỗi giá trị trỏ về đúng vị trí trong tài liệu gốc.','LangExtract: char_interval; không định vị được thì None.',['quote-check','prov'],[15,19]],
+    ['quote-check','ver','Quote check','kiểm câu trích','Code tìm câu trích trong trang đã ghi sau khi chuẩn hóa; không thấy thì gửi người duyệt.','"hằng quý" ≠ "mỗi quý".',['grounding'],[13]],
+    ['partial','ver','Partial extraction','trích xuất một phần','Trạng thái của lần chạy khi còn chunk thiếu; hiển thị rõ thay vì âm thầm thiếu.','9/12 phần.',['ledger'],[]],
+    ['carry','ver','Carry-forward','giữ quyết định','Khi chạy lại, bản ghi cùng id và cùng vân tay nội dung giữ quyết định của người duyệt.','',['stable-id','fp'],[]],
+    ['fp','ver','Content fingerprint','vân tay nội dung','Hash của những gì bám vào tài liệu (câu trích nguyên văn, giá trị chuẩn hóa, enum), không gồm lời model tự viết. Dùng để biết nội dung có đổi không.','',['carry'],[]],
+    ['conf','ver','Confidence','độ tin cậy','Xác suất ước lượng mà một số dịch vụ document AI trả cho từng trường, dùng để quyết định gửi người duyệt.','Azure: 0–1.',['hitl','verbal'],[19,20]],
+    ['verbal','ver','Verbalized confidence','độ tự tin tự khai','Model tự nói nó chắc bao nhiêu. Thường tự tin quá mức nên không nên dùng làm ngưỡng.','',['conf','bestofn'],[30]],
+    ['bestofn','ver','Best-of-N consistency','độ nhất quán nhiều lần','Chạy cùng prompt nhiều lần và so; chỗ không nhất quán có thể là bịa.','',['verbal','multi-pass'],[13,30]],
+    ['hitl','ver','Human review','người duyệt','Người làm nghề duyệt trường nghi ngờ và một mẫu ngẫu nhiên.','',['conf','carry'],[19,21]],
+    ['truth','ver','Ground truth rule','quy tắc nguồn sự thật','PDF gốc là sự thật; tóm tắt và kết quả cũ chỉ là dữ liệu phái sinh.','',['sos','quote-check','chunk-ctx'],[]],
+    ['golden','ev','Golden set','bộ nhãn tay','Tài liệu thật được người làm nghề điền đúng bản ghi theo schema, dùng làm đáp án.','',['prec','rec'],[29]],
+    ['prec','ev','Precision','độ chính xác','Tỷ lệ giá trị trích ra khớp nhãn. Thấp nghĩa là bịa hoặc sai.','TP / (TP + FP)',['rec','f1'],[18]],
+    ['rec','ev','Recall','độ phủ','Tỷ lệ giá trị trong nhãn được trích đúng. Thấp nghĩa là bỏ sót.','TP / (TP + FN)',['prec','f1'],[18]],
+    ['f1','ev','F1','','Trung bình điều hòa của precision và recall.','2PR / (P + R)',['prec','rec','micro','golden'],[18]],
+    ['micro','ev','Micro average','cộng dồn','Cộng TP, FP, FN của mọi trường rồi mới tính; trường nhiều giá trị nặng ký hơn.','Dòng "Tất cả" ở mục 13.',['f1','fuzzy'],[18]],
+    ['fuzzy','ev','Exact / fuzzy match','so khớp chính xác / nới lỏng','Luật quyết định hai giá trị có "bằng nhau" không. Phải chốt trước khi so hai phiên bản pipeline.','Không so nới lỏng cho số.',['f1'],[18]]
+  ];
+  var byId={};T.forEach(function(t){byId[t[0]]=t});
+  var grid=document.getElementById('glossGrid'), chips=document.getElementById('glossChips'), search=document.getElementById('glossSearch'), activeG='all';
+  function fold(s){return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\u0111/g,'d').replace(/[\u2013\u2014-]+/g,' ').replace(/\s+/g,' ')}
+  function renderGloss(){
+    var q=fold(search.value.trim()); grid.innerHTML='';var n=0;
+    T.forEach(function(t){
+      if(activeG!=='all'&&t[1]!==activeG)return;
+      var hay=fold(t[2]+' '+t[3]+' '+t[4]+' '+t[5]); if(q&&hay.indexOf(q)<0)return; n++;
+      var d=document.createElement('div');d.className='card term';d.id='term-'+t[0];
+      var rel=t[6].filter(function(r){return byId[r]}).map(function(r){return '<a href="#term-'+r+'" data-goto="'+r+'">'+esc(byId[r][2])+'</a>'}).join(', ');
+      var cs=(t[7]||[]).filter(function(n){return n===(n|0)&&document.getElementById('src-'+n)}).map(function(n){return '<a href="#src-'+n+'">['+n+']</a>'}).join('');if(cs)cs='<sup class="cite">'+cs+'</sup>';
+      d.innerHTML='<span class="tag">'+G[t[1]]+'</span><h4>'+esc(t[2])+(t[3]?' <span class="en">· '+esc(t[3])+'</span>':'')+'</h4><p>'+esc(t[4])+(t[5]?'':cs)+'</p>'+(t[5]?'<p class="ex">Ví dụ: '+esc(t[5])+cs+'</p>':'')+(rel?'<div class="rel">Liên quan: '+rel+'</div>':'');
+      grid.appendChild(d);
+    });
+    if(!n)grid.innerHTML='<p class="muted">Không có khái niệm khớp.</p>';
+  }
+  var all=document.createElement('button');all.className='chip on';all.textContent='Tất cả ('+T.length+')';all.dataset.g='all';all.setAttribute('aria-pressed','true');chips.appendChild(all);
+  Object.keys(G).forEach(function(k){var b=document.createElement('button');b.className='chip';b.dataset.g=k;b.setAttribute('aria-pressed','false');b.textContent=G[k];chips.appendChild(b)});
+  chips.addEventListener('click',function(e){var b=e.target.closest('.chip');if(!b)return;activeG=b.dataset.g;[].forEach.call(chips.children,function(c){setOn(c,c===b)});renderGloss()});
+  search.addEventListener('input',renderGloss);
+  grid.addEventListener('click',function(e){var a=e.target.closest('a[data-goto]');if(!a)return;e.preventDefault();
+    if(!document.getElementById('term-'+a.dataset.goto)){activeG='all';search.value='';[].forEach.call(chips.children,function(c){setOn(c,c.dataset.g==='all')});renderGloss()}
+    var t=document.getElementById('term-'+a.dataset.goto);t.scrollIntoView({behavior:'smooth',block:'center'});t.style.outline='2px solid var(--accent)';setTimeout(function(){t.style.outline=''},1500)});
+  renderGloss();
+
+  // ---------- Checklist persistence ----------
+  [].forEach.call(document.querySelectorAll('input[data-k]'),function(cb){
+    cb.checked=safeGet('lde-'+cb.dataset.k)==='1';
+    cb.addEventListener('change',function(){safeSet('lde-'+cb.dataset.k,cb.checked?'1':'0')});
+  });
+
+  // ---------- Active TOC ----------
+  var links=[].slice.call(document.querySelectorAll('#toc a'));
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(l){var on=l.getAttribute('href')==='#'+e.target.id;l.classList.toggle('active',on);if(on){var nav=l.parentNode;nav.scrollLeft=l.offsetLeft-nav.offsetLeft-(nav.clientWidth-l.offsetWidth)/2}})}})},{rootMargin:'-40% 0px -55% 0px'});
+    document.querySelectorAll('main section').forEach(function(s){io.observe(s)});
+  }
+})();
+</script>
+</body>
+</html>

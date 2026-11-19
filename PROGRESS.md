@@ -42,7 +42,7 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 
 ## Trạng thái các chủ đề
 
-### Đã publish (27)
+### Đã publish (28)
 
 | Slug | Nguồn | Ghi chú |
 |---|---|---|
@@ -73,6 +73,7 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 | `langsmith` | 44 | Publish 2026-11-19. Bài 3/3 chuỗi LangChain. Giá trace lấy từ trang giá chính thức ngày 2026-11-19 (0.005 LSU/trace, 1 LSU = $1); giá đổi thì cập nhật. Review: `_work/notes/kongming-261118-langsmith-review.md` |
 | `llm-rubric-grading` | 31 | Publish 2026-11-19. Dùng LLM chấm điểm như tính năng sản phẩm, khác `llm-evaluation`. Review: `_work/notes/kongming-261119-llm-rubric-grading-review.md` |
 | `document-parsing-chunking` | 35 | Publish 2026-11-19. Có playground chunker. Review: `_work/notes/kongming-261119-document-parsing-chunking-review.md` |
+| `long-document-extraction` | 32 | Publish 2026-11-19. Có mô phỏng chạy theo lượt với checkpoint và sổ cái, máy tính F1. Review: `_work/notes/kongming-261119-long-document-extraction-review.md` |
 
 ### Bản nháp trong repo, chưa publish (nằm trong `exclude`)
 
