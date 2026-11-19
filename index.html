@@ -156,6 +156,7 @@ h1 .w:nth-child(1){animation-delay:.35s}h1 .w:nth-child(2){animation-delay:.47s}
 .replay:hover{color:var(--text)}
 .replay[hidden]{display:none}
 
+.fine{display:inline-block}
 footer{width:100%;max-width:1160px;margin:0 auto;padding:8px 16px 28px;color:var(--muted);font-size:14px;text-align:center}
 
 @media (min-width:960px){
@@ -228,7 +229,7 @@ footer{width:100%;max-width:1160px;margin:0 auto;padding:8px 16px 28px;color:var
   </section>
 </main>
 
-<footer>© 2026 Trần Văn Tuấn <button class="replay" id="replay" type="button" hidden data-t="replay">Xem lại cảnh lắp ráp</button></footer>
+<footer><span class="fine">© 2026 Trần Văn Tuấn</span> <button class="replay" id="replay" type="button" hidden data-t="replay">Xem lại cảnh lắp ráp</button></footer>
 <div class="cursors" id="cursors" aria-hidden="true"></div>
 
 <script>
@@ -538,22 +539,32 @@ footer{width:100%;max-width:1160px;margin:0 auto;padding:8px 16px 28px;color:var
     el.innerHTML='<svg viewBox="0 0 24 24"><path d="M3 2l17 9.5-7.4 1.9L9 21z"/></svg><span>'+CUR[c][lang]+'</span>';
     layer.appendChild(el);return el;
   }
+  // Every piece that can fall, with the cursor that owns it.
+  var FALLS=[['.mono,.nav .menu,#langBtn,#themeBtn,.fine,#replay',0],['h1 .w,.bio',1],['.chip,.role',2],['.dock a,.handles span',3],['.orbit .dot',4]];
+  // Pieces are drawn from a shuffled bag, so every piece falls once before any falls again.
+  var bag=[];
+  function drawPieces(n,vw,vh){
+    var all=[];FALLS.forEach(function(o){[].forEach.call(document.querySelectorAll(o[0]),function(el){el.owner=o[1];all.push(el)})});
+    var out=[],refills=0;
+    while(out.length<n){
+      if(!bag.length){if(refills++>1)break;bag=all.slice().sort(function(){return Math.random()-.5})}
+      var el=bag.shift(),r=el.getBoundingClientRect();
+      if(r.width&&r.top>8&&r.bottom<vh-8&&r.left>4&&r.right<vw-4&&out.indexOf(el)<0)out.push(el);
+    }
+    return out;
+  }
   function mischief(){
     if(replay.hidden||document.hidden){idleNext();return}
     var vw=document.documentElement.clientWidth,vh=innerHeight,m=me.getBoundingClientRect();
     if(m.bottom<0||m.top>vh){idleNext();return}
-    // Two to four pieces fall each time, from any part of the page; each piece goes back
+    // Two to four pieces fall each time, from anywhere on the page; each piece goes back
     // with the cursor that owns it, so several cursors can come out together.
-    var pool=[];
-    [['.mono,.nav .menu,#langBtn,#themeBtn',0],['h1 .w',1],['.chip,.role',2],['.dock a,.handles span',3]].forEach(function(o){
-      [].forEach.call(document.querySelectorAll(o[0]),function(el){var r=el.getBoundingClientRect();if(r.top>8&&r.bottom<vh-8&&r.left>4&&r.right<vw-4){el.owner=o[1];pool.push(el)}});
-    });
+    var pool=drawPieces(2+Math.floor(Math.random()*3),vw,vh);
     if(pool.length<2){idleNext();return}
-    pool.sort(function(){return Math.random()-.5});pool=pool.slice(0,2+Math.floor(Math.random()*Math.min(3,pool.length-1)));
     running=running.filter(function(a){return a.playState!=='finished'});
     root.classList.add('building');
     var A={x:m.left+scrollX+m.width/2,y:m.top+scrollY+m.height/2};
-    var occ=[].slice.call(document.querySelectorAll('.mono,.nav .menu,#langBtn,#themeBtn,h1 .w,.chip,.role-box,.bio,.dock a,.handles span,#me')).map(function(e){return box(e,6)});
+    var occ=[].slice.call(document.querySelectorAll('.mono,.nav .menu,#langBtn,#themeBtn,.fine,#replay,h1 .w,.chip,.role-box,.bio,.dock a,.handles span,.orbit .dot,#me')).map(function(e){return box(e,6)});
     pool.forEach(function(el,i){
       var r=el.getBoundingClientRect(),own=box(el,6),rest=occ.filter(function(q){return q.l!==own.l||q.t!==own.t}),cands=[];
       [50,70,90,110,130,30,150].forEach(function(dy){[0,-30,30,-60,60,-90,90].forEach(function(dx){cands.push([dx+Math.round((Math.random()-.5)*16),dy])})});
