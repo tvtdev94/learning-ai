@@ -88,7 +88,9 @@
 .season .bit{transform-box:fill-box;transform-origin:center}
 .season .glow{animation:flicker 2.4s ease-in-out infinite}
 .season .flag{transform-box:fill-box;transform-origin:0 50%;animation:flutter 2.6s ease-in-out infinite alternate}
-.season .ground.bunt{top:0;bottom:auto;height:44px}
+.season .ground.bunt{top:0;bottom:auto;height:44px;width:calc(50vw - 600px);display:none}
+.season .ground.bunt.r{left:auto;right:0}
+@media (min-width:1400px){.season .ground.bunt{display:block}}
 .season .moon{position:absolute;top:max(68px,8%);left:max(3%,calc(50vw - 600px));width:clamp(44px,11vw,110px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 40% 38%,#fff8de,#f6d77c 70%);box-shadow:0 0 50px 18px rgba(246,215,124,.35);opacity:.9}
 :root[data-theme="light"] .season .moon{box-shadow:0 0 0 2px #e0a82e,0 0 40px 12px rgba(224,168,46,.3)}
 

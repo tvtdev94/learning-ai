@@ -164,15 +164,17 @@ var DECO={
       hang(heart(22,62,1.6,'var(--heart1)')+'<path d="M22 79V96" stroke="var(--heart2)" stroke-width="1.5"/>'+heart(22,106,.9,'var(--heart2)'),'var(--heart2)');
   },
   birthday:function(){
-    // Bunting along the top, and a cake with one candle in the corner.
-    var b='<svg class="ground bunt" viewBox="0 0 1200 44" preserveAspectRatio="xMidYMin slice" aria-hidden="true"><path d="M0 4Q150 34 300 4Q450 34 600 4Q750 34 900 4Q1050 34 1200 4" stroke="var(--bark)" stroke-width="1.2" fill="none"/>';
-    for(var x=12,i=0;x<1200;x+=30,i++){var t=(x%300)/300,y=4+60*t*(1-t);b+='<path fill="var(--cf'+(1+i%5)+')" d="M'+(x-9)+' '+f1(y)+'h18l-9 16z"/>'}
+    // Bunting hangs in the empty margins on both sides of the top bar (wide screens only), and a cake
+    // with one candle sits in the corner. The flags keep their size; a wider margin shows more of them.
+    var g='<path d="M0 4Q150 34 300 4Q450 34 600 4" stroke="var(--bark)" stroke-width="1.2" fill="none"/>';
+    for(var x=12,i=0;x<600;x+=30,i++){var t=(x%300)/300,y=4+60*t*(1-t);g+='<path fill="var(--cf'+(1+i%5)+')" d="M'+(x-9)+' '+f1(y)+'h18l-9 16z"/>'}
+    var b=['l xMinYMin','r xMaxYMin'].map(function(v){v=v.split(' ');return '<svg class="ground bunt '+v[0]+'" viewBox="0 0 600 44" preserveAspectRatio="'+v[1]+' slice" aria-hidden="true">'+g+'</svg>'}).join('');
     var c='<svg class="corner" viewBox="0 0 220 170" aria-hidden="true">'+bit(balloonDeco(48,48,'var(--cf2)'))+bit(balloonDeco(78,30,'var(--cf4)'))+
       '<rect x="100" y="112" width="96" height="50" rx="6" fill="var(--cake)"/><path d="M100 124q8 10 16 0t16 0 16 0 16 0 16 0 16 0V116a6 6 0 0 0-6-6h-84a6 6 0 0 0-6 6z" fill="var(--icing)"/>'+
       '<rect x="92" y="160" width="112" height="6" rx="3" fill="var(--bark)"/>'+
       bit('<rect x="145" y="88" width="6" height="22" rx="2" fill="var(--cf1)"/><path class="glow" d="M148 72q7 8 0 15-7-7 0-15z" fill="#ffb627"/>')+
       '<g fill="var(--cf3)"><circle cx="112" cy="140" r="3"/><circle cx="136" cy="146" r="3"/><circle cx="160" cy="140" r="3"/><circle cx="184" cy="146" r="3"/></g></svg>';
-    return b+'</svg>'+c;
+    return b+c;
   },
   trungthu:function(){
     return '<div class="moon"></div>'+hang('<g transform="translate(22 72) scale(1.6)"><circle r="11" fill="none" stroke="var(--gold)" stroke-width="1"/><path fill="#d62828" d="M0-10l3 6.2 6.6.9-4.8 4.6 1.2 6.6L0 5.1l-6 3.2 1.2-6.6-4.8-4.6 6.6-.9z"/><circle r="3" fill="#ffe680"/></g><path d="M22 90v26" stroke="var(--gold)" stroke-width="1.5"/>');
