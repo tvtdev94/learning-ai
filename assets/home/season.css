@@ -1,0 +1,30 @@
+/* season layer: a tinted glow plus falling or rising particles, picked from the date in Vietnam */
+.season{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;
+  --snow:#ffffff;--peach:#f59bc0;--mai:#f6c431;--leaf1:#e0782f;--leaf2:#c94a24;--leaf3:#e3a83c;--fly:#e3f56b;--lamp:#e5483a;--lamp2:#f39a2b}
+:root[data-theme="light"] .season{--snow:#8fb0dc;--peach:#e6709f;--mai:#d9a400;--fly:#a88a00}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]) .season{--snow:#8fb0dc;--peach:#e6709f;--mai:#d9a400;--fly:#a88a00}}
+.season i{position:absolute;top:0;display:block;opacity:var(--o,.85)}
+.season .snow{border-radius:50%;background:var(--snow);filter:blur(.4px);animation:fall var(--t) linear var(--d) infinite,sway var(--s) ease-in-out var(--d) infinite alternate}
+.season .petal{border-radius:70% 0 70% 0;background:var(--c);animation:fall var(--t) linear var(--d) infinite,sway var(--s) ease-in-out var(--d) infinite alternate,flip var(--s) linear var(--d) infinite}
+.season .leaf{border-radius:0 80% 0 80%;background:var(--c);animation:fall var(--t) linear var(--d) infinite,sway var(--s) ease-in-out var(--d) infinite alternate,flip var(--s) linear var(--d) infinite}
+.season .fly{border-radius:50%;background:var(--fly);box-shadow:0 0 8px 3px var(--fly);animation:drift var(--t) ease-in-out var(--d) infinite alternate,glint var(--s) ease-in-out var(--d) infinite}
+.season .lamp{border-radius:40% 40% 46% 46%;background:radial-gradient(circle at 50% 40%,#ffe2a8,var(--c) 70%);box-shadow:0 0 14px 4px rgba(243,154,43,.45);animation:rise var(--t) linear var(--d) infinite,sway var(--s) ease-in-out var(--d) infinite alternate}
+.season .moon{position:absolute;top:max(68px,8%);left:3%;width:clamp(44px,11vw,110px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 40% 38%,#fff8de,#f6d77c 70%);box-shadow:0 0 50px 18px rgba(246,215,124,.35);opacity:.9}
+[data-season="spring"] .season{background:radial-gradient(70% 55% at 15% 100%,rgba(245,155,192,.16),transparent 70%)}
+[data-season="summer"] .season{background:radial-gradient(70% 55% at 15% 100%,rgba(110,200,120,.14),transparent 70%)}
+[data-season="autumn"] .season{background:radial-gradient(70% 55% at 15% 100%,rgba(224,120,47,.16),transparent 70%)}
+[data-season="winter"] .season{background:radial-gradient(70% 55% at 15% 100%,rgba(143,176,220,.18),transparent 70%)}
+[data-season="tet"] .season{background:radial-gradient(70% 55% at 15% 100%,rgba(229,57,53,.16),transparent 70%),radial-gradient(50% 40% at 90% 100%,rgba(246,196,49,.14),transparent 70%)}
+[data-season="trungthu"] .season{background:radial-gradient(60% 50% at 12% 10%,rgba(246,215,124,.2),transparent 70%)}
+[data-season="noel"] .season{background:radial-gradient(60% 50% at 10% 100%,rgba(214,40,57,.15),transparent 70%),radial-gradient(50% 45% at 92% 100%,rgba(30,140,80,.14),transparent 70%)}
+@keyframes fall{from{translate:0 -6vh}to{translate:var(--dx) 106vh}}
+@keyframes rise{from{translate:0 106vh}to{translate:var(--dx) -12vh}}
+@keyframes sway{from{transform:translateX(calc(var(--w) * -1))}to{transform:translateX(var(--w))}}
+@keyframes flip{from{rotate:0deg}to{rotate:var(--r)}}
+@keyframes drift{from{translate:0 0}to{translate:var(--dx) var(--dy)}}
+@keyframes glint{0%,100%{opacity:.1}50%{opacity:.95}}
+/* footer button that shows the current look and switches it off or on */
+.season-btn{display:inline-flex;align-items:center;gap:6px;min-height:40px;margin:0 6px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--muted);font:inherit;font-size:14px;cursor:pointer;transition:border-color .2s,color .2s}
+.season-btn:hover{border-color:var(--accent);color:var(--text)}
+.season-btn[hidden]{display:none}
+@media (prefers-reduced-motion: reduce){.season i{display:none}}

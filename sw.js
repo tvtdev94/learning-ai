@@ -1,8 +1,10 @@
 // Offline support for the "Sổ tay" app.
 // Network first so new content shows up as soon as it is published;
 // every page you open is also saved, so it still opens when offline.
-const CACHE = 'so-tay-v2';
-const SHELL = ['./', './so-tay/', './manifest.webmanifest', './icons/icon-192.png'];
+const CACHE = 'so-tay-v3';
+// The homepage keeps its styles and scripts in assets/home/, so they are saved with it.
+const HOME = ['base.css', 'season.css', 'cursors.css', 'home.js', 'sky.js', 'season.js', 'profile.js', 'cursors.js'].map((f) => './assets/home/' + f);
+const SHELL = ['./', './so-tay/', './manifest.webmanifest', './icons/icon-192.png', ...HOME];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)));

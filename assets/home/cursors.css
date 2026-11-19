@@ -1,0 +1,24 @@
+/* multiplayer cursors that assemble the page on load */
+.cursors{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:5}
+.cur{position:absolute;left:0;top:0;opacity:0;will-change:transform,opacity}
+.cur svg{display:block;width:22px;height:22px;fill:var(--cc);stroke:#fff;stroke-width:1.5;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25))}
+.cur span{position:absolute;left:16px;top:18px;white-space:nowrap;font-size:12px;font-weight:700;line-height:1;color:#fff;background:var(--cc);padding:5px 8px;border-radius:999px 999px 999px 4px}
+.burst{position:absolute;width:36px;height:36px;margin:-18px 0 0 -18px;border-radius:50%;border:2px solid;opacity:0}
+.grab{outline:2px solid var(--gc);outline-offset:6px;border-radius:14px}
+.me.grab{border-radius:50%;outline-offset:12px}
+.ring.grab{border-radius:50%;outline-offset:3px}
+.comet{position:absolute;left:0;top:0;width:0;height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,var(--star));transform-origin:0 0;opacity:0;will-change:transform,width,opacity}
+.comet::after{content:"";position:absolute;right:-4px;top:50%;width:8px;height:8px;margin-top:-4px;border-radius:50%;background:var(--star);box-shadow:0 0 10px 3px var(--star)}
+.asm .ring{animation:spin var(--dur) linear infinite var(--dir)}
+.asm .me,.asm h1 .w,.asm .role,.asm .bio,.asm .contact{animation:none}
+.asm .bio mark{animation:none}
+/* a fallen piece raises an alarm until its cursor picks it up */
+.fallen{outline:2px dashed #e5484d;outline-offset:5px;border-radius:12px}
+.sos{position:absolute;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:#e5484d;color:#fff;font:800 14px/22px system-ui,sans-serif;text-align:center;box-shadow:0 0 0 0 rgba(229,72,77,.6);animation:sos 1s ease-out infinite}
+@keyframes sos{0%{box-shadow:0 0 0 0 rgba(229,72,77,.6);scale:1}50%{scale:1.15}100%{box-shadow:0 0 0 12px rgba(229,72,77,0);scale:1}}
+.ripple.alarm{border-color:#e5484d}
+/* orbits hold still while the cursors build them, so every grab lands on its piece */
+.building .ring,.building .chip{animation-play-state:paused}
+.replay{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 4px;border:0;background:none;color:var(--muted);font:inherit;font-size:14px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.replay:hover{color:var(--text)}
+.replay[hidden]{display:none}
