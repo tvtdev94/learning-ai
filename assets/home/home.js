@@ -3,3 +3,4 @@ import './sky.js';
 import './season.js';
 import './profile.js';
 import './cursors.js';
+import './now.js';

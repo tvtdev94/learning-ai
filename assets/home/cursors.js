@@ -249,7 +249,7 @@ function mischief(){
   running=running.filter(function(a){return a.playState!=='finished'});
   root.classList.add('building');
   var A={x:m.left+scrollX+m.width/2,y:m.top+scrollY+m.height/2};
-  var occ=[].slice.call(document.querySelectorAll('.mono,.nav .menu,#langBtn,#themeBtn,.fine,#lookBtn,#replay,h1 .w,.chip,.role-box,.bio,.dock a,.handles span,.orbit .dot,#me')).map(function(e){return box(e,6)});
+  var occ=[].slice.call(document.querySelectorAll('.mono,.nav .menu,#langBtn,#themeBtn,.fine,#lookBtn,#replay,h1 .w,.chip,.role-box,.bio,.dock a,.handles span,.orbit .dot,#me,.now h2,.now-list li')).map(function(e){return box(e,6)});
   pool.forEach(function(el,i){
     var r=el.getBoundingClientRect(),own=box(el,6),rest=occ.filter(function(q){return q.l!==own.l||q.t!==own.t}),cands=[];
     [50,70,90,110,130,30,150].forEach(function(dy){[0,-30,30,-60,60,-90,90].forEach(function(dx){cands.push([dx+Math.round((Math.random()-.5)*16),dy])})});

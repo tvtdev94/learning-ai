@@ -29,11 +29,12 @@
 <link rel="stylesheet" href="assets/home/season.css?v={{ v }}">
 <link rel="stylesheet" href="assets/home/cursors.css?v={{ v }}">
 <!-- The modules import each other as ./name.js; this map sends those imports to the same build version. -->
-<script type="importmap">{"imports":{"./assets/home/sky.js":"./assets/home/sky.js?v={{ v }}","./assets/home/season.js":"./assets/home/season.js?v={{ v }}","./assets/home/profile.js":"./assets/home/profile.js?v={{ v }}","./assets/home/cursors.js":"./assets/home/cursors.js?v={{ v }}"}}</script>
+<script type="importmap">{"imports":{"./assets/home/sky.js":"./assets/home/sky.js?v={{ v }}","./assets/home/season.js":"./assets/home/season.js?v={{ v }}","./assets/home/profile.js":"./assets/home/profile.js?v={{ v }}","./assets/home/cursors.js":"./assets/home/cursors.js?v={{ v }}","./assets/home/now.js":"./assets/home/now.js?v={{ v }}"}}</script>
 <link rel="modulepreload" href="assets/home/sky.js?v={{ v }}">
 <link rel="modulepreload" href="assets/home/season.js?v={{ v }}">
 <link rel="modulepreload" href="assets/home/profile.js?v={{ v }}">
 <link rel="modulepreload" href="assets/home/cursors.js?v={{ v }}">
+<link rel="modulepreload" href="assets/home/now.js?v={{ v }}">
 </head>
 <body>
 <div class="sky" id="sky" aria-hidden="true"></div>
@@ -83,6 +84,12 @@
       <li><a href="https://www.facebook.com/tranvantuan021094" data-tip="Facebook" aria-label="Facebook: facebook.com/tranvantuan021094" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.3v7A10 10 0 0 0 22 12z"/></svg></a></li>
     </ul>
     <p class="handles"><span>tranvantuanit210@gmail.com</span><span>0344 446 301</span></p>
+  </section>
+
+  <section class="now" aria-labelledby="nowH">
+    <h2 id="nowH" data-t="now">Gần đây tôi đang làm</h2>
+    <!-- now.js fills this with the latest commit of each recently pushed public repo; the empty rows hold its height. -->
+    <ol class="now-list" id="nowList" aria-busy="true"><li class="sk"></li><li class="sk"></li><li class="sk"></li></ol>
   </section>
 </main>
 

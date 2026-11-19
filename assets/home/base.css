@@ -124,14 +124,26 @@ h1 .w:nth-child(1){animation-delay:.35s}h1 .w:nth-child(2){animation-delay:.47s}
 
 
 .fine{display:inline-block}
+/* latest commits (now.js): one row per repo, three rows tall from the start so nothing shifts */
+.now{animation:rise .7s var(--ease) 1.2s both;max-width:560px;width:100%;min-width:0;margin:0 auto;text-align:left}
+.now h2{margin:0 0 8px;font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.now-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:6px;min-height:calc(3 * 40px + 2 * 6px)}
+.now-list a{display:flex;align-items:baseline;gap:10px;min-height:40px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:color-mix(in srgb,var(--surface) 80%,transparent);color:var(--text);text-decoration:none;font-size:14px;transition:border-color .2s,translate .2s var(--ease)}
+.now-list a:hover,.now-list a:focus-visible{border-color:var(--accent);translate:2px 0}
+.now-list b{flex:none;color:var(--accent)}
+.now-list .msg{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--muted)}
+.now-list time{flex:none;font-size:12px;color:var(--muted)}
+.now-list .now-fail{color:var(--muted)}
+.now-list .sk{height:40px;border-radius:12px;background:var(--surface-2);opacity:.5}
 footer{width:100%;max-width:1160px;margin:0 auto;padding:8px 16px 28px;color:var(--muted);font-size:14px;text-align:center}
 
 @media (min-width:960px){
   .bar{padding:20px 32px}
-  main{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);grid-template-areas:"text orbit" "contact orbit";align-content:center;column-gap:56px;row-gap:36px;padding:8px 32px 40px}
+  main{grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);grid-template-areas:"text orbit" "contact orbit" "now orbit";align-content:center;column-gap:56px;row-gap:36px;padding:8px 32px 40px}
   .text{grid-area:text;text-align:left;align-self:end}
   .orbit{--size:min(40vw,470px);grid-area:orbit;align-self:center}
   .contact{grid-area:contact;align-self:start}
+  .now{grid-area:now;margin:0;align-self:start}
   .contact{text-align:left}
   .dock,.handles{justify-content:flex-start}
   .bio{margin-left:0;font-size:19px}
