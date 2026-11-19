@@ -58,9 +58,9 @@ a.topic:hover,a.topic:focus-visible{border-color:var(--accent);transform:transla
 .topic .go{margin-top:12px;color:var(--accent);font-weight:600;font-size:14px}
 footer{color:var(--muted);font-size:14px;margin-top:32px}
 /* graph view */
-:root{--g-code:#16703d;--g-life:#8f4c0a;--g-cc:#7440b8;--edge:#c9ced8}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--g-code:#4cc184;--g-life:#e39a4f;--g-cc:#b892ff;--edge:#3a414c}}
-:root[data-theme="dark"]{--g-code:#4cc184;--g-life:#e39a4f;--g-cc:#b892ff;--edge:#3a414c}
+:root{--g-code:#16703d;--g-life:#8f4c0a;--g-tips:#7440b8;--edge:#c9ced8}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--g-code:#4cc184;--g-life:#e39a4f;--g-tips:#b892ff;--edge:#3a414c}}
+:root[data-theme="dark"]{--g-code:#4cc184;--g-life:#e39a4f;--g-tips:#b892ff;--edge:#3a414c}
 .brain{position:relative;height:clamp(340px,min(62vh,118vw),560px);background:var(--surface) radial-gradient(var(--border) 1px,transparent 1.3px) 0 0/22px 22px;border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
 .brain svg{display:block;width:100%;height:100%;cursor:grab;touch-action:pan-y;user-select:none;-webkit-user-select:none}
 .brain .lk{stroke:var(--edge);stroke-width:1.2;transition:stroke .2s,opacity .2s}
@@ -68,7 +68,7 @@ footer{color:var(--muted);font-size:14px;margin-top:32px}
 .brain.focus .lk:not(.hi),.brain .lk.off{opacity:.15}
 .brain .nd{transition:opacity .2s}
 .brain .nd circle{fill:var(--accent);stroke:var(--surface);stroke-width:2}
-.brain .nd.code circle{fill:var(--g-code)}.brain .nd.life circle{fill:var(--g-life)}.brain .nd.cc circle{fill:var(--g-cc)}
+.brain .nd.code circle{fill:var(--g-code)}.brain .nd.life circle{fill:var(--g-life)}.brain .nd.tips circle{fill:var(--g-tips)}
 .brain .nd.sel circle:not(.ping){stroke:var(--text);stroke-width:3}
 .brain .nd text{font:600 12px system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;fill:var(--text);paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round;opacity:0;transition:opacity .2s;pointer-events:none}
 .brain .nd.lab text{opacity:1}
@@ -114,7 +114,7 @@ footer{color:var(--muted);font-size:14px;margin-top:32px}
 (function(){
   // Add a new topic: create so-tay/<slug>/index.html, then add one entry here.
   // href is relative to this page: each topic lives in so-tay/<slug>/.
-  // group: 'ai' | 'code' | 'life' | 'cc' (Claude Code tips). Entries without a group belong to 'ai'.
+  // group: 'ai' | 'code' | 'life' | 'tips' (AI tips). Entries without a group belong to 'ai'.
   var TOPICS=[
     {href:'rag/',icon:'📚',title:'RAG',sub:'Retrieval-Augmented Generation',desc:'Cách cho LLM trả lời dựa trên tài liệu của bạn: flow hai pha, embedding, retrieval, đánh giá và các kỹ thuật nâng cao.',tags:['Cốt lõi + flow','Không cần code','~3 tuần']},
     {href:'ai-agent/',icon:'🤖',title:'AI Agent',sub:'Agent loop, tool, memory',desc:'Agent hoạt động thế nào: vòng lặp suy nghĩ–hành động–quan sát, tool calling, memory, multi-agent, lỗi, an toàn, đánh giá. Có mô phỏng tương tác.',tags:['Cốt lõi + flow','Có mô phỏng','~3 tuần']},
@@ -144,12 +144,12 @@ footer{color:var(--muted);font-size:14px;margin-top:32px}
     {href:'llm-rubric-grading/',icon:'📋',title:'LLM Rubric Grading',sub:'Chấm điểm là tính năng sản phẩm',desc:'Dùng LLM chấm hồ sơ theo rubric ngay trong sản phẩm: mốc điểm, trích dẫn kiểm được, cache, người duyệt, đo kappa. Có phòng hiệu chỉnh tương tác.',tags:['Rubric','Trích dẫn','Có mô phỏng']},
     {href:'document-parsing-chunking/',icon:'✂️',title:'Document Parsing & Chunking',sub:'Đọc file và cắt chunk cho RAG',desc:'Biến PDF, Word, ảnh scan, Excel thành chunk tốt cho RAG: text layer và OCR, bố cục, bảng, chiến lược chunking, metadata, lỗi và cách đo.',tags:['OCR & bố cục','Chunking','Có mô phỏng']},
     {href:'long-document-extraction/',icon:'🧾',title:'Long Document Extraction',sub:'Tài liệu 100+ trang thành dữ liệu',desc:'Biến báo cáo kiểm toán, hợp đồng 100+ trang thành bản ghi có cấu trúc: schema, map-reduce, gộp bỏ trùng, checkpoint, sổ cái, trích dẫn kiểm được, F1.',tags:['Schema','Map-reduce','Có mô phỏng']},
-    {href:'claude-code-tips/global-claude-md/',icon:'💡',group:'cc',title:'CLAUDE.md global',sub:'Luật chung cho mọi dự án',desc:'Viết ~/.claude/CLAUDE.md một lần để Claude Code làm việc đúng cách ở mọi dự án: 6 nhóm luật, file thật để chép, ba tên cần thay.',tags:['Claude Code','CLAUDE.md','Có file mẫu']},
+    {href:'ai-tips/global-claude-md/',icon:'💡',group:'tips',title:'CLAUDE.md global',sub:'Luật chung cho mọi dự án',desc:'Viết ~/.claude/CLAUDE.md một lần để Claude Code làm việc đúng cách ở mọi dự án: 6 nhóm luật, file thật để chép, ba tên cần thay.',tags:['Claude Code','CLAUDE.md','Có file mẫu']},
     {href:'multilingual-rag/',icon:'🌐',title:'RAG đa ngôn ngữ',sub:'Tài liệu, câu hỏi khác ngôn ngữ',desc:'Thiết kế RAG khi tài liệu, câu hỏi và câu trả lời khác ngôn ngữ: 4 kiến trúc, dịch máy và glossary, tiếng Việt, đo theo cặp ngôn ngữ, kèm mô phỏng.',tags:['Đa ngôn ngữ','Dịch máy','Có mô phỏng']}
   ];
   var grid=document.getElementById('topics');
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
-  var GROUPS=[['all','Tất cả'],['ai','AI'],['code','Lập trình'],['cc','Claude Code tips'],['life','Cuộc sống']];
+  var GROUPS=[['all','Tất cả'],['ai','AI'],['code','Lập trình'],['tips','AI tips'],['life','Cuộc sống']];
   var filters=document.getElementById('filters'),empty=document.getElementById('empty');
   TOPICS.forEach(function(t){
     var a=document.createElement('a');a.className='topic';a.href=t.href;a.dataset.group=t.group||'ai';
