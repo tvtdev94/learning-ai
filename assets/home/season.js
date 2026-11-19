@@ -188,6 +188,10 @@ document.getElementById('me').addEventListener('click',function(e){
   if(reduce||!TAP[season])return;
   TAP[season](e.clientX,e.clientY);
 });
+// Occasion greetings lead the typed role line while that look is on.
+var GREET={tet:['Chúc mừng năm mới 🧧','Happy Lunar New Year 🧧'],trungthu:['Trung thu vui vẻ 🏮','Happy Mid-Autumn Festival 🏮'],
+  noel:['Giáng sinh an lành 🎄','Merry Christmas 🎄']};
+function greeting(lang){var g=GREET[season];return g?g[lang==='en'?1:0]:''}
 function saved(){try{var v=localStorage.getItem(KEY);return NAMES[v]?v:'auto'}catch(e){return 'auto'}}
 function apply(next){
   season=next;root.setAttribute('data-season',season);layer.textContent='';
@@ -225,3 +229,5 @@ document.addEventListener('click',function(e){if(!panel.hidden&&!e.target.closes
 new MutationObserver(render).observe(root,{attributes:true,attributeFilter:['lang']});
 var preview=/[?&]season=(spring|summer|autumn|winter|tet|trungthu|noel)\b/.exec(location.search);
 choose(preview?preview[1]:saved());
+
+export {greeting};

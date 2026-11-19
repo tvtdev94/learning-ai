@@ -1,4 +1,5 @@
 // Homepage profile: theme toggle, typed role line, avatar ripple, language switch, mouse parallax.
+import {greeting} from './season.js';
 var root=document.documentElement;
 var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -22,12 +23,15 @@ var ROLES={
   vi:[full,'Xây dựng AgentKit','Giải pháp tăng hiệu quả và năng suất AI','Xây hệ thống AI','Học RAG và agent','Viết Sổ tay học tập'],
   en:['Software developer','Building AgentKit','Solutions for AI efficiency and productivity','Building AI systems','Learning RAG and agents','Writing a learning notebook']
 },lang='vi';
+// The role list for the current language, led by the occasion greeting when there is one.
+function roles(l){var g=greeting(l||lang);return g?[g].concat(ROLES[l||lang]):ROLES[l||lang]}
 function typeRole(delay){
   clearTimeout(typeTimer);typed.textContent='';var r=0,n=0,back=false;
   function step(){
-    var list=ROLES[lang],w=list[r%list.length];
-    if(!back){typed.textContent=w.slice(0,++n);if(n<w.length){typeTimer=setTimeout(step,70);return}back=true;typeTimer=setTimeout(step,1900);return}
-    typed.textContent=w.slice(0,--n);if(n>0){typeTimer=setTimeout(step,35);return}
+    // Array.from keeps emoji whole while they are typed and erased.
+    var list=roles(),w=Array.from(list[r%list.length]);
+    if(!back){typed.textContent=w.slice(0,++n).join('');if(n<w.length){typeTimer=setTimeout(step,70);return}back=true;typeTimer=setTimeout(step,1900);return}
+    typed.textContent=w.slice(0,--n).join('');if(n>0){typeTimer=setTimeout(step,35);return}
     back=false;r=(r+1)%list.length;typeTimer=setTimeout(step,320);
   }
   typeTimer=setTimeout(step,delay);
@@ -61,7 +65,7 @@ var nodes=document.querySelectorAll('[data-t],[data-t-html],[data-t-aria],[data-
 var roleBox=document.querySelector('.role-box'),rolePill=document.querySelector('.role');
 function fitRole(){
   var save=typed.textContent,max=0;
-  ROLES[lang].forEach(function(w){typed.textContent=w;max=Math.max(max,rolePill.offsetHeight)});
+  roles().forEach(function(w){typed.textContent=w;max=Math.max(max,rolePill.offsetHeight)});
   typed.textContent=save;roleBox.style.minHeight=max+'px';
 }
 var fitQueued=false;
@@ -75,7 +79,7 @@ function setLang(l){
     if(e.dataset.tAria)e.setAttribute('aria-label',D[e.dataset.tAria]);
     if(e.dataset.tAlt)e.setAttribute('alt',D[e.dataset.tAlt]);
   });
-  roleSr.textContent=ROLES[l].join('. ')+'.';
+  roleSr.textContent=roles(l).join('. ')+'.';
   fitRole();
   langBtn.textContent=l==='en'?'VI':'EN';langBtn.lang=l==='en'?'vi':'en';
   langBtn.setAttribute('aria-label',l==='en'?'Chuyển sang tiếng Việt':'Switch to English');
@@ -88,14 +92,16 @@ langBtn.addEventListener('click',function(){
   function apply(){
     setLang(next);
     var m=document.querySelector('.bio mark');if(m)m.style.backgroundSize='100% 45%';
-    typed.textContent=ROLES[next][0];if(!reduce)typeRole(900);
+    typed.textContent=roles()[0];if(!reduce)typeRole(900);
   }
   try{localStorage.setItem('profile-lang',next)}catch(e){}
   history.replaceState(null,'',next==='en'?'?lang=en':location.pathname);
   if(document.startViewTransition&&!reduce)document.startViewTransition(apply);else apply();
 });
 // Shown at once when the build scene does not play.
-function showFirstRole(){typed.textContent=ROLES[lang][0]}
+function showFirstRole(){typed.textContent=roles()[0]}
+// A new look can add or drop a greeting: refresh the screen-reader copy and the reserved height.
+new MutationObserver(function(){roleSr.textContent=roles().join('. ')+'.';fitRole()}).observe(root,{attributes:true,attributeFilter:['data-season']});
 
 // Mouse parallax: sky drifts one way, orbit the other, avatar tilts toward the pointer.
 if(!reduce&&window.matchMedia('(pointer: fine)').matches){
