@@ -3,14 +3,15 @@
 
 /* page accents per look; browsers without light-dark() keep the default palette */
 @supports (color:light-dark(#000,#fff)){
-  :root[data-season="spring"]{--accent:light-dark(#b3245f,#f59bc0);--accent-2:light-dark(#2e7d3a,#8fdc9a);--star:light-dark(#9a6200,#ffd27a)}
-  :root[data-season="summer"]{--accent:light-dark(#007a70,#44d7c8);--accent-2:light-dark(#4f7a00,#d8f36a);--star:light-dark(#946000,#ffd447)}
-  :root[data-season="autumn"]{--accent:light-dark(#a8480c,#f2a24e);--accent-2:light-dark(#b23a1a,#e0603a);--star:light-dark(#8a5a00,#f2c14e)}
-  :root[data-season="winter"]{--accent:light-dark(#00668a,#8fe1ff);--accent-2:light-dark(#3d5fa8,#c9d8ff);--star:light-dark(#4a6f8f,#e6f4ff)}
-  :root[data-season="noel"]{--accent:light-dark(#c0182d,#ff6b7a);--accent-2:light-dark(#13784a,#4fd18b);--star:light-dark(#9a6400,#ffd166)}
-  :root[data-season="tet"]{--accent:light-dark(#c41e1e,#ff6b5e);--accent-2:light-dark(#946800,#ffcf3f);--star:light-dark(#946800,#ffcf3f)}
-  :root[data-season="trungthu"]{--accent:light-dark(#9a5b00,#ffc857);--accent-2:light-dark(#c2410c,#ff7a45);--star:light-dark(#8a6200,#ffe9a8)}
-  :root[data-season]:not([data-season="off"]){--focus:var(--accent);--mark:color-mix(in srgb,var(--accent) 22%,transparent);--bg-glow:color-mix(in srgb,var(--accent) 16%,transparent)}
+  :root[data-season="spring"]{--bg:light-dark(#fdf0f5,#1a0f1c);--surface:light-dark(#ffffff,#2a1830);--line:light-dark(#d9dfea,#43294a);--accent:light-dark(#b3245f,#f59bc0);--accent-2:light-dark(#2e7d3a,#8fdc9a);--star:light-dark(#9a6200,#ffd27a)}
+  :root[data-season="summer"]{--bg:light-dark(#ecf9f7,#03161c);--surface:light-dark(#ffffff,#0a2832);--line:light-dark(#d9dfea,#174450);--accent:light-dark(#007a70,#44d7c8);--accent-2:light-dark(#4f7a00,#d8f36a);--star:light-dark(#946000,#ffd447)}
+  :root[data-season="autumn"]{--bg:light-dark(#fdf2e8,#1a0e06);--surface:light-dark(#ffffff,#2b1a0e);--line:light-dark(#d9dfea,#4a321c);--accent:light-dark(#a8480c,#f2a24e);--accent-2:light-dark(#b23a1a,#e0603a);--star:light-dark(#8a5a00,#f2c14e)}
+  :root[data-season="winter"]{--bg:light-dark(#ecf5fd,#061427);--surface:light-dark(#ffffff,#0f2440);--line:light-dark(#d9dfea,#23446a);--accent:light-dark(#00668a,#8fe1ff);--accent-2:light-dark(#3d5fa8,#c9d8ff);--star:light-dark(#4a6f8f,#e6f4ff)}
+  :root[data-season="noel"]{--bg:light-dark(#eef8f1,#05160e);--surface:light-dark(#ffffff,#0d281b);--line:light-dark(#d9dfea,#1f4a34);--accent:light-dark(#c0182d,#ff6b7a);--accent-2:light-dark(#13784a,#4fd18b);--star:light-dark(#9a6400,#ffd166)}
+  :root[data-season="tet"]{--bg:light-dark(#fff0ea,#1d0606);--surface:light-dark(#ffffff,#301010);--line:light-dark(#d9dfea,#552020);--accent:light-dark(#c41e1e,#ff6b5e);--accent-2:light-dark(#946800,#ffcf3f);--star:light-dark(#946800,#ffcf3f)}
+  :root[data-season="trungthu"]{--bg:light-dark(#fff7e4,#0e0b26);--surface:light-dark(#ffffff,#1c183c);--line:light-dark(#d9dfea,#352f63);--accent:light-dark(#9a5b00,#ffc857);--accent-2:light-dark(#c2410c,#ff7a45);--star:light-dark(#8a6200,#ffe9a8)}
+  :root[data-season]:not([data-season="off"]){--focus:var(--accent);--mark:color-mix(in srgb,var(--accent) 22%,transparent);--bg-glow:color-mix(in srgb,var(--accent) 28%,transparent)}
+  body{transition:background-color .6s}
 }
 
 .season{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;contain:strict;
@@ -27,7 +28,7 @@
   --m-star:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-12 -12 24 24'%3E%3Cpath d='M0-10l3 6.2 6.6.9-4.8 4.6 1.2 6.6L0 5.1l-6 3.2 1.2-6.6-4.8-4.6 6.6-.9z'/%3E%3Ccircle r='11' fill='none' stroke='%23000' stroke-width='1'/%3E%3C/svg%3E");
   --m-spark:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 0c1 8 4 11 12 12-8 1-11 4-12 12-1-8-4-11-12-12 8-1 11-4 12-12z'/%3E%3C/svg%3E");
   --m-bfly:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 20'%3E%3Cpath d='M12 8C9 2 3 0 1 3c-2 4 3 7 8 7-5 1-7 6-4 8 3 2 6-3 7-7 1 4 4 9 7 7 3-2 1-7-4-8 5 0 10-3 8-7-2-3-8-1-11 5z'/%3E%3C/svg%3E")}
-:root[data-season]:not([data-season="off"]) .season{background:radial-gradient(70% 55% at 12% 100%,color-mix(in srgb,var(--accent-2) 14%,transparent),transparent 70%)}
+:root[data-season]:not([data-season="off"]) .season{background:radial-gradient(80% 60% at 10% 100%,color-mix(in srgb,var(--accent-2) 26%,transparent),transparent 72%),radial-gradient(60% 45% at 95% 100%,color-mix(in srgb,var(--accent) 18%,transparent),transparent 70%)}
 
 /* particles: a mask gives each one its silhouette, --c its colour */
 .season i{position:absolute;top:0;display:block;opacity:var(--o,.9);background:var(--c);-webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat}
@@ -49,12 +50,12 @@
 .season .spark{animation:fall var(--t) linear var(--d) infinite,glint var(--s) ease-in-out var(--d) infinite}
 
 /* signature decorations: a strip along the bottom, a corner piece, lanterns in wide margins */
-.season .ground{position:absolute;left:0;bottom:0;width:100%;height:48px}
-.season .corner{position:absolute;right:0;bottom:0;width:clamp(120px,17vw,240px);height:auto}
-.season .hang{position:absolute;top:0;width:44px;height:auto;transform-origin:50% 0;animation:swing 4s ease-in-out infinite alternate;display:none}
+.season .ground{position:absolute;left:0;bottom:0;width:100%;height:64px}
+.season .corner{position:absolute;right:0;bottom:0;width:clamp(150px,25vw,340px);height:auto}
+.season .hang{position:absolute;top:0;width:58px;height:auto;transform-origin:50% 0;animation:swing 4s ease-in-out infinite alternate;display:none}
 .season .hang.l{left:max(12px,calc(50vw - 690px))}.season .hang.r{right:max(12px,calc(50vw - 690px));animation-delay:-2s}
 @media (min-width:1320px){.season .hang{display:block}}
-@media (max-width:959px){.season .corner{opacity:.35}}
+@media (max-width:959px){.season .corner{opacity:.45}}
 .season .wave{animation:wave var(--t) linear infinite}
 .season .bulb{animation:glint 1.6s ease-in-out infinite}
 .season .moon{position:absolute;top:max(68px,8%);left:max(3%,calc(50vw - 600px));width:clamp(44px,11vw,110px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 40% 38%,#fff8de,#f6d77c 70%);box-shadow:0 0 50px 18px rgba(246,215,124,.35);opacity:.9}

@@ -47,9 +47,9 @@ var PARTS={
 function particles(){
   var narrow=innerWidth<600,html='';
   PARTS[season].forEach(function(g){
-    var n=Math.round(g[1]*(narrow?.55:1));
+    var n=Math.round(g[1]*(narrow?.8:1.5));
     for(var i=0;i<n;i++){
-      var cls=g[0],w=pr(g[2][0],g[2][1]),k=(w-g[2][0])/(g[2][1]-g[2][0]),t=g[3][1]-k*(g[3][1]-g[3][0])+pr(-1,1),c='',st;
+      var cls=g[0],w=pr(g[2][0],g[2][1])*(cls==='fly'||cls==='snow fall'?1:1.3),k=(w-g[2][0])/(g[2][1]-g[2][0]),t=g[3][1]-k*(g[3][1]-g[3][0])+pr(-1,1),c='',st;
       if(cls==='petal fall')c=i%3?'var(--peach)':'var(--blush)';
       else if(cls==='bfly')c=i%2?'var(--peach)':'var(--mai)';
       else if(/maple|oval/.test(cls))c='var(--leaf'+(1+i%3)+')';
