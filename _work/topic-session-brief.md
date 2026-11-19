@@ -15,7 +15,7 @@ Tạo MỘT trang HTML học một chủ đề AI cho site https://tvtdev94.gith
 Đọc kỹ trang mẫu `rag/index.html` và dùng lại đúng các thành phần sau:
 - CSS tokens `:root`, kèm dark mode: `prefers-color-scheme` được guard bởi `:root:not([data-theme="light"])`, và có thêm `:root[data-theme="dark"]`.
 - Script đọc theme sớm trong `<head>`, key localStorage `rag-theme` (dùng chung toàn site).
-- Header sticky có nút `a.home` href `../`, mục lục ngang tự cuộn, nút đổi theme.
+- Header sticky có nút `a.home` href `../so-tay/` (danh sách bài), mục lục ngang tự cuộn, nút đổi theme.
 - Các lớp `.card .grid .callout .tag .table-wrap table.stack .vflow .m-only .d-only .svgbox`.
 - Quy tắc mobile `@media (max-width:600px)` và hàm `labelTables`.
 - Bọc mọi truy cập localStorage trong try/catch.
@@ -61,7 +61,7 @@ Liên kết sang các trang liên quan khi hợp lý: `../rag/`, `../ai-agent/`,
 
 ## File được phép sửa
 CHỈ `<slug>/index.html` và các file report hoặc ghi chú của chủ đề mình trong `_work/notes/`.
-KHÔNG sửa `index.html` gốc, KHÔNG sửa thư mục chủ đề khác, KHÔNG chạy git (phiên chính sẽ gộp và đẩy lên).
+KHÔNG sửa `index.html` gốc và `so-tay/index.html`, KHÔNG sửa thư mục chủ đề khác, KHÔNG chạy git (phiên chính sẽ gộp và đẩy lên).
 
 ## Kongming review: BẮT BUỘC
 Spawn agent `kongming`, đưa cho nó: đường dẫn file, file ghi chú nguồn, và mô tả người học. Yêu cầu kongming kiểm:

@@ -5,13 +5,14 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 - Site: https://tvtdev94.github.io/ (tên hiển thị "Sổ tay": ghi chép AI, lập trình và cuộc sống).
 - Repo: https://github.com/tvtdev94/tvtdev94.github.io (public). Nhánh `main`, GitHub Pages build từ thư mục gốc.
 - Đổi tên 2026-11-19: repo `learning-ai` thành `tvtdev94.github.io`, site từ `/learning-ai/` lên gốc domain. Thư mục `learning-ai/` trong repo chỉ chứa trang chuyển hướng cho link cũ (mỗi bài đã publish trước ngày đổi tên một trang) và một `sw.js` tự gỡ service worker cũ. Bài mới không cần thêm gì vào đó. Thư mục trên máy vẫn tên `learning-ai`.
-- Trang chủ chia nhóm bằng trường `group` trong `TOPICS`: `ai` (mặc định), `code`, `life`.
+- Trang gốc `/` là trang giới thiệu cá nhân (ảnh `images/avatar.png` lấy từ avatar GitHub, email, WhatsApp, GitHub, Facebook). Danh sách bài nằm ở `/so-tay/` (`so-tay/index.html`), chia nhóm bằng trường `group` trong `TOPICS`: `ai` (mặc định), `code`, `life`. Nút về của mỗi bài trỏ `../so-tay/`.
 
 ## Cấu trúc repo
 
 | Đường dẫn | Là gì | Có lên site không |
 |---|---|---|
-| `index.html` | Trang chủ, gồm các thẻ chủ đề lấy từ mảng `TOPICS` | Có |
+| `index.html` | Trang giới thiệu cá nhân | Có |
+| `so-tay/index.html` | Danh sách bài, gồm các thẻ lấy từ mảng `TOPICS` | Có |
 | `<slug>/index.html` | Mỗi chủ đề là một file tự chứa, không dùng CDN | Có, trừ các thư mục nằm trong `exclude` của `_config.yml` |
 | `_config.yml` | Danh sách bản nháp chưa được publish | Không |
 | `_work/topic-session-brief.md` | **Brief chuẩn** cho mỗi phiên làm một chủ đề: thiết kế, nghiên cứu, review, test, dọn dẹp | Không, vì Jekyll bỏ qua thư mục `_*` |
@@ -32,7 +33,7 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 6. **Dễ đọc trên điện thoại** là ưu tiên hàng đầu. Trên mobile, sơ đồ dùng bản dọc `.m-only`, bảng dùng `table.stack`.
 7. **Dọn dẹp khi xong:** dừng http.server, đóng tab Orca, xóa file tạm.
 8. **Publish:**
-   - Bỏ slug khỏi `exclude` trong `_config.yml` và thêm thẻ vào `TOPICS` trong `index.html`.
+   - Bỏ slug khỏi `exclude` trong `_config.yml` và thêm thẻ vào `TOPICS` trong `so-tay/index.html`. Kiểm nút về của trang trỏ `../so-tay/`.
    - Chạy `python3 _work/add-pwa-head.py <slug>/index.html` để gắn thẻ PWA (manifest, icon, service worker).
    - Commit theo conventional commits, rồi push.
    - Chờ Pages build, kiểm link thật bằng Orca ở 390px.

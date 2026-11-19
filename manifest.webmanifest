@@ -4,7 +4,7 @@
   "description": "Sổ tay ghi chép những gì tôi học: AI, lập trình và cuộc sống. Đọc tốt trên điện thoại.",
   "lang": "vi",
   "id": "./",
-  "start_url": "./",
+  "start_url": "./so-tay/",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f7f6f2",

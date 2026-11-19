@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sổ tay</title>
+<title>Trần Văn Tuấn</title>
 <!-- pwa -->
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
@@ -14,6 +14,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Sổ tay">
 <script>if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})</script>
+<meta name="description" content="Trần Văn Tuấn, lập trình viên. Sổ tay ghi chép AI, lập trình và cuộc sống.">
+<meta property="og:title" content="Trần Văn Tuấn">
+<meta property="og:description" content="Lập trình viên. Sổ tay ghi chép AI, lập trình và cuộc sống.">
+<meta property="og:image" content="https://tvtdev94.github.io/images/avatar.png">
+<meta property="og:url" content="https://tvtdev94.github.io/">
 <script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <style>
 :root{
@@ -32,98 +37,71 @@
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
-main{max-width:900px;margin:0 auto;padding:24px 16px 48px}
-.top{display:flex;justify-content:space-between;align-items:center;gap:12px}
-h1{font-size:clamp(28px,6vw,40px);margin:8px 0 4px;line-height:1.2}
-.lead{color:var(--muted);margin:0 0 24px}
-.theme-btn{border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:6px 12px;font:inherit;font-size:14px;cursor:pointer}
-.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
-a.topic{display:block;text-decoration:none;color:inherit;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:var(--shadow);transition:border-color .15s,transform .15s}
-a.topic:hover,a.topic:focus-visible{border-color:var(--accent);transform:translateY(-2px);outline:none}
-.topic .icon{font-size:28px;line-height:1}
-.topic h2{font-size:20px;margin:10px 0 4px}
-.topic p{margin:0;color:var(--muted);font-size:15px}
-.topic .meta{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px}
-.tag{font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
-.tag.dim{background:var(--surface-2);color:var(--muted)}
-.filters{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
-.chip{min-height:40px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:999px;padding:6px 16px;font:inherit;font-size:15px;cursor:pointer}
-.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
-:root[data-theme="dark"] .chip[aria-pressed="true"]{color:#15171a}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .chip[aria-pressed="true"]{color:#15171a}}
-[hidden]{display:none!important}
-.empty{color:var(--muted)}
-.topic .go{margin-top:12px;color:var(--accent);font-weight:600;font-size:14px}
-footer{color:var(--muted);font-size:14px;margin-top:32px}
+main{max-width:640px;margin:0 auto;padding:24px 16px 48px}
+.top{display:flex;justify-content:flex-end}
+.theme-btn{min-width:40px;min-height:40px;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;font:inherit;font-size:16px;cursor:pointer}
+.hero{text-align:center;margin:8px 0 28px}
+.avatar{width:128px;height:128px;border-radius:50%;border:3px solid var(--surface);box-shadow:0 0 0 1px var(--border);object-fit:cover;background:var(--surface-2)}
+h1{font-size:clamp(28px,7vw,38px);line-height:1.2;margin:16px 0 4px}
+.role{color:var(--muted);margin:0;font-weight:600}
+.bio{margin:16px auto 0;max-width:520px;font-size:17px}
+h2{font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:32px 0 10px}
+a.card{display:block;text-decoration:none;color:inherit;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;box-shadow:var(--shadow);transition:border-color .15s,transform .15s}
+a.card:hover,a.card:focus-visible{border-color:var(--accent);transform:translateY(-2px);outline:none}
+.card .icon{font-size:28px;line-height:1}
+.card h3{font-size:20px;margin:10px 0 4px}
+.card p{margin:0;color:var(--muted);font-size:15px}
+.card .go{margin-top:12px;color:var(--accent);font-weight:600;font-size:15px}
+ul.contact{list-style:none;margin:0;padding:0;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.contact li+li{border-top:1px solid var(--border)}
+.contact a{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 16px;color:var(--text);text-decoration:none}
+.contact a:hover,.contact a:focus-visible{background:var(--surface-2);outline:none}
+.contact svg{flex:none;width:22px;height:22px;fill:var(--accent)}
+.contact .t{display:flex;flex-direction:column;min-width:0;line-height:1.35}
+.contact .k{font-weight:600}
+.contact .v{color:var(--muted);overflow-wrap:anywhere;font-size:15px}
+footer{color:var(--muted);font-size:14px;margin-top:40px;text-align:center}
 </style>
 </head>
 <body>
 <main>
-  <div class="top">
-    <span class="tag dim">Ghi chú học tập</span>
-    <button class="theme-btn" id="themeBtn" aria-label="Đổi giao diện sáng/tối">◐</button>
-  </div>
-  <h1>Sổ tay</h1>
-  <p class="lead">Ghi chép những gì tôi học: AI, lập trình và cả chuyện trong cuộc sống. Mỗi bài là một trang riêng, đọc tốt trên điện thoại. Bấm vào một thẻ để bắt đầu.</p>
-  <div class="filters" id="filters" role="group" aria-label="Lọc theo nhóm"></div>
-  <div class="grid" id="topics"></div>
-  <p class="empty" id="empty" hidden>Nhóm này chưa có bài nào.</p>
-  <footer>Bài mới sẽ được bổ sung dần.</footer>
+  <div class="top"><button class="theme-btn" id="themeBtn" aria-label="Đổi giao diện sáng/tối">◐</button></div>
+
+  <section class="hero">
+    <img class="avatar" src="images/avatar.png" width="128" height="128" alt="Ảnh đại diện của Trần Văn Tuấn">
+    <h1>Trần Văn Tuấn</h1>
+    <p class="role">Lập trình viên</p>
+    <p class="bio">Đang học và xây hệ thống AI (RAG, agent). Đây là nơi tôi ghi chép những gì học được: AI, lập trình và cuộc sống.</p>
+  </section>
+
+  <h2>Ghi chép</h2>
+  <a class="card" href="so-tay/">
+    <div class="icon" aria-hidden="true">📒</div>
+    <h3>Sổ tay</h3>
+    <p>Mỗi bài là một trang riêng, đọc tốt trên điện thoại: khái niệm cốt lõi, cách hoạt động, ví dụ và lộ trình tự học.</p>
+    <div class="go">Mở sổ tay →</div>
+  </a>
+
+  <h2>Liên hệ</h2>
+  <ul class="contact">
+    <li><a href="mailto:tranvantuanit210@gmail.com">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm9 7.2L4 7.3V17h16V7.3l-8 4.9zM5.2 7l6.8 4.2L18.8 7H5.2z"/></svg>
+      <span class="t"><span class="k">Email</span><span class="v">tranvantuanit210@gmail.com</span></span></a></li>
+    <li><a href="https://wa.me/84344446301" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.4.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2s.2-1.1.2-1.2-.3-.2-.5-.3z"/></svg>
+      <span class="t"><span class="k">WhatsApp</span><span class="v">0344 446 301</span></span></a></li>
+    <li><a href="https://github.com/tvtdev94" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 0 0-3.2 19.5c.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.3-3.4-1.3-.4-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.6 2.4 1.1 3 .9.1-.7.4-1.1.6-1.4-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.4-1.3.1-2.7 0 0 .8-.3 2.8 1a9.6 9.6 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .6 1.4.2 2.4.1 2.7.7.7 1 1.6 1 2.7 0 3.9-2.3 4.7-4.6 5 .4.3.7.9.7 1.9V21c0 .3.2.6.7.5A10 10 0 0 0 12 2z"/></svg>
+      <span class="t"><span class="k">GitHub</span><span class="v">github.com/tvtdev94</span></span></a></li>
+    <li><a href="https://www.facebook.com/tranvantuan021094" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.3v7A10 10 0 0 0 22 12z"/></svg>
+      <span class="t"><span class="k">Facebook</span><span class="v">facebook.com/tranvantuan021094</span></span></a></li>
+  </ul>
+
+  <footer>© 2026 Trần Văn Tuấn</footer>
 </main>
 <script>
 (function(){
-  // Add a new topic: create its folder with an index.html, then add one entry here.
-  // group: 'ai' | 'code' | 'life'. Entries without a group belong to 'ai'.
-  var TOPICS=[
-    {href:'rag/',icon:'📚',title:'RAG',sub:'Retrieval-Augmented Generation',desc:'Cách cho LLM trả lời dựa trên tài liệu của bạn: flow hai pha, embedding, retrieval, đánh giá và các kỹ thuật nâng cao.',tags:['Cốt lõi + flow','Không cần code','~3 tuần']},
-    {href:'ai-agent/',icon:'🤖',title:'AI Agent',sub:'Agent loop, tool, memory',desc:'Agent hoạt động thế nào: vòng lặp suy nghĩ–hành động–quan sát, tool calling, memory, multi-agent, lỗi, an toàn, đánh giá. Có mô phỏng tương tác.',tags:['Cốt lõi + flow','Có mô phỏng','~3 tuần']},
-    {href:'reranking/',icon:'🔀',title:'Reranking',sub:'Tìm nhanh rồi xếp hạng lại',desc:'Vì sao tìm nhanh rồi xếp hạng lại: bi-encoder và cross-encoder, chọn N/k, ngưỡng điểm, nDCG/MRR, kèm mô phỏng bấm Rerank thấy thứ hạng đổi.',tags:['Cross-encoder','Có mô phỏng','Đánh giá']},
-    {href:'embedding-performance/',icon:'⚡',title:'Embedding Performance',sub:'Tìm đúng và chạy nhanh, nhẹ',desc:'Hai nghĩa của hiệu năng embedding: tìm đúng và chạy nhanh, nhẹ. Đo recall@k, tính bộ nhớ vector, Matryoshka, quantization, HNSW, đổi model.',tags:['Embedding','Có máy tính','Vector search']},
-    {href:'governance/',icon:'🛡️',title:'AI Governance',sub:'Quản trị RAG/agent doanh nghiệp',desc:'Quản trị AI cho RAG/agent doanh nghiệp: vòng đời, phân quyền dữ liệu, rủi ro ↔ kiểm soát, xử lý sự cố, checklist sẵn sàng.',tags:['Rủi ro','Dữ liệu','Có checklist']},
-    {href:'knowledge-base/',icon:'🗄️',title:'Knowledge Base',sub:'Kho tri thức cho AI',desc:'Kho tri thức cho AI: pipeline nạp dữ liệu, metadata, đồng bộ, quyền truy cập, knowledge graph và cách đo chất lượng. Có mô phỏng từng bước.',tags:['Ingestion','Metadata','Có mô phỏng']},
-    {href:'hybrid-search/',icon:'🔎',title:'Hybrid Search',sub:'BM25 + vector + RRF',desc:'BM25 và vector chạy song song rồi trộn bằng RRF: vì sao cần, cách tính, tiếng Việt, mô phỏng tương tác và cách đánh giá.',tags:['BM25','RRF','Có mô phỏng']},
-    {href:'harness/',icon:'🧰',title:'Agent Harness',sub:'Phần mềm bao quanh model',desc:'Harness là mọi thứ quanh model: vòng lặp agent, ghép context, tool, quyền, hook, sandbox, log. Đi qua 9 bước một coding agent sửa test.',tags:['Agent loop','Context','Có ví dụ từng bước']},
-    {href:'multi-agent-agentic-rag/',icon:'🕸️',title:'Multi-agent & Agentic RAG',sub:'Khi nào cho agent tự quyết',desc:'Khi nào nên cho agent tự quyết cách tìm và chia việc cho nhiều agent: flow, mô phỏng token, CRAG, lỗi MAST, cách đo.',tags:['Multi-agent','Agentic RAG','Đánh đổi']},
-    {href:'context-engineering/',icon:'🗂️',title:'Context Engineering',sub:'Quản lý thứ LLM nhìn thấy',desc:'Chọn, nén, ghi ra và cô lập context để agent chạy dài vẫn gọn, đúng và rẻ: compaction, tool search, sub-agent, prompt caching.',tags:['Context','Agent','Chi phí']},
-    {href:'llm-evaluation/',icon:'🧪',title:'LLM Evaluation',sub:'Đo chất lượng RAG và agent',desc:'Xây golden set, chọn metric cho retrieval, câu trả lời và agent, hiệu chỉnh LLM-as-judge, nối eval offline với giám sát production.',tags:['Golden set','Metric RAG','LLM-as-judge']},
-    {href:'query-transformation/',icon:'📝',title:'Query Transformation',sub:'Viết lại câu hỏi để tìm đúng',desc:'Biến câu hỏi người dùng thành truy vấn dễ tìm: rewrite, multi-query, decomposition, step-back, HyDE, routing, self-query và cái giá độ trễ.',tags:['RAG','Truy vấn','Retrieval']},
-    {href:'llm-fundamentals/',icon:'🧠',title:'LLM Fundamentals',sub:'Token, context và sampling',desc:'Token, context window, sampling, thinking và vì sao LLM bịa: nền tảng để hiểu chi phí, giới hạn và lỗi của mọi hệ RAG và agent.',tags:['Token','Context window','Sampling']},
-    {href:'prompt-engineering/',icon:'✍️',title:'Prompt Engineering',sub:'Viết chỉ dẫn cho LLM',desc:'Viết, đo và sửa prompt cho LLM: vai trò, ví dụ, thẻ XML, bám tài liệu, định dạng đầu ra, kèm mô phỏng lắp prompt và bộ eval.',tags:['Prompt','Few-shot','Eval']},
-    {href:'tool-calling-structured-output/',icon:'🛠️',title:'Tool Calling & Structured Output',sub:'Để LLM hành động và trả JSON',desc:'Cách LLM gọi tool và trả JSON đúng schema: vòng gọi tool, strict mode, kiểm lời gọi, phân quyền, đánh giá cho agent doanh nghiệp.',tags:['Tool calling','JSON Schema','Agent']},
-    {href:'model-context-protocol/',icon:'🔌',title:'Model Context Protocol',sub:'Cổng chung nối AI với hệ thống',desc:'Giao thức mở nối ứng dụng AI với dữ liệu và tool: host, client, server, flow từng bước, bảo mật, chi phí context, theo spec MCP 2026-07-28.',tags:['MCP','Bảo mật','Agent']},
-    {href:'agent-memory/',icon:'📓',title:'Agent Memory',sub:'Nhớ qua nhiều phiên làm việc',desc:'Agent nhớ khách qua nhiều phiên: các loại memory, ghi–quản lý–đọc, chấm điểm truy hồi, quên và xóa, chống memory poisoning, cách đo.',tags:['Episodic/semantic','Truy hồi','Poisoning']},
-    {href:'prompt-injection-guardrails/',icon:'🔐',title:'Prompt Injection & Guardrails',sub:'Chữ thành lệnh, phòng thủ nhiều lớp',desc:'Vì sao chữ đưa vào LLM thành lệnh: injection trực tiếp, gián tiếp, bộ ba nguy hiểm, phòng thủ nhiều lớp, phân quyền, phát hiện và đánh giá.',tags:['Bảo mật','Agent','RAG']},
-    {href:'llm-observability/',icon:'📡',title:'LLM Observability',sub:'Trace, đo và gỡ lỗi LLM',desc:'Trace, span, sampling, đo độ trễ và chất lượng để tìm lỗi trong ứng dụng RAG và agent; theo quy ước GenAI của OpenTelemetry.',tags:['Tracing','Sampling','Giám sát']},
-    {href:'llm-cost-optimization/',icon:'💰',title:'LLM Cost Optimization',sub:'Caching, định tuyến, batch, đo lường',desc:'Hóa đơn token của RAG và agent gồm gì, cách giảm bằng prompt caching, cắt context, định tuyến model, batch, và đo chi phí mỗi việc thành công.',tags:['Prompt caching','Định tuyến model','Batch']},
-    {href:'fine-tuning-vs-rag/',icon:'⚖️',title:'Fine-tuning hay RAG',sub:'Chọn đúng cách dạy LLM',desc:'Chọn đúng giữa prompt, RAG và fine-tuning: lỗi thiếu kiến thức hay lỗi hành vi, SFT, DPO, RFT, LoRA, máy tính hòa vốn, rủi ro và cách đo.',tags:['Fine-tuning','RAG','LoRA']},
-    {href:'graphrag/',icon:'🧬',title:'GraphRAG',sub:'RAG trên knowledge graph',desc:'GraphRAG cho RAG doanh nghiệp: LLM dựng knowledge graph, gom cộng đồng, tóm tắt sẵn; Local, Global, DRIFT search, chi phí index, khi nào nên dùng.',tags:['Knowledge graph','Global search','Chi phí index']},
-    {href:'langchain/',icon:'🦜',title:'LangChain',sub:'Framework xây agent và LLM app',desc:'LangChain hôm nay: model, message, tool, structured output, RAG, create_agent và middleware; phần đã thành legacy; bản đồ với LangGraph, LangSmith.',tags:['LangChain','Agent','Framework']},
-    {href:'langgraph/',icon:'🔁',title:'LangGraph',sub:'Điều phối agent có state, bền bỉ',desc:'Học LangGraph: state, node, edge, super-step, checkpoint, interrupt chờ người duyệt, time travel, memory và triển khai agent bền bỉ cho doanh nghiệp.',tags:['Agent','Orchestration','Human-in-the-loop']},
-    {href:'langsmith/',icon:'🔬',title:'LangSmith',sub:'Trace, đánh giá, phát hành agent',desc:'Học LangSmith: trace, feedback, dataset, evaluator, experiment, online eval, prompt hub, Agent Server, retention và chi phí cho agent doanh nghiệp.',tags:['Observability','Evaluation','LLMOps']},
-    {href:'llm-rubric-grading/',icon:'📋',title:'LLM Rubric Grading',sub:'Chấm điểm là tính năng sản phẩm',desc:'Dùng LLM chấm hồ sơ theo rubric ngay trong sản phẩm: mốc điểm, trích dẫn kiểm được, cache, người duyệt, đo kappa. Có phòng hiệu chỉnh tương tác.',tags:['Rubric','Trích dẫn','Có mô phỏng']},
-    {href:'document-parsing-chunking/',icon:'✂️',title:'Document Parsing & Chunking',sub:'Đọc file và cắt chunk cho RAG',desc:'Biến PDF, Word, ảnh scan, Excel thành chunk tốt cho RAG: text layer và OCR, bố cục, bảng, chiến lược chunking, metadata, lỗi và cách đo.',tags:['OCR & bố cục','Chunking','Có mô phỏng']}
-  ];
-  var grid=document.getElementById('topics');
-  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
-  var GROUPS=[['all','Tất cả'],['ai','AI'],['code','Lập trình'],['life','Cuộc sống']];
-  var filters=document.getElementById('filters'),empty=document.getElementById('empty');
-  TOPICS.forEach(function(t){
-    var a=document.createElement('a');a.className='topic';a.href=t.href;a.dataset.group=t.group||'ai';
-    a.innerHTML='<div class="icon" aria-hidden="true">'+t.icon+'</div><h2>'+esc(t.title)+'</h2><p><b>'+esc(t.sub)+'</b></p><p style="margin-top:6px">'+esc(t.desc)+'</p><div class="meta">'+t.tags.map(function(g){return '<span class="tag">'+esc(g)+'</span>'}).join('')+'</div><div class="go">Bắt đầu học →</div>';
-    grid.appendChild(a);
-  });
-  function show(g){
-    var n=0;
-    [].forEach.call(grid.children,function(a){var on=g==='all'||a.dataset.group===g;a.hidden=!on;if(on)n++});
-    [].forEach.call(filters.children,function(b){b.setAttribute('aria-pressed',b.dataset.g===g?'true':'false')});
-    empty.hidden=n>0;
-  }
-  GROUPS.forEach(function(g){
-    var n=g[0]==='all'?TOPICS.length:TOPICS.filter(function(t){return (t.group||'ai')===g[0]}).length;
-    var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.g=g[0];b.textContent=g[1]+' ('+n+')';
-    b.addEventListener('click',function(){show(g[0])});filters.appendChild(b);
-  });
-  show('all');
   var root=document.documentElement;
   document.getElementById('themeBtn').addEventListener('click',function(){
     var cur=root.getAttribute('data-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
