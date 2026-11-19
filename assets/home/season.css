@@ -19,7 +19,7 @@
   --peach:light-dark(#e6709f,#f59bc0);--blush:light-dark(#f2a8c4,#ffe3ee);--mai:light-dark(#d9a400,#f6c431);
   --leaf1:#e0782f;--leaf2:#c94a24;--leaf3:#e3a83c;--fly:light-dark(#a88a00,#e3f56b);
   --lamp:#e5483a;--gold:light-dark(#c99400,#ffd166);--sea:light-dark(#2aa89b,#44d7c8);
-  --grass:light-dark(#5aa469,#3f8f52);--bark:light-dark(#6b4a2f,#8a6a4a);--pine:light-dark(#1f7a4a,#2e9a5e);
+  --grass:light-dark(#5aa469,#3f8f52);--fw1:light-dark(#d99a00,#ffcf3f);--fw2:light-dark(#d62828,#ff6b5e);--fw3:light-dark(#d63a7a,#ff9ec4);--fw4:light-dark(#e07a00,#fff3c4);--bark:light-dark(#6b4a2f,#8a6a4a);--pine:light-dark(#1f7a4a,#2e9a5e);
   --m-petal:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 24'%3E%3Cpath d='M10 24C2 17 1 8 7 1l3 3 3-3c6 7 5 16-3 23z'/%3E%3C/svg%3E");
   --m-maple:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1l2 4.5 3-1.5-1 5 4.5-1.5-2 4 3.5 1.5-6 3.5 1 2.5-4.5-1V24h-1v-5.5l-4.5 1 1-2.5-6-3.5 3.5-1.5-2-4L8 9.5l-1-5 3 1.5z'/%3E%3C/svg%3E");
   --m-oval:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 1C5 7 4 15 11.5 22.5V24h1v-1.5C20 15 19 7 12 1z'/%3E%3C/svg%3E");
@@ -48,6 +48,11 @@
 .season .fly{animation:drift var(--t) ease-in-out var(--d) infinite alternate,glint var(--s) ease-in-out var(--d) infinite}
 .season .bfly{animation:drift var(--t) ease-in-out var(--d) infinite alternate,flap .35s ease-in-out infinite alternate}
 .season .spark{animation:fall var(--t) linear var(--d) infinite,glint var(--s) ease-in-out var(--d) infinite}
+
+/* Tết fireworks: a rocket climbs, then sparks burst out and fall away (season.js) */
+.season b{position:absolute;width:5px;height:5px;margin:-2.5px 0 0 -2.5px;border-radius:50%;background:var(--c);box-shadow:0 0 8px 2px var(--c);pointer-events:none}
+.season b.flash{width:60px;height:60px;margin:-30px 0 0 -30px;background:radial-gradient(circle,var(--c),transparent 65%);box-shadow:none}
+.season b.rocket{width:3px;height:14px;margin:0 0 0 -1.5px;border-radius:2px;background:linear-gradient(var(--c),transparent);box-shadow:none}
 
 /* signature decorations: a strip along the bottom, a corner piece, lanterns in wide margins */
 .season .ground{position:absolute;left:0;bottom:0;width:100%;height:64px}
@@ -83,4 +88,4 @@
 .look-panel button:hover{background:var(--surface-2);color:var(--text)}
 .look-panel button[aria-pressed="true"]{border-color:var(--accent);background:var(--mark);color:var(--text);font-weight:700}
 
-@media (prefers-reduced-motion: reduce){.season i{display:none}}
+@media (prefers-reduced-motion: reduce){.season i,.season b{display:none}}

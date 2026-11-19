@@ -125,6 +125,32 @@ var DECO={
   }
 };
 
+// Tết fireworks: every few seconds a rocket climbs to a random spot in the upper sky and bursts.
+// They run only while the page is visible, and never with reduced motion.
+var fwTimer=0,FW=['var(--fw1)','var(--fw2)','var(--fw3)','var(--fw4)'];
+function fireworks(){
+  clearTimeout(fwTimer);
+  if(season!=='tet'||reduce)return;
+  if(!document.hidden){launch();if(Math.random()<.35)setTimeout(launch,250+Math.random()*400)}
+  fwTimer=setTimeout(fireworks,1300+Math.random()*1900);
+}
+function launch(){
+  var x=6+Math.random()*88,y=5+Math.random()*23,c=FW[Math.floor(Math.random()*FW.length)],climb=Math.min(innerHeight*.45,280);
+  var r=document.createElement('b');r.className='rocket';r.style.cssText='left:'+x+'%;top:'+y+'%;--c:'+c;layer.appendChild(r);
+  r.animate([{translate:'0 '+climb+'px',opacity:0},{opacity:1,offset:.25},{translate:'0 0',opacity:.9}],{duration:750,easing:'cubic-bezier(.2,.7,.4,1)'})
+    .onfinish=function(){r.remove();burst(x,y,c)};
+}
+function burst(x,y,c){
+  var n=innerWidth<600?24:40,R=innerWidth<600?60+Math.random()*40:100+Math.random()*80,two=Math.random()<.4?FW[Math.floor(Math.random()*FW.length)]:c;
+  var fl=document.createElement('b');fl.className='flash';fl.style.cssText='left:'+x+'%;top:'+y+'%;--c:'+c;layer.appendChild(fl);
+  fl.animate([{opacity:.9,scale:.3},{opacity:0,scale:1.6}],{duration:500,easing:'ease-out'}).onfinish=function(){fl.remove()};
+  for(var i=0;i<n;i++){
+    var a=i/n*Math.PI*2+Math.random()*.2,d=R*(.7+Math.random()*.3),s=document.createElement('b');
+    s.style.cssText='left:'+x+'%;top:'+y+'%;--c:'+(i%2?two:c);layer.appendChild(s);
+    s.animate([{translate:'0 0',opacity:1,scale:1.2},{translate:f1(Math.cos(a)*d)+'px '+f1(Math.sin(a)*d)+'px',opacity:.9,scale:1,offset:.55},{translate:f1(Math.cos(a)*d*1.08)+'px '+f1(Math.sin(a)*d*1.08+36)+'px',opacity:0,scale:.4}],
+      {duration:1300+Math.random()*500,easing:'cubic-bezier(.15,.7,.3,1)'}).onfinish=function(){this.effect.target.remove()};
+  }
+}
 function saved(){try{var v=localStorage.getItem(KEY);return NAMES[v]?v:'auto'}catch(e){return 'auto'}}
 function apply(next){
   season=next;root.setAttribute('data-season',season);layer.textContent='';
@@ -132,7 +158,7 @@ function apply(next){
   ps=29;layer.innerHTML=DECO[season]();
   if(!reduce)particles();
 }
-function choose(c){choice=c;apply(c==='auto'?pickSeason():c);render()}
+function choose(c){choice=c;apply(c==='auto'?pickSeason():c);fireworks();render()}
 // The button names the look on screen; the panel lists every look, with the current choice pressed.
 function render(){
   var en=root.lang==='en',i=en?2:1,cal=NAMES[pickSeason()],cur=NAMES[season];
