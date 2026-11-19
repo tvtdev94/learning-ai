@@ -42,7 +42,7 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 
 ## Trạng thái các chủ đề
 
-### Đã publish (28)
+### Đã publish (29)
 
 | Slug | Nguồn | Ghi chú |
 |---|---|---|
@@ -74,6 +74,7 @@ Cập nhật lần cuối: 2026-11-16 chiều (Asia/Saigon). File này dùng đ�
 | `llm-rubric-grading` | 31 | Publish 2026-11-19. Dùng LLM chấm điểm như tính năng sản phẩm, khác `llm-evaluation`. Review: `_work/notes/kongming-261119-llm-rubric-grading-review.md` |
 | `document-parsing-chunking` | 35 | Publish 2026-11-19. Có playground chunker. Review: `_work/notes/kongming-261119-document-parsing-chunking-review.md` |
 | `long-document-extraction` | 32 | Publish 2026-11-19. Có mô phỏng chạy theo lượt với checkpoint và sổ cái, máy tính F1. Review: `_work/notes/kongming-261119-long-document-extraction-review.md` |
+| `multilingual-rag` | 34 | Publish 2026-11-19. 4 kiến trúc (dịch rồi embed, embedding đa ngôn ngữ, dịch câu hỏi, kết hợp), mô phỏng truy hồi và máy tính chi phí dịch. Review: `_work/notes/kongming-261119-multilingual-rag-review.md` |
 
 ### Bản nháp trong repo, chưa publish (nằm trong `exclude`)
 
@@ -97,7 +98,7 @@ Mỗi đợt 2 chủ đề chạy song song, mỗi chủ đề một phiên theo
 | 6 | `langchain`, `langgraph` (chuỗi hệ sinh thái LangChain, trang mới) | 8795, 8796 | Xong (2026-11-18) |
 | 7 | `langsmith` (bài cuối chuỗi, trang mới) | 8797 | Xong (2026-11-19) |
 | 8 | `document-parsing-chunking`, `llm-rubric-grading` (trang mới) | 8798, 8799 | Xong (2026-11-19) |
-| 9 | `long-document-extraction`, `multilingual-rag` (trang mới) | 8800, 8801 | Đang làm (2026-11-19) |
+| 9 | `long-document-extraction`, `multilingual-rag` (trang mới) | 8800, 8801 | Xong (2026-11-19) |
 
 Bảng port (8781–8794) và phạm vi nội dung của từng chủ đề nằm trong `_work/topic-session-brief.md`, cùng mục "Bảng chủ đề đợt 2".
 
