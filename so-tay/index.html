@@ -53,6 +53,14 @@ a.topic:hover,a.topic:focus-visible{border-color:var(--accent);transform:transla
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .chip[aria-pressed="true"]{color:#15171a}}
 [hidden]{display:none!important}
 .empty{color:var(--muted)}
+.search{position:relative;margin:0 0 12px}
+.search input{width:100%;min-height:44px;padding:8px 44px 8px 40px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);font:inherit;font-size:16px;box-shadow:var(--shadow)}
+.search input:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:var(--accent)}
+.search input::-webkit-search-cancel-button{display:none}
+.search svg{position:absolute;left:12px;top:50%;translate:0 -50%;width:18px;height:18px;fill:var(--muted);pointer-events:none}
+.search kbd{position:absolute;right:10px;top:50%;translate:0 -50%;min-width:24px;padding:1px 6px;border:1px solid var(--border);border-bottom-width:2px;border-radius:6px;background:var(--surface-2);color:var(--muted);font:600 13px/1.4 system-ui,sans-serif;text-align:center;pointer-events:none}
+.search input:focus~kbd,.search input:not(:placeholder-shown)~kbd{display:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 .back{display:inline-flex;align-items:center;min-height:40px;color:var(--accent);font-weight:600;text-decoration:none}
 .back:hover{text-decoration:underline}
 .topic .go{margin-top:12px;color:var(--accent);font-weight:600;font-size:14px}
@@ -100,7 +108,9 @@ footer{color:var(--muted);font-size:14px;margin-top:32px}
   </div>
   <h1>Sổ tay</h1>
   <p class="lead">Ghi chép những gì tôi học: AI, lập trình và cả chuyện trong cuộc sống. Mỗi bài là một trang riêng, đọc tốt trên điện thoại. Bấm vào một thẻ để bắt đầu.</p>
+  <div class="search" role="search"><label class="sr" for="q">Tìm trong Sổ tay</label><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 2a8 8 0 0 1 6.3 12.9l5.4 5.4-1.4 1.4-5.4-5.4A8 8 0 1 1 10 2zm0 2a6 6 0 1 0 0 12 6 6 0 0 0 0-12z"/></svg><input type="search" id="q" placeholder="Tìm bài: rag, agent, chi phí…" autocomplete="off" spellcheck="false" aria-describedby="qCount" aria-keyshortcuts="/"><kbd aria-hidden="true">/</kbd></div>
   <div class="filters" id="filters" role="group" aria-label="Lọc theo nhóm"></div>
+  <p class="sr" id="qCount" aria-live="polite"></p>
   <div class="brain" id="brain" role="group" aria-label="Đồ thị liên kết giữa các bài. Danh sách đầy đủ ở bên dưới.">
     <div class="brain-ctl"><button type="button" data-z="in" aria-label="Phóng to">+</button><button type="button" data-z="out" aria-label="Thu nhỏ">−</button><button type="button" data-z="fit" aria-label="Xem toàn bộ">⤢</button></div>
   </div>
@@ -156,16 +166,35 @@ footer{color:var(--muted);font-size:14px;margin-top:32px}
     a.innerHTML='<div class="icon" aria-hidden="true">'+t.icon+'</div><h2>'+esc(t.title)+'</h2><p><b>'+esc(t.sub)+'</b></p><p style="margin-top:6px">'+esc(t.desc)+'</p><div class="meta">'+t.tags.map(function(g){return '<span class="tag">'+esc(g)+'</span>'}).join('')+'</div><div class="go">Bắt đầu học →</div>';
     grid.appendChild(a);
   });
+  // Search: every word typed must appear in a note's title, subtitle, description or tags.
+  // Accents and case are ignored, so "chi phi" finds "chi phí". It works together with the group chips.
+  var qBox=document.getElementById('q'),qCount=document.getElementById('qCount'),group='all',words=[];
+  function fold(s){return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'d').toLowerCase()}
+  var HAY=TOPICS.map(function(t){return fold([t.title,t.sub,t.desc].concat(t.tags).join(' '))});
+  function hit(i){return words.every(function(w){return HAY[i].indexOf(w)>=0})}
+  function inGroup(i,g){return g==='all'||(TOPICS[i].group||'ai')===g}
+  function shown(i){return inGroup(i,group)&&hit(i)}
+  // Each chip counts the notes it would show for what is typed.
+  function label(b){var n=0;TOPICS.forEach(function(t,i){if(inGroup(i,b.dataset.g)&&hit(i))n++});b.textContent=b.dataset.name+' ('+n+')'}
   function show(g){
+    if(g)group=g;
     var n=0;
-    [].forEach.call(grid.children,function(a){var on=g==='all'||a.dataset.group===g;a.hidden=!on;if(on)n++});
-    [].forEach.call(filters.children,function(b){b.setAttribute('aria-pressed',b.dataset.g===g?'true':'false')});
+    [].forEach.call(grid.children,function(a,i){var on=shown(i);a.hidden=!on;if(on)n++});
+    [].forEach.call(filters.children,function(b){b.setAttribute('aria-pressed',b.dataset.g===group?'true':'false');label(b)});
     empty.hidden=n>0;
-    if(graph)graph.filter(g);
+    empty.textContent=words.length?'Không có bài nào khớp “'+qBox.value.trim()+'”.':'Nhóm này chưa có bài nào.';
+    qCount.textContent=words.length?n+' bài khớp':'';
+    if(graph)graph.filter(function(nd){return shown(nd.i)});
   }
+  qBox.addEventListener('input',function(){words=fold(qBox.value).split(/\s+/).filter(Boolean);show()});
+  qBox.addEventListener('keydown',function(e){if(e.key==='Escape'&&qBox.value){qBox.value='';words=[];show();e.stopPropagation()}});
+  // Press / anywhere (outside a text field) to jump to the search box.
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='/'||e.ctrlKey||e.metaKey||e.altKey||/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)||e.target.isContentEditable)return;
+    e.preventDefault();qBox.focus();qBox.select();
+  });
   GROUPS.forEach(function(g){
-    var n=g[0]==='all'?TOPICS.length:TOPICS.filter(function(t){return (t.group||'ai')===g[0]}).length;
-    var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.g=g[0];b.textContent=g[1]+' ('+n+')';
+    var b=document.createElement('button');b.type='button';b.className='chip';b.dataset.g=g[0];b.dataset.name=g[1];
     b.addEventListener('click',function(){show(g[0])});filters.appendChild(b);
   });
   // Graph view in the style of a second brain. Links are inferred from the notes themselves,
@@ -284,16 +313,16 @@ footer{color:var(--muted);font-size:14px;margin-top:32px}
     function loop(){if(running)return;running=true;requestAnimationFrame(function f(){tick();draw();if(alpha>0.005||alphaTarget>0)requestAnimationFrame(f);else running=false})}
 
     // Highlight and selection.
-    var info=document.getElementById('brainInfo'),sel=null,hover=null,group='all';
+    var info=document.getElementById('brainInfo'),sel=null,hover=null,pass=function(){return true};
     function paint(){
       var f=sel||hover;focusNode=f;box.classList.toggle('focus',!!f);
       N.forEach(function(n){
         var on=!!f&&(n===f||f.nb.indexOf(n)>=0);
         n.g.classList.toggle('hi',on);n.g.classList.toggle('sel',n===sel);
-        n.g.classList.toggle('off',group!=='all'&&n.group!==group);
+        n.g.classList.toggle('off',!pass(n));
       });
       labels();
-      L.forEach(function(l){l.el.classList.toggle('hi',!!f&&(l.s===f||l.t===f));l.el.classList.toggle('off',group!=='all'&&(l.s.group!==group||l.t.group!==group))});
+      L.forEach(function(l){l.el.classList.toggle('hi',!!f&&(l.s===f||l.t===f));l.el.classList.toggle('off',!pass(l.s)||!pass(l.t))});
     }
     function esc2(s){return esc(s)}
     function select(n){
@@ -339,7 +368,8 @@ footer{color:var(--muted);font-size:14px;margin-top:32px}
     svg.addEventListener('wheel',function(e){if(!e.ctrlKey)return;e.preventDefault();var p=local(e);zoom(Math.exp(-e.deltaY*0.01),p.x,p.y)},{passive:false});
     var rt=0;addEventListener('resize',function(){clearTimeout(rt);rt=setTimeout(function(){fit();draw();paint()},150)});
 
-    return {filter:function(g){group=g;if(sel&&g!=='all'&&sel.group!==g)select(null);else paint()}};
+    // f(node) says whether a note passes the current group and search; the rest fade out.
+    return {filter:function(f){pass=f;if(sel&&!pass(sel))select(null);else paint()}};
   })();
   show('all');
   var root=document.documentElement;
