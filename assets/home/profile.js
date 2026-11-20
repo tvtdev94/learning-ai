@@ -20,8 +20,8 @@ btn.addEventListener('click',function(){
 var typed=document.getElementById('typed'),full=typed.textContent,typeTimer=0;
 // Roles cycle like a typewriter. Edit ROLES (and the screen-reader copy in .role) to change them.
 var ROLES={
-  vi:[full,'Làm web từ 2015 với .NET, Angular, React','Xây dựng AgentKit','Giải pháp tăng hiệu quả và năng suất AI','Xây hệ thống AI','Học RAG và agent','Viết Sổ tay học tập'],
-  en:['Full-stack developer','Building for the web since 2015: .NET, Angular, React','Building AgentKit','Solutions for AI efficiency and productivity','Building AI systems','Learning RAG and agents','Writing a learning notebook']
+  vi:[full,'Làm web từ 2015 với .NET, Angular, React','Xây ứng dụng AI với Python, FastAPI, LangChain','Viết công cụ mã nguồn mở cho Claude Code','Ghi chép về RAG và agent trong Sổ tay'],
+  en:['Full-stack developer','Building for the web since 2015 with .NET, Angular, React','Building AI apps with Python, FastAPI, LangChain','Writing open-source tools for Claude Code','Keeping notes on RAG and agents']
 },lang='vi';
 // The role list for the current language, led by any occasion greetings.
 function roles(l){return greetings(l||lang).concat(ROLES[l||lang])}
