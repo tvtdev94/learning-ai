@@ -19,3 +19,6 @@ Truy cập 2026-11-20. Mỗi dòng: khẳng định → URL → câu trích.
 - Phím tắt Esc, Esc Esc, Shift+Tab, !, @, Ctrl+R, Ctrl+G, Ctrl+B, Ctrl+O, Ctrl+T → interactive-mode → bảng "General controls" và "Quick commands"
 - Bảng thói quen cũ → best-practices → "What you can stop doing"
 - Bài blog cũ anthropic.com/engineering/claude-code-best-practices trả 308 sang code.claude.com/docs/en/best-practices (kiểm bằng WebFetch).
+
+## Added after the review (2026-11-20)
+- [4] https://code.claude.com/docs/en/checkpointing: "Any other subagent: rewinding restores only the files Claude had already edited in your conversation. The subagent's edits to other files stay". Used for the subagent caveat in tip 6.
