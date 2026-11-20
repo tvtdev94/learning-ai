@@ -20,8 +20,8 @@ btn.addEventListener('click',function(){
 var typed=document.getElementById('typed'),full=typed.textContent,typeTimer=0;
 // Roles cycle like a typewriter. Edit ROLES (and the screen-reader copy in .role) to change them.
 var ROLES={
-  vi:[full,'Xây dựng AgentKit','Giải pháp tăng hiệu quả và năng suất AI','Xây hệ thống AI','Học RAG và agent','Viết Sổ tay học tập'],
-  en:['Software developer','Building AgentKit','Solutions for AI efficiency and productivity','Building AI systems','Learning RAG and agents','Writing a learning notebook']
+  vi:[full,'Làm web từ 2015 với .NET, Angular, React','Xây dựng AgentKit','Giải pháp tăng hiệu quả và năng suất AI','Xây hệ thống AI','Học RAG và agent','Viết Sổ tay học tập'],
+  en:['Full-stack developer','Building for the web since 2015: .NET, Angular, React','Building AgentKit','Solutions for AI efficiency and productivity','Building AI systems','Learning RAG and agents','Writing a learning notebook']
 },lang='vi';
 // The role list for the current language, led by any occasion greetings.
 function roles(l){return greetings(l||lang).concat(ROLES[l||lang])}
@@ -50,7 +50,7 @@ me.addEventListener('click',function(){if(!reduce)ripple()});
 // Language: the Vietnamese text lives in the HTML, English strings live here.
 // ?lang=en links straight to the English profile; the choice is remembered on this device.
 var EN={
-  title:'Trần Văn Tuấn · Software developer',nav:'Pages',notebook:'Notebook',products:'Products',theme:'Toggle light/dark theme',
+  title:'Trần Văn Tuấn · Full-stack developer',nav:'Pages',notebook:'Notebook',products:'Products',theme:'Toggle light/dark theme',
   alt:'Photo of Trần Văn Tuấn',chipCode:'Programming',chipLife:'Life',contact:'Contact',replay:'Replay the build',nowLink:'What I’m working on lately',
   bio:'This is where I write down what I learn: <mark>AI, programming and life</mark>.'
 };
