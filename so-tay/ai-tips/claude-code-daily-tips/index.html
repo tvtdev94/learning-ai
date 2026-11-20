@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>10 mẹo dùng Claude Code hằng ngày · AI tips</title>
+<!-- pwa -->
+<link rel="manifest" href="../../../manifest.webmanifest">
+<meta name="theme-color" content="#f7f6f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15171a" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" sizes="32x32" href="../../../icons/favicon-32.png">
+<link rel="apple-touch-icon" href="../../../icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sổ tay">
+<script>if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('../../../sw.js').catch(function(){})})</script>
+<meta name="description" content="10 mẹo dùng Claude Code hằng ngày, kiểm theo tài liệu chính thức: prompt cụ thể, plan mode, CLAUDE.md ngắn, phép kiểm tra, hook, rewind, context, effort, subagent, worktree.">
+<meta property="og:title" content="10 mẹo dùng Claude Code hằng ngày · AI tips">
+<meta property="og:description" content="Mười mẹo dùng Claude Code hằng ngày, mỗi mẹo dẫn tài liệu chính thức.">
+<meta property="og:image" content="https://tvtdev94.github.io/images/avatar.png">
+<meta property="og:url" content="https://tvtdev94.github.io/so-tay/ai-tips/claude-code-daily-tips/">
+<script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<script>try{var l=/[?&]lang=(en|vi)\b/.exec(location.search);l=l?l[1]:localStorage.getItem('profile-lang');if(l==='en')document.documentElement.lang='en'}catch(e){}</script>
+<!--
+  One AI tips post. Text comes in pairs: data-l="vi" and data-l="en".
+  Every command, flag and shortcut here was checked against the Claude Code docs on the date in the sources list.
+-->
+<style>
+:root{
+  --bg:#f3f6fc; --bg-glow:rgba(37,89,184,.12); --surface:#ffffff; --surface-2:#e7edf8; --line:#d1daeb;
+  --text:#111729; --muted:#47526a; --accent:#2559b8; --mark:rgba(37,89,184,.12); --ok:#16703d; --bad:#a82f2f; --star:#b06a00; --focus:#2559b8;
+  --term:#0d1326; --term-text:#dfe6f5; --term-muted:#9aa6c2;
+  --shadow:0 1px 2px rgba(17,23,41,.05),0 8px 24px rgba(17,23,41,.06);
+  --ease:cubic-bezier(.22,1,.36,1); color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0a0f1f; --bg-glow:rgba(120,160,255,.14); --surface:#121a31; --surface-2:#19223d; --line:#273356;
+    --text:#ebeff8; --muted:#a6b0c6; --accent:#86acff; --mark:rgba(134,172,255,.16); --ok:#4cc184; --bad:#ec7373; --star:#f4c95d; --focus:#86acff;
+    --term:#060a16; --shadow:none; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0a0f1f; --bg-glow:rgba(120,160,255,.14); --surface:#121a31; --surface-2:#19223d; --line:#273356;
+  --text:#ebeff8; --muted:#a6b0c6; --accent:#86acff; --mark:rgba(134,172,255,.16); --ok:#4cc184; --bad:#ec7373; --star:#f4c95d; --focus:#86acff;
+  --term:#060a16; --shadow:none; color-scheme:dark;
+}
+*{box-sizing:border-box}
+:root[lang="en"] [data-l="vi"],:root:not([lang="en"]) [data-l="en"]{display:none!important}
+body{margin:0;background:radial-gradient(90% 50% at 80% -10%,var(--bg-glow),transparent 60%) no-repeat,var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:3px;border-radius:8px}
+
+.bar{max-width:1000px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:8px}
+.back{display:inline-flex;align-items:center;gap:6px;min-height:40px;margin-right:auto;font-weight:600;font-size:15px;color:var(--muted);text-decoration:none}
+.back:hover{color:var(--text)}
+.btn{display:inline-grid;place-items:center;min-width:40px;height:40px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--text);font:800 13px/1 system-ui,-apple-system,sans-serif;letter-spacing:.04em;cursor:pointer;transition:border-color .2s}
+.btn:hover{border-color:var(--accent)}
+.btn svg{width:20px;height:20px}
+
+main{max-width:1000px;margin:0 auto;padding:8px 16px 56px}
+h1{margin:8px 0 6px;font-size:clamp(32px,8vw,52px);line-height:1.1;letter-spacing:-.02em}
+.lead{margin:0;max-width:60ch;color:var(--muted);font-size:17px}
+
+.toc{margin:22px 0 0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:8px}
+.toc a{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-weight:700;font-size:15px;text-decoration:none}
+.toc a:hover{border-color:var(--accent)}
+.toc b{color:var(--accent)}
+.tip{position:relative;margin-top:28px;padding:22px 20px;background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);display:grid;grid-template-columns:minmax(0,1fr);gap:16px;min-width:0}
+.tip::before{content:"";position:absolute;inset:-1px -1px auto;height:3px;border-radius:20px 20px 0 0;background:linear-gradient(90deg,var(--accent),transparent 70%)}
+.num{display:inline-grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--mark);color:var(--accent);font-weight:800}
+.t-head{display:flex;align-items:center;gap:12px}
+.t-head h2{margin:0;font-size:clamp(22px,5vw,28px);line-height:1.2}
+.tip h3{margin:6px 0 0;font-size:18px}
+.tip p{margin:0;font-size:17px;max-width:68ch}
+.tip code{font:15px ui-monospace,"SF Mono",Menlo,Consolas,monospace;padding:1px 6px;border-radius:6px;background:var(--surface-2);overflow-wrap:anywhere}
+.why{margin:0;padding:12px 16px;border-left:3px solid var(--star);background:var(--surface-2);border-radius:0 12px 12px 0;font-size:16px}
+.groups{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+@media (min-width:760px){.groups{grid-template-columns:1fr 1fr}}
+.groups li{padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--bg);font-size:15px}
+.groups b{display:block;font-size:15px;margin-bottom:2px}
+.file{border-radius:14px;background:var(--term);color:var(--term-text);overflow:hidden}
+.file-bar{display:flex;align-items:center;gap:10px;padding:8px 10px 8px 14px;border-bottom:1px solid #1f2a48;font:600 13px system-ui,sans-serif;color:var(--term-muted)}
+.file-bar span{margin-right:auto;font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
+.file pre{margin:0;padding:12px 14px 14px;max-height:420px;overflow:auto;font:13.5px/1.6 ui-monospace,"SF Mono",Menlo,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+.term{display:flex;gap:10px;align-items:flex-start;border-radius:14px;background:var(--term);color:var(--term-text);font:14px/1.7 ui-monospace,"SF Mono",Menlo,Consolas,monospace;padding:12px 10px 12px 14px}
+.term .k{color:var(--term-muted);user-select:none}
+.term code{flex:1;min-width:0;overflow-x:auto;white-space:pre;padding:2px 0 6px;background:none;font-size:14px}
+.copy{order:1;flex:none;min-height:40px;padding:0 12px;border-radius:10px;border:1px solid #2a3558;background:#141c35;color:var(--term-text);font:600 13px system-ui,sans-serif;cursor:pointer}
+.copy:hover{border-color:#86acff}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th,td{text-align:left;vertical-align:top;padding:9px 10px;border-bottom:1px solid var(--line)}
+th{font-size:13px;color:var(--muted)}
+.tbl{overflow-x:auto}
+.links{display:flex;flex-wrap:wrap;gap:8px}
+.links a{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--line);font-weight:700;font-size:15px;text-decoration:none}
+.links a.primary{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.links a:hover{border-color:var(--accent)}
+.src{margin:0;padding-left:20px;font-size:14px;color:var(--muted)}
+.src a{overflow-wrap:anywhere}
+sup.cite{font-size:12px;font-weight:700}
+sup.cite a{color:var(--accent);text-decoration:none}
+/* cite-tap */
+/* Same tap area for citation links on every page: at least 40px high and 24px wide.
+   Negative vertical margins keep line spacing unchanged. */
+sup.cite a{display:inline-block;box-sizing:border-box;min-width:24px;line-height:1;padding:15px 3px;margin-top:-15px;margin-bottom:-15px;text-align:center}
+.more{margin:28px 0 0;color:var(--muted);font-size:15px}
+.kicker{margin:8px 0 0;font-size:14px;font-weight:700;color:var(--muted);letter-spacing:.02em}
+.tip{margin-top:12px}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+.toc{margin:18px 0 0}
+.tip pre{margin:0;padding:12px 14px;border-radius:14px;background:var(--term);color:var(--term-text);font:13.5px/1.6 ui-monospace,"SF Mono",Menlo,Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+.tip ul{margin:0;padding-left:20px;font-size:17px;max-width:68ch}
+.tip ul li{margin:4px 0}
+td code,th code{font:14px ui-monospace,"SF Mono",Menlo,Consolas,monospace;padding:1px 5px;border-radius:6px;background:var(--surface-2);overflow-wrap:anywhere}
+@media (max-width:600px){table.stack thead{display:none}table.stack tr{display:block;padding:8px 0;border-bottom:1px solid var(--line)}table.stack td{display:block;border:0;padding:3px 0}}
+</style>
+</head>
+<body>
+<header class="bar">
+  <a class="back" href="../">← AI tips</a>
+  <button class="btn" id="langBtn" type="button">EN</button>
+  <button class="btn" id="themeBtn" type="button" aria-label="Đổi giao diện sáng/tối"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2v16a8 8 0 0 1 0-16z"/></svg></button>
+</header>
+
+<main>
+  <p class="kicker">AI tips · <span data-l="vi">Bài 2</span><span data-l="en">Post 2</span></p>
+  <h1><span data-l="vi">10 mẹo dùng Claude Code hằng ngày</span><span data-l="en">10 everyday Claude Code tips</span></h1>
+  <p class="lead" data-l="vi">Mười mẹo dùng Claude Code hằng ngày, lấy từ tài liệu chính thức. Lệnh, cờ và phím tắt trong bài đều kiểm theo tài liệu chính thức ngày 20/11/2026. Claude Code ra bản mới thường xuyên, nên nếu lệnh nào chạy khác đi, hãy xem lại tài liệu ở mục Nguồn.</p>
+  <p class="lead" data-l="en">Ten everyday Claude Code tips, taken from the official docs. Every command, flag and shortcut here was checked against the official docs on 2026-11-20. Claude Code ships often, so if a command behaves differently, check the docs in the Sources list.</p>
+
+  <ul class="toc">
+    <li><a href="#prompt"><b>1</b><span data-l="vi">Prompt cụ thể</span><span data-l="en">Specific prompts</span></a></li>
+    <li><a href="#plan"><b>2</b>Plan mode</a></li>
+    <li><a href="#claude-md"><b>3</b><span data-l="vi">CLAUDE.md ngắn</span><span data-l="en">Short CLAUDE.md</span></a></li>
+    <li><a href="#check"><b>4</b><span data-l="vi">Phép kiểm tra</span><span data-l="en">A check to run</span></a></li>
+    <li><a href="#hook"><b>5</b><span data-l="vi">Hook và deny</span><span data-l="en">Hooks and deny rules</span></a></li>
+    <li><a href="#steer"><b>6</b><span data-l="vi">Dừng và quay lại</span><span data-l="en">Stop and rewind</span></a></li>
+    <li><a href="#context"><b>7</b><span data-l="vi">Context gọn</span><span data-l="en">Lean context</span></a></li>
+    <li><a href="#effort"><b>8</b>Effort</a></li>
+    <li><a href="#subagent"><b>9</b>Subagent</a></li>
+    <li><a href="#parallel"><b>10</b><span data-l="vi">Chạy song song</span><span data-l="en">Run in parallel</span></a></li>
+    <li><a href="#keys"><b>⌨</b><span data-l="vi">Phím tắt</span><span data-l="en">Shortcuts</span></a></li>
+  </ul>
+
+  <article class="tip" id="prompt">
+    <div class="t-head"><span class="num">1</span><h2><span data-l="vi">Nói cho Claude điều nó không tự thấy</span><span data-l="en">Tell Claude what it can't see</span></h2></div>
+    <p data-l="vi">Claude bắt đầu mỗi việc bằng cách đọc code, nên cấu trúc thư mục, quy ước đặt tên hay framework test thì nó tự tìm ra. Thứ nó không thấy là những gì chưa từng nằm trong repo: một quyết định chốt trong buổi họp, quy trình deploy chỉ một người nhớ, biến môi trường mà bộ test tích hợp cần.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="en">Claude starts every task by reading your code, so it finds your folder layout, naming conventions and test framework on its own. What it can't see is anything that was never in the repo: a decision made in a meeting, a deploy process one person remembers, the environment variable your integration tests need.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="vi">Prompt cũng vậy. Nêu tên file, tả triệu chứng, nói rõ thế nào là xong, bạn đỡ được một vòng sửa qua lại. Ví dụ dưới đây phỏng theo tài liệu:</p>
+    <p data-l="en">The same goes for a prompt. Name the file, describe the symptom and say what "fixed" looks like, and you skip a round of corrections. This example is adapted from the docs:</p>
+    <div class="tbl"><table class="stack">
+      <thead><tr><th><span data-l="vi">Thay vì</span><span data-l="en">Instead of</span></th><th><span data-l="vi">Hãy viết</span><span data-l="en">Try</span></th></tr></thead>
+      <tbody><tr>
+        <td><span data-l="vi">"sửa lỗi đăng nhập"</span><span data-l="en">"fix the login bug"</span></td>
+        <td><span data-l="vi">"người dùng báo đăng nhập lỗi sau khi phiên hết hạn. xem phần refresh token trong <code>src/auth/</code>, viết một test fail tái hiện lỗi, rồi sửa"</span><span data-l="en">"users report login fails after the session times out. look at token refresh in <code>src/auth/</code>, write a failing test that reproduces it, then fix it"</span></td>
+      </tr></tbody>
+    </table></div>
+    <p data-l="vi">Có sẵn thứ Claude cần thì đưa luôn, đừng tả lại: gõ <code>@</code> kèm đường dẫn để gửi nội dung file, dán ảnh chụp màn hình lỗi, hoặc chuyển output từ shell vào:<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="en">If you already have what Claude needs, hand it over instead of describing it: type <code>@</code> and a path to include a file, paste a screenshot of the error, or pipe output in from your shell:<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <div class="term"><button class="copy" type="button" data-copy='cat error.log | claude -p "what&apos;s going on here"'><span data-l="vi">Chép</span><span data-l="en">Copy</span></button><code><span class="k">$ </span>cat error.log | claude -p "what's going on here"</code></div>
+    <p data-l="vi">Khi chưa rõ mình muốn gì, nhờ Claude phỏng vấn bạn cho tới khi đủ ý để viết spec vào <code>SPEC.md</code>. Sau đó mở một phiên mới để làm theo spec, phiên đó bắt đầu với context sạch và một định nghĩa "xong" bằng văn bản.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="en">When you don't know exactly what you want yet, ask Claude to interview you until it can write the spec to <code>SPEC.md</code>. Then start a fresh session to build from it, with a clean context and a written definition of done.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+  </article>
+
+  <article class="tip" id="plan">
+    <div class="t-head"><span class="num">2</span><h2><span data-l="vi">Bật plan mode trước khi sửa nhiều</span><span data-l="en">Use plan mode before a big change</span></h2></div>
+    <p data-l="vi">Ở plan mode, Claude đọc file, chạy lệnh để tìm hiểu rồi viết kế hoạch, nhưng không sửa source cho tới khi bạn duyệt kế hoạch đó.<sup class="cite"><a href="#src-2">[2]</a></sup> Bạn đọc kế hoạch, sửa chỗ hiểu sai, rồi mới để Claude làm.</p>
+    <p data-l="en">In plan mode Claude reads files, runs shell commands to explore and writes a plan, but it doesn't edit your source until you approve that plan.<sup class="cite"><a href="#src-2">[2]</a></sup> You read the plan, fix what it got wrong, and only then let Claude build.</p>
+    <ul data-l="vi">
+      <li>Nhấn <code>Shift+Tab</code> để đổi chế độ quyền. Từ <code>auto</code>, lần nhấn đầu chuyển sang <code>default</code> (Manual), sau đó lần lượt là <code>acceptEdits</code> rồi <code>plan</code>.</li>
+      <li>Chỉ cần plan cho một prompt thì gõ <code>/plan</code> ở đầu prompt đó.</li>
+      <li>Mở phiên ở plan mode ngay từ đầu: <code>claude --permission-mode plan</code>.</li>
+      <li>Muốn thoát thì nhấn <code>Shift+Tab</code> lần nữa. Riêng ở màn hình duyệt kế hoạch, nhấn <code>Esc</code> trước, vì <code>Shift+Tab</code> ở đó là duyệt luôn kế hoạch.<sup class="cite"><a href="#src-2">[2]</a></sup></li>
+    </ul>
+    <ul data-l="en">
+      <li>Press <code>Shift+Tab</code> to cycle permission modes. From <code>auto</code>, the first press switches to <code>default</code> (Manual), then <code>acceptEdits</code>, then <code>plan</code>.</li>
+      <li>For a single prompt, start it with <code>/plan</code>.</li>
+      <li>To start the whole session in plan mode: <code>claude --permission-mode plan</code>.</li>
+      <li>Press <code>Shift+Tab</code> again to leave. At the plan approval prompt, press <code>Esc</code> first, because <code>Shift+Tab</code> there approves the plan.<sup class="cite"><a href="#src-2">[2]</a></sup></li>
+    </ul>
+    <p data-l="vi">Từ Claude Code v2.1.283, phiên mới trong terminal và VS Code mặc định chạy ở auto mode.<sup class="cite"><a href="#src-2">[2]</a></sup></p>
+    <p data-l="en">Since Claude Code v2.1.283, new terminal and VS Code sessions start in auto mode.<sup class="cite"><a href="#src-2">[2]</a></sup></p>
+  </article>
+
+  <article class="tip" id="claude-md">
+    <div class="t-head"><span class="num">3</span><h2><span data-l="vi">Giữ CLAUDE.md thật ngắn</span><span data-l="en">Keep CLAUDE.md short</span></h2></div>
+    <p data-l="vi">Claude Code nạp <code>CLAUDE.md</code> vào mọi phiên, nên mỗi dòng trong đó lấy đi một chút chú ý của Claude ở mọi việc, kể cả việc không liên quan. Tài liệu khuyên chỉ ghi:<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="en">Claude Code loads <code>CLAUDE.md</code> into every session, so every line takes a little of Claude's attention on every task, relevant or not. The docs suggest keeping only:<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <ul data-l="vi">
+      <li>lệnh kiểm tra của repo: test, typecheck, lint, và cách chạy riêng một file test;</li>
+      <li>chỗ code dễ gây hiểu lầm, ví dụ một pattern cũ còn khắp nơi nhưng code mới không được chép theo;</li>
+      <li>quyết định không có trong repo, như cách deploy hay helper xử lý lỗi mà nhóm đã chọn;</li>
+      <li>điều bạn đã phải sửa Claude hai lần.</li>
+    </ul>
+    <ul data-l="en">
+      <li>how to check work in this repo: the test, typecheck and lint commands, and how to run one test file;</li>
+      <li>places where the code is misleading, like an old pattern that's everywhere but new code must not copy;</li>
+      <li>decisions that aren't in the repo, like how deploys work or which error helper the team chose;</li>
+      <li>anything you've had to correct twice.</li>
+    </ul>
+    <p data-l="vi"><code>/init</code> tạo bản đầu từ codebase, phần việc còn lại chủ yếu là xóa bớt; nên giữ dưới 200 dòng. Chạy <code>/context all</code> để chắc Claude đã nạp file. Sở thích riêng của bạn để trong <code>CLAUDE.local.md</code> và thêm file này vào <code>.gitignore</code>. Luật chỉ dành cho một phần code thì đặt trong <code>.claude/rules/</code> kèm bộ lọc <code>paths:</code>, để nó chỉ nạp khi Claude làm ở phần đó.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="en"><code>/init</code> generates a first version from your codebase, and most of the work after that is deleting lines; stay under 200. Run <code>/context all</code> to confirm Claude loaded the file. Personal preferences go in <code>CLAUDE.local.md</code>, added to <code>.gitignore</code>. A rule for one part of the codebase goes in <code>.claude/rules/</code> with a <code>paths:</code> filter, so it only loads when Claude works there.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="vi">Muốn có luật chung cho mọi dự án, xem <a href="../global-claude-md/">bài 1 về CLAUDE.md global</a>.</p>
+    <p data-l="en">For one set of rules across all your projects, see <a href="../global-claude-md/">post 1 on the global CLAUDE.md</a>.</p>
+  </article>
+
+  <article class="tip" id="check">
+    <div class="t-head"><span class="num">4</span><h2><span data-l="vi">Cho Claude một phép kiểm tra để tự chạy</span><span data-l="en">Give Claude a check it can run</span></h2></div>
+    <p data-l="vi">Claude dừng khi thấy việc trông có vẻ xong. Không có gì để chạy thì "trông có vẻ xong" là tất cả những gì nó có, và bạn thành bộ test.<sup class="cite"><a href="#src-1">[1]</a></sup> Có một phép kiểm trả về đạt hoặc không đạt thì Claude tự sửa, tự chạy lại cho tới khi đạt. Phép kiểm có thể là file test, exit code của bản build, linter, hay một script so output với fixture. Nếu repo đã có, dòng hữu ích nhất trong <code>CLAUDE.md</code> chính là lệnh chạy nó.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="en">Claude stops when the work looks done. With nothing to run, "looks done" is all it has, and you become the test suite.<sup class="cite"><a href="#src-1">[1]</a></sup> Give it a check that comes back pass or fail and it fixes and reruns until the check passes. That can be a test file, a build's exit code, a linter, or a script that diffs output against a fixture. If your repo has one, the most useful line in <code>CLAUDE.md</code> is the command that runs it.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="vi">Xin bằng chứng: lệnh Claude đã chạy và output của nó. Một câu "all tests pass" không nói được bao nhiêu. Muốn người khác soát, <code>/code-review</code> review diff bằng một subagent mới, chưa từng thấy hội thoại của bạn.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="en">Ask for evidence: the command Claude ran and its output. "All tests pass" on its own tells you very little. For a second pair of eyes, <code>/code-review</code> reviews the diff in a fresh subagent that never saw your conversation.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+  </article>
+
+  <article class="tip" id="hook">
+    <div class="t-head"><span class="num">5</span><h2><span data-l="vi">Luật không có ngoại lệ thì dùng hook hoặc deny</span><span data-l="en">Rules with no exceptions go in hooks or deny rules</span></h2></div>
+    <p data-l="vi"><code>CLAUDE.md</code>, prompt và skill là chỉ dẫn để Claude cân nhắc: gần như lần nào nó cũng làm theo, nhưng không có gì bảo đảm. Hook, deny rule và managed setting thì do Claude Code thực thi, lần nào cũng chạy, bất kể model nghĩ gì.<sup class="cite"><a href="#src-1">[1]</a></sup> Nếu bạn cứ thêm chữ IMPORTANT vào một dòng mà Claude vẫn bỏ qua, dòng đó nên chuyển thành hook.</p>
+    <p data-l="en"><code>CLAUDE.md</code>, prompts and skills are instructions Claude weighs: it follows them nearly every time, with no guarantee. Hooks, deny rules and managed settings are applied by Claude Code itself, every time, whatever the model decides.<sup class="cite"><a href="#src-1">[1]</a></sup> If you keep adding IMPORTANT to a line and Claude still misses it, that line belongs in a hook.</p>
+    <p data-l="vi">Chặn đọc <code>.env</code> bằng deny rule trong <code>.claude/settings.json</code>. Deny rule có hiệu lực ở mọi chế độ quyền, kể cả auto và <code>bypassPermissions</code>:<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="en">Block reading <code>.env</code> with a deny rule in <code>.claude/settings.json</code>. Deny rules hold in every permission mode, auto and <code>bypassPermissions</code> included:<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <pre>{
+  "permissions": {
+    "deny": ["Read(./.env)", "Read(./.env.local)", "Read(./secrets/**)"]
+  }
+}</pre>
+    <p data-l="vi">Bắt typecheck phải qua mới được kết thúc lượt bằng hook <code>Stop</code>. Script thoát với mã 2 thì Claude bị gửi lại làm tiếp, và những gì in ra stderr là lý do Claude nhận được:<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="en">Require a passing typecheck before the turn ends with a <code>Stop</code> hook. Exit code 2 sends Claude back to work, and whatever goes to stderr is the reason it gets:<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <pre>{
+  "hooks": {
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "pnpm tsc --noEmit 1&gt;&amp;2 || exit 2" } ] }
+    ]
+  }
+}</pre>
+    <p data-l="vi">Đừng lạm dụng. Hook dành cho luật không có ngoại lệ nào; cái gì chỉ là sở thích thì để Claude tự cân nhắc.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="en">Don't overdo it. A hook is for a rule with zero exceptions; anything that's only a preference can stay Claude's call.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+  </article>
+
+  <article class="tip" id="steer">
+    <div class="t-head"><span class="num">6</span><h2><span data-l="vi">Dừng sớm, quay lại khi cần</span><span data-l="en">Stop early, rewind when needed</span></h2></div>
+    <p data-l="vi">Xem phút đầu tiên Claude làm. Thấy nó đi lệch thì nhấn <code>Esc</code>: Claude dừng ngay và giữ lại phần đã làm, bạn chỉ hướng lại mà không mất gì.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="en">Watch the first minute. The moment Claude drifts, press <code>Esc</code>: it stops and keeps the work so far, so you can redirect without losing anything.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="vi">Nhấn <code>Esc</code> hai lần khi ô nhập đang trống, hoặc gõ <code>/rewind</code>, để mở menu quay lại. Ở đó bạn đưa code, hội thoại, hoặc cả hai về một prompt trước.<sup class="cite"><a href="#src-1">[1]</a></sup><sup class="cite"><a href="#src-3">[3]</a></sup> Nhờ vậy cứ thử cách táo bạo trước, không ổn thì quay lại. Lưu ý: checkpoint chỉ theo dõi file Claude sửa bằng công cụ sửa file của nó. File chỉ bị đổi qua lệnh Bash thì không được khôi phục, nên vẫn cần git.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="en">Press <code>Esc</code> twice on an empty prompt, or type <code>/rewind</code>, to open the rewind menu, where you roll the code, the conversation or both back to an earlier prompt.<sup class="cite"><a href="#src-1">[1]</a></sup><sup class="cite"><a href="#src-3">[3]</a></sup> That makes it cheap to try the bolder approach first. Checkpoints only cover files Claude edited with its own file tools; a file changed only by a Bash command isn't restored, so keep using git.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="vi">Đã sửa cùng một chỗ hai lần mà vẫn sai thì đừng sửa lần thứ ba. Chạy <code>/clear</code> rồi viết một prompt mới gộp những gì bạn vừa biết; hội thoại cũ đang chứa hai lần thử hỏng mà Claude cứ phải đọc lại.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="en">If you've corrected the same thing twice and it's still wrong, skip the third correction. Run <code>/clear</code> and write one new prompt that folds in what you learned; the old conversation holds two failed attempts that Claude keeps re-reading.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+  </article>
+
+  <article class="tip" id="context">
+    <div class="t-head"><span class="num">7</span><h2><span data-l="vi">Giữ context gọn để tốn ít hơn</span><span data-l="en">Keep context lean to spend less</span></h2></div>
+    <p data-l="vi">Mỗi request gửi lại cả hội thoại, nên một phiên đã gom ba việc không liên quan sẽ đọc lại cả ba ở mỗi lượt của việc thứ tư.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="en">Every request sends the whole conversation, so a session that has collected three unrelated tasks re-reads all three on every turn of the fourth.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <ul data-l="vi">
+      <li><code>/clear</code> giữa hai việc không liên quan. <code>/clear oauth-migration</code> đặt tên cho phiên vừa rời để sau này quay lại.</li>
+      <li><code>/compact</code> kèm trọng tâm, ví dụ <code>/compact keep the API changes and the test commands</code>. Trên phiên dài, bản thân lệnh này cũng là một request lớn.</li>
+      <li><code>/btw</code> hỏi nhanh một câu mà không thêm gì vào lịch sử hội thoại.<sup class="cite"><a href="#src-3">[3]</a></sup></li>
+      <li><code>/usage</code> cho biết usage đi vào đâu, chia theo skill, subagent, plugin và MCP server.</li>
+      <li>MCP server đang kết nối luôn thêm tên tool và chỉ dẫn vào context, kể cả khi không dùng. Tắt server không cần trong <code>/mcp</code>.<sup class="cite"><a href="#src-1">[1]</a></sup></li>
+    </ul>
+    <ul data-l="en">
+      <li><code>/clear</code> between unrelated tasks. <code>/clear oauth-migration</code> names the session you're leaving so you can come back to it.</li>
+      <li><code>/compact</code> with a focus, like <code>/compact keep the API changes and the test commands</code>. On a long session the command is itself a big request.</li>
+      <li><code>/btw</code> answers a quick question without adding anything to the history.<sup class="cite"><a href="#src-3">[3]</a></sup></li>
+      <li><code>/usage</code> shows where your usage went, by skill, subagent, plugin and MCP server.</li>
+      <li>Connected MCP servers add their tool names and instructions to the context even when unused. Turn off the ones you don't need in <code>/mcp</code>.<sup class="cite"><a href="#src-1">[1]</a></sup></li>
+    </ul>
+  </article>
+
+  <article class="tip" id="effort">
+    <div class="t-head"><span class="num">8</span><h2><span data-l="vi">Chỉnh effort thay vì viết "think hard"</span><span data-l="en">Set effort instead of writing "think hard"</span></h2></div>
+    <p data-l="vi">Effort là nút chính quyết định Claude nghĩ lâu bao nhiêu. Những câu như <code>think step by step</code> hay <code>be thorough</code> chỉ là chữ bình thường trong prompt, không phải từ khóa nâng mức suy nghĩ.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="en">Effort is the main control for how long Claude thinks. Phrases like <code>think step by step</code> or <code>be thorough</code> are ordinary prompt text, not keywords that raise it.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <ul data-l="vi">
+      <li><code>/effort high</code> hoặc <code>/effort xhigh</code> khi dễ sót trường hợp: lỗi trong code không phải bạn viết, test lúc qua lúc không, đổi schema phải tìm mọi chỗ đọc dữ liệu cũ.</li>
+      <li><code>/effort low</code> khi trao đổi qua lại nhanh và bạn đằng nào cũng xem từng kết quả.</li>
+      <li><code>max</code> để dành cho bài khó muốn Claude tự làm một mình. Với việc thường, nó hay nghĩ quá mức.</li>
+      <li>Chỉ một câu hỏi khó giữa chừng thì thêm <code>ultrathink</code> vào prompt đó, không cần đổi cài đặt.<sup class="cite"><a href="#src-1">[1]</a></sup></li>
+    </ul>
+    <ul data-l="en">
+      <li><code>/effort high</code> or <code>/effort xhigh</code> when cases are easy to miss: a bug in code you didn't write, a flaky test, a schema change where every reader of the old shape must be found.</li>
+      <li><code>/effort low</code> when you're going back and forth quickly and reviewing each result anyway.</li>
+      <li>Save <code>max</code> for a hard problem you want Claude to work through alone. On ordinary tasks it tends to overthink.</li>
+      <li>For one tricky question in the middle, put <code>ultrathink</code> in that prompt instead of changing the setting.<sup class="cite"><a href="#src-1">[1]</a></sup></li>
+    </ul>
+    <p data-l="vi">Một câu vẫn có ích là <code>be ambitious</code>. Claude thường hiểu yêu cầu theo nghĩa hẹp và làm phần nhỏ nhất đủ đáp ứng. Câu này nói cho nó biết phạm vi bạn muốn, ví dụ cả trạng thái rỗng, trạng thái lỗi và điều hướng bằng bàn phím, chứ không chỉ layout.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="en">One phrase that still helps is <code>be ambitious</code>. Claude tends to read a request conservatively and build the smallest thing that satisfies it. The phrase tells it the scope you want, such as empty and error states and keyboard navigation, not just the layout.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+  </article>
+
+  <article class="tip" id="subagent">
+    <div class="t-head"><span class="num">9</span><h2><span data-l="vi">Dùng subagent khi có lý do</span><span data-l="en">Use subagents for a reason</span></h2></div>
+    <p data-l="vi">Claude tự giao việc cho subagent khi thấy cần. Subagent đáng dùng khi bạn cần chạy song song nhiều phần việc độc lập, cần giữ output dài (cả bộ test, một lần tìm kiếm rộng) ngoài hội thoại chính, cần một người review chưa thấy code được viết thế nào, hoặc cần giới hạn tool cho một việc.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="en">Claude delegates to subagents on its own when it sees a reason. They pay off when you need independent pieces of work done in parallel, long output (a full test run, a wide search) kept out of your main conversation, a reviewer that didn't see how the code was written, or fewer tools for one task.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="vi">Cái giá là token: mỗi subagent gửi request riêng và tính chung vào usage của bạn. Giao cùng một việc cho subagent cũng không cho câu trả lời thông minh hơn. Một reviewer chỉ đọc, không sửa được gì, gói gọn trong một file <code>.claude/agents/reviewer.md</code>:<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="en">The cost is tokens: each subagent sends its own requests against the same usage. Handing the same task to a subagent doesn't make the answer smarter either. A read-only reviewer that can't edit anything is one short file, <code>.claude/agents/reviewer.md</code>:<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <pre>---
+name: reviewer
+description: Reviews changed files against the spec they were built from. Use after implementing a feature, before opening the PR.
+tools: Read, Grep, Glob
+---
+You're reviewing code you didn't write. Compare the changed files against the spec you're given,
+check that every requirement is implemented and the listed edge cases have tests,
+and report only the gaps that affect correctness. Skip style.</pre>
+    <p data-l="vi">Giới hạn <code>tools:</code> do Claude Code thực thi, không phải lời dặn trong prompt. Việc đơn giản như gom file đang import một module thì đặt <code>model: haiku</code> cho subagent đó để đỡ tốn.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="en">The <code>tools:</code> limit is enforced by Claude Code, not requested in a prompt. For simple jobs like collecting the files that import a module, set <code>model: haiku</code> on that subagent to spend less.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+  </article>
+
+  <article class="tip" id="parallel">
+    <div class="t-head"><span class="num">10</span><h2><span data-l="vi">Chạy song song bằng worktree, chạy tự động bằng <code>-p</code></span><span data-l="en">Run in parallel with worktrees, unattended with <code>-p</code></span></h2></div>
+    <p data-l="vi">Mỗi việc làm song song nên có một bản checkout riêng để các chỗ sửa không đè nhau. Lệnh sau mở một phiên trong worktree mới:<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="en">Give each piece of parallel work its own checkout so the edits can't collide. This starts a session in a new worktree:<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <div class="term"><button class="copy" type="button" data-copy="claude -w feature-auth"><span data-l="vi">Chép</span><span data-l="en">Copy</span></button><code><span class="k">$ </span>claude -w feature-auth</code></div>
+    <p data-l="vi">Worktree là bản checkout mới, nên file bị gitignore như <code>.env</code> không có sẵn. Liệt kê chúng trong file <code>.worktreeinclude</code> ở gốc repo (cú pháp giống <code>.gitignore</code>), Claude Code sẽ chép vào mỗi worktree nó tạo. Chỉ để file nhỏ, vì đây là chép chứ không phải link.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="en">A worktree is a fresh checkout, so gitignored files like <code>.env</code> aren't there. List them in a <code>.worktreeinclude</code> at the repo root (same syntax as <code>.gitignore</code>) and Claude Code copies them into every worktree it creates. Keep it to small files, since they're copied, not linked.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="vi"><code>claude -p "prompt"</code> chạy một lần rồi thoát, dùng được trong CI, git hook hay vòng lặp shell. Trong script, thường cần thêm: <code>--allowedTools</code> để duyệt trước các tool được dùng, <code>--permission-mode dontAsk</code> để từ chối mọi thứ khác, <code>--max-turns</code> để giới hạn số lượt, và <code>--output-format json</code> khi cần parse kết quả. Tài liệu khuyên thử trên ba file trước, sửa prompt, rồi mới chạy phần còn lại.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <p data-l="en"><code>claude -p "prompt"</code> runs once and exits, which is how it goes into CI jobs, git hooks and shell loops. In a script you'll usually add <code>--allowedTools</code> to pre-approve its tools, <code>--permission-mode dontAsk</code> to refuse everything else, <code>--max-turns</code> to cap the run, and <code>--output-format json</code> when you need to parse the result. The docs suggest trying three files first, fixing the prompt, then running the rest.<sup class="cite"><a href="#src-1">[1]</a></sup></p>
+    <pre>for file in $(cat files.txt); do
+  claude -p "Migrate $file to the new logger API and commit. Reply OK or FAIL." \
+    --allowedTools "Read,Edit,Bash(git add *),Bash(git commit *)" \
+    --permission-mode dontAsk \
+    --max-turns 20
+done</pre>
+  </article>
+
+  <article class="tip" id="keys">
+    <div class="t-head"><span class="num">⌨</span><h2><span data-l="vi">Phím tắt nên nhớ</span><span data-l="en">Shortcuts worth remembering</span></h2></div>
+    <div class="tbl"><table class="stack">
+      <thead><tr><th><span data-l="vi">Phím</span><span data-l="en">Key</span></th><th><span data-l="vi">Tác dụng</span><span data-l="en">What it does</span></th></tr></thead>
+      <tbody>
+        <tr><td><code>Esc</code></td><td><span data-l="vi">Dừng câu trả lời hoặc lệnh đang chạy, giữ phần đã làm</span><span data-l="en">Stop the current response or tool call, keeping the work so far</span></td></tr>
+        <tr><td><code>Esc</code> <code>Esc</code></td><td><span data-l="vi">Ô nhập có chữ: xóa bản nháp (nhấn <code>Up</code> để lấy lại). Ô nhập trống: mở menu rewind</span><span data-l="en">With text in the prompt: clear the draft (<code>Up</code> brings it back). With an empty prompt: open the rewind menu</span></td></tr>
+        <tr><td><code>Shift+Tab</code></td><td><span data-l="vi">Đổi qua lại các chế độ quyền, gồm cả plan</span><span data-l="en">Cycle permission modes, plan included</span></td></tr>
+        <tr><td><code>!</code></td><td><span data-l="vi">Gõ ở đầu dòng để chạy lệnh shell; output được thêm vào phiên và Claude trả lời dựa trên nó</span><span data-l="en">At the start of a line, runs a shell command, adds its output to the session, and Claude responds to it</span></td></tr>
+        <tr><td><code>@</code></td><td><span data-l="vi">Gợi ý đường dẫn file để nhắc tới file</span><span data-l="en">File path autocomplete to mention a file</span></td></tr>
+        <tr><td><code>Ctrl+R</code></td><td><span data-l="vi">Tìm lại lệnh đã gõ trước đây</span><span data-l="en">Reverse search through previous commands</span></td></tr>
+        <tr><td><code>Ctrl+G</code></td><td><span data-l="vi">Mở prompt trong trình soạn thảo mặc định, tiện viết prompt dài</span><span data-l="en">Edit the prompt in your default text editor, handy for long prompts</span></td></tr>
+        <tr><td><code>Ctrl+B</code></td><td><span data-l="vi">Đưa lệnh Bash và agent đang chạy xuống chạy nền (tmux thì nhấn hai lần)</span><span data-l="en">Background running Bash commands and agents (tmux users press twice)</span></td></tr>
+        <tr><td><code>Ctrl+O</code></td><td><span data-l="vi">Bật tắt màn hình transcript xem chi tiết tool đã chạy</span><span data-l="en">Toggle the transcript viewer with detailed tool usage</span></td></tr>
+        <tr><td><code>Ctrl+T</code></td><td><span data-l="vi">Hiện hoặc ẩn checklist việc cần làm của Claude</span><span data-l="en">Show or hide Claude's to-do checklist</span></td></tr>
+      </tbody>
+    </table></div>
+    <p data-l="vi">Phím tắt có thể khác theo hệ điều hành và terminal.<sup class="cite"><a href="#src-3">[3]</a></sup></p>
+    <p data-l="en">Shortcuts may vary by platform and terminal.<sup class="cite"><a href="#src-3">[3]</a></sup></p>
+  </article>
+
+  <article class="tip" id="old">
+    <div class="t-head"><span class="num">✕</span><h2><span data-l="vi">Thói quen cũ có thể bỏ</span><span data-l="en">Old habits you can drop</span></h2></div>
+    <p data-l="vi">Tài liệu chính thức có một bảng các lời khuyên từng đúng nhưng nay không cần nữa, vì model đã làm được việc đó.<sup class="cite"><a href="#src-1">[1]</a></sup> Bốn mục trong bảng đó:</p>
+    <p data-l="en">The official docs keep a table of advice that used to be right but is no longer needed, because the models caught up.<sup class="cite"><a href="#src-1">[1]</a></sup> Four of them:</p>
+    <div class="tbl"><table class="stack">
+      <thead><tr><th><span data-l="vi">Thói quen cũ</span><span data-l="en">Old habit</span></th><th><span data-l="vi">Nay làm gì</span><span data-l="en">What to do now</span></th></tr></thead>
+      <tbody>
+        <tr><td><span data-l="vi">Thêm IMPORTANT hoặc VIẾT HOA cho dòng Claude hay bỏ qua</span><span data-l="en">Add IMPORTANT or ALL CAPS to a line Claude keeps missing</span></td><td><span data-l="vi">Model hiện tại làm theo một dòng viết bình thường; nhấn mạnh quá tay khiến nó áp luật quá mức. Luật cứng thì dùng hook hoặc deny rule; dòng bị lạc trong file dài thì rút ngắn file.</span><span data-l="en">Current models follow a plainly worded line; extra emphasis makes them over-apply it. Hard rules go in a hook or deny rule; if the line gets lost in a long file, shorten the file.</span></td></tr>
+        <tr><td><code>think hard</code>, <code>think harder</code>, <code>be thorough</code></td><td><span data-l="vi">Dùng effort. <code>ultrathink</code> vẫn có tác dụng cho một lượt.</span><span data-l="en">Use effort. <code>ultrathink</code> still works for one turn.</span></td></tr>
+        <tr><td><span data-l="vi">Dặn "cứ làm tiếp", "đừng lười"</span><span data-l="en">Tell Claude to keep going, don't be lazy</span></td><td><span data-l="vi">Model hiện tại tự làm hết việc đã thống nhất; câu kiểu này dễ khiến làm thừa. Đưa một phép kiểm tra thì vẫn đáng làm.</span><span data-l="en">Current models carry an agreed task through; lines like that cause over-work. Giving Claude a check to pass is still worth it.</span></td></tr>
+        <tr><td><span data-l="vi">Tả kiến trúc và cây thư mục trong <code>CLAUDE.md</code></span><span data-l="en">Describe your architecture and file layout in <code>CLAUDE.md</code></span></td><td><span data-l="vi">Claude tự đọc repo. Chỉ ghi điều không có trong repo.</span><span data-l="en">Claude reads the repo itself. Only write what isn't in there.</span></td></tr>
+      </tbody>
+    </table></div>
+  </article>
+
+  <article class="tip" id="nguon">
+    <div class="t-head"><h2><span data-l="vi">Nguồn</span><span data-l="en">Sources</span></h2></div>
+    <ol class="src">
+      <li id="src-1"><a href="https://code.claude.com/docs/en/best-practices" target="_blank" rel="noopener">Claude Code docs: Best practices for Claude Code</a>, Anthropic <span data-l="vi">(truy cập 20/11/2026; bài blog cũ anthropic.com/engineering/claude-code-best-practices nay chuyển hướng tới trang này)</span><span data-l="en">(accessed 2026-11-20; the old anthropic.com/engineering/claude-code-best-practices post now redirects here)</span></li>
+      <li id="src-2"><a href="https://code.claude.com/docs/en/permission-modes" target="_blank" rel="noopener">Claude Code docs: Choose a permission mode</a>, Anthropic <span data-l="vi">(truy cập 20/11/2026)</span><span data-l="en">(accessed 2026-11-20)</span></li>
+      <li id="src-3"><a href="https://code.claude.com/docs/en/interactive-mode" target="_blank" rel="noopener">Claude Code docs: Interactive mode</a>, Anthropic <span data-l="vi">(truy cập 20/11/2026)</span><span data-l="en">(accessed 2026-11-20)</span></li>
+    </ol>
+  </article>
+
+  <p class="more"><a href="../">← <span data-l="vi">Tất cả bài AI tips</span><span data-l="en">All AI tips</span></a></p>
+</main>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  var themeBtn=document.getElementById('themeBtn'),langBtn=document.getElementById('langBtn');
+  themeBtn.addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme')||(window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');
+    var next=cur==='dark'?'light':'dark';root.setAttribute('data-theme',next);try{localStorage.setItem('rag-theme',next)}catch(e){}
+  });
+  // Language is shared with the profile, CV and products pages.
+  function setLang(l){
+    root.lang=l;
+    langBtn.textContent=l==='en'?'VI':'EN';langBtn.lang=l==='en'?'vi':'en';
+    langBtn.setAttribute('aria-label',l==='en'?'Chuyển sang tiếng Việt':'Switch to English');
+    themeBtn.setAttribute('aria-label',l==='en'?'Toggle light/dark theme':'Đổi giao diện sáng/tối');
+  }
+  setLang(root.lang==='en'?'en':'vi');
+  langBtn.addEventListener('click',function(){
+    var next=root.lang==='en'?'vi':'en';setLang(next);
+    try{localStorage.setItem('profile-lang',next)}catch(e){}
+    history.replaceState(null,'',(next==='en'?'?lang=en':location.pathname)+location.hash);
+  });
+  document.querySelectorAll('.copy').forEach(function(b){
+    b.addEventListener('click',function(){
+      if(b.dataset.busy||!b.dataset.copy)return;
+      var o=b.innerHTML,done=function(){b.dataset.busy=1;b.textContent=root.lang==='en'?'Copied':'Đã chép';setTimeout(function(){b.innerHTML=o;delete b.dataset.busy},1400)};
+      if(navigator.clipboard)navigator.clipboard.writeText(b.dataset.copy).then(done,function(){});
+    });
+  });
+})();
+</script>
+</body>
+</html>
