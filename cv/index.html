@@ -14,18 +14,15 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Sổ tay">
 <script>if('serviceWorker' in navigator)addEventListener('load',function(){navigator.serviceWorker.register('../sw.js').catch(function(){})})</script>
-<!-- Keep the CV out of search results while it still holds placeholders; delete this line once it is filled in. -->
-<meta name="robots" content="noindex">
-<meta name="description" content="CV của Trần Văn Tuấn, lập trình viên full-stack (.NET, Angular, React) ở Đà Nẵng, làm web từ 2015.">
+<meta name="description" content="CV của Trần Văn Tuấn, lập trình viên full-stack (.NET, Angular, React) ở Đà Nẵng, xây dựng ứng dụng từ 2015.">
 <meta property="og:title" content="CV · Trần Văn Tuấn">
-<meta property="og:description" content="Lập trình viên full-stack (.NET, Angular, React) ở Đà Nẵng, làm web từ 2015.">
+<meta property="og:description" content="Lập trình viên full-stack (.NET, Angular, React) ở Đà Nẵng, xây dựng ứng dụng từ 2015.">
 <meta property="og:image" content="https://tvtdev94.github.io/images/avatar.png">
 <meta property="og:url" content="https://tvtdev94.github.io/cv/">
 <script>try{var t=localStorage.getItem('rag-theme');if(t)document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <!--
-  How to fill this CV: every element with class "ph" is a placeholder.
   Text comes in pairs, data-l="vi" for Vietnamese and data-l="en" for English; only the active
-  language shows (and prints). Replace both halves of a pair and drop the "ph" class.
+  language shows (and prints). Edit both halves of a pair.
   Copy an <article class="item"> block to add another job, project or degree; delete a whole
   <section> you do not need.
 -->
@@ -96,10 +93,6 @@ h2::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--
 .notes a{display:inline-flex;align-items:center;gap:6px;min-height:44px;font-weight:700;color:var(--accent);text-decoration:none}
 
 /* Placeholders: obvious on screen so nothing unfinished goes unnoticed. */
-.ph{color:var(--muted);font-style:italic;background:repeating-linear-gradient(90deg,var(--mark) 0 8px,transparent 8px 12px) 0 100%/100% 2px no-repeat}
-.chips .ph{background:transparent;border:1px dashed var(--line);font-style:italic}
-p.ph,li.ph{background:none;border-left:3px dashed var(--line);padding-left:10px}
-.hint{margin:16px 0 0;padding:12px 14px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);font-size:15px}
 
 @supports (animation-timeline: view()){
   @media (prefers-reduced-motion: no-preference){
@@ -115,11 +108,10 @@ p.ph,li.ph{background:none;border-left:3px dashed var(--line);padding-left:10px}
 }
 @media print{
   :root{--bg:#fff;--surface:#fff;--surface-2:#f2f4f8;--line:#cfd6e4;--text:#000;--muted:#333;--accent:#1d4ea8;--shadow:none}
-  .bar,.hint,.notes{display:none}
+  .bar,.notes{display:none}
   body{font-size:12pt}
   main{padding:0}
   section{break-inside:avoid;margin-top:18px}
-  .ph{color:#999}
 }
 </style>
 </head>
@@ -284,7 +276,7 @@ p.ph,li.ph{background:none;border-left:3px dashed var(--line);padding-left:10px}
   <section aria-labelledby="edu">
     <h2 id="edu"><span data-l="vi">Học vấn</span><span data-l="en">Education</span></h2>
     <article class="item card">
-      <h3><span class="ph" data-l="vi">[Ngành học]</span><span class="ph" data-l="en">[Degree]</span> · <span data-l="vi">Trường Đại học Công nghệ Thông tin và Truyền thông Việt – Hàn</span><span data-l="en">Vietnam – Korea University of Information and Communication Technology</span></h3>
+      <h3><span data-l="vi">Công nghệ Thông tin</span><span data-l="en">Information Technology</span> · <span data-l="vi">Trường Đại học Công nghệ Thông tin và Truyền thông Việt – Hàn</span><span data-l="en">Vietnam – Korea University of Information and Communication Technology</span></h3>
       <p class="meta">2012 – 2016</p>
     </article>
   </section>
@@ -303,8 +295,6 @@ p.ph,li.ph{background:none;border-left:3px dashed var(--line);padding-left:10px}
     </div>
   </section>
 
-  <p class="hint" data-l="vi">Các ô in nghiêng có gạch là chỗ trống, đang chờ điền thông tin.</p>
-  <p class="hint" data-l="en">Italic, underlined items are placeholders waiting for real details.</p>
 </main>
 
 <script>
