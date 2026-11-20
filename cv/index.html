@@ -159,6 +159,15 @@ p.ph,li.ph{background:none;border-left:3px dashed var(--line);padding-left:10px}
     <h2 id="exp"><span data-l="vi">Kinh nghiệm</span><span data-l="en">Experience</span></h2>
     <div class="timeline">
       <article class="item card">
+        <h3><span data-l="vi">Kỹ sư full-stack · Công ty phần mềm AI</span><span data-l="en">Full-stack engineer · AI software company</span></h3>
+        <p class="meta"><span class="ph" data-l="vi">[Năm bắt đầu]</span><span class="ph" data-l="en">[Start year]</span> – <span data-l="vi">nay</span><span data-l="en">present</span></p>
+        <ul>
+          <li data-l="vi">Làm trên một nền tảng SaaS dùng AI để rà soát tài liệu tuân thủ (SOC 2, ISO 27001) cho doanh nghiệp: tải tài liệu lên, OCR, cắt chunk, tạo embedding, rồi LLM chấm điểm từng mục kiểm soát.</li><li data-l="en">Work on a SaaS platform that uses AI to review compliance documents (SOC 2, ISO 27001) for businesses: upload, OCR, chunking, embeddings, then an LLM scores each control item.</li>
+          <li data-l="vi">Hệ thống gồm cổng web cho khách, cổng quản trị, API cho đối tác kèm webhook, đăng nhập một lần, thanh toán theo gói và tự xóa dữ liệu theo hạn lưu trữ.</li><li data-l="en">The system has a customer portal, an admin portal, a partner API with webhooks, single sign-on, plan-based billing and retention-based data deletion.</li>
+          <li class="ph" data-l="vi">[Phần tôi phụ trách và kết quả]</li><li class="ph" data-l="en">[My part and the outcome]</li>
+        </ul>
+      </article>
+      <article class="item card">
         <h3><span data-l="vi">Kỹ sư full-stack · Freelancer</span><span data-l="en">Full-stack engineer · Freelancer</span></h3>
         <p class="meta">2022 – <span data-l="vi">nay</span><span data-l="en">present</span></p>
         <ul>
@@ -249,6 +258,13 @@ p.ph,li.ph{background:none;border-left:3px dashed var(--line);padding-left:10px}
         <p class="ph" data-l="vi">[Dự án làm gì, phần của tôi, kết quả.]</p><p class="ph" data-l="en">[What it does, my part, the outcome.]</p>
       </article>
       <article class="item card">
+        <h3><span data-l="vi">Nền tảng AI rà soát tuân thủ cho doanh nghiệp</span><span data-l="en">AI compliance review platform for businesses</span></h3>
+        <p class="meta"><span class="ph" data-l="vi">[Năm bắt đầu]</span><span class="ph" data-l="en">[Start year]</span> – <span data-l="vi">nay</span><span data-l="en">present</span></p>
+        <p class="stack">Python · FastAPI · MongoDB · RabbitMQ · LangChain · OpenAI, Anthropic · Azure Document Intelligence, Blob Storage · Next.js · React · SvelteKit · Keycloak · Stripe · Docker</p>
+        <p data-l="vi">Doanh nghiệp tải lên chính sách, báo cáo SOC và tài liệu khác; hệ thống đối chiếu từng tài liệu với bộ khung tuân thủ và trả về điểm cho từng mục kiểm soát. Gồm các BFF riêng cho khách, quản trị và đối tác, một pipeline xử lý tài liệu qua hàng đợi, và các job theo dõi, khôi phục tài liệu bị kẹt.</p>
+        <p data-l="en">Businesses upload policies, SOC reports and other documents; the system checks each one against a compliance framework and scores every control item. It has separate BFFs for customers, admins and partners, a queue-driven document pipeline, and jobs that track and recover stalled documents.</p>
+      </article>
+      <article class="item card">
         <h3><span data-l="vi">Công cụ AI mã nguồn mở cho Claude Code</span><span data-l="en">Open-source AI tools for Claude Code</span></h3>
         <p class="meta">2026</p>
         <p class="stack">Python · MCP · Claude Code</p>
@@ -262,11 +278,11 @@ p.ph,li.ph{background:none;border-left:3px dashed var(--line);padding-left:10px}
     <h2 id="skills"><span data-l="vi">Kỹ năng</span><span data-l="en">Skills</span></h2>
     <div class="card">
       <div class="skill-group"><h3><span data-l="vi">Frontend</span><span data-l="en">Frontend</span></h3><div class="chips"><span>HTML/CSS</span><span>JavaScript/TypeScript</span><span>React</span><span>Angular</span><span>Next.js</span></div></div>
-      <div class="skill-group"><h3><span data-l="vi">Backend</span><span data-l="en">Backend</span></h3><div class="chips"><span>.NET / ASP.NET Core</span><span>Node.js</span><span>NestJS</span><span>Python</span></div></div>
+      <div class="skill-group"><h3><span data-l="vi">Backend</span><span data-l="en">Backend</span></h3><div class="chips"><span>.NET / ASP.NET Core</span><span>Node.js</span><span>NestJS</span><span>Python / FastAPI</span></div></div>
       <div class="skill-group"><h3><span data-l="vi">Cơ sở dữ liệu</span><span data-l="en">Databases</span></h3><div class="chips"><span>SQL Server</span><span>MongoDB</span><span>RavenDB</span><span>MySQL</span></div></div>
-      <div class="skill-group"><h3><span data-l="vi">Kiến trúc và cách làm</span><span data-l="en">Architecture and practice</span></h3><div class="chips"><span>Clean Architecture</span><span>Domain-Driven Design</span><span>Modular monolith / Microservice</span><span>Message queue</span><span>TDD</span><span>Agile/Scrum</span></div></div>
+      <div class="skill-group"><h3><span data-l="vi">Kiến trúc và cách làm</span><span data-l="en">Architecture and practice</span></h3><div class="chips"><span>Clean Architecture</span><span>Domain-Driven Design</span><span>Modular monolith / Microservice</span><span>Message queue (RabbitMQ)</span><span>TDD</span><span>Agile/Scrum</span></div></div>
       <div class="skill-group"><h3><span data-l="vi">Phân tích</span><span data-l="en">Analysis</span></h3><div class="chips"><span data-l="vi">Phân tích epic và story</span><span data-l="en">Epic and story analysis</span><span data-l="vi">Ước lượng dự án</span><span data-l="en">Project estimation</span></div></div>
-      <div class="skill-group"><h3><span data-l="vi">AI</span><span data-l="en">AI</span></h3><div class="chips"><span>RAG</span><span>AI agent</span><span>MCP</span><span>Claude Code</span></div></div>
+      <div class="skill-group"><h3><span data-l="vi">AI</span><span data-l="en">AI</span></h3><div class="chips"><span>RAG</span><span>LangChain</span><span>OpenAI, Anthropic API</span><span>AI agent</span><span>MCP</span><span>Claude Code</span></div></div>
     </div>
   </section>
 
@@ -285,7 +301,7 @@ p.ph,li.ph{background:none;border-left:3px dashed var(--line);padding-left:10px}
 
   <section aria-labelledby="lang">
     <h2 id="lang"><span data-l="vi">Ngoại ngữ</span><span data-l="en">Languages</span></h2>
-    <div class="card chips"><span class="ph" data-l="vi">[Ngôn ngữ · mức độ]</span><span class="ph" data-l="en">[Language · level]</span></div>
+    <div class="card chips"><span data-l="vi">Tiếng Anh · cơ bản</span><span data-l="en">English · basic</span></div>
   </section>
 
   <section class="notes" aria-labelledby="learn">
