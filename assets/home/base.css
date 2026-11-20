@@ -83,7 +83,7 @@ main{flex:1;width:100%;max-width:1160px;margin:0 auto;padding:4px 16px 32px;disp
 @keyframes spin{to{rotate:360deg}}
 @keyframes ringIn{from{opacity:0;scale:.55}to{opacity:1;scale:1}}
 
-.me{position:absolute;inset:31%;border-radius:50%;animation:pop .9s var(--ease) .15s both;transform:perspective(700px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .4s var(--ease);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.me{position:absolute;inset:31%;border-radius:50%;animation:pop .9s var(--ease) .15s both;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .me::before,.me::after{content:"";position:absolute;inset:-7px;border-radius:50%;background:conic-gradient(from 0deg,var(--accent),transparent 28%,var(--star) 50%,transparent 72%,var(--accent-2) 90%,var(--accent));animation:spin 6s linear infinite}
 .me::after{inset:-14px;filter:blur(18px);opacity:.55}
 .me img{position:relative;z-index:1;display:block;width:100%;height:100%;border-radius:50%;object-fit:cover;background:var(--surface-2);box-shadow:0 0 0 4px var(--bg)}

@@ -20,8 +20,8 @@ btn.addEventListener('click',function(){
 var typed=document.getElementById('typed'),full=typed.textContent,typeTimer=0;
 // Roles cycle like a typewriter. Edit ROLES (and the screen-reader copy in .role) to change them.
 var ROLES={
-  vi:[full,'Làm web từ 2015 với .NET, Angular, React','Xây ứng dụng AI với Python, FastAPI, LangChain','Viết công cụ mã nguồn mở cho Claude Code','Ghi chép về RAG và agent trong Sổ tay'],
-  en:['Full-stack developer','Building for the web since 2015 with .NET, Angular, React','Building AI apps with Python, FastAPI, LangChain','Writing open-source tools for Claude Code','Keeping notes on RAG and agents']
+  vi:[full,'Xây dựng ứng dụng từ 2015 với .NET, Angular, React','Xây ứng dụng AI với Python, FastAPI, LangChain','Viết công cụ mã nguồn mở cho Claude Code','Ghi chép về RAG và agent trong Sổ tay'],
+  en:['Full-stack developer','Building applications since 2015 with .NET, Angular, React','Building AI apps with Python, FastAPI, LangChain','Writing open-source tools for Claude Code','Keeping notes on RAG and agents']
 },lang='vi';
 // The role list for the current language, led by any occasion greetings.
 function roles(l){return greetings(l||lang).concat(ROLES[l||lang])}
@@ -105,7 +105,7 @@ function showFirstRole(){typed.textContent=roles()[0]}
 // A new look can add or drop a greeting: refresh the screen-reader copy and the reserved height.
 new MutationObserver(function(){roleSr.textContent=roles().join('. ')+'.';fitRole()}).observe(root,{attributes:true,attributeFilter:['data-season']});
 
-// Mouse parallax: sky drifts one way, orbit the other, avatar tilts toward the pointer.
+// Mouse parallax: sky drifts one way, orbit the other. The avatar stays flat so its circle never looks squashed.
 if(!reduce&&window.matchMedia('(pointer: fine)').matches){
   var sky=document.getElementById('sky'),px=0,py=0,queued=false;
   addEventListener('pointermove',function(e){
@@ -115,7 +115,6 @@ if(!reduce&&window.matchMedia('(pointer: fine)').matches){
       queued=false;
       sky.style.setProperty('--sx',(-px*14).toFixed(1)+'px');sky.style.setProperty('--sy',(-py*14).toFixed(1)+'px');
       orbit.style.setProperty('--ox',(px*10).toFixed(1)+'px');orbit.style.setProperty('--oy',(py*10).toFixed(1)+'px');
-      me.style.setProperty('--ry',(px*14).toFixed(1)+'deg');me.style.setProperty('--rx',(-py*14).toFixed(1)+'deg');
     });
   });
 }
