@@ -96,6 +96,8 @@ h1{margin:4px 0 0;font-size:min(11.5vw,72px);line-height:1.1;letter-spacing:-.03
 h1 .w{display:inline-block;animation:rise .9s var(--ease) both}
 h1 .w:nth-child(1){animation-delay:.35s}h1 .w:nth-child(2){animation-delay:.47s}h1 .w:nth-child(3){animation-delay:.59s}
 @keyframes rise{from{opacity:0;translate:0 .45em;rotate:4deg}to{opacity:1;translate:0 0;rotate:0deg}}
+.tag{margin:6px 0 0;display:inline-flex;align-items:center;gap:10px;font-size:13px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);animation:rise .8s var(--ease) .64s both}
+.tag::before,.tag::after{content:"";width:22px;height:1px;background:currentColor;opacity:.5}
 .role-box{margin:10px 0 0;min-height:calc(2 * 1.35em + 14px);font-size:18px;display:flex;align-items:flex-start;justify-content:center}
 .role{margin:0;max-width:100%;display:inline-flex;align-items:center;gap:10px;font-size:18px;line-height:1.35;font-weight:700;color:var(--muted);padding:6px 14px 6px 12px;border:1px solid var(--line);border-radius:22px;background:var(--surface);animation:rise .8s var(--ease) .7s both}
 .role .pulse{width:10px;height:10px;border-radius:50%;background:#3fbf7f;animation:ping 2s ease-out infinite}
@@ -139,6 +141,7 @@ footer{width:100%;max-width:1160px;margin:0 auto;padding:8px 16px 28px;color:var
   .bio{margin-left:0;font-size:19px}
   h1{font-size:min(5.6vw,72px)}
   .role-box{min-height:0;justify-content:flex-start}
+  .tag::before{display:none}
   footer{text-align:left;padding:8px 32px 32px}
 }
 @media (prefers-reduced-motion: reduce){

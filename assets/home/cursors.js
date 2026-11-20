@@ -64,7 +64,7 @@ function assemble(){
   var D=function(el,fx,fy,dx,dy,r){return ['d',el,fx,fy,dx,dy,r]};
   var jobs=[
     [D(me,.5,.5,-60,46,-10),D(Q('.mono'),.5,.5,-40,34,-8),D(menus[0],.5,.5,-30,44,-8),D(menus[1],.5,.5,24,52,6),D(menus[2],.5,.5,40,38,-5),D(langBtn,.5,.5,30,44,15),D(btn,.5,.5,-24,48,-20)],
-    [D(w[0],.5,.55,-50,70,-12),D(w[1],.5,.55,40,-60,9),D(w[2],.5,.55,60,80,-8),D(Q('.bio'),.12,.3,-30,60,3),['h']],
+    [D(w[0],.5,.55,-50,70,-12),D(w[1],.5,.55,40,-60,9),D(w[2],.5,.55,60,80,-8),D(Q('.tag'),.5,.5,-40,50,6),D(Q('.bio'),.12,.3,-30,60,3),['h']],
     [D(Q('.role'),.18,.5,70,-34,-7)].concat(chips.map(function(ch,i){var v=[[-50,-40,-12],[60,-30,10],[-40,50,8],[50,45,-10],[-60,20,14]][i%5];return D(ch,.5,.5,v[0],v[1],v[2])})),
     ic.map(function(a,i){var v=[[-40,90,-20],[30,110,15],[-20,100,-18],[50,80,22],[-50,96,12]][i%5];return D(a,.5,.5,v[0],v[1],v[2])}).concat([D(hs[0],.3,.5,40,50,4),D(hs[1],.5,.5,-30,44,-4)]),
     [['r',rings[0],200,28],['r',rings[1],-40,21],['r',rings[2],120,13]].concat(CONS.map(function(cn){return ['s',cn]}))
@@ -226,7 +226,7 @@ function cursorEl(c){
   layer.appendChild(el);return el;
 }
 // Every piece that can fall, with the cursor that owns it.
-var FALLS=[['.mono,.nav .menu,#langBtn,#themeBtn,.fine,.foot-link,#lookBtn,#replay',0],['h1 .w,.bio',1],['.chip,.role',2],['.dock a,.handles span',3],['.orbit .dot',4],['#season .hang,#season .moon,#season .bit',5]];
+var FALLS=[['.mono,.nav .menu,#langBtn,#themeBtn,.fine,.foot-link,#lookBtn,#replay',0],['h1 .w,.tag,.bio',1],['.chip,.role',2],['.dock a,.handles span',3],['.orbit .dot',4],['#season .hang,#season .moon,#season .bit',5]];
 // Pieces are drawn from a shuffled bag, so every piece falls once before any falls again.
 var bag=[];
 function drawPieces(n,vw,vh){
@@ -250,7 +250,7 @@ function mischief(){
   running=running.filter(function(a){return a.playState!=='finished'});
   root.classList.add('building');
   var A={x:m.left+scrollX+m.width/2,y:m.top+scrollY+m.height/2};
-  var occ=[].slice.call(document.querySelectorAll('.mono,.nav .menu,#langBtn,#themeBtn,.fine,.foot-link,#lookBtn,#replay,h1 .w,.chip,.role-box,.bio,.dock a,.handles span,.orbit .dot,#me')).map(function(e){return box(e,6)});
+  var occ=[].slice.call(document.querySelectorAll('.mono,.nav .menu,#langBtn,#themeBtn,.fine,.foot-link,#lookBtn,#replay,h1 .w,.tag,.chip,.role-box,.bio,.dock a,.handles span,.orbit .dot,#me')).map(function(e){return box(e,6)});
   pool.forEach(function(el,i){
     var r=el.getBoundingClientRect(),own=box(el,6),rest=occ.filter(function(q){return q.l!==own.l||q.t!==own.t}),cands=[];
     [50,70,90,110,130,30,150].forEach(function(dy){[0,-30,30,-60,60,-90,90].forEach(function(dx){cands.push([dx+Math.round((Math.random()-.5)*16),dy])})});
