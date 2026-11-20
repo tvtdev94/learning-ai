@@ -66,7 +66,7 @@ function assemble(){
     [D(me,.5,.5,-60,46,-10),D(Q('.mono'),.5,.5,-40,34,-8),D(menus[0],.5,.5,-30,44,-8),D(menus[1],.5,.5,24,52,6),D(menus[2],.5,.5,40,38,-5),D(langBtn,.5,.5,30,44,15),D(btn,.5,.5,-24,48,-20)],
     [D(w[0],.5,.55,-50,70,-12),D(w[1],.5,.55,40,-60,9),D(w[2],.5,.55,60,80,-8),D(Q('.bio'),.12,.3,-30,60,3),['h']],
     [D(Q('.role'),.18,.5,70,-34,-7)].concat(chips.map(function(ch,i){var v=[[-50,-40,-12],[60,-30,10],[-40,50,8],[50,45,-10],[-60,20,14]][i%5];return D(ch,.5,.5,v[0],v[1],v[2])})),
-    ic.map(function(a,i){var v=[[-40,90,-20],[30,110,15],[-20,100,-18],[50,80,22]][i];return D(a,.5,.5,v[0],v[1],v[2])}).concat([D(hs[0],.3,.5,40,50,4),D(hs[1],.5,.5,-30,44,-4)]),
+    ic.map(function(a,i){var v=[[-40,90,-20],[30,110,15],[-20,100,-18],[50,80,22],[-50,96,12]][i%5];return D(a,.5,.5,v[0],v[1],v[2])}).concat([D(hs[0],.3,.5,40,50,4),D(hs[1],.5,.5,-30,44,-4)]),
     [['r',rings[0],200,28],['r',rings[1],-40,21],['r',rings[2],120,13]].concat(CONS.map(function(cn){return ['s',cn]}))
   ];
   // Season decorations live in a fixed layer behind the page, so they are moved in place and
